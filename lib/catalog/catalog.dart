@@ -2095,16 +2095,16 @@ Future<void> _shareSelectedWhatsApp({
       String fileBase64 = base64Encode(fileBytes);
 
       final response = await http.post(
-        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+        Uri.parse("http://192.168.0.10:3000/send-file-new"),
         body: {
           'data': fileBase64,
           'filename': fileType == 'image' ? 'catalog.jpg' : 'catalog.pdf',
-          'key': AppConstants.whatsappKey,
+          // 'key': AppConstants.whatsappKey,
           'number': '91$mobileNo',
           'caption': caption ?? 'Please find the file attached.',
         },
       );
-
+      print('WhatsApp API Response: ${response.body}');
       if (response.statusCode == 200) {
         print('File sent successfully');
         return true;

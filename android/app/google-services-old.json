@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "28644865400",
+    "project_id": "vrserptest1",
+    "storage_bucket": "vrserptest1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28644865400:android:b48f69f980808705cd848d",
+        "android_client_info": {
+          "package_name": "com.example.vrs_erp_figma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_4wgMzVMNtxc9YIaKBOQ_mCyegYp9Suw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

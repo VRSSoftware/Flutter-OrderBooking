@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "904453695362",
+    "project_id": "testnotificationapp-aebb2",
+    "storage_bucket": "testnotificationapp-aebb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:904453695362:android:0ea5b42f56ce1b3ef1519b",
+        "android_client_info": {
+          "package_name": "com.example.vrs_erp_figma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_VH5KVPSvINN5eIstGoeH8OBWR-bC3Ww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

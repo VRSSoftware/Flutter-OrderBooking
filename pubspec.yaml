@@ -63,6 +63,10 @@ dependencies:
   pdfx: 2.9.1
   multicast_dns: ^0.3.3
   badges: ^3.1.2
+  flutter_local_notifications: 18.0.1
+  firebase_messaging: ^16.0.4
+  firebase_core: ^4.2.0
+
 
  # android_intent_plus: ^4.0.2
   #device_apps: ^2.2.0

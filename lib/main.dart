@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vrs_erp_figma/OrderBooking/order_booking.dart';
@@ -5,6 +6,7 @@ import 'package:vrs_erp_figma/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp_figma/catalog/catalog.dart';
 import 'package:vrs_erp_figma/constants/app_constants.dart';
 import 'package:vrs_erp_figma/dashboard/dashboard.dart';
+import 'package:vrs_erp_figma/firebase_options.dart';
 import 'package:vrs_erp_figma/models/CartModel.dart';
 import 'package:vrs_erp_figma/privacypolicy/deleteAccount.dart';
 import 'package:vrs_erp_figma/privacypolicy/privacypolicy.dart';
@@ -20,12 +22,19 @@ import 'package:vrs_erp_figma/screens/mdns/MdnsDiscoveryScreen.dart';
 import 'package:vrs_erp_figma/screens/packing/packing_order_screen.dart';
 import 'package:vrs_erp_figma/screens/sale_bill/sale_bill_order_screen.dart';
 import 'package:vrs_erp_figma/screens/splash_screen.dart';
+import 'package:vrs_erp_figma/services/notification_service.dart';
 import 'package:vrs_erp_figma/stockReport/stockreportpage.dart';
 import 'package:vrs_erp_figma/viewOrder/view_order.dart';
 import 'package:vrs_erp_figma/viewOrder/view_order_screen.dart';
 import 'package:vrs_erp_figma/viewOrder/view_order_screen_barcode.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
+  // await NotificationService().init();
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => CartModel())],

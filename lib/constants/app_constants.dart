@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConstants {
-  static String BASE_URL = "http://192.168.0.11:8080/api/v1";
+  // static String BASE_URL = "http://192.168.0.10:8080/api/v1";
   static bool isLive = true;
+ static  String BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
 //  static  String BASE_URL = "https://vrserp.com/vrs_erp_tjs/api/v1";
 //  static  String BASE_URL = "https://vrserp.com/vrs_erp_tjs/api/v1";
   static  String? whatsappKey;
