@@ -277,6 +277,7 @@ class _LoginPageState extends State<LoginScreen> {
                 _usernameController.text.trim()) {
               await fetchOnlineImageSetting(); // API CALL HERE
               UserSession.rptPath = await fetchAppSetting('606');
+              UserSession.imageDependsOn = await fetchAppSetting('577');
               AppConstants.whatsappKey = await fetchAppSetting('541');
               await fetchDatabaseCredentials();
               // print("Whatsapp Key: ${AppConstants.whatsappKey}");

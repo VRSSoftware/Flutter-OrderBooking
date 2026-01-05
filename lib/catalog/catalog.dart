@@ -1735,6 +1735,7 @@ Widget _buildItemCard(Catalog item, bool isLargeScreen) {
   // }
 
 List<String> _getImageUrl(Catalog catalog) {
+
   
   final shadeImages = catalog.shadeImages ?? '';
   final fullImagePath = catalog.fullImagePath ?? '';
@@ -1742,7 +1743,7 @@ List<String> _getImageUrl(Catalog catalog) {
   print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
   print('Base URL: ${AppConstants.BASE_URL}');
 
-  if (shadeImages.isNotEmpty && false) {
+  if (shadeImages.isNotEmpty && UserSession.imageDependsOn == 'S') {
     final imageEntries = shadeImages.split(',').map((entry) => entry.trim()).toList();
     List<String> imageUrls = [];
     for (var entry in imageEntries) {

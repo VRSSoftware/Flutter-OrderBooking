@@ -433,7 +433,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       final categories = await ApiService.fetchCategories();
       setState(() {
         _categories = [
-          Category(itemSubGrpKey: '-1', itemSubGrpName: "ALL"),
+        //  Category(itemSubGrpKey: '-1', itemSubGrpName: "ALL"),
           ...categories,
         ];
         _isLoadingCategories = false;
