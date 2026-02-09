@@ -632,18 +632,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                       child: OutlinedButton(
                                         onPressed: () {
                                           setState(() {
-                                            _selectedCategoryKey = category.itemSubGrpKey;
-                                            _selectedCategoryName = category.itemSubGrpName;
+                                            // _selectedCategoryKey = category.itemSubGrpKey;
+                                            // _selectedCategoryName = category.itemSubGrpName;
                                             if (_selectedCategoryKey == '-1') {
                                               _items = _allItems;
                                             } else {
-                                              _items = _allItems
-                                                  .where(
-                                                    (item) =>
-                                                        item.itemSubGrpKey ==
-                                                        _selectedCategoryKey,
-                                                  )
-                                                  .toList();
+                                              // _items = _allItems
+                                              //     .where(
+                                              //       (item) =>
+                                              //           item.itemSubGrpKey ==
+                                              //           _selectedCategoryKey,
+                                              //     )
+                                              //     .toList();
                                             }
                                           });
                                           Navigator.pushNamed(

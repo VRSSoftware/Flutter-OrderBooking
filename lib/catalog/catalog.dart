@@ -29,6 +29,8 @@ import 'package:vrs_erp/models/size.dart';
 import 'package:vrs_erp/models/style.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
 
 class CatalogPage extends StatefulWidget {
   @override
@@ -222,56 +224,68 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
-Future<void> _fetchCatalogItems() async {
-  try {
-    if (pageNo == 1) {
+  Future<void> _fetchCatalogItems() async {
+    try {
+      if (pageNo == 1) {
+        setState(() {
+          catalogItems = [];
+          isLoading = true;
+          hasMore = true;
+        });
+      } else {
+        setState(() {
+          isLoadingMore = true;
+        });
+      }
+
+      final result = await ApiService.fetchCatalogItem(
+        itemSubGrpKey: itemSubGrpKey!,
+        itemKey: itemKey,
+        cobr: coBr!,
+        sortBy: sortBy,
+        // styleKey: selectedStyles.length == 1 ? selectedStyles[0].styleKey : null,
+        styleKey:
+            selectedStyles.isEmpty
+                ? null
+                : selectedStyles.map((s) => s.styleKey).join(','),
+        shadeKey:
+            selectedShades.isEmpty
+                ? null
+                : selectedShades.map((s) => s.shadeKey).join(','),
+        sizeKey:
+            selectedSize.isEmpty
+                ? null
+                : selectedSize.map((s) => s.itemSizeKey).join(','),
+        fromMRP: fromMRP == "" ? null : fromMRP,
+        toMRP: toMRP == "" ? null : toMRP,
+        fromDate: fromDate == "" ? null : fromDate,
+        toDate: toDate == "" ? null : toDate,
+        brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
+        pageNo: pageNo,
+      );
+
+      // print('Full API Response: ${jsonEncode(result)}'); // Log raw JSON
+      final List<Catalog> items = result["catalogs"] as List<Catalog>;
+      // print(
+      //   'Catalog Items: ${items.map((e) => {'styleCode': e.styleCode, 'ShadeImages': e.shadeImages, 'fullImagePath': e.fullImagePath ?? ''}).toList()}',
+      // );
+
       setState(() {
-        catalogItems = [];
-        isLoading = true;
-        hasMore = true;
+        catalogItems.addAll(items);
+        total = result["total"] ?? items.length; // Adjust based on API response
+        isLoading = false;
+        isLoadingMore = false;
+        hasMore = items.length >= pageSize;
       });
-    } else {
+    } catch (e) {
+      debugPrint('Failed to load catalog items: $e');
       setState(() {
-        isLoadingMore = true;
+        isLoading = false;
+        isLoadingMore = false;
       });
     }
-
-    final result = await ApiService.fetchCatalogItem(
-      itemSubGrpKey: itemSubGrpKey!,
-      itemKey: itemKey,
-      cobr: coBr!,
-      sortBy: sortBy,
-      styleKey: selectedStyles.length == 1 ? selectedStyles[0].styleKey : null,
-      shadeKey: selectedShades.isEmpty ? null : selectedShades.map((s) => s.shadeKey).join(','),
-      sizeKey: selectedSize.isEmpty ? null : selectedSize.map((s) => s.itemSizeKey).join(','),
-      fromMRP: fromMRP == "" ? null : fromMRP,
-      toMRP: toMRP == "" ? null : toMRP,
-      fromDate: fromDate == "" ? null : fromDate,
-      toDate: toDate == "" ? null : toDate,
-      brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
-      pageNo: pageNo,
-    );
-
-    print('Full API Response: ${jsonEncode(result)}'); // Log raw JSON
-    final List<Catalog> items = result["catalogs"] as List<Catalog>;
-    print('Catalog Items: ${items.map((e) => {'styleCode': e.styleCode, 'ShadeImages': e.shadeImages, 'fullImagePath': e.fullImagePath ?? ''}).toList()}');
-
-    setState(() {
-      catalogItems.addAll(items);
-      total = result["total"] ?? items.length; // Adjust based on API response
-      isLoading = false;
-      isLoadingMore = false;
-      hasMore = items.length >= pageSize;
-    });
-  } catch (e) {
-    debugPrint('Failed to load catalog items: $e');
-    setState(() {
-      isLoading = false;
-      isLoadingMore = false;
-    });
   }
-}
- 
+
   // Future<void> _fetchStylesByItemGrpKey(String itemKey) async {
   //   try {
   //     final fetchedStyles = await ApiService.fetchStylesByItem(itemKey);
@@ -687,7 +701,7 @@ Future<void> _fetchCatalogItems() async {
         child: Icon(Icons.filter_alt_outlined, color: Colors.white),
         tooltip: 'Filter',
       ),
-      bottomNavigationBar: BottomNavigationWidget(currentScreen:  '/catalog',),
+      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/catalog'),
       // bottomNavigationBar: BottomNavigationWidget(
       //   currentIndex: 1,
       //   onTap: (index) {
@@ -746,263 +760,560 @@ Future<void> _fetchCatalogItems() async {
     return 0.4;
   }
 
-Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
-  final filteredItems = _getFilteredItems();
+  Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
+    final filteredItems = _getFilteredItems();
 
-  return ListView.builder(
-    controller: _scrollController,
-    itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-    itemBuilder: (context, index) {
-      if (index == filteredItems.length && isLoadingMore) {
-        return Center(
-          child: LoadingAnimationWidget.waveDots(
-            color: AppColors.primaryColor,
-            size: 30,
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == filteredItems.length && isLoadingMore) {
+          return Center(
+            child: LoadingAnimationWidget.waveDots(
+              color: AppColors.primaryColor,
+              size: 30,
+            ),
+          );
+        }
+        final item = filteredItems[index];
+        bool isSelected = selectedItems.contains(item);
+        List<String> shades =
+            item.shadeName.isNotEmpty
+                ? item.shadeName
+                    .split(',')
+                    .map((shade) => shade.trim())
+                    .toList()
+                : [];
+        final imageUrls = _getImageUrl(item);
+        print('Image URLs before use: $imageUrls');
+        final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+
+        return GestureDetector(
+          onDoubleTap: () {
+            _openImageZoom1(
+              context,
+              item,
+              showShades: showShades,
+              showMRP: showMRP,
+              showWSP: showWSP,
+              showSizes: showSizes,
+              showProduct: showProduct,
+              showRemark: showRemark,
+              isLargeScreen: isLargeScreen,
+            );
+          },
+          onLongPress: () => _toggleItemSelection(item),
+          onTap: () {
+            if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: Card(
+              elevation: isSelected ? 8 : 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(0),
+              ),
+              color: isSelected ? Colors.blue.shade50 : Colors.white,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(0),
+                          bottomLeft: Radius.circular(0),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          flex: 2,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(0),
+                              topRight: Radius.circular(0),
+                            ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final maxImageHeight =
+                                    constraints.maxWidth * 1.2;
+                                return ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: maxImageHeight,
+                                  ),
+                                  child:
+                                      imageUrls.isNotEmpty &&
+                                              imageUrls[0].isNotEmpty
+                                          ? Stack(
+                                            children: [
+                                              SizedBox(
+                                                height: maxImageHeight,
+                                                width: double.infinity,
+                                                child: PageView.builder(
+                                                  itemCount: imageUrls.length,
+                                                  onPageChanged: (index) {
+                                                    currentImageIndex.value =
+                                                        index;
+                                                  },
+                                                  itemBuilder: (
+                                                    context,
+                                                    index,
+                                                  ) {
+                                                    final imageUrl =
+                                                        imageUrls[index];
+                                                    return _buildSingleImage(
+                                                      imageUrl,
+                                                      maxImageHeight,
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              if (imageUrls.length > 1)
+                                                Positioned(
+                                                  bottom: 8,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: ValueListenableBuilder<
+                                                    int
+                                                  >(
+                                                    valueListenable:
+                                                        currentImageIndex,
+                                                    builder: (
+                                                      context,
+                                                      index,
+                                                      child,
+                                                    ) {
+                                                      return DotIndicator(
+                                                        count: imageUrls.length,
+                                                        currentIndex: index,
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                            ],
+                                          )
+                                          : _buildSingleImage(
+                                            '',
+                                            maxImageHeight,
+                                          ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: isLargeScreen ? 16 : 8),
+                        Flexible(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isLargeScreen ? 16 : 12,
+                                ),
+                                child: Table(
+                                  columnWidths: const {
+                                    0: IntrinsicColumnWidth(),
+                                    1: FixedColumnWidth(8),
+                                    2: FlexColumnWidth(),
+                                  },
+                                  defaultVerticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  children: [
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('Design'),
+                                        const Text(':'),
+                                        Text(
+                                          item.styleCodeWithcount,
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: isLargeScreen ? 20 : 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    _buildSpacerRow(),
+                                    if (showShades && shades.isNotEmpty)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Shade'),
+                                          const Text(':'),
+                                          Text(
+                                            shades.join(', '),
+                                            style: TextStyle(
+                                              fontSize: isLargeScreen ? 14 : 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showShades && shades.isNotEmpty)
+                                      _buildSpacerRow(),
+                                    if (showMRP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('MRP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.mrp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showMRP) _buildSpacerRow(),
+                                    if (showWSP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('WSP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.wsp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showWSP) _buildSpacerRow(),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Size'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              _getSizeText(item),
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      _buildSpacerRow(),
+                                    if (showProduct)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Product'),
+                                          const Text(':'),
+                                          Text(
+                                            item.itemName,
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showProduct) _buildSpacerRow(),
+                                    if (showRemark)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Remark'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              item.remark?.trim().isNotEmpty ==
+                                                      true
+                                                  ? item.remark!
+                                                  : '--',
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle,
+                          color: AppColors.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         );
-      }
-      final item = filteredItems[index];
-      bool isSelected = selectedItems.contains(item);
-      List<String> shades = item.shadeName.isNotEmpty
-          ? item.shadeName.split(',').map((shade) => shade.trim()).toList()
-          : [];
-      final imageUrls = _getImageUrl(item);
-      print('Image URLs before use: $imageUrls');
-      final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+      },
+    );
+  }
 
-      return GestureDetector(
-        onDoubleTap: () {
-          _openImageZoom1(
-            context,
-            item,
-            showShades: showShades,
-            showMRP: showMRP,
-            showWSP: showWSP,
-            showSizes: showSizes,
-            showProduct: showProduct,
-            showRemark: showRemark,
-            isLargeScreen: isLargeScreen,
+  Widget _buildExpandedView(bool isLargeScreen) {
+    final filteredItems = _getFilteredItems();
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == filteredItems.length && isLoadingMore) {
+          return Center(
+            child: LoadingAnimationWidget.waveDots(
+              color: AppColors.primaryColor,
+              size: 30,
+            ),
           );
-        },
-        onLongPress: () => _toggleItemSelection(item),
-        onTap: () {
-          if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
+        }
+        final item = filteredItems[index];
+        final isSelected = selectedItems.contains(item);
+        final shades = item.shadeName.split(',').map((s) => s.trim()).toList();
+        final imageUrls = _getImageUrl(item);
+        print('Image URLs: $imageUrls');
+        final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+
+        return GestureDetector(
+          onDoubleTap: () {
+            _openImageZoom1(
+              context,
+              item,
+              showShades: showShades,
+              showMRP: showMRP,
+              showWSP: showWSP,
+              showSizes: showSizes,
+              showProduct: showProduct,
+              showRemark: showRemark,
+              isLargeScreen: isLargeScreen,
+            );
+          },
+          onLongPress: () => _toggleItemSelection(item),
+          onTap: () {
+            if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+          },
           child: Card(
             elevation: isSelected ? 8 : 4,
+            margin: EdgeInsets.symmetric(
+              vertical: 8,
+              horizontal: isLargeScreen ? 16 : 8,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(0),
             ),
             color: isSelected ? Colors.blue.shade50 : Colors.white,
             child: Stack(
               children: [
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  child: Container(
-                    width: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(0),
-                        bottomLeft: Radius.circular(0),
+                        topRight: Radius.circular(0),
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final maxImageHeight = constraints.maxWidth * 1.2;
+                          return ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: maxImageHeight,
+                              minHeight: constraints.maxWidth,
+                            ),
+                            child:
+                                imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
+                                    ? Stack(
+                                      children: [
+                                        SizedBox(
+                                          height: maxImageHeight,
+                                          width: double.infinity,
+                                          child: PageView.builder(
+                                            itemCount: imageUrls.length,
+                                            onPageChanged: (index) {
+                                              currentImageIndex.value = index;
+                                            },
+                                            itemBuilder: (context, index) {
+                                              final imageUrl = imageUrls[index];
+                                              return _buildSingleImage(
+                                                imageUrl,
+                                                maxImageHeight,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        if (imageUrls.length > 1)
+                                          Positioned(
+                                            bottom: 8,
+                                            left: 0,
+                                            right: 0,
+                                            child: ValueListenableBuilder<int>(
+                                              valueListenable:
+                                                  currentImageIndex,
+                                              builder: (context, index, child) {
+                                                return DotIndicator(
+                                                  count: imageUrls.length,
+                                                  currentIndex: index,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                      ],
+                                    )
+                                    : _buildSingleImage('', maxImageHeight),
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(0),
-                            topRight: Radius.circular(0),
-                          ),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final maxImageHeight = constraints.maxWidth * 1.2;
-                              return ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight: maxImageHeight,
-                                ),
-                                child: imageUrls.isNotEmpty &&
-                                        imageUrls[0].isNotEmpty
-                                    ? Stack(
-                                        children: [
-                                          SizedBox(
-                                            height: maxImageHeight,
-                                            width: double.infinity,
-                                            child: PageView.builder(
-                                              itemCount: imageUrls.length,
-                                              onPageChanged: (index) {
-                                                currentImageIndex.value = index;
-                                              },
-                                              itemBuilder: (context, index) {
-                                                final imageUrl =
-                                                    imageUrls[index];
-                                                return _buildSingleImage(
-                                                    imageUrl, maxImageHeight);
-                                              },
-                                            ),
-                                          ),
-                                          if (imageUrls.length > 1)
-                                            Positioned(
-                                              bottom: 8,
-                                              left: 0,
-                                              right: 0,
-                                              child: ValueListenableBuilder<int>(
-                                                valueListenable:
-                                                    currentImageIndex,
-                                                builder:
-                                                    (context, index, child) {
-                                                  return DotIndicator(
-                                                    count: imageUrls.length,
-                                                    currentIndex: index,
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                        ],
-                                      )
-                                    : _buildSingleImage('', maxImageHeight),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: isLargeScreen ? 16 : 8),
-                      Flexible(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
-                              child: Table(
-                                columnWidths: const {
-                                  0: IntrinsicColumnWidth(),
-                                  1: FixedColumnWidth(8),
-                                  2: FlexColumnWidth(),
-                                },
-                                defaultVerticalAlignment:
-                                    TableCellVerticalAlignment.middle,
-                                children: [
-                                  TableRow(
-                                    children: [
-                                      _buildLabelText('Design'),
-                                      const Text(':'),
-                                      Text(
-                                        item.styleCodeWithcount,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: isLargeScreen ? 20 : 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  _buildSpacerRow(),
-                                  if (showShades && shades.isNotEmpty)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Shade'),
-                                        const Text(':'),
-                                        Text(
-                                          shades.join(', '),
-                                          style: TextStyle(
-                                            fontSize: isLargeScreen ? 14 : 13,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showShades && shades.isNotEmpty)
-                                    _buildSpacerRow(),
-                                  if (showMRP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('MRP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.mrp.toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showMRP) _buildSpacerRow(),
-                                  if (showWSP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('WSP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.wsp.toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showWSP) _buildSpacerRow(),
-                                  if (item.sizeName.isNotEmpty && showSizes)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Size'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            _getSizeText(item),
-                                            style: _valueTextStyle(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (item.sizeName.isNotEmpty && showSizes)
-                                    _buildSpacerRow(),
-                                  if (showProduct)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Product'),
-                                        const Text(':'),
-                                        Text(
-                                          item.itemName,
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showProduct) _buildSpacerRow(),
-                                  if (showRemark)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Remark'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            item.remark?.trim().isNotEmpty ==
-                                                    true
-                                                ? item.remark!
-                                                : '--',
-                                            style: _valueTextStyle(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
+                    Padding(
+                      padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
+                      child: Table(
+                        columnWidths: const {
+                          0: IntrinsicColumnWidth(),
+                          1: FixedColumnWidth(8),
+                          2: FlexColumnWidth(),
+                        },
+                        defaultVerticalAlignment:
+                            TableCellVerticalAlignment.middle,
+                        children: [
+                          TableRow(
+                            children: [
+                              Text(
+                                'Design',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
+                              const Text(':'),
+                              Text(
+                                item.styleCodeWithcount,
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isLargeScreen ? 20 : 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          _buildSpacerRow(),
+                          if (showShades && shades.isNotEmpty)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'Shade',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                Text(
+                                  shades.join(', '),
+                                  style: TextStyle(
+                                    fontSize: isLargeScreen ? 14 : 13,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          if (showShades && shades.isNotEmpty)
+                            _buildSpacerRow(),
+                          if (showMRP)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'MRP',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                Text(
+                                  item.mrp.toStringAsFixed(2),
+                                  style: _valueTextStyle(),
+                                ),
+                              ],
+                            ),
+                          if (showMRP) _buildSpacerRow(),
+                          if (showWSP)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'WSP',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                Text(
+                                  item.wsp.toStringAsFixed(2),
+                                  style: _valueTextStyle(),
+                                ),
+                              ],
+                            ),
+                          if (showWSP) _buildSpacerRow(),
+                          if (item.sizeName.isNotEmpty && showSizes)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'Size',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Text(
+                                    _getSizeText(item),
+                                    style: _valueTextStyle(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (item.sizeName.isNotEmpty && showSizes)
+                            _buildSpacerRow(),
+                          if (showProduct)
+                            TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 5),
+                                  child: Text(
+                                    'Product',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const Text(':'),
+                                Text(item.itemName, style: _valueTextStyle()),
+                              ],
+                            ),
+                          if (showProduct) _buildSpacerRow(),
+                          if (showRemark)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'Remark',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Text(
+                                    item.remark?.trim().isNotEmpty == true
+                                        ? item.remark!
+                                        : '--',
+                                    style: _valueTextStyle(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 if (isSelected)
                   Positioned(
@@ -1024,278 +1335,11 @@ Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
               ],
             ),
           ),
-        ),
-      );
-    },
-  );
-}
-
-Widget _buildExpandedView(bool isLargeScreen) {
-  final filteredItems = _getFilteredItems();
-  return ListView.builder(
-    controller: _scrollController,
-    itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-    itemBuilder: (context, index) {
-      if (index == filteredItems.length && isLoadingMore) {
-        return Center(
-          child: LoadingAnimationWidget.waveDots(
-            color: AppColors.primaryColor,
-            size: 30,
-          ),
         );
-      }
-      final item = filteredItems[index];
-      final isSelected = selectedItems.contains(item);
-      final shades = item.shadeName.split(',').map((s) => s.trim()).toList();
-      final imageUrls = _getImageUrl(item);
-      print('Image URLs: $imageUrls');
-      final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+      },
+    );
+  }
 
-      return GestureDetector(
-        onDoubleTap: () {
-          _openImageZoom1(
-            context,
-            item,
-            showShades: showShades,
-            showMRP: showMRP,
-            showWSP: showWSP,
-            showSizes: showSizes,
-            showProduct: showProduct,
-            showRemark: showRemark,
-            isLargeScreen: isLargeScreen,
-          );
-        },
-        onLongPress: () => _toggleItemSelection(item),
-        onTap: () {
-          if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-        },
-        child: Card(
-          elevation: isSelected ? 8 : 4,
-          margin: EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: isLargeScreen ? 16 : 8,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
-          ),
-          color: isSelected ? Colors.blue.shade50 : Colors.white,
-          child: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(0),
-                      topRight: Radius.circular(0),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final maxImageHeight = constraints.maxWidth * 1.2;
-                        return ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: maxImageHeight,
-                            minHeight: constraints.maxWidth,
-                          ),
-                          child: imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
-                              ? Stack(
-                                  children: [
-                                    SizedBox(
-                                      height: maxImageHeight,
-                                      width: double.infinity,
-                                      child: PageView.builder(
-                                        itemCount: imageUrls.length,
-                                        onPageChanged: (index) {
-                                          currentImageIndex.value = index;
-                                        },
-                                        itemBuilder: (context, index) {
-                                          final imageUrl = imageUrls[index];
-                                          return _buildSingleImage(
-                                              imageUrl, maxImageHeight);
-                                        },
-                                      ),
-                                    ),
-                                    if (imageUrls.length > 1)
-                                      Positioned(
-                                        bottom: 8,
-                                        left: 0,
-                                        right: 0,
-                                        child: ValueListenableBuilder<int>(
-                                          valueListenable: currentImageIndex,
-                                          builder: (context, index, child) {
-                                            return DotIndicator(
-                                              count: imageUrls.length,
-                                              currentIndex: index,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                  ],
-                                )
-                              : _buildSingleImage('', maxImageHeight),
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
-                    child: Table(
-                      columnWidths: const {
-                        0: IntrinsicColumnWidth(),
-                        1: FixedColumnWidth(8),
-                        2: FlexColumnWidth(),
-                      },
-                      defaultVerticalAlignment:
-                          TableCellVerticalAlignment.middle,
-                      children: [
-                        TableRow(
-                          children: [
-                            Text(
-                              'Design',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const Text(':'),
-                            Text(
-                              item.styleCodeWithcount,
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: isLargeScreen ? 20 : 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                        _buildSpacerRow(),
-                        if (showShades && shades.isNotEmpty)
-                          TableRow(
-                            children: [
-                              Text(
-                                'Shade',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text(':'),
-                              Text(
-                                shades.join(', '),
-                                style: TextStyle(
-                                  fontSize: isLargeScreen ? 14 : 13,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (showShades && shades.isNotEmpty) _buildSpacerRow(),
-                        if (showMRP)
-                          TableRow(
-                            children: [
-                              Text(
-                                'MRP',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text(':'),
-                              Text(
-                                item.mrp.toStringAsFixed(2),
-                                style: _valueTextStyle(),
-                              ),
-                            ],
-                          ),
-                        if (showMRP) _buildSpacerRow(),
-                        if (showWSP)
-                          TableRow(
-                            children: [
-                              Text(
-                                'WSP',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text(':'),
-                              Text(
-                                item.wsp.toStringAsFixed(2),
-                                style: _valueTextStyle(),
-                              ),
-                            ],
-                          ),
-                        if (showWSP) _buildSpacerRow(),
-                        if (item.sizeName.isNotEmpty && showSizes)
-                          TableRow(
-                            children: [
-                              Text(
-                                'Size',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text(':'),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  _getSizeText(item),
-                                  style: _valueTextStyle(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (item.sizeName.isNotEmpty && showSizes)
-                          _buildSpacerRow(),
-                        if (showProduct)
-                          TableRow(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(right: 5),
-                                child: Text(
-                                  'Product',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const Text(':'),
-                              Text(item.itemName, style: _valueTextStyle()),
-                            ],
-                          ),
-                        if (showProduct) _buildSpacerRow(),
-                        if (showRemark)
-                          TableRow(
-                            children: [
-                              Text(
-                                'Remark',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const Text(':'),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  item.remark?.trim().isNotEmpty == true
-                                      ? item.remark!
-                                      : '--',
-                                  style: _valueTextStyle(),
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (isSelected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check_circle,
-                      color: AppColors.primaryColor,
-                      size: 24,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
   Widget _buildLabelText(String label) {
     return Padding(
       padding: const EdgeInsets.only(right: 5),
@@ -1377,270 +1421,278 @@ Widget _buildExpandedView(bool isLargeScreen) {
     );
   }
 
- void _openImageZoom(BuildContext context, Catalog item) {
-  final imageUrls = _getImageUrl(item);
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ImageZoomScreen(imageUrls: imageUrls),
-    ),
-  );
-}
+  void _openImageZoom(BuildContext context, Catalog item) {
+    final imageUrls = _getImageUrl(item);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageZoomScreen(imageUrls: imageUrls),
+      ),
+    );
+  }
 
-Widget _buildItemCard(Catalog item, bool isLargeScreen) {
-  bool isSelected = selectedItems.contains(item);
-  List<String> shades = item.shadeName.split(',').map((s) => s.trim()).toList();
-  final imageUrls = _getImageUrl(item);
-  print('Image URLs before use: $imageUrls');
-  final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+  Widget _buildItemCard(Catalog item, bool isLargeScreen) {
+    bool isSelected = selectedItems.contains(item);
+    List<String> shades =
+        item.shadeName.split(',').map((s) => s.trim()).toList();
+    final imageUrls = _getImageUrl(item);
+    print('Image URLs before use: $imageUrls');
+    final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
 
-  return GestureDetector(
-    onDoubleTap: () {
-      _openImageZoom1(
-        context,
-        item,
-        showShades: showShades,
-        showMRP: showMRP,
-        showWSP: showWSP,
-        showSizes: showSizes,
-        showProduct: showProduct,
-        showRemark: showRemark,
-        isLargeScreen: isLargeScreen,
-      );
-    },
-    onLongPress: () => _toggleItemSelection(item),
-    onTap: () {
-      if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-    },
-    child: Card(
-      elevation: isSelected ? 8 : 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-      color: isSelected ? Colors.blue.shade50 : Colors.white,
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(0),
-                  topRight: Radius.circular(0),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxImageHeight = constraints.maxWidth * 1.2;
-                    return ConstrainedBox(
-                      constraints: BoxConstraints(maxHeight: maxImageHeight),
-                      child: imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
-                          ? Stack(
-                              children: [
-                                SizedBox(
-                                  height: maxImageHeight,
-                                  child: PageView.builder(
-                                    itemCount: imageUrls.length,
-                                    onPageChanged: (index) {
-                                      currentImageIndex.value = index;
-                                    },
-                                    itemBuilder: (context, index) {
-                                      final imageUrl = imageUrls[index];
-                                      return _buildSingleImage(
-                                          imageUrl, maxImageHeight);
-                                    },
-                                  ),
-                                ),
-                                if (imageUrls.length > 1)
-                                  Positioned(
-                                    bottom: 8,
-                                    left: 0,
-                                    right: 0,
-                                    child: ValueListenableBuilder<int>(
-                                      valueListenable: currentImageIndex,
-                                      builder: (context, index, child) {
-                                        return DotIndicator(
-                                          count: imageUrls.length,
-                                          currentIndex: index,
-                                        );
-                                      },
+    return GestureDetector(
+      onDoubleTap: () {
+        _openImageZoom1(
+          context,
+          item,
+          showShades: showShades,
+          showMRP: showMRP,
+          showWSP: showWSP,
+          showSizes: showSizes,
+          showProduct: showProduct,
+          showRemark: showRemark,
+          isLargeScreen: isLargeScreen,
+        );
+      },
+      onLongPress: () => _toggleItemSelection(item),
+      onTap: () {
+        if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+      },
+      child: Card(
+        elevation: isSelected ? 8 : 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+        color: isSelected ? Colors.blue.shade50 : Colors.white,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(0),
+                    topRight: Radius.circular(0),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxImageHeight = constraints.maxWidth * 1.2;
+                      return ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxImageHeight),
+                        child:
+                            imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
+                                ? Stack(
+                                  children: [
+                                    SizedBox(
+                                      height: maxImageHeight,
+                                      child: PageView.builder(
+                                        itemCount: imageUrls.length,
+                                        onPageChanged: (index) {
+                                          currentImageIndex.value = index;
+                                        },
+                                        itemBuilder: (context, index) {
+                                          final imageUrl = imageUrls[index];
+                                          return _buildSingleImage(
+                                            imageUrl,
+                                            maxImageHeight,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                              ],
-                            )
-                          : _buildSingleImage('', maxImageHeight),
-                    );
-                  },
+                                    if (imageUrls.length > 1)
+                                      Positioned(
+                                        bottom: 8,
+                                        left: 0,
+                                        right: 0,
+                                        child: ValueListenableBuilder<int>(
+                                          valueListenable: currentImageIndex,
+                                          builder: (context, index, child) {
+                                            return DotIndicator(
+                                              count: imageUrls.length,
+                                              currentIndex: index,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                  ],
+                                )
+                                : _buildSingleImage('', maxImageHeight),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
-                child: Table(
-                  columnWidths: const {
-                    0: IntrinsicColumnWidth(),
-                    1: FixedColumnWidth(8),
-                    2: FlexColumnWidth(),
-                  },
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: [
-                    TableRow(
-                      children: [
-                        _buildLabelText('Design'),
-                        const Text(':'),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            item.styleCodeWithcount,
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: isLargeScreen ? 20 : 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    _buildSpacerRow(),
-                    if (showShades && shades.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.all(isLargeScreen ? 16 : 12),
+                  child: Table(
+                    columnWidths: const {
+                      0: IntrinsicColumnWidth(),
+                      1: FixedColumnWidth(8),
+                      2: FlexColumnWidth(),
+                    },
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    children: [
                       TableRow(
                         children: [
-                          _buildLabelText('Shade'),
+                          _buildLabelText('Design'),
                           const Text(':'),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Text(
-                              shades.join(', '),
+                              item.styleCodeWithcount,
                               style: TextStyle(
-                                fontSize: isLargeScreen ? 14 : 13,
-                                color: Colors.grey[700],
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: isLargeScreen ? 20 : 16,
                               ),
                             ),
                           ),
                         ],
                       ),
-                    if (showShades && shades.isNotEmpty) _buildSpacerRow(),
-                    if (showMRP)
-                      TableRow(
-                        children: [
-                          _buildLabelText('MRP'),
-                          const Text(':'),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              item.mrp.toStringAsFixed(2),
+                      _buildSpacerRow(),
+                      if (showShades && shades.isNotEmpty)
+                        TableRow(
+                          children: [
+                            _buildLabelText('Shade'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                shades.join(', '),
+                                style: TextStyle(
+                                  fontSize: isLargeScreen ? 14 : 13,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (showShades && shades.isNotEmpty) _buildSpacerRow(),
+                      if (showMRP)
+                        TableRow(
+                          children: [
+                            _buildLabelText('MRP'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                item.mrp.toStringAsFixed(2),
+                                style: _valueTextStyle(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (showMRP) _buildSpacerRow(),
+                      if (showWSP)
+                        TableRow(
+                          children: [
+                            _buildLabelText('WSP'),
+                            const Text(':'),
+                            Text(
+                              item.wsp.toStringAsFixed(2),
                               style: _valueTextStyle(),
                             ),
-                          ),
-                        ],
-                      ),
-                    if (showMRP) _buildSpacerRow(),
-                    if (showWSP)
-                      TableRow(
-                        children: [
-                          _buildLabelText('WSP'),
-                          const Text(':'),
-                          Text(
-                            item.wsp.toStringAsFixed(2),
-                            style: _valueTextStyle(),
-                          ),
-                        ],
-                      ),
-                    if (showWSP) _buildSpacerRow(),
-                    if (item.sizeName.isNotEmpty && showSizes)
-                      TableRow(
-                        children: [
-                          _buildLabelText('Size'),
-                          const Text(':'),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              _getSizeText(item),
-                              style: _valueTextStyle(),
+                          ],
+                        ),
+                      if (showWSP) _buildSpacerRow(),
+                      if (item.sizeName.isNotEmpty && showSizes)
+                        TableRow(
+                          children: [
+                            _buildLabelText('Size'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                _getSizeText(item),
+                                style: _valueTextStyle(),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    if (item.sizeName.isNotEmpty && showSizes) _buildSpacerRow(),
-                    if (showProduct)
-                      TableRow(
-                        children: [
-                          _buildLabelText('Product'),
-                          const Text(':'),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              item.itemName,
-                              style: _valueTextStyle(),
+                          ],
+                        ),
+                      if (item.sizeName.isNotEmpty && showSizes)
+                        _buildSpacerRow(),
+                      if (showProduct)
+                        TableRow(
+                          children: [
+                            _buildLabelText('Product'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                item.itemName,
+                                style: _valueTextStyle(),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    if (showProduct) _buildSpacerRow(),
-                    if (showRemark)
-                      TableRow(
-                        children: [
-                          _buildLabelText('Remark'),
-                          const Text(':'),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              item.remark?.trim().isNotEmpty == true
-                                  ? item.remark!
-                                  : '--',
-                              style: _valueTextStyle(),
+                          ],
+                        ),
+                      if (showProduct) _buildSpacerRow(),
+                      if (showRemark)
+                        TableRow(
+                          children: [
+                            _buildLabelText('Remark'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                item.remark?.trim().isNotEmpty == true
+                                    ? item.remark!
+                                    : '--',
+                                style: _valueTextStyle(),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                  ],
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          if (isSelected)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle,
-                  color: AppColors.primaryColor,
-                  size: 24,
-                ),
-              ),
+              ],
             ),
-        ],
+            if (isSelected)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: AppColors.primaryColor,
+                    size: 24,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildSingleImage(String imageUrl, double maxHeight) {
     return SizedBox(
       height: maxHeight,
       width: double.infinity,
       child: Center(
-        child: imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade300,
-                    child: const Center(child: Icon(Icons.error)),
-                  );
-                },
-              )
-            : Container(
-                color: Colors.grey.shade300,
-                child: const Center(child: Icon(Icons.image_not_supported)),
-              ),
+        child:
+            imageUrl.isNotEmpty
+                ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: const Center(child: Icon(Icons.error)),
+                    );
+                  },
+                )
+                : Container(
+                  color: Colors.grey.shade300,
+                  child: const Center(child: Icon(Icons.image_not_supported)),
+                ),
       ),
     );
   }
+
   Widget _buildBottomButtons(bool isLargeScreen) {
     return SafeArea(
       child: Container(
@@ -1734,39 +1786,39 @@ Widget _buildItemCard(Catalog item, bool isLargeScreen) {
   //   return '';
   // }
 
-List<String> _getImageUrl(Catalog catalog) {
+  List<String> _getImageUrl(Catalog catalog) {
+    final shadeImages = catalog.shadeImages ?? '';
+    final fullImagePath = catalog.fullImagePath ?? '';
+    print('ShadeImages for catalog ${catalog.styleCode}: $shadeImages');
+    print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
+    print('Base URL: ${AppConstants.BASE_URL}');
 
-  
-  final shadeImages = catalog.shadeImages ?? '';
-  final fullImagePath = catalog.fullImagePath ?? '';
-  print('ShadeImages for catalog ${catalog.styleCode}: $shadeImages');
-  print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
-  print('Base URL: ${AppConstants.BASE_URL}');
-
-  if (shadeImages.isNotEmpty && UserSession.imageDependsOn == 'S') {
-    final imageEntries = shadeImages.split(',').map((entry) => entry.trim()).toList();
-    List<String> imageUrls = [];
-    for (var entry in imageEntries) {
-      final parts = entry.split(':');
-      if (parts.length < 2) continue;
-      final path = parts.sublist(1).join(':').trim();
-      if (path.isEmpty) continue;
-      final fileName = path.split('/').last.split('\\').last;
-      if (fileName.isEmpty) continue;
+    if (shadeImages.isNotEmpty && UserSession.imageDependsOn == 'S') {
+      final imageEntries =
+          shadeImages.split(',').map((entry) => entry.trim()).toList();
+      List<String> imageUrls = [];
+      for (var entry in imageEntries) {
+        final parts = entry.split(':');
+        if (parts.length < 2) continue;
+        final path = parts.sublist(1).join(':').trim();
+        if (path.isEmpty) continue;
+        final fileName = path.split('/').last.split('\\').last;
+        if (fileName.isEmpty) continue;
+        final url = '${AppConstants.BASE_URL}/images/$fileName';
+        imageUrls.add(url);
+      }
+      return imageUrls.isEmpty ? [''] : imageUrls;
+    } else if (fullImagePath.isNotEmpty) {
+      final fileName = fullImagePath.split('/').last.split('?').first;
+      if (fileName.isEmpty) return [''];
       final url = '${AppConstants.BASE_URL}/images/$fileName';
-      imageUrls.add(url);
+      // return [url];
+      return [fullImagePath];
     }
-    return imageUrls.isEmpty ? [''] : imageUrls;
-  } else if (fullImagePath.isNotEmpty) {
-    final fileName = fullImagePath.split('/').last.split('?').first;
-    if (fileName.isEmpty) return [''];
-    final url = '${AppConstants.BASE_URL}/images/$fileName';
-    // return [url];
-    return [fullImagePath];
+
+    return [''];
   }
 
-  return [''];
-}
   void _showFilterDialog() async {
     final result = await Navigator.push(
       context,
@@ -1830,6 +1882,7 @@ List<String> _getImageUrl(Catalog catalog) {
       print("aaaaaaaa  ${selectedFilters['styles']}");
       print("aaaaaaaa  ${selectedFilters['WSPfrom']}");
       print("aaaaaaaa  ${selectedFilters['WSPto']}");
+      print("aaaaaaaa  ${selectedFilters['styles']}");
       if (!(selectedStyles.isEmpty &&
           selectedSize.isEmpty &&
           selectedShades.isEmpty &&
@@ -1846,179 +1899,178 @@ List<String> _getImageUrl(Catalog catalog) {
     }
   }
 
- Future<void> _shareSelectedItemsPDF({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
-
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Sharing PDF .....'),
-          ],
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    final tempDir = await getTemporaryDirectory();
-    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-    List<Map<String, dynamic>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      final imageUrls = _getImageUrl(item);
-      for (var imageUrl in imageUrls) {
-        if (imageUrl.isEmpty) continue;
-        Map<String, dynamic> catalogItem = {
-          'fullImagePath': imageUrl,
-        };
-        if (includeDesign) catalogItem['design'] = item.styleCode;
-        if (includeShade) catalogItem['shade'] = item.shadeName;
-        if (includeRate) catalogItem['rate'] = item.mrp;
-        if (includeWsp) catalogItem['wsp'] = item.wsp;
-        if (includeSize) {
-          if (includeSizeMrp && includeSizeWsp) {
-            catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
-          } else if (!includeSizeMrp && !includeSizeWsp) {
-            catalogItem['onlySizes'] = item.onlySizes ?? '';
-          } else {
-            catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
-          }
-        }
-        if (includeProduct) catalogItem['product'] = item.itemName;
-        if (includeRemark) catalogItem['remark'] = item.remark;
-        catalogItems.add(catalogItem);
-      }
-    }
-
-    final requestBody = {
-      "company": UserSession.coBrName,
-      "createdBy": "admin",
-      "mobile": "",
-      "catalogItems": catalogItems,
-    };
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final file = File(
-        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        
-      );
-      await file.writeAsBytes(response.bodyBytes);
-
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Please find the Catalog as an attachment.');
-    } else {
+  Future<void> _shareSelectedItemsPDF({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+  }) async {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate PDF: ${response.statusCode}'),
+        const SnackBar(content: Text('Please select items to share')),
+      );
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Sharing PDF .....'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
         ),
       );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
-  }
-}
-Future<void> _shareSelectedWhatsApp({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeSize = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool includeLabel = false,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
 
-  try {
-    String mobileNo = await _showMobileNumberDialog();
+      final tempDir = await getTemporaryDirectory();
+      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+      List<Map<String, dynamic>> catalogItems = [];
 
-    if (mobileNo.isNotEmpty) {
       for (var item in selectedItems) {
         final imageUrls = _getImageUrl(item);
-        for (var url in imageUrls) {
-          if (url.isEmpty) continue;
-          final response = await http.get(Uri.parse(url));
-
-          if (response.statusCode == 200) {
-            final imageBytes = response.bodyBytes;
-
-            String caption = '';
-            if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
-            if (includeShade) caption += '*Shade*\t\t: ${item.shadeName}\n';
-            if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
-            if (includeSize) {
-              caption +=
-                  '*Sizes*\t\t\t: ${includeLabel ? item.sizeDetails : formatSizes(item.sizeWithMrp)}\n';
+        for (var imageUrl in imageUrls) {
+          if (imageUrl.isEmpty) continue;
+          Map<String, dynamic> catalogItem = {'fullImagePath': imageUrl};
+          if (includeDesign) catalogItem['design'] = item.styleCode;
+          if (includeShade) catalogItem['shade'] = item.shadeName;
+          if (includeRate) catalogItem['rate'] = item.mrp;
+          if (includeWsp) catalogItem['wsp'] = item.wsp;
+          if (includeSize) {
+            if (includeSizeMrp && includeSizeWsp) {
+              catalogItem['sizeDetailsWithoutWSp'] =
+                  item.sizeDetailsWithoutWSp ?? '';
+            } else if (!includeSizeMrp && !includeSizeWsp) {
+              catalogItem['onlySizes'] = item.onlySizes ?? '';
+            } else {
+              catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
             }
-            if (includeProduct) caption += '*Product*\t: ${item.itemName}\n';
-            if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
-
-            bool result = await sendWhatsAppFile(
-              fileBytes: imageBytes,
-              mobileNo: mobileNo,
-              fileType: 'image',
-              caption: caption,
-            );
-
-            if (!result) {
-              print(
-                "Failed to send image for ${item.itemName}.",
-              );
-            }
-          } else {
-            print(
-              "Failed to download the image for ${item.itemName}. Status Code: ${response.statusCode}",
-            );
           }
+          if (includeProduct) catalogItem['product'] = item.itemName;
+          if (includeRemark) catalogItem['remark'] = item.remark;
+          catalogItems.add(catalogItem);
         }
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Images sent successfully...')),
+
+      final requestBody = {
+        "company": UserSession.coBrName,
+        "createdBy": "admin",
+        "mobile": "",
+        "catalogItems": catalogItems,
+      };
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
       );
-      setState(() {
-        selectedItems = [];
-      });
+
+      if (response.statusCode == 200) {
+        final file = File(
+          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+        await file.writeAsBytes(response.bodyBytes);
+
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'Please find the Catalog as an attachment.');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: ${response.statusCode}'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+      );
     }
-  } catch (e) {
-    print(e.toString());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
   }
-}
+
+  Future<void> _shareSelectedWhatsApp({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeSize = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool includeLabel = false,
+  }) async {
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select items to share')),
+      );
+      return;
+    }
+
+    try {
+      String mobileNo = await _showMobileNumberDialog();
+
+      if (mobileNo.isNotEmpty) {
+        for (var item in selectedItems) {
+          final imageUrls = _getImageUrl(item);
+          for (var url in imageUrls) {
+            if (url.isEmpty) continue;
+            final response = await http.get(Uri.parse(url));
+
+            if (response.statusCode == 200) {
+              final imageBytes = response.bodyBytes;
+
+              String caption = '';
+              if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
+              if (includeShade) caption += '*Shade*\t\t: ${item.shadeName}\n';
+              if (includeRate)
+                caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
+              if (includeSize) {
+                caption +=
+                    '*Sizes*\t\t\t: ${includeLabel ? item.sizeDetails : formatSizes(item.sizeWithMrp)}\n';
+              }
+              if (includeProduct) caption += '*Product*\t: ${item.itemName}\n';
+              if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
+
+              bool result = await sendWhatsAppFile(
+                fileBytes: imageBytes,
+                mobileNo: mobileNo,
+                fileType: 'image',
+                caption: caption,
+              );
+
+              if (!result) {
+                print("Failed to send image for ${item.itemName}.");
+              }
+            } else {
+              print(
+                "Failed to download the image for ${item.itemName}. Status Code: ${response.statusCode}",
+              );
+            }
+          }
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Images sent successfully...')),
+        );
+        setState(() {
+          selectedItems = [];
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+      );
+    }
+  }
+
   Future<String> _showMobileNumberDialog() async {
     TextEditingController controller = TextEditingController();
 
@@ -2119,127 +2171,128 @@ Future<void> _shareSelectedWhatsApp({
     }
   }
 
-Future<void> _shareSelectedItems({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
+  Future<void> _shareSelectedItems({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+  }) async {
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select items to share')),
+      );
+      return;
+    }
 
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Preparing items for sharing...'),
-          ],
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Preparing items for sharing...'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
         ),
-        duration: Duration(seconds: 1),
-      ),
-    );
+      );
 
-    final List<Map<String, String>> catalogItems = [];
-    for (var item in selectedItems) {
-      final imageUrls = _getImageUrl(item);
-      print('Image URLs before use: $imageUrls');
+      final List<Map<String, String>> catalogItems = [];
+      for (var item in selectedItems) {
+        final imageUrls = _getImageUrl(item);
+        print('Image URLs before use: $imageUrls');
 
-      for (var imageUrl in imageUrls) {
-        if (imageUrl.isEmpty) continue;
-        String sizeValue = '';
-        if (includeSize) {
-          if (includeSizeMrp && includeSizeWsp) {
-            sizeValue = item.sizeDetailsWithoutWSp ?? '';
-          } else if (!includeSizeMrp && !includeSizeWsp) {
-            sizeValue = item.onlySizes ?? '';
-          } else {
-            sizeValue = item.sizeWithMrp ?? '';
+        for (var imageUrl in imageUrls) {
+          if (imageUrl.isEmpty) continue;
+          String sizeValue = '';
+          if (includeSize) {
+            if (includeSizeMrp && includeSizeWsp) {
+              sizeValue = item.sizeDetailsWithoutWSp ?? '';
+            } else if (!includeSizeMrp && !includeSizeWsp) {
+              sizeValue = item.onlySizes ?? '';
+            } else {
+              sizeValue = item.sizeWithMrp ?? '';
+            }
+          }
+
+          catalogItems.add({
+            'fullImagePath': imageUrl,
+            'design': includeDesign ? item.styleCode : '',
+            'shade': includeShade ? item.shadeName : '',
+            'rate': includeRate ? item.mrp.toString() : '',
+            'wsp': includeWsp ? item.wsp.toString() : '',
+            'size': sizeValue,
+            'product': includeProduct ? item.itemName : '',
+            'remark': includeRemark ? item.remark : '',
+          });
+        }
+      }
+
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'catalogItems': catalogItems,
+          'includeDesign': includeDesign,
+          'includeShade': includeShade,
+          'includeRate': includeRate,
+          'includeWsp': includeWsp,
+          'includeSize': includeSize,
+          'includeProduct': includeProduct,
+          'includeRemark': includeRemark,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as List;
+        final tempDir = await getTemporaryDirectory();
+        List<String> filePaths = [];
+
+        for (var imageData in responseData) {
+          try {
+            final imageBytes = base64Decode(imageData['image']);
+            final file = File(
+              '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+            await file.writeAsBytes(imageBytes);
+            filePaths.add(file.path);
+          } catch (e) {
+            print('Error saving image: $e');
           }
         }
 
-        catalogItems.add({
-          'fullImagePath': imageUrl,
-          'design': includeDesign ? item.styleCode : '',
-          'shade': includeShade ? item.shadeName : '',
-          'rate': includeRate ? item.mrp.toString() : '',
-          'wsp': includeWsp ? item.wsp.toString() : '',
-          'size': sizeValue,
-          'product': includeProduct ? item.itemName : '',
-          'remark': includeRemark ? item.remark : '',
-        });
-      }
-    }
-
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'catalogItems': catalogItems,
-        'includeDesign': includeDesign,
-        'includeShade': includeShade,
-        'includeRate': includeRate,
-        'includeWsp': includeWsp,
-        'includeSize': includeSize,
-        'includeProduct': includeProduct,
-        'includeRemark': includeRemark,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body) as List;
-      final tempDir = await getTemporaryDirectory();
-      List<String> filePaths = [];
-
-      for (var imageData in responseData) {
-        try {
-          final imageBytes = base64Decode(imageData['image']);
-          final file = File(
-            '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        if (filePaths.isNotEmpty) {
+          await Share.shareFiles(filePaths);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Images shared successfully')),
           );
-          await file.writeAsBytes(imageBytes);
-          filePaths.add(file.path);
-        } catch (e) {
-          print('Error saving image: $e');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No valid images to share')),
+          );
         }
-      }
-
-      if (filePaths.isNotEmpty) {
-        await Share.shareFiles(filePaths);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Images shared successfully')),
-        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No valid images to share')),
+          SnackBar(
+            content: Text('Failed to generate images: ${response.statusCode}'),
+          ),
         );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate images: ${response.statusCode}'),
-        ),
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
+      print('Error in _shareSelectedItems: $e');
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
-    print('Error in _shareSelectedItems: $e');
   }
-}
+
   void _toggleItemSelection(Catalog item) {
     setState(() {
       if (selectedItems.contains(item)) {
@@ -2408,7 +2461,7 @@ Future<void> _shareSelectedItems({
             Navigator.pop(context);
             _shareSelectedItemsPDF(
               shareType: 'pdf',
-              
+
               includeDesign: includeDesign,
               includeShade: includeShade,
               includeRate: includeRate,
@@ -2449,208 +2502,423 @@ Future<void> _shareSelectedItems({
     );
   }
 
-Future<void> _handleDownloadOption(
-  String option, {
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to download')),
-    );
-    return;
-  }
-
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Preparing download...'),
-          ],
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    Directory? downloadsDir;
-    if (Platform.isAndroid) {
-      downloadsDir = Directory('/storage/emulated/0/Download');
-      if (!await downloadsDir.exists()) {
-        downloadsDir = await getExternalStorageDirectory();
-      }
-    } else {
-      downloadsDir = await getApplicationDocumentsDirectory();
+  Future<void> _handleDownloadOption(
+    String option, {
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+  }) async {
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select items to download')),
+      );
+      return;
     }
 
-    final now = DateTime.now();
-    final timestamp =
-        '${now.year}${now.month}${now.day}_${now.hour}${now.minute}${now.second}';
-
-    if (option == 'pdf') {
-      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-      List<Map<String, dynamic>> catalogItems = [];
-
-      for (var item in selectedItems) {
-        final imageUrls = _getImageUrl(item);
-        print('Image URLs before use: $imageUrls');
-        for (var imageUrl in imageUrls) {
-          if (imageUrl.isEmpty) continue;
-          Map<String, dynamic> catalogItem = {
-            'fullImagePath': imageUrl,
-          };
-          if (includeDesign) catalogItem['design'] = item.styleCode;
-          if (includeShade) catalogItem['shade'] = item.shadeName;
-          if (includeRate) catalogItem['rate'] = item.mrp;
-          if (includeWsp) catalogItem['wsp'] = item.wsp;
-          if (includeSize) {
-            if (includeSizeMrp && includeSizeWsp) {
-              catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
-            } else if (!includeSizeMrp && !includeSizeWsp) {
-              catalogItem['onlySizes'] = item.onlySizes ?? '';
-            } else {
-              catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
-            }
-          }
-          if (includeProduct) catalogItem['product'] = item.itemName;
-          if (includeRemark) catalogItem['remark'] = item.remark;
-          catalogItems.add(catalogItem);
-        }
-      }
-
-      final requestBody = {
-        "company": "VRS Software",
-        "createdBy": "admin",
-        "mobile": "",
-        "catalogItems": catalogItems,
-      };
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final pdfFile = File('${downloadsDir?.path}/catalog_$timestamp.pdf');
-        await pdfFile.writeAsBytes(response.bodyBytes);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF downloaded to ${pdfFile.path}')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate PDF: ${response.statusCode}'),
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Preparing download...'),
+            ],
           ),
-        );
-      }
-    } else if (option == 'image') {
-      final List<Map<String, String>> catalogItems = [];
-      for (var item in selectedItems) {
-        final imageUrls = _getImageUrl(item);
-        print('Image URLs before use: $imageUrls');
-        for (var imageUrl in imageUrls) {
-          if (imageUrl.isEmpty) continue;
-          String sizeValue = '';
-          if (includeSize) {
-            if (includeSizeMrp && includeSizeWsp) {
-              sizeValue = item.sizeDetailsWithoutWSp ?? '';
-            } else if (!includeSizeMrp && !includeSizeWsp) {
-              sizeValue = item.onlySizes ?? '';
-            } else {
-              sizeValue = item.sizeWithMrp ?? '';
-            }
-          }
+          duration: Duration(seconds: 1),
+        ),
+      );
 
-          catalogItems.add({
-            'fullImagePath': imageUrl,
-            'design': includeDesign ? item.styleCode : '',
-            'shade': includeShade ? item.shadeName : '',
-            'rate': includeRate ? item.mrp.toString() : '',
-            'wsp': includeWsp ? item.wsp.toString() : '',
-            'size': sizeValue,
-            'product': includeProduct ? item.itemName : '',
-            'remark': includeRemark ? item.remark : '',
-          });
+      Directory? downloadsDir;
+
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          downloadsDir = Directory('/storage/emulated/0/Download');
+          if (!await downloadsDir.exists()) {
+            downloadsDir = await getExternalStorageDirectory();
+          }
+        } else {
+          downloadsDir = await getApplicationDocumentsDirectory();
         }
       }
 
-      final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'catalogItems': catalogItems,
-          'includeDesign': includeDesign,
-          'includeShade': includeShade,
-          'includeRate': includeRate,
-          'includeWsp': includeWsp,
-          'includeSize': includeSize,
-          'includeProduct': includeProduct,
-          'includeRemark': includeRemark,
-        }),
-      );
+      final now = DateTime.now();
+      final timestamp =
+          '${now.year}${now.month}${now.day}_${now.hour}${now.minute}${now.second}';
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as List;
-        int count = 1;
-        int successCount = 0;
-        int imageIndex = 0;
+      /* ====================== PDF ====================== */
+
+      if (option == 'pdf') {
+        final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+        List<Map<String, dynamic>> catalogItems = [];
 
         for (var item in selectedItems) {
           final imageUrls = _getImageUrl(item);
-          print('Image URLs before use: $imageUrls');
-          for (var _ in imageUrls) {
-            if (imageIndex >= responseData.length) break;
-            try {
-              final imageData = responseData[imageIndex];
-              final imageBytes = base64Decode(imageData['image']);
-              final finalFile = File(
-                '${downloadsDir?.path}/catalog_${item.styleCode}_${count}_$timestamp.jpg',
-              );
-              await finalFile.writeAsBytes(imageBytes);
-              successCount++;
-              count++;
-              imageIndex++;
-            } catch (e) {
-              print('Error saving image: $e');
-              imageIndex++;
+          for (var imageUrl in imageUrls) {
+            if (imageUrl.isEmpty) continue;
+
+            Map<String, dynamic> catalogItem = {'fullImagePath': imageUrl};
+
+            if (includeDesign) catalogItem['design'] = item.styleCode;
+            if (includeShade) catalogItem['shade'] = item.shadeName;
+            if (includeRate) catalogItem['rate'] = item.mrp;
+            if (includeWsp) catalogItem['wsp'] = item.wsp;
+
+            if (includeSize) {
+              if (includeSizeMrp && includeSizeWsp) {
+                catalogItem['sizeDetailsWithoutWSp'] =
+                    item.sizeDetailsWithoutWSp ?? '';
+              } else if (!includeSizeMrp && !includeSizeWsp) {
+                catalogItem['onlySizes'] = item.onlySizes ?? '';
+              } else {
+                catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
+              }
             }
+
+            if (includeProduct) catalogItem['product'] = item.itemName;
+            if (includeRemark) catalogItem['remark'] = item.remark;
+
+            catalogItems.add(catalogItem);
           }
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '$successCount images downloaded to Downloads folder',
-            ),
-          ),
+        final response = await http.post(
+          Uri.parse(apiUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            "company": "VRS Software",
+            "createdBy": "admin",
+            "mobile": "",
+            "catalogItems": catalogItems,
+          }),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to generate images: ${response.statusCode}',
+
+        if (response.statusCode == 200) {
+          final fileName = 'catalog_$timestamp.pdf';
+
+          if (kIsWeb) {
+            _downloadFileWeb(
+              bytes: response.bodyBytes,
+              fileName: fileName,
+              mimeType: 'application/pdf',
+            );
+          } else {
+            final pdfFile = File('${downloadsDir!.path}/$fileName');
+            await pdfFile.writeAsBytes(response.bodyBytes);
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('PDF downloaded successfully')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to generate PDF: ${response.statusCode}'),
             ),
-          ),
-        );
+          );
+        }
       }
+      /* ====================== IMAGES ====================== */
+      else if (option == 'image') {
+        final List<Map<String, String>> catalogItems = [];
+
+        for (var item in selectedItems) {
+          final imageUrls = _getImageUrl(item);
+          for (var imageUrl in imageUrls) {
+            if (imageUrl.isEmpty) continue;
+
+            String sizeValue = '';
+            if (includeSize) {
+              if (includeSizeMrp && includeSizeWsp) {
+                sizeValue = item.sizeDetailsWithoutWSp ?? '';
+              } else if (!includeSizeMrp && !includeSizeWsp) {
+                sizeValue = item.onlySizes ?? '';
+              } else {
+                sizeValue = item.sizeWithMrp ?? '';
+              }
+            }
+
+            catalogItems.add({
+              'fullImagePath': imageUrl,
+              'design': includeDesign ? item.styleCode : '',
+              'shade': includeShade ? item.shadeName : '',
+              'rate': includeRate ? item.mrp.toString() : '',
+              'wsp': includeWsp ? item.wsp.toString() : '',
+              'size': sizeValue,
+              'product': includeProduct ? item.itemName : '',
+              'remark': includeRemark ? item.remark : '',
+            });
+          }
+        }
+
+        final response = await http.post(
+          Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'catalogItems': catalogItems}),
+        );
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body) as List;
+          int count = 1;
+
+          for (var imageData in responseData) {
+            final imageBytes = base64Decode(imageData['image']);
+            final fileName = 'catalog_${count}_$timestamp.jpg';
+
+            if (kIsWeb) {
+              _downloadFileWeb(
+                bytes: imageBytes,
+                fileName: fileName,
+                mimeType: 'image/jpeg',
+              );
+            } else {
+              final file = File('${downloadsDir!.path}/$fileName');
+              await file.writeAsBytes(imageBytes);
+            }
+
+            count++;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$count images downloaded successfully')),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to generate images')));
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Download failed: $e')));
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Download failed: ${e.toString()}')),
-    );
   }
-}
+
+  void _downloadFileWeb({
+    required List<int> bytes,
+    required String fileName,
+    required String mimeType,
+  }) {
+    final blob = html.Blob([bytes], mimeType);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+
+    final anchor =
+        html.AnchorElement(href: url)
+          ..setAttribute('download', fileName)
+          ..click();
+
+    html.Url.revokeObjectUrl(url);
+  }
+
+  // Future<void> _handleDownloadOption(
+  //   String option, {
+  //   bool includeDesign = true,
+  //   bool includeShade = true,
+  //   bool includeRate = true,
+  //   bool includeWsp = true,
+  //   bool includeSize = true,
+  //   bool includeSizeMrp = true,
+  //   bool includeSizeWsp = true,
+  //   bool includeProduct = true,
+  //   bool includeRemark = true,
+  // }) async {
+  //   if (selectedItems.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Please select items to download')),
+  //     );
+  //     return;
+  //   }
+
+  //   try {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Row(
+  //           children: [
+  //             CircularProgressIndicator(),
+  //             SizedBox(width: 16),
+  //             Text('Preparing download...'),
+  //           ],
+  //         ),
+  //         duration: Duration(seconds: 1),
+  //       ),
+  //     );
+
+  //     Directory? downloadsDir;
+  //     if (Platform.isAndroid) {
+  //       downloadsDir = Directory('/storage/emulated/0/Download');
+  //       if (!await downloadsDir.exists()) {
+  //         downloadsDir = await getExternalStorageDirectory();
+  //       }
+  //     } else {
+  //       downloadsDir = await getApplicationDocumentsDirectory();
+  //     }
+
+  //     final now = DateTime.now();
+  //     final timestamp =
+  //         '${now.year}${now.month}${now.day}_${now.hour}${now.minute}${now.second}';
+
+  //     if (option == 'pdf') {
+  //       final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+  //       List<Map<String, dynamic>> catalogItems = [];
+
+  //       for (var item in selectedItems) {
+  //         final imageUrls = _getImageUrl(item);
+  //         print('Image URLs before use: $imageUrls');
+  //         for (var imageUrl in imageUrls) {
+  //           if (imageUrl.isEmpty) continue;
+  //           Map<String, dynamic> catalogItem = {'fullImagePath': imageUrl};
+  //           if (includeDesign) catalogItem['design'] = item.styleCode;
+  //           if (includeShade) catalogItem['shade'] = item.shadeName;
+  //           if (includeRate) catalogItem['rate'] = item.mrp;
+  //           if (includeWsp) catalogItem['wsp'] = item.wsp;
+  //           if (includeSize) {
+  //             if (includeSizeMrp && includeSizeWsp) {
+  //               catalogItem['sizeDetailsWithoutWSp'] =
+  //                   item.sizeDetailsWithoutWSp ?? '';
+  //             } else if (!includeSizeMrp && !includeSizeWsp) {
+  //               catalogItem['onlySizes'] = item.onlySizes ?? '';
+  //             } else {
+  //               catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
+  //             }
+  //           }
+  //           if (includeProduct) catalogItem['product'] = item.itemName;
+  //           if (includeRemark) catalogItem['remark'] = item.remark;
+  //           catalogItems.add(catalogItem);
+  //         }
+  //       }
+
+  //       final requestBody = {
+  //         "company": "VRS Software",
+  //         "createdBy": "admin",
+  //         "mobile": "",
+  //         "catalogItems": catalogItems,
+  //       };
+
+  //       final response = await http.post(
+  //         Uri.parse(apiUrl),
+  //         headers: {'Content-Type': 'application/json'},
+  //         body: jsonEncode(requestBody),
+  //       );
+
+  //       if (response.statusCode == 200) {
+  //         final pdfFile = File('${downloadsDir?.path}/catalog_$timestamp.pdf');
+  //         await pdfFile.writeAsBytes(response.bodyBytes);
+
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(content: Text('PDF downloaded to ${pdfFile.path}')),
+  //         );
+  //       } else {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Failed to generate PDF: ${response.statusCode}'),
+  //           ),
+  //         );
+  //       }
+  //     } else if (option == 'image') {
+  //       final List<Map<String, String>> catalogItems = [];
+  //       for (var item in selectedItems) {
+  //         final imageUrls = _getImageUrl(item);
+  //         print('Image URLs before use: $imageUrls');
+  //         for (var imageUrl in imageUrls) {
+  //           if (imageUrl.isEmpty) continue;
+  //           String sizeValue = '';
+  //           if (includeSize) {
+  //             if (includeSizeMrp && includeSizeWsp) {
+  //               sizeValue = item.sizeDetailsWithoutWSp ?? '';
+  //             } else if (!includeSizeMrp && !includeSizeWsp) {
+  //               sizeValue = item.onlySizes ?? '';
+  //             } else {
+  //               sizeValue = item.sizeWithMrp ?? '';
+  //             }
+  //           }
+
+  //           catalogItems.add({
+  //             'fullImagePath': imageUrl,
+  //             'design': includeDesign ? item.styleCode : '',
+  //             'shade': includeShade ? item.shadeName : '',
+  //             'rate': includeRate ? item.mrp.toString() : '',
+  //             'wsp': includeWsp ? item.wsp.toString() : '',
+  //             'size': sizeValue,
+  //             'product': includeProduct ? item.itemName : '',
+  //             'remark': includeRemark ? item.remark : '',
+  //           });
+  //         }
+  //       }
+
+  //       final response = await http.post(
+  //         Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+  //         headers: {'Content-Type': 'application/json'},
+  //         body: jsonEncode({
+  //           'catalogItems': catalogItems,
+  //           'includeDesign': includeDesign,
+  //           'includeShade': includeShade,
+  //           'includeRate': includeRate,
+  //           'includeWsp': includeWsp,
+  //           'includeSize': includeSize,
+  //           'includeProduct': includeProduct,
+  //           'includeRemark': includeRemark,
+  //         }),
+  //       );
+
+  //       if (response.statusCode == 200) {
+  //         final responseData = jsonDecode(response.body) as List;
+  //         int count = 1;
+  //         int successCount = 0;
+  //         int imageIndex = 0;
+
+  //         for (var item in selectedItems) {
+  //           final imageUrls = _getImageUrl(item);
+  //           print('Image URLs before use: $imageUrls');
+  //           for (var _ in imageUrls) {
+  //             if (imageIndex >= responseData.length) break;
+  //             try {
+  //               final imageData = responseData[imageIndex];
+  //               final imageBytes = base64Decode(imageData['image']);
+  //               final finalFile = File(
+  //                 '${downloadsDir?.path}/catalog_${item.styleCode}_${count}_$timestamp.jpg',
+  //               );
+  //               await finalFile.writeAsBytes(imageBytes);
+  //               successCount++;
+  //               count++;
+  //               imageIndex++;
+  //             } catch (e) {
+  //               print('Error saving image: $e');
+  //               imageIndex++;
+  //             }
+  //           }
+  //         }
+
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(
+  //               '$successCount images downloaded to Downloads folder',
+  //             ),
+  //           ),
+  //         );
+  //       } else {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(
+  //               'Failed to generate images: ${response.statusCode}',
+  //             ),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Download failed: ${e.toString()}')),
+  //     );
+  //   }
+  // }
+
   void _showDownloadOptions() {
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
