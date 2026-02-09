@@ -15,6 +15,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/data.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
+import 'dart:typed_data';
+
 
 class CustomerOrderDetailsPage extends StatefulWidget {
   final String custKey;
@@ -402,13 +406,26 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
     return filePath;
   }
 
-  void _handleDownloadAll() async {
+  void _downloadPdfOnWeb({required List<int> bytes, required String fileName}) {
+    final blob = html.Blob([bytes], 'application/pdf');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+
+    final anchor =
+        html.AnchorElement(href: url)
+          ..setAttribute('download', fileName)
+          ..click();
+
+    html.Url.revokeObjectUrl(url);
+  }
+
+  Future<void> _handleDownloadAll() async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Generating full report...')),
       );
 
       final detailedData = await _fetchFullCustomerReport();
+
       if (detailedData.isEmpty) {
         ScaffoldMessenger.of(
           context,
@@ -417,18 +434,41 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
       }
 
       final pdf = await _generateFullCustomerPDF(detailedData);
-      final filePath = await _savePDF(pdf, 'CustomerOrderReport_');
 
-      if (filePath.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF saved to: $filePath'),
-            action: SnackBarAction(
-              label: 'Open',
-              onPressed: () => OpenFile.open(filePath),
-            ),
-          ),
+      final timestamp =
+          '${DateTime.now().year}${DateTime.now().month}${DateTime.now().day}'
+          '_${DateTime.now().hour}${DateTime.now().minute}${DateTime.now().second}';
+
+      final fileName = 'CustomerOrderReport_$timestamp.pdf';
+
+      /* ==================== WEB ==================== */
+      if (kIsWeb) {
+        final Uint8List pdfBytes = await pdf.save();
+
+        _downloadPdfOnWeb(
+          bytes: pdfBytes.toList(), // ✅ convert to List<int>
+          fileName: fileName,
         );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF downloaded successfully')),
+        );
+      }
+      /* ==================== MOBILE ==================== */
+      else {
+        final filePath = await _savePDF(pdf, 'CustomerOrderReport_');
+
+        if (filePath.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF saved to: $filePath'),
+              action: SnackBarAction(
+                label: 'Open',
+                onPressed: () => OpenFile.open(filePath),
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(

@@ -12,6 +12,11 @@ import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/customerOrderDetailsPage.dart';
 import 'package:vrs_erp/dashboard/orderStatus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class OrderDetailsPage extends StatefulWidget {
   final List<Map<String, dynamic>> orderDetails;
@@ -142,94 +147,98 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
- appBar: AppBar(
-  title: const Text(
-    'Order Details',
-    style: TextStyle(color: Colors.white),
-  ),
-  backgroundColor: AppColors.primaryColor,
-  elevation: 1,
-  leading: IconButton(
-    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-    onPressed: () => Navigator.pop(context),
-  ),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-      tooltip: 'Order Status',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const OrderStatus()),
-        );
-      },
-    ),
-    PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: Colors.white),
-      offset: const Offset(0, 40), // Positions the menu below the three-dot icon
-      onSelected: (String value) {
-        switch (value) {
-          case 'download':
-            _handleDownload();
-            break;
-          case 'whatsapp':
-            _handleWhatsAppShare();
-            break;
-          case 'view':
-            _handleView();
-            break;
-        }
-      },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(
-          value: 'download',
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 0.0,
-            ),
-            leading: Icon(
-              Icons.download,
-              size: 20,
-              color: Colors.blue,
-            ),
-            title: Text('Download'),
-          ),
+      appBar: AppBar(
+        title: const Text(
+          'Order Details',
+          style: TextStyle(color: Colors.white),
         ),
-        const PopupMenuItem<String>(
-          value: 'whatsapp',
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 0.0,
-            ),
-            leading: FaIcon(
-              FontAwesomeIcons.whatsapp,
-              size: 20,
-              color: Colors.green,
-            ),
-            title: Text('WhatsApp'),
-          ),
+        backgroundColor: AppColors.primaryColor,
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        const PopupMenuItem<String>(
-          value: 'view',
-          child: ListTile(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 0.0,
-            ),
-            leading: FaIcon(
-              FontAwesomeIcons.eye,
-              size: 18,
-              color: Colors.blue,
-            ),
-            title: Text('View'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+            tooltip: 'Order Status',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const OrderStatus()),
+              );
+            },
           ),
-        ),
-      ],
-    ),
-  ],
-),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            offset: const Offset(
+              0,
+              40,
+            ), // Positions the menu below the three-dot icon
+            onSelected: (String value) {
+              switch (value) {
+                case 'download':
+                  _handleDownload();
+                  break;
+                case 'whatsapp':
+                  _handleWhatsAppShare();
+                  break;
+                case 'view':
+                  _handleView();
+                  break;
+              }
+            },
+            itemBuilder:
+                (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'download',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 0.0,
+                      ),
+                      leading: Icon(
+                        Icons.download,
+                        size: 20,
+                        color: Colors.blue,
+                      ),
+                      title: Text('Download'),
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'whatsapp',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 0.0,
+                      ),
+                      leading: FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        size: 20,
+                        color: Colors.green,
+                      ),
+                      title: Text('WhatsApp'),
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'view',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 0.0,
+                      ),
+                      leading: FaIcon(
+                        FontAwesomeIcons.eye,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
+                      title: Text('View'),
+                    ),
+                  ),
+                ],
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
         child: SingleChildScrollView(
@@ -439,14 +448,34 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   Future<String> _savePDF(pw.Document pdf) async {
-    String filePath = '';
-
     try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'SalesOrder_TotalOrderSummary_$timestamp.pdf';
+
+      /* ======================== WEB ======================== */
+      if (kIsWeb) {
+        final Uint8List pdfBytes = await pdf.save();
+
+        final blob = html.Blob([pdfBytes], 'application/pdf');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+
+        final anchor =
+            html.AnchorElement(href: url)
+              ..setAttribute('download', fileName)
+              ..click();
+
+        html.Url.revokeObjectUrl(url);
+
+        // Web has no real file path – return filename only
+        return fileName;
+      }
+
+      /* ====================== MOBILE ====================== */
+
       // Request storage permissions for Android
       if (Platform.isAndroid) {
         var status = await Permission.storage.request();
         if (!status.isGranted) {
-          // For Android 13+, try manageExternalStorage if needed
           status = await Permission.manageExternalStorage.request();
           if (!status.isGranted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -457,38 +486,34 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         }
       }
 
-      // Determine the Downloads directory
       Directory? downloadsDir;
+
       if (Platform.isAndroid) {
-        // On Android, use the Downloads directory
         downloadsDir = Directory('/storage/emulated/0/Download');
         if (!await downloadsDir.exists()) {
-          // Fallback to getExternalStorageDirectory if Downloads folder doesn't exist
           downloadsDir = await getExternalStorageDirectory();
         }
       } else if (Platform.isIOS) {
-        // On iOS, use the Documents directory (Downloads folder is restricted)
         downloadsDir = await getApplicationDocumentsDirectory();
       }
 
-      if (downloadsDir != null) {
-        final file = File(
-          '${downloadsDir.path}/SalesOrder_TotalOrderSummary_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
-        await file.writeAsBytes(await pdf.save());
-        filePath = file.path;
-      } else {
+      if (downloadsDir == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unable to access Downloads directory')),
         );
+        return '';
       }
+
+      final file = File('${downloadsDir.path}/$fileName');
+      await file.writeAsBytes(await pdf.save());
+
+      return file.path;
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error saving PDF: $e')));
+      return '';
     }
-
-    return filePath;
   }
 
   void _handleDownload() async {
