@@ -4,8 +4,8 @@
 // import 'dart:convert';
 
 // import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
-// import 'package:vrs_erp_figma/screens/login_screen.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/screens/login_screen.dart';
 
 // class RegisterScreen extends StatefulWidget {
 //   @override
@@ -514,8 +514,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/login_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override

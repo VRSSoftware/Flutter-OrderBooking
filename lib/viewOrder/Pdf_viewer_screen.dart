@@ -8,7 +8,7 @@
 // import 'package:dio/dio.dart';
 // import 'package:share_plus/share_plus.dart';
 // import 'package:http/http.dart' as http;
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
 
 // class PdfViewerScreen extends StatefulWidget {
 //   final String orderNo;
@@ -250,7 +250,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
-import 'package:vrs_erp_figma/constants/app_constants.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 
 class PdfViewerScreen extends StatefulWidget {

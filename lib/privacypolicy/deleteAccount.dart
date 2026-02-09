@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
 
 class DeleteAccountPage extends StatefulWidget {
   const DeleteAccountPage({super.key});

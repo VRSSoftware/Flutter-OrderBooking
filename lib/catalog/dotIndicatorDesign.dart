@@ -1,7 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class DotIndicator extends StatelessWidget {
   final int count;

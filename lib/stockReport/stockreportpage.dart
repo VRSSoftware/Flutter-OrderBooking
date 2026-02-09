@@ -5,19 +5,19 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/category.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/models/stockReportModel.dart';
-import 'package:vrs_erp_figma/models/style.dart';
-import 'package:vrs_erp_figma/models/shade.dart';
-import 'package:vrs_erp_figma/models/size.dart';
-import 'package:vrs_erp_figma/models/brand.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/stockReport/stockfilter.dart';
-import 'package:vrs_erp_figma/widget/bottom_navbar.dart'; // Import StockFilterPage
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/category.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/models/stockReportModel.dart';
+import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/models/shade.dart';
+import 'package:vrs_erp/models/size.dart';
+import 'package:vrs_erp/models/brand.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/stockReport/stockfilter.dart';
+import 'package:vrs_erp/widget/bottom_navbar.dart'; // Import StockFilterPage
 
 class StockReportPage extends StatefulWidget {
   const StockReportPage({super.key});

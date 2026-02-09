@@ -1,7 +1,7 @@
 // import 'package:flutter/material.dart';
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
-// import 'package:vrs_erp_figma/models/catalog.dart';
-// import 'package:vrs_erp_figma/widget/booknowwidget.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/models/catalog.dart';
+// import 'package:vrs_erp/widget/booknowwidget.dart';
 
 // class CatalogItemCard extends StatelessWidget {
 //   final Catalog catalog;

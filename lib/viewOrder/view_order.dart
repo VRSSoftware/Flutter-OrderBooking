@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/viewOrder/add_more_info.dart';
-import 'package:vrs_erp_figma/viewOrder/customer_master.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/viewOrder/add_more_info.dart';
+import 'package:vrs_erp/viewOrder/customer_master.dart';
 
 class ViewOrderScreens extends StatefulWidget {
   @override

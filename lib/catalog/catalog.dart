@@ -15,20 +15,20 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vrs_erp_figma/catalog/dotIndicatorDesign.dart';
-import 'package:vrs_erp_figma/catalog/download_options.dart';
-import 'package:vrs_erp_figma/catalog/filter.dart';
-import 'package:vrs_erp_figma/catalog/image_zoom1.dart';
-import 'package:vrs_erp_figma/catalog/imagezoom.dart';
-import 'package:vrs_erp_figma/catalog/share_option_screen.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/brand.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/models/shade.dart';
-import 'package:vrs_erp_figma/models/size.dart';
-import 'package:vrs_erp_figma/models/style.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/widget/bottom_navbar.dart';
+import 'package:vrs_erp/catalog/dotIndicatorDesign.dart';
+import 'package:vrs_erp/catalog/download_options.dart';
+import 'package:vrs_erp/catalog/filter.dart';
+import 'package:vrs_erp/catalog/image_zoom1.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
+import 'package:vrs_erp/catalog/share_option_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/brand.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/models/shade.dart';
+import 'package:vrs_erp/models/size.dart';
+import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/widget/bottom_navbar.dart';
 
 class CatalogPage extends StatefulWidget {
   @override

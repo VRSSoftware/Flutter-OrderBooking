@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
 
 class CustomerDetailTab extends StatefulWidget {
   const CustomerDetailTab({super.key});

@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/models/PytTermDisc.dart';
-import 'package:vrs_erp_figma/models/salesman.dart';
-import 'package:vrs_erp_figma/models/consignee.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/models/PytTermDisc.dart';
+import 'package:vrs_erp/models/salesman.dart';
+import 'package:vrs_erp/models/consignee.dart';
 
 class AddMoreInfoDialog extends StatefulWidget {
   final List<Map<String, String>> salesPersonList;

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/keyName.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/services/app_services.dart';
 
 class CustomerMasterDialog extends StatefulWidget {
   @override

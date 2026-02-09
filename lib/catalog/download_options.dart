@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class DownloadOptionsSheet extends StatefulWidget {
   final Function(String, Map<String, bool>) onDownload;

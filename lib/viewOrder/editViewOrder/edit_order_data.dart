@@ -1,5 +1,5 @@
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/models/consignee.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/models/consignee.dart';
 
 class EditOrderData {
   static List<CatalogOrderData> data = [];

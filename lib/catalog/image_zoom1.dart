@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/catalog/dotIndicatorDesign.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
+import 'package:vrs_erp/catalog/dotIndicatorDesign.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/catalog.dart';
 
 class ImageZoomScreen1 extends StatefulWidget {
   final List<String> imageUrls;

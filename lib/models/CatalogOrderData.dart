@@ -1,5 +1,5 @@
-import 'package:vrs_erp_figma/models/OrderMatrix.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
+import 'package:vrs_erp/models/OrderMatrix.dart';
+import 'package:vrs_erp/models/catalog.dart';
 
 class CatalogOrderData {
   final Catalog catalog;

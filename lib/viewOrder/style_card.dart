@@ -1,5 +1,5 @@
 // import 'package:flutter/material.dart';
-// import 'package:vrs_erp_figma/catalog/imagezoom.dart';
+// import 'package:vrs_erp/catalog/imagezoom.dart';
 // import '../constants/app_constants.dart';
 // import 'dart:convert';
 // import 'package:http/http.dart' as http;
@@ -743,8 +743,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vrs_erp_figma/catalog/imagezoom.dart';
-import 'package:vrs_erp_figma/models/CartModel.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
+import 'package:vrs_erp/models/CartModel.dart';
 import '../constants/app_constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;

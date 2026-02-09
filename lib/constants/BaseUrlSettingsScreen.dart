@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/login_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/login_screen.dart';
 
 class BaseUrlSettingsScreen extends StatefulWidget {
   @override
@@ -21,7 +21,7 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
   void _loadUrls() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _baseUrlController.text = prefs.getString('BASE_URL') ?? AppConstants.BASE_URL;
+      _baseUrlController.text = prefs.getString('BASE_URL') ?? AppConstants.BASE_URL ?? '';
       _rptBaseUrlController.text = prefs.getString('Pdf_url') ?? AppConstants.Pdf_url;
       _baseUrlController.text =  AppConstants.BASE_URL ?? "";
       _rptBaseUrlController.text = AppConstants.Pdf_url ?? "";

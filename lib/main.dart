@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vrs_erp_figma/OrderBooking/order_booking.dart';
-import 'package:vrs_erp_figma/OrderBooking/orderbooking_booknow.dart';
-import 'package:vrs_erp_figma/catalog/catalog.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/dashboard/dashboard.dart';
-import 'package:vrs_erp_figma/models/CartModel.dart';
-import 'package:vrs_erp_figma/privacypolicy/deleteAccount.dart';
-import 'package:vrs_erp_figma/privacypolicy/privacypolicy.dart';
-import 'package:vrs_erp_figma/register/packingRegisterScreen.dart';
-import 'package:vrs_erp_figma/register/register.dart';
-import 'package:vrs_erp_figma/catalog/catalog_screen.dart';
-import 'package:vrs_erp_figma/register/saleBillRegister.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
+import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
+import 'package:vrs_erp/catalog/catalog.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/dashboard/dashboard.dart';
+import 'package:vrs_erp/models/CartModel.dart';
+import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
+import 'package:vrs_erp/privacypolicy/privacypolicy.dart';
+import 'package:vrs_erp/register/packingRegisterScreen.dart';
+import 'package:vrs_erp/register/register.dart';
+import 'package:vrs_erp/catalog/catalog_screen.dart';
+import 'package:vrs_erp/register/saleBillRegister.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
 
-import 'package:vrs_erp_figma/screens/home_screen.dart';
-import 'package:vrs_erp_figma/screens/login_screen.dart';
-import 'package:vrs_erp_figma/screens/mdns/MdnsDiscoveryScreen.dart';
-import 'package:vrs_erp_figma/screens/packing/packing_order_screen.dart';
-import 'package:vrs_erp_figma/screens/sale_bill/sale_bill_order_screen.dart';
-import 'package:vrs_erp_figma/screens/splash_screen.dart';
-import 'package:vrs_erp_figma/stockReport/stockreportpage.dart';
-import 'package:vrs_erp_figma/viewOrder/view_order.dart';
-import 'package:vrs_erp_figma/viewOrder/view_order_screen.dart';
-import 'package:vrs_erp_figma/viewOrder/view_order_screen_barcode.dart';
+import 'package:vrs_erp/screens/home_screen.dart';
+import 'package:vrs_erp/screens/login_screen.dart';
+import 'package:vrs_erp/screens/mdns/MdnsDiscoveryScreen.dart';
+import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
+import 'package:vrs_erp/screens/sale_bill/sale_bill_order_screen.dart';
+import 'package:vrs_erp/screens/splash_screen.dart';
+import 'package:vrs_erp/stockReport/stockreportpage.dart';
+import 'package:vrs_erp/viewOrder/view_order.dart';
+import 'package:vrs_erp/viewOrder/view_order_screen.dart';
+import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
 
 void main() {
   runApp(

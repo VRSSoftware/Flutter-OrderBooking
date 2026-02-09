@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:vrs_erp_figma/models/PartyWithSpclMarkDwn.dart';
-import 'package:vrs_erp_figma/models/brand.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/models/category.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/models/keyName.dart';
-import 'package:vrs_erp_figma/models/registerModel.dart';
-import 'package:vrs_erp_figma/models/shade.dart';
-import 'package:vrs_erp_figma/models/size.dart';
-import 'package:vrs_erp_figma/models/stockReportModel.dart';
-import 'package:vrs_erp_figma/models/style.dart';
+import 'package:vrs_erp/models/PartyWithSpclMarkDwn.dart';
+import 'package:vrs_erp/models/brand.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/models/category.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/models/registerModel.dart';
+import 'package:vrs_erp/models/shade.dart';
+import 'package:vrs_erp/models/size.dart';
+import 'package:vrs_erp/models/stockReportModel.dart';
+import 'package:vrs_erp/models/style.dart';
 import '../constants/app_constants.dart';
 import '../models/consignee.dart';
 

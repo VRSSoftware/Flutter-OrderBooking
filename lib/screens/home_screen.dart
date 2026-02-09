@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/widget/bottom_navbar.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/widget/bottom_navbar.dart';
 
 // --- Colors from the new design ---
 // We'll assume light mode, as your original code was light.

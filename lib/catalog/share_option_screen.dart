@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:vrs_erp_figma/catalog/toggle_option_screen.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
+import 'package:vrs_erp/catalog/toggle_option_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class ShareOptionsPage extends StatefulWidget {
   final Function({
@@ -265,7 +265,7 @@ class _ShareOptionsPageState extends State<ShareOptionsPage> {
   }
 
   // import 'package:flutter/material.dart';
-  // import 'package:vrs_erp_figma/constants/app_constants.dart';
+  // import 'package:vrs_erp/constants/app_constants.dart';
 
   // class ShareOptionsPage extends StatefulWidget {
   //   final bool includeDesign;

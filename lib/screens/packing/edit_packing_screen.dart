@@ -2,18 +2,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/models/OrderMatrix.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/models/keyName.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/addMoreItemsForEdit.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/customer_details_tab.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_data.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/transaction_tab.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/transaction_tab2.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/transaction_tab3.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/models/OrderMatrix.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/addMoreItemsForEdit.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/customer_details_tab.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab2.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab3.dart';
 
 enum ActiveTab { transaction, customerDetails }
 

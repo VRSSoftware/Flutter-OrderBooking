@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/category.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/category.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/services/app_services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class AddMoreItemsForEdit extends StatefulWidget {

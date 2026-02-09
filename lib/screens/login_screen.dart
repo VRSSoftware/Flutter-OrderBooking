@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/BaseUrlSettingsScreen.dart';
-import 'package:vrs_erp_figma/screens/home_screen.dart';
-import 'package:vrs_erp_figma/screens/register_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/BaseUrlSettingsScreen.dart';
+import 'package:vrs_erp/screens/home_screen.dart';
+import 'package:vrs_erp/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override

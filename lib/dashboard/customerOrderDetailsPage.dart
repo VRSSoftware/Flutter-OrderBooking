@@ -13,8 +13,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/dashboard/data.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/dashboard/data.dart';
 
 class CustomerOrderDetailsPage extends StatefulWidget {
   final String custKey;

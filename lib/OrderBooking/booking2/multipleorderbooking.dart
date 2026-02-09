@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/CartModel.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/CartModel.dart';
+import 'package:vrs_erp/models/catalog.dart';
 
 class CatalogItem {
   final String styleCode;

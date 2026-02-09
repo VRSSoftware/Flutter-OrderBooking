@@ -6,20 +6,20 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:vrs_erp_figma/OrderBooking/barcode/barcodewidget.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/constants/constants.dart';
-import 'package:vrs_erp_figma/dashboard/orderStatus.dart';
-import 'package:vrs_erp_figma/models/CartModel.dart';
-import 'package:vrs_erp_figma/models/PartyWithSpclMarkDwn.dart';
-import 'package:vrs_erp_figma/models/category.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/models/keyName.dart';
-import 'package:vrs_erp_figma/register/register.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/widget/bottom_navbar.dart';
-import 'package:vrs_erp_figma/widget/filterdailogwidget.dart';
+import 'package:vrs_erp/OrderBooking/barcode/barcodewidget.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/dashboard/orderStatus.dart';
+import 'package:vrs_erp/models/CartModel.dart';
+import 'package:vrs_erp/models/PartyWithSpclMarkDwn.dart';
+import 'package:vrs_erp/models/category.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/register/register.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/widget/bottom_navbar.dart';
+import 'package:vrs_erp/widget/filterdailogwidget.dart';
 
 class SaleBillBookingScreen extends StatefulWidget {
   @override

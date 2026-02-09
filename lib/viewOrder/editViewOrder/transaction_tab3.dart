@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
 
 class TransactionTab3 extends StatefulWidget {
   const TransactionTab3({super.key});

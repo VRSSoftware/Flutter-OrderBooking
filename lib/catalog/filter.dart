@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/brand.dart';
-import 'package:vrs_erp_figma/models/shade.dart';
-import 'package:vrs_erp_figma/models/size.dart';
-import 'package:vrs_erp_figma/models/style.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/brand.dart';
+import 'package:vrs_erp/models/shade.dart';
+import 'package:vrs_erp/models/size.dart';
+import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 class FilterPage extends StatefulWidget {
@@ -249,11 +249,11 @@ class _FilterPageState extends State<FilterPage> {
                         children: [
                           _buildRadioOption(
                             'Latest Design',
-                            isSelected: sortBy == 'design asc',
+                            isSelected: sortBy == 'design desc',
                             onTap:
                                 () => setState(() {
                                   sortBy =
-                                      'design asc'; // maps to ORDER BY created_dt DESC
+                                      'design desc'; // maps to ORDER BY created_dt DESC
                                 }),
                           ),
                           _buildRadioOption(

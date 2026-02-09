@@ -5,17 +5,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:vrs_erp_figma/catalog/imagezoom.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/constants/constants.dart';
-import 'package:vrs_erp_figma/register/register.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/screens/home_screen.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/models/OrderMatrix.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_data.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/more_order_using_barcode.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/register/register.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/screens/home_screen.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/models/OrderMatrix.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/more_order_using_barcode.dart';
 
 enum ActiveTab { transaction, customerDetails }
 
@@ -583,53 +583,55 @@ Future<String> insertFinalSalesOrder(String orderDataJson) async {
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildTabBar(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child:
-                    _showForm
-                        ? _OrderForm(
-                          controllers: _orderControllers,
-                          dropdownData: _dropdownData,
-                          onPartySelected: _handlePartySelection,
-                          updateTotals: _updateTotals,
-                          saveOrder: _handleSave,
-                          // additionalInfo: _additionalInfo,
-                          // consignees: consignees,
-                          // paymentTerms: paymentTerms,
-                          // bookingTypes: _bookingTypes,
-                          // onAdditionalInfoUpdated: (newInfo) {
-                          //   setState(() {
-                          //     _additionalInfo = newInfo;
-                          //   });
-                          // },
-                            isSaving: _isSaving,
-                        )
-                        : _StyleCardsView(
-                          styleManager: _styleManager,
-                          updateTotals: _updateTotals,
-                          getColor: _getColorCode,
-
-                          onUpdate: () async {
-                            await _styleManager.refreshOrderItems(
-                              barcode: barcodeMode,
-                            );
-                            _initializeQuantitiesAndColors();
-                            _updateTotals();
-                          },
-                          quantities: quantities,
-                          selectedColors: selectedColors,
-                        ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTabBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child:
+                      _showForm
+                          ? _OrderForm(
+                            controllers: _orderControllers,
+                            dropdownData: _dropdownData,
+                            onPartySelected: _handlePartySelection,
+                            updateTotals: _updateTotals,
+                            saveOrder: _handleSave,
+                            // additionalInfo: _additionalInfo,
+                            // consignees: consignees,
+                            // paymentTerms: paymentTerms,
+                            // bookingTypes: _bookingTypes,
+                            // onAdditionalInfoUpdated: (newInfo) {
+                            //   setState(() {
+                            //     _additionalInfo = newInfo;
+                            //   });
+                            // },
+                              isSaving: _isSaving,
+                          )
+                          : _StyleCardsView(
+                            styleManager: _styleManager,
+                            updateTotals: _updateTotals,
+                            getColor: _getColorCode,
+        
+                            onUpdate: () async {
+                              await _styleManager.refreshOrderItems(
+                                barcode: barcodeMode,
+                              );
+                              _initializeQuantitiesAndColors();
+                              _updateTotals();
+                            },
+                            quantities: quantities,
+                            selectedColors: selectedColors,
+                          ),
+                ),
               ),
             ),
-          ),
-          _buildBottomButtons(),
-        ],
+            _buildBottomButtons(),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handleAddAction,

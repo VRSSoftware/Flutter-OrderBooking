@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vrs_erp_figma/OrderBooking/barcode/barcode_scanner.dart';
-import 'package:vrs_erp_figma/OrderBooking/barcode/bookonBarcode2.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
+import 'package:vrs_erp/OrderBooking/barcode/barcode_scanner.dart';
+import 'package:vrs_erp/OrderBooking/barcode/bookonBarcode2.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class MoreOrderBarcodePage extends StatefulWidget {
   final ValueChanged<String> onFilterPressed;

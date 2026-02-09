@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
-// import 'package:vrs_erp_figma/screens/login_screen.dart'; // Import your LoginScreen
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/screens/login_screen.dart'; // Import your LoginScreen
 
 // class DrawerScreen extends StatefulWidget {
 //   @override
@@ -303,8 +303,8 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/screens/login_screen.dart'; // Import your LoginScreen
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/login_screen.dart'; // Import your LoginScreen
 
 class DrawerScreen extends StatefulWidget {
   @override

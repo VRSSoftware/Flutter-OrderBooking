@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/screens/mdns/MdnsServiceDiscovery.dart';
+import 'package:vrs_erp/screens/mdns/MdnsServiceDiscovery.dart';
 
 class MdnsDiscoveryScreen extends StatefulWidget {
   @override

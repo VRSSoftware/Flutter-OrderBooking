@@ -1,4 +1,4 @@
-# vrs_erp_figma
+# vrs_erp
 
 A new Flutter project.
 

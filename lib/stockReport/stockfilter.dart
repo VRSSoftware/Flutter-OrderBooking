@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/models/brand.dart';
-import 'package:vrs_erp_figma/models/shade.dart';
-import 'package:vrs_erp_figma/models/size.dart';
-import 'package:vrs_erp_figma/models/style.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/models/brand.dart';
+import 'package:vrs_erp/models/shade.dart';
+import 'package:vrs_erp/models/size.dart';
+import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 // New model class for image-based items

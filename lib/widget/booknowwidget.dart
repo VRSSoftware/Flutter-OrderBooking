@@ -2,8 +2,8 @@
 // import 'package:flutter/cupertino.dart';
 // import 'package:flutter/material.dart';
 // import 'package:http/http.dart' as http;
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
-// import 'package:vrs_erp_figma/models/CatalogItem.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/models/CatalogItem.dart';
 
 // class CatalogBookingTable extends StatefulWidget {
 //   final String itemSubGrpKey;
@@ -824,14 +824,14 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/constants/constants.dart';
-import 'package:vrs_erp_figma/models/CatalogItem.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
-import 'package:vrs_erp_figma/models/OrderMatrix.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_data.dart';
-import 'package:vrs_erp_figma/viewOrder/editViewOrder/edit_order_screen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/models/CatalogItem.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/models/OrderMatrix.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_screen.dart';
 
 class CatalogBookingTable extends StatefulWidget {
   final String itemSubGrpKey;

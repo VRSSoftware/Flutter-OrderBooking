@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
-// import 'package:vrs_erp_figma/constants/app_constants.dart';
-// import 'package:vrs_erp_figma/catalog/imagezoom.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/catalog/imagezoom.dart';
 
 // class OrderStatusCard extends StatelessWidget {
 //   final String productName;
@@ -309,9 +309,9 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/catalog/imagezoom.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
+import 'package:vrs_erp/models/catalog.dart';
 
 class OrderStatusCard extends StatelessWidget {
   final String productName;

@@ -5,21 +5,21 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:vrs_erp_figma/catalog/imagezoom.dart';
-import 'package:vrs_erp_figma/constants/app_constants.dart';
-import 'package:vrs_erp_figma/constants/constants.dart';
-import 'package:vrs_erp_figma/screens/drawer_screen.dart';
-import 'package:vrs_erp_figma/screens/home_screen.dart';
-import 'package:vrs_erp_figma/services/app_services.dart';
-import 'package:vrs_erp_figma/viewOrder/Pdf_viewer_screen.dart';
-import 'package:vrs_erp_figma/viewOrder/add_more_info.dart';
-import 'package:vrs_erp_figma/viewOrder/customer_master.dart';
-import 'package:vrs_erp_figma/models/consignee.dart';
-import 'package:vrs_erp_figma/models/PytTermDisc.dart';
-import 'package:vrs_erp_figma/models/item.dart';
-import 'package:vrs_erp_figma/models/catalog.dart';
-import 'package:vrs_erp_figma/models/OrderMatrix.dart';
-import 'package:vrs_erp_figma/models/CatalogOrderData.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/screens/home_screen.dart';
+import 'package:vrs_erp/services/app_services.dart';
+import 'package:vrs_erp/viewOrder/Pdf_viewer_screen.dart';
+import 'package:vrs_erp/viewOrder/add_more_info.dart';
+import 'package:vrs_erp/viewOrder/customer_master.dart';
+import 'package:vrs_erp/models/consignee.dart';
+import 'package:vrs_erp/models/PytTermDisc.dart';
+import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/models/catalog.dart';
+import 'package:vrs_erp/models/OrderMatrix.dart';
+import 'package:vrs_erp/models/CatalogOrderData.dart';
 
 enum ActiveTab { transaction, customerDetails }
 
