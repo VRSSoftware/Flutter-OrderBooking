@@ -240,7 +240,6 @@
 
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:convert';
-import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -252,6 +251,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:vrs_erp/constants/app_constants.dart';
 
+// Web-specific import
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import 'dart:io' as io;
 
 class PdfViewerScreen extends StatefulWidget {
   final String orderNo;
@@ -275,9 +278,8 @@ class PdfViewerScreen extends StatefulWidget {
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
   String? filePath = '';
-  String rptName = '';
   bool isLoading = true;
-  Uint8List? pdfBytes; // for web
+  Uint8List? pdfBytes; // For web preview
 
   @override
   void initState() {
@@ -288,13 +290,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   Future<void> _loadPdf() async {
     try {
       final docId = widget.orderNo.replaceAll(RegExp(r'[^0-9]'), '');
-      rptName = widget.rptName;
       final dio = Dio();
       final response = await dio.post(
         '${AppConstants.Pdf_url}/api/order/pdf',
         data: {
           "doc_id": docId,
-          "rptName": rptName,
+          "rptName": widget.rptName,
           "dbName": UserSession.dbName,
           "dbUser": UserSession.dbUser,
           "dbPassword": UserSession.dbPassword,
@@ -315,11 +316,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           final path = '${dir.path}/order_$docId.pdf';
           final file = io.File(path);
           await file.writeAsBytes(response.data);
-
           setState(() {
             filePath = path;
             isLoading = false;
-            rptName = widget.rptName;
           });
         }
       } else {
@@ -387,7 +386,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-
               if (kIsWeb) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('WhatsApp send not supported on Web')));
@@ -421,10 +419,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     if (filePath == null && pdfBytes == null) return;
     try {
       if (kIsWeb) {
-        // final blob = html.Blob([pdfBytes!], 'application/pdf');
-        // final url = html.Url.createObjectUrlFromBlob(blob);
-        // html.window.open(url, "_blank");
-        // html.Url.revokeObjectUrl(url);
+        final blob = html.Blob([pdfBytes!], 'application/pdf');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        html.window.open(url, "_blank"); // Open PDF in new tab
+        html.Url.revokeObjectUrl(url);
       } else {
         await Share.shareXFiles([
           XFile(filePath!),
@@ -454,7 +452,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _sharePdf,
                     icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text("Open PDF"),
+                    label: const Text("Open PDF in New Tab"),
                   ),
                 )
               : PDFView(
@@ -502,4 +500,3 @@ Future<bool> sendWhatsAppFile({
     return false;
   }
 }
-
