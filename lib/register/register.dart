@@ -1065,7 +1065,7 @@ import 'package:flutter/foundation.dart' show kIsWeb; // Detect Web
 import 'package:flutter/material.dart';
 
 // Web-specific (ignore in mobile)
-import 'dart:html' as html; // For browser downloads
+// import 'dart:html' as html; // For browser downloads
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -1348,9 +1348,27 @@ class _RegisterPageState extends State<RegisterPage> {
 
                                     try {
                                       final dio = Dio();
+                                      // final response = await dio.post(
+                                      //   // '${AppConstants.Pdf_url}/api/values/order2',
+                                      //   '${AppConstants.Pdf_url}',
+                                      //   data: {"doc_id": docId},
+                                      //   options: Options(
+                                      //     responseType: ResponseType.bytes,
+                                      //   ),
+                                      // );
                                       final response = await dio.post(
-                                        '${AppConstants.Pdf_url}/api/values/order2',
-                                        data: {"doc_id": docId},
+                                        // '${AppConstants.Pdf_url}/api/order/pdf',
+                                        '${AppConstants.Pdf_url}',
+                                        data: {
+                                          "doc_id": docId,
+                                          "rptName": "SalesOrder",
+                                          "dbName": UserSession.dbName,
+                                          "dbUser": UserSession.dbUser,
+                                          "dbPassword": UserSession.dbPassword,
+                                          "dbServer":
+                                              UserSession.dbSourceForRpt,
+                                          "rptPath": UserSession.rptPath,
+                                        },
                                         options: Options(
                                           responseType: ResponseType.bytes,
                                         ),
@@ -1441,9 +1459,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
                           /* ======================= FETCH PDF ======================= */
                           final dio = Dio();
+                          // final response = await dio.post(
+                          //   // '${AppConstants.Pdf_url}/api/values/order2',
+                          //   '${AppConstants.Pdf_url}',
+                          //   data: {"doc_id": registerOrder.orderId},
+                          //   options: Options(responseType: ResponseType.bytes),
+                          // );
                           final response = await dio.post(
-                            '${AppConstants.Pdf_url}/api/values/order2',
-                            data: {"doc_id": registerOrder.orderId},
+                            // '${AppConstants.Pdf_url}/api/order/pdf',
+                            '${AppConstants.Pdf_url}',
+                            data: {
+                              "doc_id": registerOrder.orderId,
+                              "rptName": "SalesOrder",
+                              "dbName": UserSession.dbName,
+                              "dbUser": UserSession.dbUser,
+                              "dbPassword": UserSession.dbPassword,
+                              "dbServer": UserSession.dbSourceForRpt,
+                              "rptPath": UserSession.rptPath,
+                            },
                             options: Options(responseType: ResponseType.bytes),
                           );
 
@@ -1457,19 +1490,19 @@ class _RegisterPageState extends State<RegisterPage> {
 
                             /* ======================= WEB ======================= */
                             if (kIsWeb) {
-                              final blob = html.Blob([
-                                response.data,
-                              ], 'application/pdf');
-                              final url = html.Url.createObjectUrlFromBlob(
-                                blob,
-                              );
+                              // final blob = html.Blob([
+                              //   response.data,
+                              // ], 'application/pdf');
+                              // final url = html.Url.createObjectUrlFromBlob(
+                              //   blob,
+                              // );
 
-                              final anchor =
-                                  html.AnchorElement(href: url)
-                                    ..setAttribute('download', fileName)
-                                    ..click();
+                              // final anchor =
+                              //     html.AnchorElement(href: url)
+                              //       ..setAttribute('download', fileName)
+                              //       ..click();
 
-                              html.Url.revokeObjectUrl(url);
+                              // html.Url.revokeObjectUrl(url);
 
                               if (mounted) {
                                 Navigator.of(

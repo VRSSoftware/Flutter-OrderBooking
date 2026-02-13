@@ -337,7 +337,8 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage> {
                                     try {
                                       final dio = Dio();
                                       final response = await dio.post(
-                                        '${AppConstants.Pdf_url}/api/values/order5',
+                                        // '${AppConstants.Pdf_url}/api/values/order5',
+                                        '${AppConstants.Pdf_url}',
                                         data: {
                                           "doc_id": docId,
                                           "rptName": "SaleBillGST",
@@ -433,7 +434,8 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage> {
 
                           final dio = Dio();
                           final response = await dio.post(
-                            '${AppConstants.Pdf_url}/api/values/order5',
+                            // '${AppConstants.Pdf_url}/api/values/order5',
+                            '${AppConstants.Pdf_url}',
                             data: {
                               "doc_id": registerOrder.orderId,
                               "rptName": "SaleBillGST",

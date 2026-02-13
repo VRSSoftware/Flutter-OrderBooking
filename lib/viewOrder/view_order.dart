@@ -134,7 +134,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreens> {
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
       appBar: AppBar(
-        title: Text('View Order', style: TextStyle(color: Colors.white)),
+        title: Text('View Order', 
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 20)),
         backgroundColor: Colors.deepPurple,
         elevation: 1,
         leading: Builder(

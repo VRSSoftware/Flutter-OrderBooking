@@ -16,7 +16,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// import 'dart:html' as html;
 
 class OrderDetailsPage extends StatefulWidget {
   final List<Map<String, dynamic>> orderDetails;
@@ -454,17 +454,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
       /* ======================== WEB ======================== */
       if (kIsWeb) {
-        final Uint8List pdfBytes = await pdf.save();
+        // final Uint8List pdfBytes = await pdf.save();
 
-        final blob = html.Blob([pdfBytes], 'application/pdf');
-        final url = html.Url.createObjectUrlFromBlob(blob);
+        // final blob = html.Blob([pdfBytes], 'application/pdf');
+        // final url = html.Url.createObjectUrlFromBlob(blob);
 
-        final anchor =
-            html.AnchorElement(href: url)
-              ..setAttribute('download', fileName)
-              ..click();
+        // final anchor =
+        //     html.AnchorElement(href: url)
+        //       ..setAttribute('download', fileName)
+        //       ..click();
 
-        html.Url.revokeObjectUrl(url);
+        // html.Url.revokeObjectUrl(url);
 
         // Web has no real file path – return filename only
         return fileName;

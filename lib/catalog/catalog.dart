@@ -30,7 +30,7 @@ import 'package:vrs_erp/models/style.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html;
+// import 'dart:html' as html;
 
 class CatalogPage extends StatefulWidget {
   @override
@@ -2706,15 +2706,15 @@ class _CatalogPageState extends State<CatalogPage> {
     required String fileName,
     required String mimeType,
   }) {
-    final blob = html.Blob([bytes], mimeType);
-    final url = html.Url.createObjectUrlFromBlob(blob);
+    // final blob = html.Blob([bytes], mimeType);
+    // final url = html.Url.createObjectUrlFromBlob(blob);
 
-    final anchor =
-        html.AnchorElement(href: url)
-          ..setAttribute('download', fileName)
-          ..click();
+    // final anchor =
+    //     html.AnchorElement(href: url)
+    //       ..setAttribute('download', fileName)
+    //       ..click();
 
-    html.Url.revokeObjectUrl(url);
+    // html.Url.revokeObjectUrl(url);
   }
 
   // Future<void> _handleDownloadOption(

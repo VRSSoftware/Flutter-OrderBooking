@@ -1,75 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:flutter/foundation.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
+  const BarcodeScannerScreen({super.key});
+
   @override
-  _BarcodeScannerScreenState createState() => _BarcodeScannerScreenState();
+  State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
+  final MobileScannerController _controller = MobileScannerController(
+    autoStart: false, // important for web
+    formats: [BarcodeFormat.code39],
+  );
+
   bool _isFlashOn = false;
-  final MobileScannerController _controller = MobileScannerController(formats: [BarcodeFormat.code39],);
   bool _isScanned = false;
+  bool _cameraStarted = false;
+  String? _error;
+
   BarcodeCapture? lastCapture;
 
+  // ================= START CAMERA SAFELY =================
+  Future<void> _startCamera() async {
+    try {
+      setState(() => _error = null);
+      await _controller.start();
+      _cameraStarted = true;
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  // ================= CAPTURE BUTTON =================
   void _onCapturePressed() {
     if (_isScanned) return;
 
     if (lastCapture != null && lastCapture!.barcodes.isNotEmpty) {
-      final String? code = lastCapture!.barcodes.first.rawValue;
+      final code = lastCapture!.barcodes.first.rawValue;
+
       if (code != null) {
         _isScanned = true;
         Navigator.pop(context, code);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("No barcode detected")),
-        );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("No barcode detected")),
+        const SnackBar(content: Text("No barcode detected")),
       );
     }
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // Web needs camera start after UI build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCamera();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // ================= UI =================
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Scan Barcode"),
+        title: const Text("Scan Barcode"),
         actions: [
-          IconButton(
-            icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: () {
-              setState(() {
-                _isFlashOn = !_isFlashOn;
-              });
-              _controller.toggleTorch();
-            },
-          ),
+          if (!kIsWeb)
+            IconButton(
+              icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
+              onPressed: () async {
+                setState(() => _isFlashOn = !_isFlashOn);
+                await _controller.toggleTorch();
+              },
+            ),
         ],
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            //allowDuplicates: true,
-            onDetect: (capture) {
-              lastCapture = capture;
-            },
-          ),
-          // Green Focus Frame
+          // ================= CAMERA =================
+          if (_error == null)
+            MobileScanner(
+              controller: _controller,
+              onDetect: (capture) {
+                lastCapture = capture;
+              },
+              errorBuilder: (context, error, child) {
+                return _buildError(error.toString());
+              },
+            )
+          else
+            _buildError(_error!),
+
+          // ================= GREEN FRAME =================
           Center(
             child: Container(
               width: 250,
               height: 250,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.greenAccent, width: 2),
-                borderRadius: BorderRadius.circular(0),
               ),
             ),
           ),
-          // Circular Capture Button
+
+          // ================= CAPTURE BUTTON =================
           Positioned(
             bottom: 40,
             left: 0,
@@ -84,19 +126,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                     shape: BoxShape.circle,
                     color: Colors.white,
                     border: Border.all(color: Colors.grey, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(2, 2),
-                      ),
-                    ],
                   ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    size: 30,
-                    color: Colors.black87,
-                  ),
+                  child: const Icon(Icons.camera_alt),
                 ),
               ),
             ),
@@ -106,9 +137,35 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  // ================= ERROR UI =================
+  Widget _buildError(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error, color: Colors.red, size: 40),
+          const SizedBox(height: 10),
+          Text(
+            "Camera error",
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          // Retry button
+          ElevatedButton(
+            onPressed: _startCamera,
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -236,7 +236,7 @@ class _LoginPageState extends State<LoginScreen> {
     });
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    if (isRegistered == '1') {
+    if (isRegistered == '1' || true) {
       if (_formKey.currentState?.validate() ?? false) {
         final url = '${AppConstants.BASE_URL}/users/login';
         final Map<String, String> headers = {

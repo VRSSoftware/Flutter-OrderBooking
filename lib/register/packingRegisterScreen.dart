@@ -337,7 +337,8 @@ class _PackingPageState extends State<PackingPage> {
                                     try {
                                       final dio = Dio();
                                       final response = await dio.post(
-                                        '${AppConstants.Pdf_url}/api/values5',
+                                        // '${AppConstants.Pdf_url}/api/values5',
+                                        '${AppConstants.Pdf_url}',
                                         data: {
                                           "doc_id": docId,
                                           "rptName": 'Packing',
@@ -434,7 +435,8 @@ class _PackingPageState extends State<PackingPage> {
 
                           final dio = Dio();
                           final response = await dio.post(
-                            '${AppConstants.Pdf_url}/api/values/order5',
+                            // '${AppConstants.Pdf_url}/api/values/order5',
+                            '${AppConstants.Pdf_url}',
                             data: {
                               "doc_id": registerOrder.orderId,
                               "rptName": 'Packing',

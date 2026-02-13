@@ -4,6 +4,7 @@ import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
 import 'package:vrs_erp/dashboard/dashboard.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
@@ -21,6 +22,8 @@ import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
 import 'package:vrs_erp/screens/sale_bill/sale_bill_order_screen.dart';
 import 'package:vrs_erp/screens/splash_screen.dart';
 import 'package:vrs_erp/stockReport/stockreportpage.dart';
+import 'package:vrs_erp/viewOrder/TemptestPage.dart';
+import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
 import 'package:vrs_erp/viewOrder/view_order.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
@@ -82,7 +85,9 @@ class MyApp extends StatelessWidget {
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
       },
 
-      home: LoginScreen(),
+      // home: SalesOrderInvoicePage(),
+      home: OrderDetailsPage123(),
+      // home: LoginScreen(),
       // home: SplashScreen(),
       // home: MdnsDiscoveryScreen(),
     );

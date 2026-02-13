@@ -16,7 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/data.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html;
+// import 'dart:html' as html;
 import 'dart:typed_data';
 
 
@@ -407,15 +407,15 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
   }
 
   void _downloadPdfOnWeb({required List<int> bytes, required String fileName}) {
-    final blob = html.Blob([bytes], 'application/pdf');
-    final url = html.Url.createObjectUrlFromBlob(blob);
+    // final blob = html.Blob([bytes], 'application/pdf');
+    // final url = html.Url.createObjectUrlFromBlob(blob);
 
-    final anchor =
-        html.AnchorElement(href: url)
-          ..setAttribute('download', fileName)
-          ..click();
+    // final anchor =
+    //     html.AnchorElement(href: url)
+    //       ..setAttribute('download', fileName)
+    //       ..click();
 
-    html.Url.revokeObjectUrl(url);
+    // html.Url.revokeObjectUrl(url);
   }
 
   Future<void> _handleDownloadAll() async {

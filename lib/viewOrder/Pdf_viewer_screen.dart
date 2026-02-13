@@ -13,8 +13,8 @@
 // class PdfViewerScreen extends StatefulWidget {
 //   final String orderNo;
 //   final String? whatsappNo;
-//     final String partyName; 
-//      final String orderDate; 
+//     final String partyName;
+//      final String orderDate;
 //      final String rptName;
 
 //   const PdfViewerScreen({
@@ -22,7 +22,7 @@
 //     required this.orderNo,
 //     required this.whatsappNo,
 //     required this.partyName,
-//      required this.orderDate, 
+//      required this.orderDate,
 //      required this.rptName,
 //   }) : super(key: key);
 
@@ -240,6 +240,7 @@
 
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:convert';
+import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -253,8 +254,9 @@ import 'package:vrs_erp/constants/app_constants.dart';
 
 // Web-specific import
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-import 'dart:io' as io;
+// import 'dart:html' as html;
+// import 'dart:io' as io;
+import 'package:vrs_erp/utils/platform/platform_downloader.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final String orderNo;
@@ -292,7 +294,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       final docId = widget.orderNo.replaceAll(RegExp(r'[^0-9]'), '');
       final dio = Dio();
       final response = await dio.post(
-        '${AppConstants.Pdf_url}/api/order/pdf',
+        // '${AppConstants.Pdf_url}/api/order/pdf',
+        '${AppConstants.Pdf_url}',
         data: {
           "doc_id": docId,
           "rptName": widget.rptName,
@@ -312,12 +315,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             isLoading = false;
           });
         } else {
-          final dir = await getTemporaryDirectory();
-          final path = '${dir.path}/order_$docId.pdf';
-          final file = io.File(path);
-          await file.writeAsBytes(response.data);
+          // final path = await PlatformDownloader.saveTempPdf(
+          //   Uint8List.fromList(response.data),
+          //   'order_$docId.pdf',
+          // );
+
           setState(() {
-            filePath = path;
+            // filePath = path;
             isLoading = false;
           });
         }
@@ -331,8 +335,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   void _showError(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
         isLoading = false;
       });
@@ -342,28 +347,29 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   void _showShareOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const FaIcon(FontAwesomeIcons.whatsapp, size: 25),
-              title: const Text('Send via WhatsApp'),
-              onTap: () {
-                Navigator.pop(context);
-                _showWhatsAppDialog();
-              },
+      builder:
+          (_) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const FaIcon(FontAwesomeIcons.whatsapp, size: 25),
+                  title: const Text('Send via WhatsApp'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showWhatsAppDialog();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.share),
+                  title: const Text('Share'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sharePdf();
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                _sharePdf();
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -371,47 +377,52 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     final controller = TextEditingController(text: widget.whatsappNo);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Send PDF via WhatsApp'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'WhatsApp Number'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              if (kIsWeb) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('WhatsApp send not supported on Web')));
-                return;
-              }
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Send PDF via WhatsApp'),
+            content: TextField(
+              controller: controller,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: 'WhatsApp Number'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  if (kIsWeb) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('WhatsApp send not supported on Web'),
+                      ),
+                    );
+                    return;
+                  }
 
-              final file = io.File(filePath!);
-              final fileBytes = await file.readAsBytes();
-              final success = await sendWhatsAppFile(
-                fileBytes: fileBytes,
-                mobileNo: controller.text,
-                fileType: 'pdf',
-                caption:
-                    'Dear ${widget.partyName},Thanks for booking your order with ${UserSession.coBrName}.Your order number:${widget.orderNo} on ${widget.orderDate}.',
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                      Text(success ? 'Sent via WhatsApp' : 'Failed to send'),
-                ),
-              );
-            },
-            child: const Text('Send'),
+                  final file = io.File(filePath!);
+                  final fileBytes = await file.readAsBytes();
+                  final success = await sendWhatsAppFile(
+                    fileBytes: fileBytes,
+                    mobileNo: controller.text,
+                    fileType: 'pdf',
+                    caption:
+                        'Dear ${widget.partyName},Thanks for booking your order with ${UserSession.coBrName}.Your order number:${widget.orderNo} on ${widget.orderDate}.',
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success ? 'Sent via WhatsApp' : 'Failed to send',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Send'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -419,20 +430,23 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     if (filePath == null && pdfBytes == null) return;
     try {
       if (kIsWeb) {
-        final blob = html.Blob([pdfBytes!], 'application/pdf');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        html.window.open(url, "_blank"); // Open PDF in new tab
-        html.Url.revokeObjectUrl(url);
+        // final blob = html.Blob([pdfBytes!], 'application/pdf');
+        // final url = html.Url.createObjectUrlFromBlob(blob);
+        // html.window.open(url, "_blank"); // Open PDF in new tab
+        // html.Url.revokeObjectUrl(url);
+        // await PlatformDownloader.saveTempPdf(pdfBytes!,"pdf");
+
       } else {
-        await Share.shareXFiles([
-          XFile(filePath!),
-        ],
-            text:
-                'Dear ${widget.partyName},Thanks for booking your order with ${UserSession.coBrName}.Your order number:${widget.orderNo} on ${widget.orderDate}');
+        await Share.shareXFiles(
+          [XFile(filePath!)],
+          text:
+              'Dear ${widget.partyName},Thanks for booking your order with ${UserSession.coBrName}.Your order number:${widget.orderNo} on ${widget.orderDate}',
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Share error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Share error: $e')));
     }
   }
 
@@ -442,29 +456,33 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       appBar: AppBar(
         title: const Text('Order PDF'),
         actions: [
-          IconButton(icon: const Icon(Icons.share), onPressed: _showShareOptions),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _showShareOptions,
+          ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : kIsWeb
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : kIsWeb
               ? Center(
-                  child: ElevatedButton.icon(
-                    onPressed: _sharePdf,
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text("Open PDF in New Tab"),
-                  ),
-                )
-              : PDFView(
-                  filePath: filePath!,
-                  enableSwipe: true,
-                  swipeHorizontal: true,
-                  autoSpacing: false,
-                  pageFling: false,
-                  onError: (error) => _showError('PDF Error: $error'),
-                  onPageError: (page, error) =>
-                      _showError('Error on page $page: $error'),
+                child: ElevatedButton.icon(
+                  onPressed: _sharePdf,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text("Open PDF in New Tab"),
                 ),
+              )
+              : PDFView(
+                filePath: filePath!,
+                enableSwipe: true,
+                swipeHorizontal: true,
+                autoSpacing: false,
+                pageFling: false,
+                onError: (error) => _showError('PDF Error: $error'),
+                onPageError:
+                    (page, error) => _showError('Error on page $page: $error'),
+              ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showShareOptions,
         tooltip: 'Share PDF',
