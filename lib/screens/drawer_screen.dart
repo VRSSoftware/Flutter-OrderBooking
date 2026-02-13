@@ -322,8 +322,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Order Register': 'assets/images/register.png',
     'Stock Report': 'assets/images/report.png',
     'Dashboard': 'assets/images/dashboard.png',
+     'Production' : 'assets/images/production.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
+   
   };
 
   final Map<String, IconData> _fallbackIcons = {
@@ -333,6 +335,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Order Register': Icons.list_alt,
     'Stock Report': Icons.assessment,
     'Dashboard': Icons.dashboard,
+    'Production' : Icons.production_quantity_limits,
     'Setting': Icons.settings,
     'Delete Account': Icons.delete_forever,
   };
@@ -364,6 +367,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return 'Stock Report';
       case '/dashboard':
         return 'Dashboard';
+         case '/production':
+        return 'Production';
       case '/setting':
         return 'Setting';
       case '/deleteAccount':
@@ -435,6 +440,9 @@ Widget build(BuildContext context) {
         return '/stockReport';
       case 'Dashboard':
         return '/dashboard';
+             
+		case 'Production':
+        return '/production';
       case 'Setting':
         return '/setting';
       case 'Delete Account':
