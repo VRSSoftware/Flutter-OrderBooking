@@ -450,7 +450,7 @@ class _CatalogPageState extends State<CatalogPage> {
                         return Dialog(
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                             side: BorderSide(
                               color: Colors.grey.shade300,
                               width: 1,
@@ -811,7 +811,7 @@ class _CatalogPageState extends State<CatalogPage> {
             child: Card(
               elevation: isSelected ? 8 : 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
               color: isSelected ? Colors.blue.shade50 : Colors.white,
               child: Stack(
@@ -1112,7 +1112,7 @@ class _CatalogPageState extends State<CatalogPage> {
               horizontal: isLargeScreen ? 16 : 8,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(0),
+              borderRadius: BorderRadius.circular(8),
             ),
             color: isSelected ? Colors.blue.shade50 : Colors.white,
             child: Stack(
@@ -1459,7 +1459,7 @@ class _CatalogPageState extends State<CatalogPage> {
       },
       child: Card(
         elevation: isSelected ? 8 : 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         color: isSelected ? Colors.blue.shade50 : Colors.white,
         child: Stack(
           children: [
@@ -1727,7 +1727,7 @@ class _CatalogPageState extends State<CatalogPage> {
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primaryColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(0),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(
                   horizontal: isLargeScreen ? 24 : 16,
@@ -1756,7 +1756,7 @@ class _CatalogPageState extends State<CatalogPage> {
         backgroundColor: Colors.white,
         foregroundColor:
             filterOption == label ? AppColors.primaryColor : Colors.grey,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: EdgeInsets.symmetric(
           vertical: isLargeScreen ? 16 : 12,
           horizontal: isLargeScreen ? 24 : 16,
@@ -2079,7 +2079,7 @@ class _CatalogPageState extends State<CatalogPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           title: const Text('Enter Mobile Number'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2326,7 +2326,7 @@ class _CatalogPageState extends State<CatalogPage> {
             return AlertDialog(
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
               title: const Text('Share as Link'),
               content: SingleChildScrollView(

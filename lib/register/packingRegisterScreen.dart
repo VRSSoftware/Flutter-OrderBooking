@@ -241,7 +241,7 @@ class _PackingPageState extends State<PackingPage> {
         border: const Border.fromBorderSide(
           BorderSide(color: Color.fromRGBO(227, 242, 253, 1), width: 1),
         ),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),

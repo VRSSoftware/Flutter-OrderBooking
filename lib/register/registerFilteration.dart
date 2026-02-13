@@ -227,7 +227,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -246,7 +246,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -268,7 +268,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -286,7 +286,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -311,7 +311,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(0),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     dropdownColor: Colors.white, // Menu background
@@ -352,7 +352,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             (context, popupWidget) => Container(
                               decoration: BoxDecoration(
                                 color: Colors.white, // Menu background
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.withOpacity(0.5),
@@ -371,7 +371,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -399,7 +399,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             (context, popupWidget) => Container(
                               decoration: BoxDecoration(
                                 color: Colors.white, // Menu background
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.withOpacity(0.5),
@@ -418,7 +418,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -474,7 +474,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -504,7 +504,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -532,7 +532,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Theme(

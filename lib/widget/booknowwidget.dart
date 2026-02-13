@@ -402,7 +402,7 @@
 //         style: ElevatedButton.styleFrom(
 //           backgroundColor: totalQty > 0 ? AppColors.primaryColor : Colors.grey,
 //           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(0),
+//             borderRadius: BorderRadius.circular(8),
 //           ),
 //         ),
 //         onPressed: totalQty > 0 ? _submitOrder : null,
@@ -424,7 +424,7 @@
 //           backgroundColor: Colors.transparent,
 //           elevation: 0,
 //           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(0),
+//             borderRadius: BorderRadius.circular(8),
 //             side: const BorderSide(color: AppColors.primaryColor, width: 2),
 //           ),
 //         ),
@@ -1243,7 +1243,7 @@ class _CatalogBookingTableState extends State<CatalogBookingTable> {
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: totalQty > 0 ? AppColors.primaryColor : Colors.grey,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         onPressed: totalQty > 0 ? _submitOrder : null,
       ),
@@ -1263,7 +1263,7 @@ class _CatalogBookingTableState extends State<CatalogBookingTable> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(8),
             side: const BorderSide(color: AppColors.primaryColor, width: 2),
           ),
         ),

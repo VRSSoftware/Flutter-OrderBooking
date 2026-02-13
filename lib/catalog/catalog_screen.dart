@@ -523,7 +523,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             itemCount: garmentImages.length,
                             itemBuilder: (context, index, realIndex) {
                               return ClipRRect(
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 child: Image.asset(
                                   garmentImages[index],
                                   fit: BoxFit.cover,
@@ -672,7 +672,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                           ),
                                           shape: MaterialStateProperty.all(
                                             RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(0),
+                                              borderRadius: BorderRadius.circular(8),
                                             ),
                                           ),
                                         ),
@@ -770,7 +770,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                 side: BorderSide(color: Colors.grey.shade300),
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(0),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               onPressed: () {

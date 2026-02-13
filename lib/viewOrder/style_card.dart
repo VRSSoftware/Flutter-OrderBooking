@@ -306,7 +306,7 @@
 //             decoration: InputDecoration(
 //               labelText: 'Note',
 //               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(0),
+//                 borderRadius: BorderRadius.circular(8),
 //               ),
 //             ),
 //           ),
@@ -316,7 +316,7 @@
 //             decoration: InputDecoration(
 //               labelText: 'Style Total Quantity',
 //               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(0),
+//                 borderRadius: BorderRadius.circular(8),
 //               ),
 //             ),
 //             controller: TextEditingController(text: styleTotalQty.toString())
@@ -364,7 +364,7 @@
 //         style: OutlinedButton.styleFrom(
 //           side: BorderSide(color: color),
 //           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(0),
+//             borderRadius: BorderRadius.circular(8),
 //           ),
 //           padding: const EdgeInsets.symmetric(vertical: 16),
 //         ),
@@ -1087,7 +1087,7 @@ class _StyleCardState extends State<StyleCard> {
             decoration: InputDecoration(
               labelText: 'Note',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -1097,7 +1097,7 @@ class _StyleCardState extends State<StyleCard> {
             decoration: InputDecoration(
               labelText: 'Style Total Quantity',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             controller: TextEditingController(text: styleTotalQty.toString())
@@ -1145,7 +1145,7 @@ class _StyleCardState extends State<StyleCard> {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: color),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),

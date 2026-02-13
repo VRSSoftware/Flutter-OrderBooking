@@ -1173,7 +1173,7 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
                           backgroundColor: Colors.grey[300],
                           foregroundColor: Colors.black87,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -1260,7 +1260,7 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color.fromARGB(255, 196, 195, 195)),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10.0),
@@ -2155,7 +2155,7 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color.fromARGB(255, 182, 181, 181)!),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),

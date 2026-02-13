@@ -474,11 +474,11 @@ class _StockReportPageState extends State<StockReportPage> {
                   margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.white, width: 1),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       _getImageUrl(items.first),
                       fit: BoxFit.contain,
@@ -786,11 +786,11 @@ class _StockReportPageState extends State<StockReportPage> {
                     }
                   });
                 },
-                dropdownDecoratorProps: const DropDownDecoratorProps(
+                dropdownDecoratorProps:  DropDownDecoratorProps(
                   dropdownSearchDecoration: InputDecoration(
                     labelText: "Select Category",
                     border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                           borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true, // Add this
                     fillColor: Colors.white,
@@ -881,11 +881,11 @@ class _StockReportPageState extends State<StockReportPage> {
                     }
                   });
                 },
-                dropdownDecoratorProps: const DropDownDecoratorProps(
+                dropdownDecoratorProps:  DropDownDecoratorProps(
                   dropdownSearchDecoration: InputDecoration(
                     labelText: "Select Item",
                     border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                           borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true, // Add this
                     fillColor: Colors.white, // Set background color
@@ -911,119 +911,36 @@ class _StockReportPageState extends State<StockReportPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: OutlinedButton.icon(
-                        onPressed: _fetchStockReport,
-                        icon: const Icon(Icons.visibility, size: 12),
-                        label: const Text(
-                          "View",
-                          style: TextStyle(fontSize: 10),
-                          softWrap: false,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          side: const BorderSide(color: Colors.blue),
-                          foregroundColor: Colors.blue,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement download logic
-                        },
-                        icon: const Icon(Icons.download, size: 12),
-                        label: const Text(
-                          "Download",
-                          style: TextStyle(fontSize: 10),
-                          softWrap: false,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          side: const BorderSide(color: Colors.deepPurple),
-                          foregroundColor: Colors.deepPurple,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement WhatsApp logic
-                        },
-                        icon: const FaIcon(
-                          FontAwesomeIcons.whatsapp,
-                          size: 12,
-                          color: Colors.green,
-                        ),
-                        label: const Text(
-                          "WhatsApp",
-                          style: TextStyle(fontSize: 10, color: Colors.green),
-                          softWrap: false,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          side: const BorderSide(color: Colors.green),
-                          foregroundColor: Colors.green,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: OutlinedButton.icon(
-                        onPressed: clearFilters,
-                        icon: const Icon(
-                          Icons.clear,
-                          size: 12,
-                          color: Colors.red,
-                        ),
-                        label: const Text(
-                          "Clear",
-                          style: TextStyle(fontSize: 10, color: Colors.red),
-                          softWrap: false,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          side: const BorderSide(color: Colors.red),
-                          foregroundColor: Colors.red,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+         Row(
+  children: [
+    _buildActionButton(
+      icon: Icons.visibility,
+      label: "View",
+      color: Colors.blue,
+      onTap: _fetchStockReport,
+    ),
+    _buildActionButton(
+      icon: Icons.download,
+      label: "Download",
+      color: Colors.deepPurple,
+      onTap: () {},
+    ),
+    _buildActionButton(
+      icon: FontAwesomeIcons.whatsapp,
+      label: "WhatsApp",
+      color: Colors.green,
+      isFaIcon: true,
+      onTap: () {},
+    ),
+    _buildActionButton(
+      icon: Icons.clear,
+      label: "Clear",
+      color: Colors.red,
+      onTap: clearFilters,
+    ),
+  ],
+),
+
               const SizedBox(height: 16),
               // Stock Items Table
               Expanded(
@@ -1159,6 +1076,55 @@ class _StockReportPageState extends State<StockReportPage> {
       // ),
     );
   }
+Widget _buildActionButton({
+  required IconData icon,
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+  bool isFaIcon = false,
+}) {
+  return Expanded(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 60, // 🔥 Reduced height
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.20),
+                  shape: BoxShape.circle,
+                ),
+                child: isFaIcon
+                    ? FaIcon(icon, size: 20, color: color)
+                    : Icon(icon, size: 22, color: color),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9, // 🔥 Smaller text
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(

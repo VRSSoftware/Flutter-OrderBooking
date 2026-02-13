@@ -223,7 +223,7 @@
 //                             filled: true,
 //                             fillColor: Colors.white,
 //                             border: OutlineInputBorder(
-//                               borderRadius: BorderRadius.circular(0),
+//                               borderRadius: BorderRadius.circular(8),
 //                             ),
 //                           ),
 //                           controller: TextEditingController(
@@ -241,7 +241,7 @@
 //                             filled: true,
 //                             fillColor: Colors.white,
 //                             border: OutlineInputBorder(
-//                               borderRadius: BorderRadius.circular(0),
+//                               borderRadius: BorderRadius.circular(8),
 //                             ),
 //                           ),
 //                           controller: TextEditingController(
@@ -269,7 +269,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -288,7 +288,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -310,7 +310,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -329,7 +329,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -351,7 +351,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -370,7 +370,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -392,7 +392,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -411,7 +411,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -433,7 +433,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -452,7 +452,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -474,7 +474,7 @@
 //                       containerBuilder: (context, popupWidget) => Container(
 //                         decoration: BoxDecoration(
 //                           color: Colors.white,
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                           boxShadow: [
 //                             BoxShadow(
 //                               color: Colors.grey.withOpacity(0.5),
@@ -493,7 +493,7 @@
 //                         filled: true,
 //                         fillColor: Colors.white,
 //                         border: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                     ),
@@ -550,7 +550,7 @@
 //                       style: ElevatedButton.styleFrom(
 //                         backgroundColor: AppColors.primaryColor,
 //                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                       child: const Padding(
@@ -582,7 +582,7 @@
 //                       style: ElevatedButton.styleFrom(
 //                         backgroundColor: Colors.grey,
 //                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(0),
+//                           borderRadius: BorderRadius.circular(8),
 //                         ),
 //                       ),
 //                       child: const Padding(
@@ -610,7 +610,7 @@
 //     return Container(
 //       margin: const EdgeInsets.only(bottom: 12),
 //       decoration: BoxDecoration(
-//         borderRadius: BorderRadius.circular(0),
+//         borderRadius: BorderRadius.circular(8),
 //         border: Border.all(color: Colors.grey.shade300),
 //       ),
 //       child: Theme(
@@ -901,7 +901,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -919,7 +919,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -948,7 +948,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -967,7 +967,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -990,7 +990,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -1009,7 +1009,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -1032,7 +1032,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -1051,7 +1051,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -1074,7 +1074,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -1093,7 +1093,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -1117,7 +1117,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -1136,7 +1136,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -1159,7 +1159,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -1178,7 +1178,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -1255,7 +1255,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -1295,7 +1295,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -1323,7 +1323,7 @@ class _OrderStatusFilterPageState extends State<OrderStatusFilterPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Theme(

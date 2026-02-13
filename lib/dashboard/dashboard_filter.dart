@@ -238,6 +238,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                       labelText: 'Select Date Range',
                     ),
                     dropdownColor: Colors.white,
+                    
                     value: selectedDateRange,
                     items:
                         dateRangeOptions
@@ -252,6 +253,8 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                       });
                     },
                   ),
+                 
+                 
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -263,7 +266,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -281,7 +284,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           controller: TextEditingController(
@@ -312,7 +315,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                             (context, popupWidget) => Container(
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.withOpacity(0.5),
@@ -331,7 +334,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -358,7 +361,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                             (context, popupWidget) => Container(
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.withOpacity(0.5),
@@ -377,7 +380,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -402,7 +405,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -421,7 +424,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -445,7 +448,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                           (context, popupWidget) => Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.5),
@@ -464,7 +467,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -515,7 +518,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -556,7 +559,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Padding(
@@ -584,7 +587,7 @@ class _DashboardFilterPageState extends State<DashboardFilterPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Theme(

@@ -114,7 +114,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                           backgroundColor: Colors.grey[300],
                           foregroundColor: Colors.black87,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -594,7 +594,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color.fromARGB(255, 182, 181, 181)!),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),

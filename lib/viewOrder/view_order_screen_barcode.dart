@@ -1370,7 +1370,7 @@ class _StyleCardState extends State<StyleCard> {
                           vertical: 10.0,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         side: BorderSide(color: Colors.red.shade600),
                       ),
@@ -1397,7 +1397,7 @@ class _StyleCardState extends State<StyleCard> {
         vertical: 10.0,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       side: BorderSide(
         color: _hasQuantityChanged

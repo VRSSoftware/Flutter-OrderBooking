@@ -151,7 +151,7 @@
 //       child: Padding(
 //         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
 //         child: InkWell(
-//           borderRadius: BorderRadius.circular(0),
+//           borderRadius: BorderRadius.circular(8),
 //           onTap: () => _navigateTo(title, route),
 //           child: Container(
 //             decoration: BoxDecoration(
@@ -159,7 +159,7 @@
 //                   isSelected || isHovered
 //                       ? const Color.fromARGB(255, 206, 222, 240)
 //                       : Colors.transparent,
-//               borderRadius: BorderRadius.circular(0),
+//               borderRadius: BorderRadius.circular(8),
 //             ),
 //             child: ListTile(
 //               contentPadding: const EdgeInsets.symmetric(
@@ -249,7 +249,7 @@
 //       child: Padding(
 //         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
 //         child: InkWell(
-//           borderRadius: BorderRadius.circular(0),
+//           borderRadius: BorderRadius.circular(8),
 //           onTap: () {
 //             Navigator.pop(context); // Close the drawer
 //             Navigator.pushReplacementNamed(
@@ -263,7 +263,7 @@
 //                   hoveredSection == 'Logout'
 //                       ? const Color.fromARGB(255, 222, 187, 231)
 //                       : Colors.transparent,
-//               borderRadius: BorderRadius.circular(0),
+//               borderRadius: BorderRadius.circular(8),
 //             ),
 //             child: ListTile(
 //               contentPadding: const EdgeInsets.symmetric(
@@ -468,14 +468,14 @@ Widget build(BuildContext context) {
           vertical: isLargeScreen ? 8 : 4,
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(0), // Softer corners for better UX
+          borderRadius: BorderRadius.circular(8), // Softer corners for better UX
           onTap: () => _navigateTo(title, route),
           child: Container(
             decoration: BoxDecoration(
               color: isSelected || isHovered
                   ? const Color.fromARGB(255, 206, 222, 240)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(0),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
               contentPadding: EdgeInsets.symmetric(
@@ -574,7 +574,7 @@ Widget build(BuildContext context) {
           vertical: isLargeScreen ? 8 : 4,
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           onTap: () {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/login');
@@ -584,7 +584,7 @@ Widget build(BuildContext context) {
               color: hoveredSection == 'Logout'
                   ? const Color.fromARGB(255, 222, 187, 231)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(0),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
               contentPadding: EdgeInsets.symmetric(

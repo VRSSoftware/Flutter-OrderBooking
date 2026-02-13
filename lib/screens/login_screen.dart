@@ -604,7 +604,7 @@ class _LoginPageState extends State<LoginScreen> {
   //                               width: double.infinity,
   //                               height: 45,
   //                               decoration: BoxDecoration(
-  //                                 borderRadius: BorderRadius.circular(0),
+  //                                 borderRadius: BorderRadius.circular(8),
   //                                 gradient: LinearGradient(
   //                                   colors: [
   //                                     AppColors.primaryColor,
@@ -625,7 +625,7 @@ class _LoginPageState extends State<LoginScreen> {
   //                                   backgroundColor: Colors.transparent,
   //                                   shadowColor: Colors.transparent,
   //                                   shape: RoundedRectangleBorder(
-  //                                     borderRadius: BorderRadius.circular(0),
+  //                                     borderRadius: BorderRadius.circular(8),
   //                                   ),
   //                                 ),
   //                                 child:
@@ -860,7 +860,7 @@ class _LoginPageState extends State<LoginScreen> {
                                     width: double.infinity,
                                     height: 45,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(0),
+                                      borderRadius: BorderRadius.circular(8),
                                       gradient: LinearGradient(
                                         colors: [
                                           AppColors.primaryColor,
@@ -1006,21 +1006,21 @@ class _LoginPageState extends State<LoginScreen> {
                 horizontal: 12,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 2.0,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 3.0,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 2.0,
@@ -1066,21 +1066,21 @@ class _LoginPageState extends State<LoginScreen> {
                 horizontal: 12,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 2.0,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 3.0,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: AppColors.primaryColor,
                   width: 2.0,

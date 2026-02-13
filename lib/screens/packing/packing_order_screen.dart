@@ -329,7 +329,7 @@ class _PackingBookingScreenState extends State<PackingBookingScreen> {
                                             shape: WidgetStateProperty.all(
                                               RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(0),
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
                                           ),
@@ -406,7 +406,7 @@ class _PackingBookingScreenState extends State<PackingBookingScreen> {
                             side: BorderSide(color: Colors.grey.shade300),
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           onPressed: () {

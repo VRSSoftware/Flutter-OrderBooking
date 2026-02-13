@@ -146,7 +146,7 @@ class _AddMoreItemsForEditState extends State<AddMoreItemsForEdit> {
                                         shape: MaterialStateProperty.all(
                                           RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(0),
+                                                BorderRadius.circular(8),
                                           ),
                                         ),
                                       ),
@@ -218,7 +218,7 @@ class _AddMoreItemsForEditState extends State<AddMoreItemsForEdit> {
                           side: BorderSide(color: Colors.grey.shade300),
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         onPressed: () {

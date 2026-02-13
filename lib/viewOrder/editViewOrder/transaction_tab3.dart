@@ -405,7 +405,7 @@ title: const Text('Select an Action'),
       vertical: 8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade500),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

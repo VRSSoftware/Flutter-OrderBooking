@@ -782,7 +782,7 @@ class _OrderPageState extends State<OrderPage> {
             child: Card(
               elevation: isSelected ? 8 : 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
               color: isSelected ? Colors.blue.shade50 : Colors.white,
               child: Stack(
@@ -1046,7 +1046,7 @@ class _OrderPageState extends State<OrderPage> {
               horizontal: isLargeScreen ? 16 : 8,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(0),
+              borderRadius: BorderRadius.circular(8),
             ),
             color: isSelected ? Colors.blue.shade50 : Colors.white,
             child: Stack(
@@ -1171,7 +1171,7 @@ class _OrderPageState extends State<OrderPage> {
                               ),
                               shape: MaterialStateProperty.all(
                                 RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(0),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                             ),
@@ -1202,7 +1202,7 @@ class _OrderPageState extends State<OrderPage> {
                               ),
                               shape: MaterialStateProperty.all(
                                 RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(0),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                             ),
@@ -1252,7 +1252,7 @@ class _OrderPageState extends State<OrderPage> {
 
     return Card(
       elevation: isSelected ? 8 : 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       color: isSelected ? Colors.blue.shade50 : Colors.white,
       child: Stack(
         children: [
@@ -1378,7 +1378,7 @@ class _OrderPageState extends State<OrderPage> {
                         ),
                         shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -1409,7 +1409,7 @@ class _OrderPageState extends State<OrderPage> {
                         ),
                         shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -1502,7 +1502,7 @@ class _OrderPageState extends State<OrderPage> {
     final unifiedButtonGroup = Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: buttonColor, width: 1),
       ),
       child: Row(

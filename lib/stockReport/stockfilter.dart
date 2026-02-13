@@ -362,10 +362,10 @@ class _StockFilterPageState extends State<StockFilterPage> {
                             decoration: InputDecoration(
                               hintText: 'Search and select styles',
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(0),
+                                borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide(
                                   color: AppColors.primaryColor,
                                 ),
@@ -669,7 +669,7 @@ Positioned(
               backgroundColor: AppColors.primaryColor,
               padding: const EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             onPressed: () {
@@ -701,7 +701,7 @@ Positioned(
               backgroundColor: Colors.grey,
               padding: const EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             onPressed: () {
@@ -747,7 +747,7 @@ Positioned(
       color: AppColors.primaryColor.withOpacity(0.2),
       selectedColor: AppColors.primaryColor,
       fillColor: AppColors.primaryColor,
-      borderRadius: BorderRadius.circular(0),
+      borderRadius: BorderRadius.circular(8),
       borderColor: AppColors.primaryColor,
       selectedBorderColor: AppColors.primaryColor,
       constraints: const BoxConstraints(minHeight: 40, minWidth: 100),
@@ -827,9 +827,9 @@ Positioned(
         searchFieldProps: TextFieldProps(
           decoration: InputDecoration(
             hintText: hintText,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(0)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(0),
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: AppColors.primaryColor),
             ),
           ),
@@ -874,11 +874,11 @@ Positioned(
         floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
         hintStyle: TextStyle(color: const Color(0xFF87898A)),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: AppColors.secondaryColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: AppColors.primaryColor),
         ),
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -935,14 +935,14 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
         backgroundColor: Colors.white,
         collapsedBackgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(
             color: const Color.fromARGB(255, 202, 201, 201),
             width: 0.5,
           ), // Expanded border
         ),
         collapsedShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(
             color: const Color.fromARGB(255, 202, 201, 201),
             width: 0.5,

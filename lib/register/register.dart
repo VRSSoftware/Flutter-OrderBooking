@@ -224,7 +224,7 @@
 //     decoration: BoxDecoration(
 //       color: Colors.white, // White background
 //       border: Border.all(color: Colors.blueGrey.shade100, width: 1), // Subtle border
-//       borderRadius: BorderRadius.circular(0), // Rounded corners
+//       borderRadius: BorderRadius.circular(8), // Rounded corners
 
 //     ),
 //     child: Padding(
@@ -867,7 +867,7 @@
 //                       ),
 //                       decoration: BoxDecoration(
 //                         color: Colors.white,
-//                         borderRadius: BorderRadius.circular(0),
+//                         borderRadius: BorderRadius.circular(8),
 //                         boxShadow: const [
 //                           BoxShadow(
 //                             color: Colors.black12,
@@ -1249,7 +1249,7 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 1,
           ),
         ),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),

@@ -672,7 +672,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade500),
-        borderRadius: BorderRadius.circular(0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -745,7 +745,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(0),
+                  borderRadius: BorderRadius.circular(8),
                   side: const BorderSide(
                     color: AppColors.primaryColor,
                     width: 2,
@@ -771,7 +771,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                         ? AppColors.primaryColor
                         : Colors.grey,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(0),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

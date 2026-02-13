@@ -247,7 +247,7 @@ fetchPartyList() async {
                       //               (context, popupWidget) => Container(
                       //                 decoration: BoxDecoration(
                       //                   color: Colors.white,
-                      //                   borderRadius: BorderRadius.circular(0),
+                      //                   borderRadius: BorderRadius.circular(8),
                       //                   boxShadow: [
                       //                     BoxShadow(
                       //                       color: Colors.grey.withOpacity(0.5),
@@ -266,7 +266,7 @@ fetchPartyList() async {
                       //         //     filled: true,
                       //         //     fillColor: Colors.white,
                       //         //     border: OutlineInputBorder(
-                      //         //       borderRadius: BorderRadius.circular(0),
+                      //         //       borderRadius: BorderRadius.circular(8),
                       //         //     ),
                       //         //   ),
                       //         // ),
@@ -290,7 +290,7 @@ fetchPartyList() async {
                       //         (context, popupWidget) => Container(
                       //           decoration: BoxDecoration(
                       //             color: Colors.white, // Menu background
-                      //             borderRadius: BorderRadius.circular(0),
+                      //             borderRadius: BorderRadius.circular(8),
                       //             boxShadow: [
                       //               BoxShadow(
                       //                 color: Colors.grey.withOpacity(0.5),
@@ -309,7 +309,7 @@ fetchPartyList() async {
                       //       filled: true,
                       //       fillColor: Colors.white,
                       //       border: OutlineInputBorder(
-                      //         borderRadius: BorderRadius.circular(0),
+                      //         borderRadius: BorderRadius.circular(8),
                       //       ),
                       //     ),
                       //   ),
@@ -430,7 +430,7 @@ fetchPartyList() async {
                                             shape: WidgetStateProperty.all(
                                               RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(0),
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
                                           ),
@@ -507,7 +507,7 @@ fetchPartyList() async {
                             side: BorderSide(color: Colors.grey.shade300),
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           onPressed: () {

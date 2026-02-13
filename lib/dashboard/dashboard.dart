@@ -366,7 +366,7 @@ finally {
                       elevation: 0,
                       color: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(0),
+                        borderRadius: BorderRadius.circular(8),
                         side: const BorderSide(color: Colors.grey),
                       ),
                       child: Padding(
@@ -504,7 +504,7 @@ finally {
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFF5F7FA),
                                               borderRadius:
-                                                  BorderRadius.circular(0),
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Row(
                                               mainAxisAlignment:
@@ -555,7 +555,7 @@ finally {
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFF5F7FA),
                                               borderRadius:
-                                                  BorderRadius.circular(0),
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Row(
                                               mainAxisAlignment:
@@ -594,7 +594,7 @@ finally {
                       elevation: 0,
                       color: Colors.blue.withOpacity(0.2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(0),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -609,7 +609,7 @@ finally {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(0),
+                                  borderRadius: BorderRadius.circular(8),
                                   gradient: const LinearGradient(
                                     colors: [
                                       Color(0xFFB2EBF2),
@@ -724,7 +724,7 @@ finally {
                       elevation: 0,
                       color: const Color(0xFFE0F7FA),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(0),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -1043,7 +1043,7 @@ class __StatusCardState extends State<_StatusCard>
       child: Card(
         elevation: 0,
         color: widget.color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(

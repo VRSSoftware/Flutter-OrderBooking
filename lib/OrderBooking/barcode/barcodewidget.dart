@@ -194,11 +194,11 @@
 //                       filled: true,
 //                       fillColor: const Color(0xFFF6F8FA),
 //                       border: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(0),
+//                         borderRadius: BorderRadius.circular(8),
 //                         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
 //                       ),
 //                       enabledBorder: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(0),
+//                         borderRadius: BorderRadius.circular(8),
 //                         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
 //                       ),
 //                     ),
@@ -234,7 +234,7 @@
 //                       color: AppColors.primaryColor,
 //                       width: 1.5,
 //                     ),
-//                     borderRadius: BorderRadius.circular(0),
+//                     borderRadius: BorderRadius.circular(8),
 //                   ),
 //                   child: Row(
 //                     children: [
@@ -589,13 +589,13 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                         filled: true,
                         fillColor: const Color(0xFFF6F8FA),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
                             color: Color(0xFFE0E0E0),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(0),
+                          borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
                             color: Color(0xFFE0E0E0),
                         
@@ -644,7 +644,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                       color: AppColors.primaryColor,
                       width: 1.5,
                     ),
-                    borderRadius: BorderRadius.circular(0),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [

@@ -328,7 +328,7 @@ class _SaleBillBookingScreenState extends State<SaleBillBookingScreen> {
                                             shape: WidgetStateProperty.all(
                                               RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(0),
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
                                           ),
@@ -405,7 +405,7 @@ class _SaleBillBookingScreenState extends State<SaleBillBookingScreen> {
                             side: BorderSide(color: Colors.grey.shade300),
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           onPressed: () {
