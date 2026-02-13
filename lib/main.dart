@@ -86,8 +86,8 @@ class MyApp extends StatelessWidget {
       },
 
       // home: SalesOrderInvoicePage(),
-      home: OrderDetailsPage123(),
-      // home: LoginScreen(),
+      // home: OrderDetailsPage123(),
+      home: LoginScreen(),
       // home: SplashScreen(),
       // home: MdnsDiscoveryScreen(),
     );
