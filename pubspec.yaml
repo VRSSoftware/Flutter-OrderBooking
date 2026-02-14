@@ -134,7 +134,11 @@ flutter:
     - assets/images/packing_register.png
     - assets/images/salebill.png
     - assets/images/sale.png
-    
+    - assets/images/cloths/img1.jpg
+    - assets/images/cloths/img2.jpg
+    - assets/images/cloths/img3.jpg
+    - assets/images/cloths/img4.png
+    - assets/images/cloths/img5.jpg
     
 
   # An image asset can refer to one or more resolution-specific "variants", see
