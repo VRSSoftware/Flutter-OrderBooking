@@ -1,4 +1,4 @@
-package com.example.vrs_erp
+package com.vrssoftwares.vrs_erp
 
 import android.content.Intent
 import android.net.Uri

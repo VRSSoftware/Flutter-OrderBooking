@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
       title: 'VRS ERP',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         // primarySwatch: AppColors.primaryColor
         primarySwatch: Colors.blue,
         progressIndicatorTheme: ProgressIndicatorThemeData(color: Colors.blue),
