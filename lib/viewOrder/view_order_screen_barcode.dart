@@ -43,7 +43,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
   ActiveTab _activeTab = ActiveTab.transaction;
   Map<String, Map<String, Map<String, int>>> quantities = {};
   Map<String, Set<String>> selectedColors = {};
-    bool _isSaving = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -63,17 +63,17 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
   }
 
   Future<void> _handleSave() async {
-  if (_isSaving) return;
-  
-  setState(() => _isSaving = true);
-  try {
-    await _saveOrderLocally();
-  } catch (e) {
-    print('Save error: $e');
-  } finally {
-    setState(() => _isSaving = false);
+    if (_isSaving) return;
+    
+    setState(() => _isSaving = true);
+    try {
+      await _saveOrderLocally();
+    } catch (e) {
+      print('Save error: $e');
+    } finally {
+      setState(() => _isSaving = false);
+    }
   }
-}
 
   double _calculateTotalAmount() {
     double total = 0.0;
@@ -250,7 +250,6 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     return "fail";
   }
 
-
   void _setInitialDates() {
     final today = DateTime.now();
     _orderControllers.date.text = _OrderControllers.formatDate(today);
@@ -338,25 +337,25 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
   Future<void> _saveOrderLocally() async {
     if (!_formKey.currentState!.validate()) return;
 
-      String? consigneeLedKey = '';
-  String? stationStnKey = '';
-  final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-  if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-    final selectedConsignee = consignees.firstWhere(
-      (consignee) => consignee.ledName == selectedConsigneeName,
-      orElse: () => Consignee(
-        ledKey: '',
-        ledName: '',
-        stnKey: '',
-        stnName: '',
-        paymentTermsKey: '',
-        paymentTermsName: '',
-        pytTermDiscdays: '0',
-      ),
-    );
-    consigneeLedKey = selectedConsignee.ledKey;
-    stationStnKey = selectedConsignee.stnKey;
-  }
+    String? consigneeLedKey = '';
+    String? stationStnKey = '';
+    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+      final selectedConsignee = consignees.firstWhere(
+        (consignee) => consignee.ledName == selectedConsigneeName,
+        orElse: () => Consignee(
+          ledKey: '',
+          ledName: '',
+          stnKey: '',
+          stnName: '',
+          paymentTermsKey: '',
+          paymentTermsName: '',
+          pytTermDiscdays: '0',
+        ),
+      );
+      consigneeLedKey = selectedConsignee.ledKey;
+      stationStnKey = selectedConsignee.stnKey;
+    }
 
     final orderData = {
       "saleorderno": _orderControllers.orderNo.text,
@@ -370,8 +369,8 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       "totitem": _orderControllers.totalItem.text,
       "totqty": _orderControllers.totalQty.text,
       "remark": _orderControllers.remark.text,
-       "consignee": consigneeLedKey, // Use ledKey instead of ledName
-    "station": stationStnKey,     // Use stnKey instead of stnName
+      "consignee": consigneeLedKey,
+      "station": stationStnKey,
       "paymentterms":
           _additionalInfo['paymentterms'] ??
           _orderControllers.pytTermDiscKey ??
@@ -386,87 +385,68 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       "bookingtype": _additionalInfo['bookingtype'] ?? '',
       "salesman":
           _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-      // "items":
-      //     _styleManager.groupedItems.entries
-      //         .map((entry) {
-      //           return entry.value.map((item) {
-      //             return {
-      //               ...item,
-      //               'clqty':
-      //                   _styleManager
-      //                       .controllers[entry
-      //                           .key]?[item['shadeName']]?[item['sizeName']]
-      //                       ?.text ??
-      //                   '0',
-      //             };
-      //           }).toList();
-      //         })
-      //         .toList()
-      //         .expand((i) => i)
-      //         .toList(),
     };
 
     final orderDataJson = jsonEncode(orderData);
     print("Saved Order Data:");
     print(orderDataJson);
 
-   try {
-    final orderNumber = await insertFinalSalesOrder(orderDataJson);
-    if (orderNumber != null) {
-      // Format the order number as "SO" + response body
-      final formattedOrderNo = "SO$orderNumber";
-      print("formattedOrderNo: ${formattedOrderNo}");
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Order Saved'),
-          content: Text(
-            'Order $formattedOrderNo saved successfully', // Use formatted order number
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PdfViewerScreen(
-                      rptName: 'SalesOrder',
-                      orderNo: formattedOrderNo, // Use formatted order number
-                      whatsappNo: _orderControllers.whatsAppMobileNo,
-                      partyName: _orderControllers.selectedPartyName ?? '', 
-                      orderDate: _orderControllers.date.text,
+    try {
+      final orderNumber = await insertFinalSalesOrder(orderDataJson);
+      if (orderNumber != null) {
+        final formattedOrderNo = "SO$orderNumber";
+        print("formattedOrderNo: ${formattedOrderNo}");
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Order Saved'),
+            content: Text(
+              'Order $formattedOrderNo saved successfully',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PdfViewerScreen(
+                        rptName: 'SalesOrder',
+                        orderNo: formattedOrderNo,
+                        whatsappNo: _orderControllers.whatsAppMobileNo,
+                        partyName: _orderControllers.selectedPartyName ?? '', 
+                        orderDate: _orderControllers.date.text,
+                      ),
                     ),
-                  ),
-                );
-              },
-              child: Text('View PDF'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomeScreen()),
-                );
-              },
-              child: Text('Done'),
-            ),
-          ],
-        ),
-      );
+                  );
+                },
+                child: Text('View PDF'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
+                },
+                child: Text('Done'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error during order saving: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
     }
-  } catch (e) {
-    print('Error during order saving: $e');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
   }
-}
 
   void _updateTotals() {
     int totalQty = 0;
-    double totalAmt = 0.0; // Use double for currency
+    double totalAmt = 0.0;
 
     _styleManager.controllers.forEach((style, shades) {
       final itemsForStyle = _styleManager.groupedItems[style] ?? [];
@@ -476,7 +456,6 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           final qty = int.tryParse(controller.text) ?? 0;
           totalQty += qty;
 
-          // Find the item to get MRP
           final item = itemsForStyle.firstWhere(
             (item) =>
                 (item['shadeName']?.toString() ?? '') == shade &&
@@ -495,178 +474,216 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     _orderControllers.totalQty.text = totalQty.toString();
     _orderControllers.totalItem.text =
         _styleManager.groupedItems.length.toString();
-    _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(
-      2,
-    ); // Format to 2 decimal places
+    _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(2);
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final Color primaryBlue = const Color(0xFF2196F3);
+
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildTabBar(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child:
-                    _showForm
-                        ? _OrderForm(
-                          controllers: _orderControllers,
-                          dropdownData: _dropdownData,
-                          onPartySelected: _handlePartySelection,
-                          updateTotals: _updateTotals,
-                          saveOrder: _handleSave,
-                          additionalInfo: _additionalInfo,
-                          consignees: consignees,
-                          paymentTerms: paymentTerms,
-                          bookingTypes: _bookingTypes,
-                          onAdditionalInfoUpdated: (newInfo) {
-                            setState(() {
-                              _additionalInfo = newInfo;
-                            });
-                          },
-                           isSaving: _isSaving,
-                        )
-                        : _StyleCardsView(
-                          styleManager: _styleManager,
-                          updateTotals: _updateTotals,
-                          getColor: _getColorCode,
-                          onUpdate: () async {
-                            await _styleManager.refreshOrderItems(
-                              barcode: barcodeMode,
-                            );
-                            _initializeQuantitiesAndColors();
-                            _updateTotals();
-                          },
-                          quantities: quantities,
-                          selectedColors: selectedColors,
-                        ),
-              ),
+      appBar: AppBar(
+        title: const Text(
+          'View Order Barcode',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: primaryBlue,
+        elevation: 4,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            color: primaryBlue,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 20,
+                  color: Colors.white.withOpacity(0.5),
+                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                ),
+                Flexible(
+                  child: Text(
+                    'Items: ${_calculateTotalItems()}',
+                    style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 20,
+                  color: Colors.white.withOpacity(0.5),
+                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                ),
+                Flexible(
+                  child: Text(
+                    'Qty: ${_calculateTotalQuantity()}',
+                    style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
-          _buildBottomButtons(),
-        ],
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTabBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child:
+                      _showForm
+                          ? _OrderForm(
+                            controllers: _orderControllers,
+                            dropdownData: _dropdownData,
+                            onPartySelected: _handlePartySelection,
+                            updateTotals: _updateTotals,
+                            saveOrder: _handleSave,
+                            additionalInfo: _additionalInfo,
+                            consignees: consignees,
+                            paymentTerms: paymentTerms,
+                            bookingTypes: _bookingTypes,
+                            onAdditionalInfoUpdated: (newInfo) {
+                              setState(() {
+                                _additionalInfo = newInfo;
+                              });
+                            },
+                            isSaving: _isSaving,
+                          )
+                          : _StyleCardsView(
+                            styleManager: _styleManager,
+                            updateTotals: _updateTotals,
+                            getColor: _getColorCode,
+                            onUpdate: () async {
+                              await _styleManager.refreshOrderItems(
+                                barcode: barcodeMode,
+                              );
+                              _initializeQuantitiesAndColors();
+                              _updateTotals();
+                            },
+                            quantities: quantities,
+                            selectedColors: selectedColors,
+                          ),
+                ),
+              ),
+            ),
+            _buildBottomButtons(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTabBar() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _activeTab = ActiveTab.transaction;
-                    _showForm = false;
-                  });
-                },
-                child: Text('Transaction'),
-                style: TextButton.styleFrom(
-                  foregroundColor:
-                      _activeTab == ActiveTab.transaction
-                          ? AppColors.primaryColor
-                          : Colors.grey,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-            Expanded(
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _activeTab = ActiveTab.customerDetails;
-                    _showForm = true;
-                  });
-                },
-                child: Text('Customer Details'),
-                style: TextButton.styleFrom(
-                  foregroundColor:
-                      _activeTab == ActiveTab.customerDetails
-                          ? AppColors.primaryColor
-                          : Colors.grey,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-        Container(
-          height: 2,
-          color: Colors.grey[300],
-          child: AnimatedAlign(
-            duration: Duration(milliseconds: 300),
-            alignment:
-                _activeTab == ActiveTab.transaction
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
-            child: Container(
-              width: MediaQuery.of(context).size.width / 2,
-              height: 2,
-              color: AppColors.primaryColor,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+    final Color primaryBlue = const Color(0xFF2196F3);
 
-  Widget _buildBottomButtons() {
-    return Padding(
-      padding: const EdgeInsets.all(1.0),
+    return Container(
+      color: Colors.white,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomeScreen()),
-              );
-            },
-            child: Text('CANCEL', style: TextStyle(color: Colors.red)),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              if (_activeTab == ActiveTab.transaction) {
-                setState(() {
-                  _activeTab = ActiveTab.customerDetails;
-                  _showForm = true;
-                });
-              } else {
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
                 setState(() {
                   _activeTab = ActiveTab.transaction;
                   _showForm = false;
                 });
-              }
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_activeTab == ActiveTab.customerDetails)
-                  Icon(Icons.arrow_back_ios, color: Colors.blue, size: 16),
-                Text(
-                  _activeTab == ActiveTab.transaction ? 'NEXT' : 'BACK',
-                  style: TextStyle(color: Colors.blue),
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          _activeTab == ActiveTab.transaction
+                              ? primaryBlue
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
                 ),
-                if (_activeTab == ActiveTab.transaction)
-                  Icon(Icons.arrow_forward_ios, color: Colors.blue, size: 16),
-              ],
+                child: Text(
+                  'Transaction',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color:
+                        _activeTab == ActiveTab.transaction
+                            ? primaryBlue
+                            : Colors.grey,
+                    fontWeight:
+                        _activeTab == ActiveTab.transaction
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeTab = ActiveTab.customerDetails;
+                  _showForm = true;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          _activeTab == ActiveTab.customerDetails
+                              ? primaryBlue
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Customer Details',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color:
+                        _activeTab == ActiveTab.customerDetails
+                            ? primaryBlue
+                            : Colors.grey,
+                    fontWeight:
+                        _activeTab == ActiveTab.customerDetails
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -674,78 +691,78 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     );
   }
 
-  AppBar _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'View Order Barcode',
-        style: TextStyle(color: Colors.white),
-      ),
-      backgroundColor: AppColors.primaryColor,
-      elevation: 1,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(
-          48.0,
-        ), // Adjusted height for better spacing
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-          color: AppColors.primaryColor, // Consistent with AppBar background
-          child: Row(
+  Widget _buildBottomButtons() {
+    final Color primaryBlue = const Color(0xFF2196F3);
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Text(
-                  'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
-                  style: GoogleFonts.roboto(
-                    color: Colors.white,
-                    fontSize: 12, // Smaller font for better fit
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
+                },
+                child: const Text(
+                  "CANCEL",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 20,
-                color: Colors.white.withOpacity(0.5), // Softer divider color
-                margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              ),
-              Flexible(
-                child: Text(
-                  'Items: ${_calculateTotalItems()}',
-                  style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
+              TextButton.icon(
+                onPressed: () {
+                  if (_activeTab == ActiveTab.transaction) {
+                    setState(() {
+                      _activeTab = ActiveTab.customerDetails;
+                      _showForm = true;
+                    });
+                  } else {
+                    setState(() {
+                      _activeTab = ActiveTab.transaction;
+                      _showForm = false;
+                    });
+                  }
+                },
+                icon: Icon(
+                  _activeTab == ActiveTab.transaction
+                      ? Icons.chevron_right
+                      : Icons.chevron_left,
+                  size: 18,
+                  color: primaryBlue,
                 ),
-              ),
-              Container(
-                width: 1,
-                height: 20,
-                color: Colors.white.withOpacity(0.5),
-                margin: const EdgeInsets.symmetric(horizontal: 8.0),
-              ),
-              Flexible(
-                child: Text(
-                  'Qty: ${_calculateTotalQuantity()}',
-                  style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
+                label: Text(
+                  _activeTab == ActiveTab.transaction ? "NEXT" : "BACK",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: AppColors.primaryBlue,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
   void _handlePartySelection(String? val, String? key) async {
     if (key == null) return;
-      setState(() {
-    _orderControllers.selectedParty = val; // Store the display name
-    _orderControllers.selectedPartyKey = key;
-    _orderControllers.selectedPartyName = val; // Store for PDF
-  });
+    setState(() {
+      _orderControllers.selectedParty = val;
+      _orderControllers.selectedPartyKey = key;
+      _orderControllers.selectedPartyName = val;
+    });
 
     _orderControllers.selectedPartyKey = key;
     UserSession.userLedKey = key;
@@ -819,7 +836,7 @@ class _OrderControllers {
 
   String? selectedParty;
   String? selectedPartyKey;
-   String? selectedPartyName;
+  String? selectedPartyName;
   String? selectedTransporter;
   String? selectedTransporterKey;
   String? selectedBroker;
@@ -1141,7 +1158,6 @@ class _StyleCardsView extends StatelessWidget {
         );
         final mrp = item['mrp']?.toString() ?? '0';
         final wsp = item['wsp']?.toString() ?? '0';
-        // final qty = item['clqty']?.toString() ?? '0';
         final qty = item['data2']?.toString() ?? '0';
         return '$mrp,$wsp,$qty';
       });
@@ -1192,7 +1208,6 @@ class _StyleCardsView extends StatelessWidget {
   }
 }
 
-
 class StyleCard extends StatefulWidget {
   final String styleCode;
   final List<dynamic> items;
@@ -1219,17 +1234,15 @@ class StyleCard extends StatefulWidget {
   _StyleCardState createState() => _StyleCardState();
 }
 
-
 class _StyleCardState extends State<StyleCard> {
   bool _hasQuantityChanged = false;
   bool _isUpdated = false;
-  bool _isLoading = false; // State variable for inline loader
+  bool _isLoading = false;
   Map<String, Map<String, int>> _lastSavedQuantities = {};
 
   @override
   void initState() {
     super.initState();
-    // Deep copy initial quantities
     _lastSavedQuantities = widget.quantities.map((shade, sizes) => MapEntry(
           shade,
           Map<String, int>.from(sizes),
@@ -1386,75 +1399,75 @@ class _StyleCardState extends State<StyleCard> {
                     ),
                   ),
                   const SizedBox(width: 12.0),
-                        Expanded(
-  child: TextButton(
-    onPressed: _isLoading || !_hasQuantityChanged
-        ? null
-        : () => _submitUpdate(context),
-    style: TextButton.styleFrom(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20.0,
-        vertical: 10.0,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      side: BorderSide(
-        color: _hasQuantityChanged
-            ? Colors.blue
-            : Colors.grey.shade400,
-      ),
-      backgroundColor: _hasQuantityChanged
-          ? Colors.blue.withOpacity(0.1)
-          : Colors.grey.withOpacity(0.1),
-    ),
-    child: _isLoading
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Updating...',
-                style: TextStyle(
-                  color: Colors.blue, // Match button's active color
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.blue, // Match button's active color
-                ),
-              ),
-            ],
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.save,
-                color: _hasQuantityChanged
-                    ? Colors.blue
-                    : Colors.grey.shade400,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Update',
-                style: TextStyle(
-                  color: _hasQuantityChanged
-                      ? Colors.blue
-                      : Colors.grey.shade400,
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-  ),
-),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: _isLoading || !_hasQuantityChanged
+                          ? null
+                          : () => _submitUpdate(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 10.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(
+                          color: _hasQuantityChanged
+                              ? Colors.blue
+                              : Colors.grey.shade400,
+                        ),
+                        backgroundColor: _hasQuantityChanged
+                            ? Colors.blue.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                      ),
+                      child: _isLoading
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Updating...',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.save,
+                                  color: _hasQuantityChanged
+                                      ? Colors.blue
+                                      : Colors.grey.shade400,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Update',
+                                  style: TextStyle(
+                                    color: _hasQuantityChanged
+                                        ? Colors.blue
+                                        : Colors.grey.shade400,
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 15),
@@ -1512,7 +1525,7 @@ class _StyleCardState extends State<StyleCard> {
         total += stock;
       }
     }
-    return total; // As per original code, always returns 0
+    return total;
   }
 
   double _calculateCatalogPrice() {
@@ -1753,7 +1766,7 @@ class _StyleCardState extends State<StyleCard> {
     if (confirmed != true) return;
 
     setState(() {
-      _isLoading = true; // Show inline loader
+      _isLoading = true;
     });
 
     String sCode = widget.styleCode;
@@ -1792,7 +1805,7 @@ class _StyleCardState extends State<StyleCard> {
       );
 
       setState(() {
-        _isLoading = false; // Hide inline loader
+        _isLoading = false;
       });
 
       if (response.statusCode == 200) {
@@ -1818,7 +1831,7 @@ class _StyleCardState extends State<StyleCard> {
       }
     } catch (e) {
       setState(() {
-        _isLoading = false; // Hide inline loader
+        _isLoading = false;
       });
       _showErrorDialog(context, "Error deleting style: $e");
     }
@@ -1832,7 +1845,7 @@ class _StyleCardState extends State<StyleCard> {
     }
 
     setState(() {
-      _isLoading = true; // Show inline loader
+      _isLoading = true;
     });
 
     String sCode = widget.styleCode;
@@ -1863,7 +1876,6 @@ class _StyleCardState extends State<StyleCard> {
     };
 
     try {
-      // Send initial request
       final initialResponse = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
         headers: {'Content-Type': 'application/json'},
@@ -1872,7 +1884,7 @@ class _StyleCardState extends State<StyleCard> {
 
       if (initialResponse.statusCode != 200) {
         setState(() {
-          _isLoading = false; // Hide inline loader
+          _isLoading = false;
         });
         _showErrorDialog(
           context,
@@ -1885,7 +1897,6 @@ class _StyleCardState extends State<StyleCard> {
         final shadeMap = widget.quantities;
         List<Future<http.Response>> requests = [];
 
-        // Prepare all shade/size requests
         for (final shade in shadeMap.keys) {
           final sizeMap = shadeMap[shade]!;
           for (final size in sizeMap.keys) {
@@ -1920,7 +1931,6 @@ class _StyleCardState extends State<StyleCard> {
           }
         }
 
-        // Send all requests concurrently
         final responses = await Future.wait(requests);
 
         bool allSuccessful = true;
@@ -1935,7 +1945,7 @@ class _StyleCardState extends State<StyleCard> {
         }
 
         setState(() {
-          _isLoading = false; // Hide inline loader
+          _isLoading = false;
         });
 
         if (allSuccessful) {
@@ -1971,28 +1981,25 @@ class _StyleCardState extends State<StyleCard> {
         }
       } else {
         setState(() {
-          _isLoading = false; // Hide inline loader
+          _isLoading = false;
         });
         _showErrorDialog(context, "No quantities found for style: ${widget.styleCode}");
       }
     } catch (e) {
       setState(() {
-        _isLoading = false; // Hide inline loader
+        _isLoading = false;
       });
       print('Error updating style: $e');
       _showErrorDialog(context, "Error updating style: $e");
     }
   }
 
-
-    @override
+  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Main content
         buildOrderItem(widget.catalogOrder, context),
         
-        // Modal loading overlay
         if (_isLoading)
           ModalBarrier(
             dismissible: false,
@@ -2079,7 +2086,7 @@ class _OrderForm extends StatefulWidget {
   final List<PytTermDisc> paymentTerms;
   final List<Item> bookingTypes;
   final Function(Map<String, dynamic>) onAdditionalInfoUpdated;
-      final bool isSaving;
+  final bool isSaving;
 
   const _OrderForm({
     required this.controllers,
@@ -2092,7 +2099,7 @@ class _OrderForm extends StatefulWidget {
     required this.paymentTerms,
     required this.bookingTypes,
     required this.onAdditionalInfoUpdated,
-     required this.isSaving,
+    required this.isSaving,
   });
 
   @override
@@ -2100,6 +2107,10 @@ class _OrderForm extends StatefulWidget {
 }
 
 class _OrderFormState extends State<_OrderForm> {
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color slate600 = const Color(0xFF64748B);
+  final Color slateBorder = const Color(0xFFCBD5E1);
+
   @override
   void initState() {
     super.initState();
@@ -2146,22 +2157,14 @@ class _OrderFormState extends State<_OrderForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // _buildResponsiveRow(
-        //   context,
-          // buildTextField(
-          //   context,
-          //   "Order No",
-          //   widget.controllers.orderNo,
-          //   isText: true,
-          // ),
-          buildTextField(
-            context,
-            "Select Date",
-            widget.controllers.date,
-            isDate: true,
-            onTap: () => _selectDate(context, widget.controllers.date),
-          ),
-       // ),
+        buildTextField(
+          context,
+          "Select Date",
+          widget.controllers.date,
+          isDate: true,
+          onTap: () => _selectDate(context, widget.controllers.date),
+        ),
+
         _buildPartyDropdownRow(context),
         _buildDropdown(
           "Broker",
@@ -2232,7 +2235,6 @@ class _OrderFormState extends State<_OrderForm> {
             readOnly: true,
           ),
         ),
-        // Add Total Amount field below the row
         buildTextField(
           context,
           "Total Amount (₹)",
@@ -2294,61 +2296,62 @@ class _OrderFormState extends State<_OrderForm> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  minimumSize: Size(double.infinity, 50),
+                  backgroundColor: primaryBlue.withOpacity(0.1),
+                  foregroundColor: primaryBlue,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero, // removes curve
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: const Text(
                   'Add More Info',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
             const SizedBox(width: 10),
-      Expanded(
-      child: ElevatedButton(
-        onPressed: widget.isSaving ? null : widget.saveOrder,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: widget.isSaving 
-              ? Colors.grey 
-              : AppColors.primaryColor,
-          minimumSize: const Size(double.infinity, 50),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
-        ),
-        child: widget.isSaving
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Saving...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: widget.isSaving ? null : widget.saveOrder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 12),
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              )
-            : const Text(
-                'Save',
-                style: TextStyle(color: Colors.white),
+                ),
+                child: widget.isSaving
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Saving...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
+                    : const Text(
+                        'Save',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
               ),
-      ),
-    ),
+            ),
           ],
         ),
       ],
@@ -2368,21 +2371,23 @@ class _OrderFormState extends State<_OrderForm> {
           ),
         ),
         const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed:
-              UserSession.userType == 'C'
-                  ? null
-                  : () => showDialog(
-                    context: context,
-                    builder: (_) => CustomerMasterDialog(),
-                  ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.lightBlue,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero, // Removes curve
-            ),
+        Container(
+          height: 54,
+          width: 54,
+          decoration: BoxDecoration(
+            color: primaryBlue,
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text('+', style: TextStyle(color: Colors.white)),
+          child: IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed:
+                UserSession.userType == 'C'
+                    ? null
+                    : () => showDialog(
+                      context: context,
+                      builder: (_) => CustomerMasterDialog(),
+                    ),
+          ),
         ),
       ],
     );
@@ -2404,7 +2409,9 @@ class _OrderFormState extends State<_OrderForm> {
             decoration: InputDecoration(
               hintText: _getSearchHint(label),
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
@@ -2414,7 +2421,24 @@ class _OrderFormState extends State<_OrderForm> {
         dropdownDecoratorProps: DropDownDecoratorProps(
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
-            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            labelStyle: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         dropdownBuilder: (context, selectedItem) {
@@ -2493,6 +2517,9 @@ Widget buildTextField(
   VoidCallback? onTap,
   bool isText = false,
 }) {
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color slateBorder = const Color(0xFFCBD5E1);
+
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: TextFormField(
@@ -2502,8 +2529,28 @@ Widget buildTextField(
       onTap: onTap ?? (isDate ? () => _selectDate(context, controller) : null),
       decoration: InputDecoration(
         labelText: label,
-
-        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        suffixIcon:
+            isDate
+                ? Icon(Icons.calendar_today, size: 20, color: Colors.grey)
+                : null,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: slateBorder),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: primaryBlue, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        labelStyle: const TextStyle(
+          color: Color(0xFF64748B),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     ),
   );
@@ -2591,7 +2638,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
       text: widget.additionalInfo['station'] ?? '',
     );
     _paymentDaysController = TextEditingController(
-      text: widget.additionalInfo['paymentdays'] ?? '',
+      text: widget.additionalInfo['paymentdays'] ?? widget.creditPeriod?.toString() ?? '',
     );
     _selectedSalesman =
         widget.salesPersonList.firstWhere(
@@ -2618,25 +2665,46 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Add More Information'),
-      content: SingleChildScrollView(
+    final Color primaryBlue = const Color(0xFF2196F3);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: MediaQuery.of(context).size.height * 0.65,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.salesPersonList.map((e) => e['ledName']!).toList(),
-              selectedItem: _selectedSalesman,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Salesman',
-                  border: OutlineInputBorder(),
-                ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    "Additional Information",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
+                  ),
+                  const SizedBox(height: 4),
+                  Divider(color: Colors.grey.shade300, height: 1),
+                ],
               ),
-              onChanged:
-                  widget.isSalesmanDropdownEnabled
-                      ? (val) {
+            ),
+            
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildDropdown(
+                      "Salesman",
+                      widget.salesPersonList.map((e) => e['ledName']!).toList(),
+                      _selectedSalesman,
+                      widget.isSalesmanDropdownEnabled,
+                      (val) {
                         setState(() {
                           _selectedSalesman = val;
                           _selectedSalesmanKey =
@@ -2645,99 +2713,190 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                                 orElse: () => {'ledKey': ''},
                               )['ledKey'];
                         });
-                      }
-                      : null,
-              enabled: widget.isSalesmanDropdownEnabled,
-            ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.consignees.map((e) => e.ledName).toList(),
-              selectedItem: _selectedConsignee,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Consignee',
-                  border: OutlineInputBorder(),
+                      },
+                    ),
+                    
+                    _buildDropdown(
+                      "Consignee",
+                      widget.consignees.map((e) => e.ledName).toList(),
+                      _selectedConsignee,
+                      true,
+                      (val) => setState(() => _selectedConsignee = val),
+                    ),
+                    
+                    _buildDropdown(
+                      "Payment Terms",
+                      widget.paymentTerms.map((e) => e.name).toList(),
+                      _selectedPaymentTerm,
+                      true,
+                      (val) => setState(() => _selectedPaymentTerm = val),
+                    ),
+                    
+                    _buildDropdown(
+                      "Booking Type",
+                      widget.bookingTypes.map((e) => e.itemName).toList(),
+                      _selectedBookingType,
+                      true,
+                      (val) => setState(() => _selectedBookingType = val),
+                    ),
+                    
+                    _buildTextField("Reference No", _refNoController),
+                    
+                    _buildTextField("Station", _stationController),
+                    
+                    _buildTextField(
+                      "Payment Days", 
+                      _paymentDaysController,
+                      keyboardType: TextInputType.number,
+                    ),
+                    
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
-              onChanged: (val) => setState(() => _selectedConsignee = val),
             ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.paymentTerms.map((e) => e.name).toList(),
-              selectedItem: _selectedPaymentTerm,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Payment Terms',
-                  border: OutlineInputBorder(),
-                ),
+            
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
               ),
-              onChanged: (val) => setState(() => _selectedPaymentTerm = val),
-            ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.bookingTypes.map((e) => e.itemName).toList(),
-              selectedItem: _selectedBookingType,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Booking Type',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              onChanged: (val) => setState(() => _selectedBookingType = val),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _refNoController,
-              decoration: InputDecoration(
-                labelText: 'Reference No',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _stationController,
-              decoration: InputDecoration(
-                labelText: 'Station',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _paymentDaysController,
-              decoration: InputDecoration(
-                labelText: 'Payment Days',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            final newInfo = {
-              'salesman': _selectedSalesmanKey,
-              'consignee': _selectedConsignee,
-              'paymentterms': _selectedPaymentTerm,
-              'bookingtype': _selectedBookingType,
-              'refno': _refNoController.text,
-              'station': _stationController.text,
-              'paymentdays': _paymentDaysController.text,
-            };
-            widget.onValueChanged(newInfo);
-            Navigator.pop(context, newInfo);
-          },
-          child: Text('Save'),
-        ),
-      ],
     );
+  }
+
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    List<String> items,
+    String? selectedValue,
+    bool enabled,
+    Function(String?) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: DropdownSearch<String>(
+        enabled: enabled,
+        items: items,
+        selectedItem: selectedValue,
+        onChanged: onChanged,
+        popupProps: PopupProps.menu(
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: InputDecoration(
+              hintText: "Search $label",
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              isDense: true,
+            ),
+          ),
+          itemBuilder: (context, item, isSelected) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Text(item, style: const TextStyle(fontSize: 13)),
+            );
+          },
+          constraints: const BoxConstraints(maxHeight: 300),
+        ),
+        dropdownDecoratorProps: DropDownDecoratorProps(
+          dropdownSearchDecoration: InputDecoration(
+            labelText: label,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+        dropdownButtonProps: const DropdownButtonProps(icon: Icon(Icons.keyboard_arrow_down)),
+        dropdownBuilder: (context, selectedItem) {
+          if (selectedItem == null || selectedItem.isEmpty) {
+            return Text("Select $label", style: const TextStyle(fontSize: 13, color: Colors.grey));
+          }
+          return Text(selectedItem, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis);
+        },
+        filterFn: (item, filter) {
+          if (filter.isEmpty) return true;
+          return item.toLowerCase().contains(filter.toLowerCase());
+        },
+      ),
+    );
+  }
+
+  void _onSave() {
+    final newInfo = {
+      'salesman': _selectedSalesmanKey,
+      'consignee': _selectedConsignee,
+      'paymentterms': _selectedPaymentTerm,
+      'bookingtype': _selectedBookingType,
+      'refno': _refNoController.text,
+      'station': _stationController.text,
+      'paymentdays': _paymentDaysController.text,
+    };
+    widget.onValueChanged(newInfo);
+    Navigator.pop(context, newInfo);
   }
 }
