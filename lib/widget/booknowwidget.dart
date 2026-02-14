@@ -1121,55 +1121,112 @@ class _CatalogBookingTableState extends State<CatalogBookingTable> {
     );
   }
 
+  // Widget _buildCatalogTable(double maxWidth) {
+  //   final requiredTableWidth = 100 + (80 * sizes.length);
+  //   final hasHorizontalScroll = requiredTableWidth > maxWidth;
+
+  //   if (sizes.isEmpty || colors.isEmpty) {
+  //     return Container(
+  //       padding: const EdgeInsets.all(16),
+  //       child: const Center(
+  //         child: Text(
+  //           'No items available',
+  //           style: TextStyle(fontSize: 16, color: Colors.grey),
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(horizontal: 16),
+  //     decoration: BoxDecoration(
+  //       border: Border.all(color: Colors.grey.shade500),
+  //     ),
+  //     child: SingleChildScrollView(
+  //       scrollDirection: Axis.horizontal,
+  //       child: ConstrainedBox(
+  //         constraints: BoxConstraints(minWidth: maxWidth - 32),
+  //         child: Container(
+  //           width: requiredTableWidth.toDouble(),
+  //           child: Table(
+  //             border: TableBorder.symmetric(
+  //               inside: BorderSide(color: Colors.grey.shade400, width: 1),
+  //             ),
+  //             columnWidths: _buildColumnWidths(maxWidth),
+  //             children: [
+  //               _buildPriceRow("MRP", sizeMrpMap, FontWeight.w600),
+  //               _buildPriceRow(
+  //                 markDwn == 0.0 ? "WSP" : "Rate",
+  //                 sizeWspMap,
+  //                 FontWeight.w400,
+  //               ),
+  //               _buildHeaderRow(),
+  //               for (var i = 0; i < colors.length; i++)
+  //                 _buildQuantityRow(colors[i], i),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildCatalogTable(double maxWidth) {
-    final requiredTableWidth = 100 + (80 * sizes.length);
-    final hasHorizontalScroll = requiredTableWidth > maxWidth;
+  final requiredTableWidth = 100 + (80 * sizes.length);
+  final hasHorizontalScroll = requiredTableWidth > maxWidth;
 
-    if (sizes.isEmpty || colors.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: const Center(
-          child: Text(
-            'No items available',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
+  if (sizes.isEmpty || colors.isEmpty) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade500),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: maxWidth - 32),
-          child: Container(
-            width: requiredTableWidth.toDouble(),
-            child: Table(
-              border: TableBorder.symmetric(
-                inside: BorderSide(color: Colors.grey.shade400, width: 1),
-              ),
-              columnWidths: _buildColumnWidths(maxWidth),
-              children: [
-                _buildPriceRow("MRP", sizeMrpMap, FontWeight.w600),
-                _buildPriceRow(
-                  markDwn == 0.0 ? "WSP" : "Rate",
-                  sizeWspMap,
-                  FontWeight.w400,
-                ),
-                _buildHeaderRow(),
-                for (var i = 0; i < colors.length; i++)
-                  _buildQuantityRow(colors[i], i),
-              ],
-            ),
-          ),
+      padding: const EdgeInsets.all(16),
+      child: const Center(
+        child: Text(
+          'No items available',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
       ),
     );
   }
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey.shade500),
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: maxWidth - 32),
+        child: Container(
+          width: requiredTableWidth.toDouble(),
+          child: Table(
+            border: TableBorder.symmetric(
+              inside: BorderSide(color: Colors.grey.shade400, width: 1),
+            ),
+            columnWidths: _buildColumnWidths(maxWidth),
+            children: [
+              // First: Header row with Shade/Size diagonal split
+              _buildHeaderRow(),
+              
+              // Second: MRP row
+              _buildPriceRow("MRP", sizeMrpMap, FontWeight.w600),
+              
+              // Third: WSP/Rate row
+              _buildPriceRow(
+                markDwn == 0.0 ? "WSP" : "Rate",
+                sizeWspMap,
+                FontWeight.w400,
+              ),
+              
+              // Then: All shade rows with quantity input fields
+              for (var i = 0; i < colors.length; i++)
+                _buildQuantityRow(colors[i], i),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   Map<int, TableColumnWidth> _buildColumnWidths(double maxWidth) {
     final baseWidth = maxWidth < 600 ? 80.0 : 100.0;

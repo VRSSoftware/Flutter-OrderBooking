@@ -926,31 +926,64 @@ class _StyleCardState extends State<StyleCard> {
     );
   }
 
-  Widget _buildPriceTable(BuildContext context) {
-    final sizeDetails = _getSizeDetails(widget.items);
-    final sortedSizes = sizeDetails.keys.toList()..sort();
-    final sortedShades = _getSortedShades(widget.items);
+  // Widget _buildPriceTable(BuildContext context) {
+  //   final sizeDetails = _getSizeDetails(widget.items);
+  //   final sortedSizes = sizeDetails.keys.toList()..sort();
+  //   final sortedShades = _getSortedShades(widget.items);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minWidth: MediaQuery.of(context).size.width - 64,
-        ),
-        child: Table(
-          border: TableBorder.all(color: Colors.grey.shade300, width: 1),
-          columnWidths: _buildColumnWidths(sortedSizes),
-          children: [
+  //   return SingleChildScrollView(
+  //     scrollDirection: Axis.horizontal,
+  //     child: ConstrainedBox(
+  //       constraints: BoxConstraints(
+  //         minWidth: MediaQuery.of(context).size.width - 64,
+  //       ),
+  //       child: Table(
+  //         border: TableBorder.all(color: Colors.grey.shade300, width: 1),
+  //         columnWidths: _buildColumnWidths(sortedSizes),
+  //         children: [
            
-            _buildHeaderRow(sortedSizes),
-            ...sortedShades.map((shade) => _buildShadeRow(shade, sortedSizes)),
-             _buildTableRow('MRP', sortedSizes, sizeDetails, 'mrp'),
-            _buildTableRow('WSP', sortedSizes, sizeDetails, 'wsp'),
-          ],
-        ),
+  //           _buildHeaderRow(sortedSizes),
+  //           ...sortedShades.map((shade) => 
+  //           _buildShadeRow(shade, sortedSizes)),
+  //            _buildTableRow('MRP', sortedSizes, sizeDetails, 'mrp'),
+  //           _buildTableRow('WSP', sortedSizes, sizeDetails, 'wsp'),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildPriceTable(BuildContext context) {
+  final sizeDetails = _getSizeDetails(widget.items);
+  final sortedSizes = sizeDetails.keys.toList()..sort();
+  final sortedShades = _getSortedShades(widget.items);
+
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: MediaQuery.of(context).size.width - 64,
       ),
-    );
-  }
+      child: Table(
+        border: TableBorder.all(color: Colors.grey.shade300, width: 1),
+        columnWidths: _buildColumnWidths(sortedSizes),
+        children: [
+          // First: Header row
+          _buildHeaderRow(sortedSizes),
+          
+          // Second: MRP row
+          _buildTableRow('MRP', sortedSizes, sizeDetails, 'mrp'),
+          
+          // Third: WSP row
+          _buildTableRow('WSP', sortedSizes, sizeDetails, 'wsp'),
+          
+          // Then: All shade rows
+          ...sortedShades.map((shade) => _buildShadeRow(shade, sortedSizes)),
+        ],
+      ),
+    ),
+  );
+}
 
   Map<String, Map<String, num>> _getSizeDetails(List<dynamic> items) {
     final details = <String, Map<String, num>>{};
