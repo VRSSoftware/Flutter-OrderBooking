@@ -63,6 +63,7 @@ dependencies:
   pdfx: 2.9.1
   multicast_dns: ^0.3.3
   badges: ^3.1.2
+  dropdown_button2: ^2.3.9
 
  # android_intent_plus: ^4.0.2
   #device_apps: ^2.2.0
@@ -129,6 +130,10 @@ flutter:
     - assets/images/team.png
     - assets/images/deleteAccount.png
     - assets/images/production.png
+    - assets/images/packing.png
+    - assets/images/packing_register.png
+    - assets/images/salebill.png
+
     
     
 

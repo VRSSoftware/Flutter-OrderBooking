@@ -38,11 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Colors.blue[100]!,
         );
       case 'Catalog':
-        return IconStyle(
-          Icons.style,
-          Colors.green[500]!,
-          Colors.green[100]!,
-        );
+        return IconStyle(Icons.style, Colors.green[500]!, Colors.green[100]!);
       case 'Order Register':
         return IconStyle(
           Icons.app_registration,
@@ -62,17 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Colors.red[100]!,
         );
       case 'Packing Register':
-        return IconStyle(
-          Icons.checklist,
-          Colors.cyan[500]!,
-          Colors.cyan[100]!,
-        );
+        return IconStyle(Icons.checklist, Colors.cyan[500]!, Colors.cyan[100]!);
       case 'Sale Bill Register':
-        return IconStyle(
-          Icons.receipt,
-          Colors.teal[500]!,
-          Colors.teal[100]!,
-        );
+        return IconStyle(Icons.receipt, Colors.teal[500]!, Colors.teal[100]!);
       case 'Stock Report':
         return IconStyle(
           Icons.assessment,
@@ -85,12 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Colors.indigo[500]!,
           Colors.indigo[100]!,
         );
+        case 'Production':
+  return IconStyle(
+    Icons.precision_manufacturing,   // 🏭 Factory gear icon
+    kPrimaryColor,
+    Colors.purple[100]!,
+  );
+
       default:
-        return IconStyle(
-          Icons.grid_view,
-          Colors.grey[500]!,
-          Colors.grey[100]!,
-        );
+        return IconStyle(Icons.grid_view, Colors.grey[500]!, Colors.grey[100]!);
     }
   }
 
@@ -101,31 +92,38 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: DrawerScreen(),
       // --- New AppBar Styling ---
       appBar: AppBar(
+        toolbarHeight: 48, // ✅ Decrease height (default is 56)
+
         title: Text(
-          'Home',
+          'VRS Software',
           style: GoogleFonts.roboto(
-            color: kTextLight,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 20, // text-xl
+            fontSize: 18, // Slightly reduced to match height
           ),
         ),
-        backgroundColor: kBackgroundLight,
-        elevation: 1.0, // shadow-sm
+
+        backgroundColor: AppColors.primaryColor,
+        elevation: 3,
         centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(
-              Icons.menu,
-              color: kTextLight,
-              size: 30, // text-3xl
-            ),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
         ),
-        actions: [
-          
-        ],
+
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(
+                  Icons.menu,
+                  color: Colors.white,
+                  size: 24, // Slightly smaller for compact look
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+        ),
       ),
+
       // --- Your Existing Body Structure ---
       body: Padding(
         // Changed padding to match p-4 from new design
@@ -148,9 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       // --- Your Existing Bottom Nav Bar ---
-      bottomNavigationBar: BottomNavigationWidget(
-        currentScreen: '/home',
-      ),
+      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/home'),
     );
   }
 
@@ -170,82 +166,40 @@ class _HomeScreenState extends State<HomeScreen> {
         alignment: WrapAlignment.center,
         children: [
           // We now call the new _buildFeatureButton
-          _buildFeatureButton(
-            context,
-            'Order Booking',
-            () {
-              Navigator.pushNamed(context, '/orderbooking');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Catalog',
-            () {
-              Navigator.pushNamed(context, '/catalog');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Order Register',
-            () {
-              Navigator.pushNamed(context, '/registerOrders');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Packing',
-            () {
-              Navigator.pushNamed(context, '/packingBooking');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Sale Bill',
-            () {
-              Navigator.pushNamed(context, '/SaleBillBookingScreen');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Packing Register',
-            () {
-              Navigator.pushNamed(context, '/packingOrders');
-            },
-            buttonWidth,
-          ),
-          _buildFeatureButton(
-            context,
-            'Sale Bill Register',
-            () {
-              Navigator.pushNamed(context, '/saleBillRegister');
-            },
-            buttonWidth,
-          ),
+          _buildFeatureButton(context, 'Order Booking', () {
+            Navigator.pushNamed(context, '/orderbooking');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Catalog', () {
+            Navigator.pushNamed(context, '/catalog');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Order Register', () {
+            Navigator.pushNamed(context, '/registerOrders');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Packing', () {
+            Navigator.pushNamed(context, '/packingBooking');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Sale Bill', () {
+            Navigator.pushNamed(context, '/SaleBillBookingScreen');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Packing Register', () {
+            Navigator.pushNamed(context, '/packingOrders');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Sale Bill Register', () {
+            Navigator.pushNamed(context, '/saleBillRegister');
+          }, buttonWidth),
+           _buildFeatureButton(context, 'Production', () {
+            Navigator.pushNamed(context, '/production');
+          }, buttonWidth),
           // --- Your Existing UserSession Logic ---
           UserSession.userType == 'A'
-              ? _buildFeatureButton(
-                  context,
-                  'Stock Report',
-                  () {
-                    Navigator.pushNamed(context, '/stockReport');
-                  },
-                  buttonWidth,
-                )
+              ? _buildFeatureButton(context, 'Stock Report', () {
+                Navigator.pushNamed(context, '/stockReport');
+              }, buttonWidth)
               : Container(),
           UserSession.userType == 'A'
-              ? _buildFeatureButton(
-                  context,
-                  'Dashboard',
-                  () {
-                    Navigator.pushNamed(context, '/dashboard');
-                  },
-                  buttonWidth,
-                )
+              ? _buildFeatureButton(context, 'Dashboard', () {
+                Navigator.pushNamed(context, '/dashboard');
+              }, buttonWidth)
               : Container(),
         ],
       ),
@@ -253,48 +207,65 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // --- REBUILT Feature Button to match new design ---
-  Widget _buildFeatureButton(
-    BuildContext context,
-    String label,
-    VoidCallback onTap,
-    double width,
-  ) {
-    final style = _getIconStyle(label);
-    
-    // We use SizedBox to constrain the width to fit your Wrap layout
-    return SizedBox(
-      width: width,
+Widget _buildFeatureButton(
+  BuildContext context,
+  String label,
+  VoidCallback onTap,
+  double width,
+) {
+  final style = _getIconStyle(label);
+
+  return SizedBox(
+    width: width,
+    child: Container(
+      decoration: BoxDecoration(
+        border: const Border(
+          top: BorderSide(
+            color: Color(0xFF800000), 
+            width: 1.5, // 🔥 Reduced
+          ),
+          bottom: BorderSide(
+            color: Color(0xFF800000), 
+            width: 1.5, // 🔥 Reduced
+          ),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Card(
         color: kCardLight,
-        elevation: 1.0, // shadow-sm
+        elevation: 1.0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0), // rounded-lg
+          borderRadius: BorderRadius.circular(12.0),
         ),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0), // p-4 equivalent
+            padding: const EdgeInsets.symmetric(
+              vertical: 24.0,
+              horizontal: 16.0,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 CircleAvatar(
-                  radius: 28, // w-14 h-14
+                  radius: 28,
                   backgroundColor: style.backgroundColor,
                   child: Icon(
                     style.icon,
-                    size: 30, // text-3xl
+                    size: 30,
                     color: style.iconColor,
                   ),
                 ),
-                const SizedBox(height: 12), // mb-3
+                const SizedBox(height: 12),
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto( // Using Roboto font
-                    fontSize: 14, // text-sm
-                    fontWeight: FontWeight.w500, // font-medium
+                  style: GoogleFonts.roboto(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                     color: kTextLight,
                   ),
                 ),
@@ -303,6 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

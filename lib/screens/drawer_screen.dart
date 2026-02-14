@@ -301,10 +301,9 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/screens/login_screen.dart'; // Import your LoginScreen
+import 'package:vrs_erp/screens/login_screen.dart';
 
 class DrawerScreen extends StatefulWidget {
   @override
@@ -317,26 +316,45 @@ class _DrawerScreenState extends State<DrawerScreen> {
 
   final Map<String, String> _iconPaths = {
     'Home': 'assets/images/home.png',
+    'Dashboard': 'assets/images/dashboard.png',
     'Order Booking': 'assets/images/orderbooking.png',
     'Catalog': 'assets/images/catalog.png',
     'Order Register': 'assets/images/register.png',
+    'Packing': 'assets/images/packing.png',
+    'Packing Register': 'assets/images/packing_register.png',
     'Stock Report': 'assets/images/report.png',
-    'Dashboard': 'assets/images/dashboard.png',
-     'Production' : 'assets/images/production.png',
+    'Sale Bill': 'assets/images/salebill.png',
+    'Sale Bill Register': 'assets/images/report.png',
+    'Production': 'assets/images/production.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
-   
   };
 
   final Map<String, IconData> _fallbackIcons = {
     'Home': Icons.home,
-    'Order Booking': Icons.book,
-    'Catalog': Icons.category,
-    'Order Register': Icons.list_alt,
-    'Stock Report': Icons.assessment,
-    'Dashboard': Icons.dashboard,
-    'Production' : Icons.production_quantity_limits,
+
+    'Order Booking': Icons.shopping_cart_checkout,
+
+    'Catalog': Icons.inventory_2,
+
+    'Order Register': Icons.receipt_long,
+
+    'Packing': Icons.inventory,
+
+    'Packing Register': Icons.fact_check,
+
+    'Stock Report': Icons.bar_chart,
+
+    'Sale Bill': Icons.point_of_sale,
+
+    'Sale Bill Register': Icons.menu_book,
+
+    'Dashboard': Icons.dashboard_customize,
+
+    'Production': Icons.precision_manufacturing,
+
     'Setting': Icons.settings,
+
     'Delete Account': Icons.delete_forever,
   };
 
@@ -363,11 +381,19 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return 'Catalog';
       case '/registerOrders':
         return 'Order Register';
+      case '/packingBooking':
+        return 'Packing';
+      case '/packingOrders':
+        return 'Packing Register';
       case '/stockReport':
         return 'Stock Report';
+      case '/SaleBillBookingScreen':
+        return 'Sale Bill';
+      case '/saleBillRegister':
+        return 'Sale Bill Register';
       case '/dashboard':
         return 'Dashboard';
-         case '/production':
+      case '/production':
         return 'Production';
       case '/setting':
         return 'Setting';
@@ -389,42 +415,78 @@ class _DrawerScreenState extends State<DrawerScreen> {
     Navigator.pushReplacementNamed(context, route);
   }
 
- @override
-Widget build(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final isLargeScreen = screenWidth > 600;
-  final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.65); // Responsive drawer width
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 600;
+    final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.70);
 
-  return Align(
-    alignment: Alignment.centerLeft,
-    child: SizedBox(
-      width: drawerWidth.clamp(260.0, 400.0), // Clamp for better limits
-      child: Drawer(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: isLargeScreen ? 48 : 24),
-                _buildUserProfile(),
-                const Divider(),
-                ..._iconPaths.keys
-                    .where((title) {
-                        if (UserSession.userType != 'C') return true;
-                        return title != 'Stock Report' && title != 'Dashboard';
-                      })
-                    .map((title) => _buildDrawerItem(title, _getRouteFromSection(title))),
-                const Divider(),
-                _buildLogoutButton(),
-                SizedBox(height: isLargeScreen ? 32 : 16),
-              ],
+    return Drawer(
+      width: drawerWidth.clamp(260.0, 400.0),
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          /// 🔵 GRADIENT PROFILE HEADER (Now covers status bar)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 30, // ✅ Fix here
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryColor,
+                  AppColors.primaryColor.withOpacity(0.75),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomRight: Radius.circular(35),
+              ),
+            ),
+            child: _buildProfileContent(),
+          ),
+
+          /// 🔹 REST CONTENT SAFE
+          Expanded(
+            child: SafeArea(
+              top: false, // ✅ Important
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+
+                    ..._iconPaths.keys
+                        .where((title) {
+                          if (UserSession.userType != 'C') return true;
+                          return title != 'Stock Report' &&
+                              title != 'Dashboard';
+                        })
+                        .map(
+                          (title) => _buildDrawerItem(
+                            title,
+                            _getRouteFromSection(title),
+                          ),
+                        ),
+
+                    const Divider(thickness: 1),
+
+                    _buildLogoutButton(),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _getRouteFromSection(String section) {
     switch (section) {
@@ -436,12 +498,19 @@ Widget build(BuildContext context) {
         return '/catalog';
       case 'Order Register':
         return '/registerOrders';
+      case 'Packing':
+        return '/packingBooking';
+      case 'Packing Register':
+        return '/packingOrders';
       case 'Stock Report':
         return '/stockReport';
+      case 'Sale Bill':
+        return '/SaleBillBookingScreen';
+      case 'Sale Bill Register':
+        return '/saleBillRegister';
       case 'Dashboard':
         return '/dashboard';
-             
-		case 'Production':
+      case 'Production':
         return '/production';
       case 'Setting':
         return '/setting';
@@ -452,63 +521,81 @@ Widget build(BuildContext context) {
     }
   }
 
+  Widget _buildProfileContent() {
+    return Row(
+      children: [
+        const CircleAvatar(
+          radius: 30,
+          backgroundImage: AssetImage('assets/images/logo.png'),
+          backgroundColor: Colors.white,
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                UserSession.name ?? 'Guest',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                UserSession.userType == 'C' ? 'Customer' : 'User',
+                style: const TextStyle(fontSize: 13, color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDrawerItem(String title, String route) {
     final isSelected = selectedSection == title;
     final isHovered = hoveredSection == title;
     final iconPath = _iconPaths[title]!;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth > 600;
 
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredSection = title),
       onExit: (_) => setState(() => hoveredSection = null),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isLargeScreen ? 16 : 8,
-          vertical: isLargeScreen ? 8 : 4,
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8), // Softer corners for better UX
-          onTap: () => _navigateTo(title, route),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected || isHovered
-                  ? const Color.fromARGB(255, 206, 222, 240)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: isLargeScreen ? 24 : 16,
-                vertical: isLargeScreen ? 8 : 4,
-              ),
-              leading: SizedBox(
-                width: isLargeScreen ? 32 : 24,
-                height: isLargeScreen ? 32 : 24,
-                child: Image.asset(
-                  iconPath,
-                  width: isLargeScreen ? 32 : 24,
-                  height: isLargeScreen ? 32 : 24,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      _fallbackIcons[title]!,
-                      size: isLargeScreen ? 32 : 24,
-                      color: isSelected || isHovered
+      child: InkWell(
+        onTap: () => _navigateTo(title, route),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color:
+                isSelected || isHovered
+                    ? AppColors.primaryColor.withOpacity(0.10)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            leading: Image.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  _fallbackIcons[title]!,
+                  color:
+                      isSelected || isHovered
                           ? AppColors.primaryColor
                           : Colors.grey[800],
-                    );
-                  },
-                ),
-              ),
-              title: Text(
-                title,
-                style: TextStyle(
-                  fontSize: isLargeScreen ? 18 : 16,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected || isHovered
-                      ? AppColors.primaryColor
-                      : Colors.grey[800],
-                ),
+                );
+              },
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color:
+                    isSelected || isHovered
+                        ? AppColors.primaryColor
+                        : Colors.grey[800],
               ),
             ),
           ),
@@ -517,100 +604,32 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildUserProfile() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth > 600;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isLargeScreen ? 24 : 16,
-        vertical: isLargeScreen ? 16 : 10,
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: isLargeScreen ? 36 : 28,
-            backgroundImage: const AssetImage('assets/images/logo.png'),
-            backgroundColor: Colors.grey[300],
-          ),
-          SizedBox(width: isLargeScreen ? 16 : 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  UserSession.name ?? 'Guest',
-                  style: TextStyle(
-                    fontSize: isLargeScreen ? 18 : 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: isLargeScreen ? 8 : 4),
-                Text(
-                  UserSession.userType == 'C' ? 'Customer' : 'User',
-                  style: TextStyle(
-                    fontSize: isLargeScreen ? 14 : 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  /// 🔴 LOGOUT BUTTON (Different Color)
   Widget _buildLogoutButton() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth > 600;
+    final isHovered = hoveredSection == 'Logout';
 
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredSection = 'Logout'),
       onExit: (_) => setState(() => hoveredSection = null),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isLargeScreen ? 16 : 8,
-          vertical: isLargeScreen ? 8 : 4,
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.pushReplacementNamed(context, '/login');
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: hoveredSection == 'Logout'
-                  ? const Color.fromARGB(255, 222, 187, 231)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: isLargeScreen ? 24 : 16,
-                vertical: isLargeScreen ? 8 : 4,
-              ),
-              leading: SizedBox(
-                width: isLargeScreen ? 32 : 24,
-                height: isLargeScreen ? 32 : 24,
-                child: Icon(
-                  Icons.exit_to_app,
-                  size: isLargeScreen ? 32 : 24,
-                  color: hoveredSection == 'Logout'
-                      ? AppColors.primaryColor
-                      : Colors.grey[800],
-                ),
-              ),
-              title: Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: isLargeScreen ? 18 : 16,
-                  fontWeight: FontWeight.bold,
-                  color: hoveredSection == 'Logout'
-                      ? AppColors.primaryColor
-                      : Colors.grey[800],
-                ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.pushReplacementNamed(context, '/login');
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                isHovered ? Colors.red.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const ListTile(
+            leading: Icon(Icons.logout, color: Colors.red),
+            title: Text(
+              'Logout',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red, // 🔴 Different color
               ),
             ),
           ),
