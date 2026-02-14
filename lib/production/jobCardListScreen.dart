@@ -263,7 +263,8 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
+      body:SafeArea(
+  child: ListView.builder(
         itemCount: _jobCards.length,
         itemBuilder: (context, index) {
           final jobCard = _jobCards[index];
@@ -388,7 +389,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
             ),
           );
         },
-      ),
+       ) ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToJobCardDetail(null),
         backgroundColor: const Color(0xFF4A90E2),

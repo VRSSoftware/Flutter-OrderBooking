@@ -938,7 +938,7 @@ class _OrderPageState extends State<OrderPage> {
                                         shape: MaterialStateProperty.all(
                                           RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                              0,
+                                              8,
                                             ),
                                           ),
                                         ),

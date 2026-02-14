@@ -30,7 +30,8 @@ class PrivacyPolicyPage extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
+      body:SafeArea(
+  child: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +113,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
           ],
         ),
-       )  ),
+      ) )  ),
     );
   }
 

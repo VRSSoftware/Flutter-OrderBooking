@@ -1521,7 +1521,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
       text: widget.additionalInfo['station'] ?? '',
     );
     _paymentDaysController = TextEditingController(
-      text: widget.additionalInfo['paymentdays'] ?? '',
+      text: widget.additionalInfo['paymentdays'] ?? widget.creditPeriod?.toString() ?? '',
     );
     _selectedSalesman =
         widget.salesPersonList.firstWhere(
@@ -1550,27 +1550,47 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
   Widget build(BuildContext context) {
     final Color primaryBlue = const Color(0xFF2196F3);
 
-    return AlertDialog(
-      title: Text('Add More Information'),
-      content: SingleChildScrollView(
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: MediaQuery.of(context).size.height * 0.65,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.salesPersonList.map((e) => e['ledName']!).toList(),
-              selectedItem: _selectedSalesman,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Salesman',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    "Additional Information",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Divider(color: Colors.grey.shade300, height: 1),
+                ],
               ),
-              onChanged:
-                  widget.isSalesmanDropdownEnabled
-                      ? (val) {
+            ),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Salesman Dropdown
+                    _buildDropdown(
+                      "Salesman",
+                      widget.salesPersonList.map((e) => e['ledName']!).toList(),
+                      _selectedSalesman,
+                      widget.isSalesmanDropdownEnabled,
+                      (val) {
                         setState(() {
                           _selectedSalesman = val;
                           _selectedSalesmanKey =
@@ -1579,111 +1599,197 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                                 orElse: () => {'ledKey': ''},
                               )['ledKey'];
                         });
-                      }
-                      : null,
-              enabled: widget.isSalesmanDropdownEnabled,
+                      },
+                    ),
+                    
+                    // Consignee Dropdown
+                    _buildDropdown(
+                      "Consignee",
+                      widget.consignees.map((e) => e.ledName).toList(),
+                      _selectedConsignee,
+                      true,
+                      (val) => setState(() => _selectedConsignee = val),
+                    ),
+                    
+                    // Payment Terms Dropdown
+                    _buildDropdown(
+                      "Payment Terms",
+                      widget.paymentTerms.map((e) => e.name).toList(),
+                      _selectedPaymentTerm,
+                      true,
+                      (val) => setState(() => _selectedPaymentTerm = val),
+                    ),
+                    
+                    // Booking Type Dropdown
+                    _buildDropdown(
+                      "Booking Type",
+                      widget.bookingTypes.map((e) => e.itemName).toList(),
+                      _selectedBookingType,
+                      true,
+                      (val) => setState(() => _selectedBookingType = val),
+                    ),
+                    
+                    // Reference No TextField
+                    _buildTextField("Reference No", _refNoController),
+                    
+                    // Station TextField
+                    _buildTextField("Station", _stationController),
+                    
+                    // Payment Days TextField
+                    _buildTextField(
+                      "Payment Days", 
+                      _paymentDaysController,
+                      keyboardType: TextInputType.number,
+                    ),
+                    
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.consignees.map((e) => e.ledName).toList(),
-              selectedItem: _selectedConsignee,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Consignee',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            
+            // Footer Buttons
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                ),
-              ),
-              onChanged: (val) => setState(() => _selectedConsignee = val),
-            ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.paymentTerms.map((e) => e.name).toList(),
-              selectedItem: _selectedPaymentTerm,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Payment Terms',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                ),
+                ],
               ),
-              onChanged: (val) => setState(() => _selectedPaymentTerm = val),
-            ),
-            SizedBox(height: 10),
-            DropdownSearch<String>(
-              popupProps: PopupProps.menu(showSearchBox: true),
-              items: widget.bookingTypes.map((e) => e.itemName).toList(),
-              selectedItem: _selectedBookingType,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  labelText: 'Booking Type',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              onChanged: (val) => setState(() => _selectedBookingType = val),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _refNoController,
-              decoration: InputDecoration(
-                labelText: 'Reference No',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _stationController,
-              decoration: InputDecoration(
-                labelText: 'Station',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _paymentDaysController,
-              decoration: InputDecoration(
-                labelText: 'Payment Days',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              keyboardType: TextInputType.number,
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            final newInfo = {
-              'salesman': _selectedSalesmanKey,
-              'consignee': _selectedConsignee,
-              'paymentterms': _selectedPaymentTerm,
-              'bookingtype': _selectedBookingType,
-              'refno': _refNoController.text,
-              'station': _stationController.text,
-              'paymentdays': _paymentDaysController.text,
-            };
-            widget.onValueChanged(newInfo);
-            Navigator.pop(context, newInfo);
-          },
-          child: Text('Save'),
-        ),
-      ],
     );
+  }
+
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    List<String> items,
+    String? selectedValue,
+    bool enabled,
+    Function(String?) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: DropdownSearch<String>(
+        enabled: enabled,
+        items: items,
+        selectedItem: selectedValue,
+        onChanged: onChanged,
+        popupProps: PopupProps.menu(
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: InputDecoration(
+              hintText: "Search $label",
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              isDense: true,
+            ),
+          ),
+          itemBuilder: (context, item, isSelected) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Text(item, style: const TextStyle(fontSize: 13)),
+            );
+          },
+          constraints: const BoxConstraints(maxHeight: 300),
+        ),
+        dropdownDecoratorProps: DropDownDecoratorProps(
+          dropdownSearchDecoration: InputDecoration(
+            labelText: label,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+        dropdownButtonProps: const DropdownButtonProps(icon: Icon(Icons.keyboard_arrow_down)),
+        dropdownBuilder: (context, selectedItem) {
+          if (selectedItem == null || selectedItem.isEmpty) {
+            return Text("Select $label", style: const TextStyle(fontSize: 13, color: Colors.grey));
+          }
+          return Text(selectedItem, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis);
+        },
+        filterFn: (item, filter) {
+          if (filter.isEmpty) return true;
+          return item.toLowerCase().contains(filter.toLowerCase());
+        },
+      ),
+    );
+  }
+
+  void _onSave() {
+    final newInfo = {
+      'salesman': _selectedSalesmanKey,
+      'consignee': _selectedConsignee,
+      'paymentterms': _selectedPaymentTerm,
+      'bookingtype': _selectedBookingType,
+      'refno': _refNoController.text,
+      'station': _stationController.text,
+      'paymentdays': _paymentDaysController.text,
+    };
+    widget.onValueChanged(newInfo);
+    Navigator.pop(context, newInfo);
   }
 }

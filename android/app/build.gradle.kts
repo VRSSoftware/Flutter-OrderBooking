@@ -4,7 +4,7 @@ import java.io.FileInputStream
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 
-if (keystorePropertiesFile.exists()) {
+if (keystorePropertiesFile.exists()) {home
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 

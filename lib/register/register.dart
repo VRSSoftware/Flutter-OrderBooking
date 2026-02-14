@@ -2127,7 +2127,8 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-      body:
+      body:SafeArea(
+  child:
           isLoading
               ? Stack(
                 children: [
@@ -2218,7 +2219,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ],
                 ),
-              ),
+        )  ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50),
         child: FloatingActionButton(

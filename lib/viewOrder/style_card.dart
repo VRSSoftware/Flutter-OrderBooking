@@ -941,10 +941,11 @@ class _StyleCardState extends State<StyleCard> {
           border: TableBorder.all(color: Colors.grey.shade300, width: 1),
           columnWidths: _buildColumnWidths(sortedSizes),
           children: [
-            _buildTableRow('MRP', sortedSizes, sizeDetails, 'mrp'),
-            _buildTableRow('WSP', sortedSizes, sizeDetails, 'wsp'),
+           
             _buildHeaderRow(sortedSizes),
             ...sortedShades.map((shade) => _buildShadeRow(shade, sortedSizes)),
+             _buildTableRow('MRP', sortedSizes, sizeDetails, 'mrp'),
+            _buildTableRow('WSP', sortedSizes, sizeDetails, 'wsp'),
           ],
         ),
       ),

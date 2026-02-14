@@ -143,7 +143,7 @@ class BottomNavigationWidget extends StatelessWidget {
         child: BottomNavigationBar(
           currentIndex: currentIndex < 0 ? 0 : currentIndex,
           backgroundColor: AppColors.primaryColor, // ✅ Primary background
-          selectedItemColor: const Color(0xFF800000), // ✅ Maroon selected
+         selectedItemColor: Colors.white, // ✅ Maroon selected
           unselectedItemColor: Colors.white.withOpacity(0.7),
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -164,7 +164,7 @@ class BottomNavigationWidget extends StatelessWidget {
                   icon: Icon(item['icon']),
                   activeIcon: Icon(
                     item['icon'],
-                    color: const Color(0xFF800000),
+                    color:  Colors.white,
                   ),
                   label: item['label'],
                 ),

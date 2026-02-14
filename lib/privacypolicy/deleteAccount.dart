@@ -303,7 +303,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
               ),
         ),
       ),
-        body: Stack(
+        body:SafeArea(
+  child: Stack(
           children: [
             SingleChildScrollView(
               child: Padding(
@@ -376,7 +377,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             ),
           ],
         ),
-      ),
+       ) ),
      ));
   }
 }
