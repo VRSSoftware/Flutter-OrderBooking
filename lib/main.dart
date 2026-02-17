@@ -29,8 +29,10 @@ import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
 import 'package:vrs_erp/viewOrder/view_order.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() {
+  usePathUrlStrategy();
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => CartModel())],

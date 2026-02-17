@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/screens/MyWebViewPage.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
 
@@ -73,12 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Colors.indigo[500]!,
           Colors.indigo[100]!,
         );
-        case 'Production':
-  return IconStyle(
-    Icons.precision_manufacturing,   // 🏭 Factory gear icon
-    kPrimaryColor,
-    Colors.purple[100]!,
-  );
+      case 'Production':
+        return IconStyle(
+          Icons.precision_manufacturing, // 🏭 Factory gear icon
+          kPrimaryColor,
+          Colors.purple[100]!,
+        );
 
       default:
         return IconStyle(Icons.grid_view, Colors.grey[500]!, Colors.grey[100]!);
@@ -187,8 +188,14 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildFeatureButton(context, 'Sale Bill Register', () {
             Navigator.pushNamed(context, '/saleBillRegister');
           }, buttonWidth),
-           _buildFeatureButton(context, 'Production', () {
+          _buildFeatureButton(context, 'Production', () {
             Navigator.pushNamed(context, '/production');
+          }, buttonWidth),
+          _buildFeatureButton(context, 'Web', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) =>  UniversalWebView()),
+            );
           }, buttonWidth),
           // --- Your Existing UserSession Logic ---
           UserSession.userType == 'A'
@@ -207,75 +214,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // --- REBUILT Feature Button to match new design ---
-Widget _buildFeatureButton(
-  BuildContext context,
-  String label,
-  VoidCallback onTap,
-  double width,
-) {
-  final style = _getIconStyle(label);
+  Widget _buildFeatureButton(
+    BuildContext context,
+    String label,
+    VoidCallback onTap,
+    double width,
+  ) {
+    final style = _getIconStyle(label);
 
-  return SizedBox(
-    width: width,
-    child: Container(
-      decoration: BoxDecoration(
-        border: const Border(
-          top: BorderSide(
-            color: Color(0xFF800000), 
-            width: 1.5, // 🔥 Reduced
-          ),
-          bottom: BorderSide(
-            color: Color(0xFF800000), 
-            width: 1.5, // 🔥 Reduced
-          ),
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Card(
-        color: kCardLight,
-        elevation: 1.0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 24.0,
-              horizontal: 16.0,
+    return SizedBox(
+      width: width,
+      child: Container(
+        decoration: BoxDecoration(
+          border: const Border(
+            top: BorderSide(
+              color: Color(0xFF800000),
+              width: 1.5, // 🔥 Reduced
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: style.backgroundColor,
-                  child: Icon(
-                    style.icon,
-                    size: 30,
-                    color: style.iconColor,
+            bottom: BorderSide(
+              color: Color(0xFF800000),
+              width: 1.5, // 🔥 Reduced
+            ),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Card(
+          color: kCardLight,
+          elevation: 1.0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 24.0,
+                horizontal: 16.0,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: style.backgroundColor,
+                    child: Icon(style.icon, size: 30, color: style.iconColor),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: kTextLight,
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.roboto(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: kTextLight,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }
