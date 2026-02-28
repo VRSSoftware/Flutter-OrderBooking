@@ -69,6 +69,10 @@ class _OrderPageState extends State<OrderPage> {
   String? name;
   String? type;
   String? transactionType;
+  
+   String? stockFilter;
+  String? imageFilter;
+
 
   @override
   void initState() {
@@ -281,6 +285,8 @@ class _OrderPageState extends State<OrderPage> {
         fromDate: fromDate.isEmpty ? null : fromDate,
         toDate: toDate.isEmpty ? null : toDate,
         brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
+              stockFilter: stockFilter == "" ? null : stockFilter,  // Add this
+      imageFilter: imageFilter == "" ? null : imageFilter,   // Add this
         pageNo: pageNo,
       );
 
@@ -408,7 +414,7 @@ class _OrderPageState extends State<OrderPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          toTitleCase(itemNamee ?? ''),
+          toTitleCase(itemNamee ?? 'Booking Items'),
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.primaryColor,
@@ -1708,66 +1714,90 @@ class _OrderPageState extends State<OrderPage> {
     return '';
   }
 
-  void _showFilterDialog() async {
-    final result = await Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
-        settings: RouteSettings(
-          arguments: {
-            'itemKey': itemKey,
-            'itemSubGrpKey': itemSubGrpKey,
-            'coBr': coBr,
-            'fcYrId': fcYrId,
-            'styles': styles,
-            'shades': shades,
-            'sizes': sizes,
-            'selectedShades': selectedShades,
-            'selectedSizes': selectedSize,
-            'selectedStyles': selectedStyles,
-            'fromMRP': fromMRP,
-            'toMRP': toMRP,
-            'WSPfrom': WSPfrom,
-            'WSPto': WSPto,
-            'sortBy': sortBy,
-            'fromDate': fromDate,
-            'toDate': toDate,
-            'brands': brands.isEmpty ? [] : brands,
-          },
-        ),
-        transitionDuration: Duration(milliseconds: 500),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return ScaleTransition(
-            scale: animation,
-            alignment: Alignment.bottomRight,
-            child: FadeTransition(opacity: animation, child: child),
-          );
+void _showFilterDialog() async {
+  final result = await Navigator.push(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
+      settings: RouteSettings(
+        arguments: {
+          'itemKey': itemKey,
+          'itemSubGrpKey': itemSubGrpKey,
+          'coBr': coBr,
+          'fcYrId': fcYrId,
+          'styles': styles,
+          'shades': shades,
+          'sizes': sizes,
+          'selectedShades': selectedShades,
+          'selectedSizes': selectedSize,
+          'selectedStyles': selectedStyles,
+          'fromMRP': fromMRP,
+          'toMRP': toMRP,
+          'WSPfrom': WSPfrom,
+          'WSPto': WSPto,
+          'sortBy': sortBy,
+          'fromDate': fromDate,
+          'toDate': toDate,
+          'brands': brands.isEmpty ? [] : brands,
+          'stockFilter': stockFilter,  // Add this
+          'imageFilter': imageFilter,   // Add this
         },
       ),
-    );
+      transitionDuration: Duration(milliseconds: 500),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: animation,
+          alignment: Alignment.bottomRight,
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+    ),
+  );
 
-    if (result != null) {
-      Map<String, dynamic> selectedFilters = result;
-      setState(() {
-        selectedStyles = selectedFilters['styles'];
-        selectedSize = selectedFilters['sizes'];
-        selectedShades = selectedFilters['shades'];
-        fromMRP = selectedFilters['fromMRP'];
-        toMRP = selectedFilters['toMRP'];
-        WSPfrom = selectedFilters['WSPfrom'];
-        WSPto = selectedFilters['WSPto'];
-        sortBy = selectedFilters['sortBy'];
-        fromDate = selectedFilters['fromDate'];
-        toDate = selectedFilters['toDate'];
-        pageNo = 1;
-        hasMore = true;
-        catalogItems.clear();
-        selectedItems.clear();
-      });
+  if (result != null) {
+    Map<String, dynamic> selectedFilters = result;
+    setState(() {
+      selectedStyles = selectedFilters['styles'];
+      selectedSize = selectedFilters['sizes'];
+      selectedShades = selectedFilters['shades'];
+      fromMRP = selectedFilters['fromMRP'];
+      toMRP = selectedFilters['toMRP'];
+      WSPfrom = selectedFilters['WSPfrom'];
+      WSPto = selectedFilters['WSPto'];
+      sortBy = selectedFilters['sortBy'];
+      fromDate = selectedFilters['fromDate'];
+      toDate = selectedFilters['toDate'];
+      stockFilter = selectedFilters['stockFilter'];  // Add this
+      imageFilter = selectedFilters['imageFilter'];   // Add this
+      
+      // Reset pagination
+      pageNo = 1;
+      catalogItems = [];
+      hasMore = true;
+    });
+    
+    print("fromDate  ${selectedFilters['fromDate']}");
+    print("todate  ${selectedFilters['toDate']}");
+    print("stockFilter  ${selectedFilters['stockFilter']}");  // Add this
+    print("imageFilter  ${selectedFilters['imageFilter']}");   // Add this
+    
+    if (!(selectedStyles.isEmpty &&
+        selectedSize.isEmpty &&
+        selectedShades.isEmpty &&
+        fromMRP == "" &&
+        toMRP == "" &&
+        WSPfrom == "" &&
+        WSPto == "" &&
+        selectedBrands.isEmpty &&
+        sortBy == "" &&
+        fromDate == "" &&
+        toDate == "" &&
+        stockFilter == "" &&  // Add this
+        imageFilter == "")) {  // Add this
       _fetchCatalogItems();
     }
   }
-
+}
   void _showBookingDialog(BuildContext context, Catalog item, String typee) {
     debugPrint(typee);
     showDialog(

@@ -323,6 +323,13 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     return DateFormat('yyyy-MM-dd').format(futureDate);
   }
 
+    String getTodayWithZeroTime() {
+    final now = DateTime.now();
+    final zeroTime = DateTime(now.year, now.month, now.day);
+    return DateFormat('yyyy-MM-dd HH:mm:ss.SSS').format(zeroTime);
+  }
+
+
   String calculateDueDate() {
     final paymentDays = _additionalInfo['paymentdays'];
     if (paymentDays != null &&
@@ -381,7 +388,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           '0',
       "duedate": calculateDueDate(),
       "refno": _additionalInfo['refno'] ?? '',
-      "date": '',
+     "date": getTodayWithZeroTime(),
       "bookingtype": _additionalInfo['bookingtype'] ?? '',
       "salesman":
           _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',

@@ -282,6 +282,8 @@ Future<void> _fetchCatalogItems() async {
     });
   }
 }
+  
+  
   // Future<void> _fetchStylesByItemGrpKey(String itemKey) async {
   //   try {
   //     final fetchedStyles = await ApiService.fetchStylesByItem(itemKey);
