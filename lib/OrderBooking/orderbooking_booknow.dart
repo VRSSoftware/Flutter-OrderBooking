@@ -23,7 +23,7 @@ import 'package:vrs_erp/widget/booknowwidget.dart';
 class OrderPage extends StatefulWidget {
   final String? name;
 
-    const OrderPage({Key? key, this.name}) : super(key: key);
+  const OrderPage({Key? key, this.name}) : super(key: key);
 
   @override
   _OrderPageState createState() => _OrderPageState();
@@ -944,8 +944,11 @@ class _OrderPageState extends State<OrderPage> {
                                         ),
                                       ),
                                       onPressed:
-                                          () =>
-                                              _showBookingDialog(context, item, type!),
+                                          () => _showBookingDialog(
+                                            context,
+                                            item,
+                                            type!,
+                                          ),
                                       child: Text(
                                         isEdit ? 'Add more' : 'BOOK NOW',
                                         style: TextStyle(
@@ -1175,7 +1178,8 @@ class _OrderPageState extends State<OrderPage> {
                                 ),
                               ),
                             ),
-                            onPressed: () => _showBookingDialog(context, item, type!),
+                            onPressed:
+                                () => _showBookingDialog(context, item, type!),
                             child: Text(
                               isEdit ? 'Add more' : 'BOOK NOW',
                               style: TextStyle(
@@ -1404,9 +1408,7 @@ class _OrderPageState extends State<OrderPage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          Colors.green,
-                        ),
+                        backgroundColor: WidgetStateProperty.all(Colors.green),
                         shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -1513,106 +1515,175 @@ class _OrderPageState extends State<OrderPage> {
                 backgroundColor: Colors.white,
                 foregroundColor: buttonColor,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    bottomLeft: Radius.circular(8),
-                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => MultiCatalogBookingPage(
-                            catalogs: selectedItems,
-                            onSuccess: () {
-                              setState(() {
-                                selectedItems.clear();
-                              });
-                              _fetchCartCount();
-                              Provider.of<CartModel>(
-                                context,
-                                listen: false,
-                              ).refreshAddedItems();
-                            },
-                          ),
-                    ),
-                  ),
+              onPressed: () {
+                Widget screen;
+
+                if (AppConstants.bookingType == "1") {
+                  screen = MultiCatalogBookingPage(
+                    catalogs: selectedItems,
+                    onSuccess: () {
+                      setState(() {
+                        selectedItems.clear();
+                      });
+                      _fetchCartCount();
+                      Provider.of<CartModel>(
+                        context,
+                        listen: false,
+                      ).refreshAddedItems();
+                    },
+                  );
+                } else if (AppConstants.bookingType == "2") {
+                  screen = CreateOrderScreen(
+                    catalogs: selectedItems,
+                    onSuccess: () {
+                      setState(() {
+                        selectedItems.clear();
+                      });
+                      _fetchCartCount();
+                      Provider.of<CartModel>(
+                        context,
+                        listen: false,
+                      ).refreshAddedItems();
+                    },
+                  );
+                } else {
+                  screen = CreateOrderScreen3(
+                    catalogs: selectedItems,
+                    onSuccess: () {
+                      setState(() {
+                        selectedItems.clear();
+                      });
+                      _fetchCartCount();
+                      Provider.of<CartModel>(
+                        context,
+                        listen: false,
+                      ).refreshAddedItems();
+                    },
+                  );
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => screen),
+                );
+              },
               child: Text(isEdit ? 'Add more' : 'BOOK NOW'),
-            ),
-          ),
-          Container(height: 42, width: 2, color: buttonColor),
-          Expanded(
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: buttonColor,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => CreateOrderScreen(
-                            catalogs: selectedItems,
-                            onSuccess: () {
-                              setState(() {
-                                selectedItems.clear();
-                              });
-                              _fetchCartCount();
-                              Provider.of<CartModel>(
-                                context,
-                                listen: false,
-                              ).refreshAddedItems();
-                            },
-                          ),
-                    ),
-                  ),
-              child: const Icon(Icons.shopping_cart),
-            ),
-          ),
-          Container(height: 42, width: 2, color: buttonColor),
-          Expanded(
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: buttonColor,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(8),
-                    bottomRight: Radius.circular(8),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => CreateOrderScreen3(
-                            catalogs: selectedItems,
-                            onSuccess: () {
-                              setState(() {
-                                selectedItems.clear();
-                              });
-                              _fetchCartCount();
-                              Provider.of<CartModel>(
-                                context,
-                                listen: false,
-                              ).refreshAddedItems();
-                            },
-                          ),
-                    ),
-                  ),
-              child: const Icon(Icons.assignment),
             ),
           ),
         ],
       ),
+      // child: Row(
+      //   children: [
+      //     Expanded(
+      //       child: TextButton(
+      //         style: TextButton.styleFrom(
+      //           backgroundColor: Colors.white,
+      //           foregroundColor: buttonColor,
+      //           shape: const RoundedRectangleBorder(
+      //             borderRadius: BorderRadius.only(
+      //               topLeft: Radius.circular(8),
+      //               bottomLeft: Radius.circular(8),
+      //             ),
+      //           ),
+      //           padding: const EdgeInsets.symmetric(vertical: 12),
+      //         ),
+      //         onPressed:
+      //             () => Navigator.push(
+      //               context,
+      //               MaterialPageRoute(
+      //                 builder:
+      //                     (context) => MultiCatalogBookingPage(
+      //                       catalogs: selectedItems,
+      //                       onSuccess: () {
+      //                         setState(() {
+      //                           selectedItems.clear();
+      //                         });
+      //                         _fetchCartCount();
+      //                         Provider.of<CartModel>(
+      //                           context,
+      //                           listen: false,
+      //                         ).refreshAddedItems();
+      //                       },
+      //                     ),
+      //               ),
+      //             ),
+      //         child: Text(isEdit ? 'Add more' : 'BOOK NOW4'),
+      //       ),
+      //     ),
+      //     Container(height: 42, width: 2, color: buttonColor),
+      //     Expanded(
+      //       child: TextButton(
+      //         style: TextButton.styleFrom(
+      //           backgroundColor: Colors.white,
+      //           foregroundColor: buttonColor,
+      //           padding: const EdgeInsets.symmetric(vertical: 12),
+      //         ),
+      //         onPressed:
+      //             () => Navigator.push(
+      //               context,
+      //               MaterialPageRoute(
+      //                 builder:
+      //                     (context) => CreateOrderScreen(
+      //                       catalogs: selectedItems,
+      //                       onSuccess: () {
+      //                         setState(() {
+      //                           selectedItems.clear();
+      //                         });
+      //                         _fetchCartCount();
+      //                         Provider.of<CartModel>(
+      //                           context,
+      //                           listen: false,
+      //                         ).refreshAddedItems();
+      //                       },
+      //                     ),
+      //               ),
+      //             ),
+      //         child: const Icon(Icons.shopping_cart),
+      //       ),
+      //     ),
+      //     Container(height: 42, width: 2, color: buttonColor),
+      //     Expanded(
+      //       child: TextButton(
+      //         style: TextButton.styleFrom(
+      //           backgroundColor: Colors.white,
+      //           foregroundColor: buttonColor,
+      //           shape: const RoundedRectangleBorder(
+      //             borderRadius: BorderRadius.only(
+      //               topRight: Radius.circular(8),
+      //               bottomRight: Radius.circular(8),
+      //             ),
+      //           ),
+      //           padding: const EdgeInsets.symmetric(vertical: 12),
+      //         ),
+      //         onPressed:
+      //             () => Navigator.push(
+      //               context,
+      //               MaterialPageRoute(
+      //                 builder:
+      //                     (context) => CreateOrderScreen3(
+      //                       catalogs: selectedItems,
+      //                       onSuccess: () {
+      //                         setState(() {
+      //                           selectedItems.clear();
+      //                         });
+      //                         _fetchCartCount();
+      //                         Provider.of<CartModel>(
+      //                           context,
+      //                           listen: false,
+      //                         ).refreshAddedItems();
+      //                       },
+      //                     ),
+      //               ),
+      //             ),
+      //         child: const Icon(Icons.assignment),
+      //       ),
+      //     ),
+      //   ],
+      // ),
     );
 
     return [
