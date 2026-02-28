@@ -2053,8 +2053,8 @@ class _CatalogPageState extends State<CatalogPage> {
                 if (includeProduct)
                   caption += '*Product*\t: ${item.itemName}\n';
                 if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
-                if(AppConstants.whatsappType == "U")
-                {
+          
+                
                 bool result = await sendWhatsAppFile(
                   fileBytes: imageBytes,
                   mobileNo: mobileNo,
@@ -2065,20 +2065,7 @@ class _CatalogPageState extends State<CatalogPage> {
                 if (!result) {
                   print("Failed to send image for ${item.itemName}.");
                 }
-                }
-                else{
-                   bool result = await sendWhatsAppOfficialFile(
-                  fileBytes: imageBytes,
-                  mobileNo: mobileNo,
-                  fileType: 'image',
-                  caption: caption,
-                );
-
-                if (!result) {
-                  print("Failed to send image for ${item.itemName}.");
-                }
-
-                }
+                
               } else {
                 print(
                   "Failed to download the image for ${item.itemName}. Status Code: ${response.statusCode}",
