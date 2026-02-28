@@ -283,57 +283,61 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> fetchCatalogItem({
-    required String itemSubGrpKey,
-    String? itemKey,
-    required String cobr,
-    String? brandKey,
-    String? sortBy,
-    String? styleKey,
-    String? shadeKey,
-    String? sizeKey,
-    String? fromMRP,
-    String? toMRP,
-    String? fromDate,
-    String? toDate,
-    int? pageNo,
-  }) async {
-    final url = Uri.parse('${AppConstants.BASE_URL}/catalog/catlogDetailsPgn');
+static Future<Map<String, dynamic>> fetchCatalogItem({
+  required String itemSubGrpKey,
+  String? itemKey,
+  required String cobr,
+  String? brandKey,
+  String? sortBy,
+  String? styleKey,
+  String? shadeKey,
+  String? sizeKey,
+  String? fromMRP,
+  String? toMRP,
+  String? fromDate,
+  String? toDate,
+  String? stockFilter,  // Add this
+  String? imageFilter,   // Add this
+  int? pageNo,
+}) async {
+  final url = Uri.parse('${AppConstants.BASE_URL}/catalog/catlogDetailsPgn');
 
-    final Map<String, dynamic> body = {
-      "itemSubGrpKey": itemSubGrpKey,
-      "itemKey": itemKey,
-      "brandKey": brandKey,
-      "styleKey": styleKey,
-      "shadeKey": shadeKey,
-      "sizeKey": sizeKey,
-      "fromMRP": fromMRP,
-      "toMRP": toMRP,
-      "cobr": cobr,
-      "sortBy": sortBy,
-      "fromDate": fromDate,
-      "toDate": toDate,
-      "pageNo": pageNo,
+  final Map<String, dynamic> body = {
+    "itemSubGrpKey": itemSubGrpKey,
+    "itemKey": itemKey,
+    "brandKey": brandKey,
+    "styleKey": styleKey,
+    "shadeKey": shadeKey,
+    "sizeKey": sizeKey,
+    "fromMRP": fromMRP,
+    "toMRP": toMRP,
+    "cobr": cobr,
+    "sortBy": sortBy,
+    "fromDate": fromDate,
+    "toDate": toDate,
+    "stockFilter": stockFilter,  // Add this
+    "imageFilter": imageFilter,   // Add this
+    "pageNo": pageNo,
+  };
+
+  final response = await http.post(
+    url,
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode(body),
+  );
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(response.body);
+    final catalogs = data.map((json) => Catalog.fromJson(json)).toList();
+    return {"statusCode": response.statusCode, "catalogs": catalogs};
+  } else {
+    return {
+      "statusCode": response.statusCode,
+      "catalogs": [],
+      "error": response.body,
     };
-
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      final catalogs = data.map((json) => Catalog.fromJson(json)).toList();
-      return {"statusCode": response.statusCode, "catalogs": catalogs};
-    } else {
-      return {
-        "statusCode": response.statusCode,
-        "catalogs": [],
-        "error": response.body,
-      };
-    }
   }
+}
 
   static Future<List<String>> fetchAddedItems({
     required String coBrId,
@@ -884,4 +888,26 @@ class ApiService {
       return {'statusCode': 500, 'result': <KeyName>[]};
     }
   }
+// Add this to your ApiService class
+static Future<Map<String, dynamic>> fetchOrderReportData(String orderNo) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.OrderReportView}/orderRegister/getSalesOrderData/$orderNo'),
+      headers: {
+        'Content-Type': 'application/json',
+        // Add any authentication headers if needed
+        // 'Authorization': 'Bearer ${UserSession.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load order report data: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching order report data: $e');
+    throw Exception('Error fetching order report data: $e');
+  }
+}
 }

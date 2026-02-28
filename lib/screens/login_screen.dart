@@ -712,9 +712,11 @@ class _LoginPageState extends State<LoginScreen> {
   //     ),
   //   );
   // }
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          Colors.grey[100], // Light grey background to make card stand out
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -736,26 +738,57 @@ class _LoginPageState extends State<LoginScreen> {
           builder: (context, constraints) {
             final screenWidth = MediaQuery.of(context).size.width;
             final containerWidth = screenWidth > 600 ? 500.0 : double.infinity;
+            final isMobile = screenWidth < 600;
 
             return Center(
               child: Container(
                 width: containerWidth,
-                child: SingleChildScrollView(
-                  physics:
-                      constraints.maxHeight < 600
-                          ? AlwaysScrollableScrollPhysics()
-                          : NeverScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
+                margin: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 0,
+                  vertical: 20,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  // Enhanced shadow to make card pop
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
                     ),
-                    child: IntrinsicHeight(
-                      child: Form(
+                    BoxShadow(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 15,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top gradient border
+                      Container(
+                        height: 4,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.primaryColor, AppColors.maroon],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
+                      ),
+
+                      // Form content - EXACTLY as original
+                      Form(
                         key: _formKey,
                         child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // Background image with logo - ORIGINAL
                             Stack(
                               alignment: Alignment.bottomCenter,
                               clipBehavior: Clip.none,
@@ -763,7 +796,7 @@ class _LoginPageState extends State<LoginScreen> {
                                 Image.asset(
                                   "assets/images/background.png",
                                   width: double.infinity,
-                                  height: constraints.maxHeight * 0.23,
+                                  height: 150,
                                   fit: BoxFit.cover,
                                 ),
                                 Positioned(
@@ -783,21 +816,54 @@ class _LoginPageState extends State<LoginScreen> {
                                 ),
                               ],
                             ),
-                            SizedBox(height: 50),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
+
+                            // Form fields container - ORIGINAL
+                            Container(
+                              padding: EdgeInsets.all(16),
                               child: Column(
                                 children: [
+                                  SizedBox(
+                                    height: 40,
+                                  ), // Space for overlapping logo
+                                  // ORIGINAL "Login Now" text
                                   Text(
-                                    "Login Now",
+                                    "LOGIN NOW",
                                     style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w900,
+                                      foreground:
+                                          Paint()
+                                            ..shader = LinearGradient(
+                                              colors: [
+                                                AppColors.primaryColor,
+                                                Color(
+                                                  0xFF6A11CB,
+                                                ), // Deep Purple
+                                                AppColors.maroon,
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ).createShader(
+                                              Rect.fromLTWH(0, 0, 200, 70),
+                                            ),
+                                      shadows: [
+                                        Shadow(
+                                          color: AppColors.primaryColor
+                                              .withOpacity(0.5),
+                                          offset: Offset(3, 3),
+                                          blurRadius: 7,
+                                        ),
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.9),
+                                          offset: Offset(1, 1),
+                                          blurRadius: 2,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   SizedBox(height: 8),
+
+                                  // ORIGINAL form fields exactly as before
                                   _buildTextField(
                                     "User",
                                     "Enter your username",
@@ -810,6 +876,7 @@ class _LoginPageState extends State<LoginScreen> {
                                                 ? 'Username is required'
                                                 : null,
                                   ),
+
                                   _buildTextField(
                                     "Password",
                                     "Enter your password",
@@ -823,6 +890,7 @@ class _LoginPageState extends State<LoginScreen> {
                                                 ? 'Password is required'
                                                 : null,
                                   ),
+
                                   _buildDropdown(
                                     "Company",
                                     "Select your Company",
@@ -840,6 +908,7 @@ class _LoginPageState extends State<LoginScreen> {
                                                 ? 'Please select a company'
                                                 : null,
                                   ),
+
                                   _buildDropdown(
                                     "Year",
                                     "Select Year",
@@ -855,7 +924,10 @@ class _LoginPageState extends State<LoginScreen> {
                                                 ? 'Please select a year'
                                                 : null,
                                   ),
+
                                   SizedBox(height: 8),
+
+                                  // ORIGINAL login button
                                   Container(
                                     width: double.infinity,
                                     height: 45,
@@ -880,7 +952,7 @@ class _LoginPageState extends State<LoginScreen> {
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
-                                            0,
+                                            8,
                                           ),
                                         ),
                                       ),
@@ -921,6 +993,8 @@ class _LoginPageState extends State<LoginScreen> {
                                               ),
                                     ),
                                   ),
+
+                                  // ORIGINAL register link
                                   isRegistered == '1'
                                       ? Container()
                                       : TextButton(
@@ -958,7 +1032,7 @@ class _LoginPageState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),

@@ -237,6 +237,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return DateFormat('yyyy-MM-dd').format(futureDate);
   }
 
+  String getTodayWithZeroTime() {
+    final now = DateTime.now();
+    final zeroTime = DateTime(now.year, now.month, now.day);
+    return DateFormat('yyyy-MM-dd HH:mm:ss.SSS').format(zeroTime);
+  }
+
   String calculateDueDate() {
     final paymentDays = _additionalInfo['paymentdays'];
     if (paymentDays != null &&
@@ -296,7 +302,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           '0',
       "duedate": calculateDueDate(),
       "refno": _additionalInfo['refno'] ?? '',
-      "date": '',
+      "date": getTodayWithZeroTime(),
       "bookingtype": _additionalInfo['bookingtype'] ?? '',
       "salesman":
           _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
@@ -1521,7 +1527,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
       text: widget.additionalInfo['station'] ?? '',
     );
     _paymentDaysController = TextEditingController(
-      text: widget.additionalInfo['paymentdays'] ?? widget.creditPeriod?.toString() ?? '',
+      text:
+          widget.additionalInfo['paymentdays'] ??
+          widget.creditPeriod?.toString() ??
+          '',
     );
     _selectedSalesman =
         widget.salesPersonList.firstWhere(
@@ -1552,7 +1561,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 20.0,
+      ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         constraints: BoxConstraints(
@@ -1569,14 +1581,18 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                 children: [
                   Text(
                     "Additional Information",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: primaryBlue,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Divider(color: Colors.grey.shade300, height: 1),
                 ],
               ),
             ),
-            
+
             // Content
             Expanded(
               child: SingleChildScrollView(
@@ -1601,7 +1617,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         });
                       },
                     ),
-                    
+
                     // Consignee Dropdown
                     _buildDropdown(
                       "Consignee",
@@ -1610,7 +1626,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedConsignee = val),
                     ),
-                    
+
                     // Payment Terms Dropdown
                     _buildDropdown(
                       "Payment Terms",
@@ -1619,7 +1635,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedPaymentTerm = val),
                     ),
-                    
+
                     // Booking Type Dropdown
                     _buildDropdown(
                       "Booking Type",
@@ -1628,26 +1644,26 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedBookingType = val),
                     ),
-                    
+
                     // Reference No TextField
                     _buildTextField("Reference No", _refNoController),
-                    
+
                     // Station TextField
                     _buildTextField("Station", _stationController),
-                    
+
                     // Payment Days TextField
                     _buildTextField(
-                      "Payment Days", 
+                      "Payment Days",
                       _paymentDaysController,
                       keyboardType: TextInputType.number,
                     ),
-                    
+
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-            
+
             // Footer Buttons
             Container(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -1661,9 +1677,14 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                      child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        "Save",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1674,9 +1695,14 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -1701,7 +1727,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: Colors.grey.shade400),
             borderRadius: BorderRadius.circular(6),
@@ -1710,7 +1739,11 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
             borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
             borderRadius: BorderRadius.circular(6),
           ),
-          labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+          labelStyle: const TextStyle(
+            color: Color(0xFF475569),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -1735,8 +1768,13 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
           searchFieldProps: TextFieldProps(
             decoration: InputDecoration(
               hintText: "Search $label",
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
               isDense: true,
             ),
           ),
@@ -1752,7 +1790,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(6),
@@ -1761,15 +1802,28 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
               borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
               borderRadius: BorderRadius.circular(6),
             ),
-            labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+            labelStyle: const TextStyle(
+              color: Color(0xFF475569),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        dropdownButtonProps: const DropdownButtonProps(icon: Icon(Icons.keyboard_arrow_down)),
+        dropdownButtonProps: const DropdownButtonProps(
+          icon: Icon(Icons.keyboard_arrow_down),
+        ),
         dropdownBuilder: (context, selectedItem) {
           if (selectedItem == null || selectedItem.isEmpty) {
-            return Text("Select $label", style: const TextStyle(fontSize: 13, color: Colors.grey));
+            return Text(
+              "Select $label",
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            );
           }
-          return Text(selectedItem, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis);
+          return Text(
+            selectedItem,
+            style: const TextStyle(fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          );
         },
         filterFn: (item, filter) {
           if (filter.isEmpty) return true;

@@ -6,6 +6,7 @@ import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
+import 'package:vrs_erp/dashboard/customerOrderDetailsPage.dart';
 import 'package:vrs_erp/dashboard/dashboard.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
@@ -89,6 +90,7 @@ class MyApp extends StatelessWidget {
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => JobCardListScreen(),
+      
       },
 
       // home: SalesOrderInvoicePage(),

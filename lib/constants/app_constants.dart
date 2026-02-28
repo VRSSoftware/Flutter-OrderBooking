@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConstants {
-  // static String BASE_URL = "http://192.168.0.11:8080/api/v1";
+  static String BASE_URL = "http://192.168.0.5:8080/api/v1";
   static bool isLive = true;
   //  static  String? BASE_URL;
   //  static  String? BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
-  static String? BASE_URL = "https://api.vrsretail.in/vrs_erp/api/v1";
+  //static String? BASE_URL = "https://43.227.186.253:8080/vrs_erp/api/v1";
   static String? whatsappKey;
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com";
   // static  String Pdf_url = "https://localhost:44303";
@@ -16,6 +16,8 @@ class AppConstants {
   // static  String Pdf_url = "http://pdf.uniretailsoftware.com/";
   static String Pdf_url =
       "https://api.vrsretail.in/vrs_erp/api/v1/report/getRptReport";
+
+      static String OrderReportView="http://192.168.0.254:8080/api/v1";
 }
 
 class AppColors {

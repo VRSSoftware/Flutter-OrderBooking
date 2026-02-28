@@ -90,6 +90,9 @@ class _CatalogPageState extends State<CatalogPage> {
   final ScrollController _scrollController = ScrollController();
   final int pageSize = 10; // Adjust based on backend API
 
+   String? stockFilter;
+  String? imageFilter;
+
   @override
   void initState() {
     super.initState();
@@ -224,68 +227,61 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
-  Future<void> _fetchCatalogItems() async {
-    try {
-      if (pageNo == 1) {
-        setState(() {
-          catalogItems = [];
-          isLoading = true;
-          hasMore = true;
-        });
-      } else {
-        setState(() {
-          isLoadingMore = true;
-        });
-      }
-
-      final result = await ApiService.fetchCatalogItem(
-        itemSubGrpKey: itemSubGrpKey!,
-        itemKey: itemKey,
-        cobr: coBr!,
-        sortBy: sortBy,
-        // styleKey: selectedStyles.length == 1 ? selectedStyles[0].styleKey : null,
-        styleKey:
-            selectedStyles.isEmpty
-                ? null
-                : selectedStyles.map((s) => s.styleKey).join(','),
-        shadeKey:
-            selectedShades.isEmpty
-                ? null
-                : selectedShades.map((s) => s.shadeKey).join(','),
-        sizeKey:
-            selectedSize.isEmpty
-                ? null
-                : selectedSize.map((s) => s.itemSizeKey).join(','),
-        fromMRP: fromMRP == "" ? null : fromMRP,
-        toMRP: toMRP == "" ? null : toMRP,
-        fromDate: fromDate == "" ? null : fromDate,
-        toDate: toDate == "" ? null : toDate,
-        brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
-        pageNo: pageNo,
-      );
-
-      // print('Full API Response: ${jsonEncode(result)}'); // Log raw JSON
-      final List<Catalog> items = result["catalogs"] as List<Catalog>;
-      // print(
-      //   'Catalog Items: ${items.map((e) => {'styleCode': e.styleCode, 'ShadeImages': e.shadeImages, 'fullImagePath': e.fullImagePath ?? ''}).toList()}',
-      // );
-
+Future<void> _fetchCatalogItems() async {
+  try {
+    if (pageNo == 1) {
       setState(() {
-        catalogItems.addAll(items);
-        total = result["total"] ?? items.length; // Adjust based on API response
-        isLoading = false;
-        isLoadingMore = false;
-        hasMore = items.length >= pageSize;
+        catalogItems = [];
+        isLoading = true;
+        hasMore = true;
       });
-    } catch (e) {
-      debugPrint('Failed to load catalog items: $e');
+    } else {
       setState(() {
-        isLoading = false;
-        isLoadingMore = false;
+        isLoadingMore = true;
       });
     }
-  }
 
+    final result = await ApiService.fetchCatalogItem(
+      itemSubGrpKey: itemSubGrpKey!,
+      itemKey: itemKey,
+      cobr: coBr!,
+      sortBy: sortBy,
+      styleKey: selectedStyles.isEmpty
+          ? null
+          : selectedStyles.map((s) => s.styleKey).join(','),
+      shadeKey: selectedShades.isEmpty
+          ? null
+          : selectedShades.map((s) => s.shadeKey).join(','),
+      sizeKey: selectedSize.isEmpty
+          ? null
+          : selectedSize.map((s) => s.itemSizeKey).join(','),
+      fromMRP: fromMRP == "" ? null : fromMRP,
+      toMRP: toMRP == "" ? null : toMRP,
+      fromDate: fromDate == "" ? null : fromDate,
+      toDate: toDate == "" ? null : toDate,
+      brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
+      stockFilter: stockFilter == "" ? null : stockFilter,  // Add this
+      imageFilter: imageFilter == "" ? null : imageFilter,   // Add this
+      pageNo: pageNo,
+    );
+
+    final List<Catalog> items = result["catalogs"] as List<Catalog>;
+
+    setState(() {
+      catalogItems.addAll(items);
+      total = result["total"] ?? items.length;
+      isLoading = false;
+      isLoadingMore = false;
+      hasMore = items.length >= pageSize;
+    });
+  } catch (e) {
+    debugPrint('Failed to load catalog items: $e');
+    setState(() {
+      isLoading = false;
+      isLoadingMore = false;
+    });
+  }
+}
   // Future<void> _fetchStylesByItemGrpKey(String itemKey) async {
   //   try {
   //     final fetchedStyles = await ApiService.fetchStylesByItem(itemKey);
@@ -404,7 +400,7 @@ class _CatalogPageState extends State<CatalogPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          toTitleCase(itemNamee ?? ''),
+          toTitleCase(itemNamee ?? 'Catalog Items'),
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.primaryColor,
@@ -760,327 +756,318 @@ class _CatalogPageState extends State<CatalogPage> {
     return 0.4;
   }
 
-Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
-  final filteredItems = _getFilteredItems();
+  Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
+    final filteredItems = _getFilteredItems();
 
-  return ListView.builder(
-    controller: _scrollController,
-    itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-    itemBuilder: (context, index) {
-      if (index == filteredItems.length && isLoadingMore) {
-        return Center(
-          child: LoadingAnimationWidget.waveDots(
-            color: AppColors.primaryColor,
-            size: 30,
-          ),
-        );
-      }
-
-      final item = filteredItems[index];
-      bool isSelected = selectedItems.contains(item);
-
-      List<String> shades =
-          item.shadeName.isNotEmpty
-              ? item.shadeName
-                  .split(',')
-                  .map((shade) => shade.trim())
-                  .toList()
-              : [];
-
-      final imageUrls = _getImageUrl(item);
-      final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
-
-      return GestureDetector(
-        onDoubleTap: () {
-          _openImageZoom1(
-            context,
-            item,
-            showShades: showShades,
-            showMRP: showMRP,
-            showWSP: showWSP,
-            showSizes: showSizes,
-            showProduct: showProduct,
-            showRemark: showRemark,
-            isLargeScreen: isLargeScreen,
-          );
-        },
-        onLongPress: () => _toggleItemSelection(item),
-        onTap: () {
-          if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: Card(
-            clipBehavior: Clip.antiAlias,
-            elevation: isSelected ? 8 : 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == filteredItems.length && isLoadingMore) {
+          return Center(
+            child: LoadingAnimationWidget.waveDots(
+              color: AppColors.primaryColor,
+              size: 30,
             ),
-            color: isSelected ? Colors.blue.shade50 : Colors.white,
-            child: Stack(
-              children: [
-                // Left curved color strip
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  child: Container(
-                    width: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        bottomLeft: Radius.circular(12),
+          );
+        }
+
+        final item = filteredItems[index];
+        bool isSelected = selectedItems.contains(item);
+
+        List<String> shades =
+            item.shadeName.isNotEmpty
+                ? item.shadeName
+                    .split(',')
+                    .map((shade) => shade.trim())
+                    .toList()
+                : [];
+
+        final imageUrls = _getImageUrl(item);
+        final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+
+        return GestureDetector(
+          onDoubleTap: () {
+            _openImageZoom1(
+              context,
+              item,
+              showShades: showShades,
+              showMRP: showMRP,
+              showWSP: showWSP,
+              showSizes: showSizes,
+              showProduct: showProduct,
+              showRemark: showRemark,
+              isLargeScreen: isLargeScreen,
+            );
+          },
+          onLongPress: () => _toggleItemSelection(item),
+          onTap: () {
+            if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              elevation: isSelected ? 8 : 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: isSelected ? Colors.blue.shade50 : Colors.white,
+              child: Stack(
+                children: [
+                  // Left curved color strip
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          bottomLeft: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                Padding(
-                  padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            bottomLeft: Radius.circular(12),
-                          ),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final maxImageHeight =
-                                  constraints.maxWidth * 1.2;
+                  Padding(
+                    padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          flex: 2,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              bottomLeft: Radius.circular(12),
+                            ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final maxImageHeight =
+                                    constraints.maxWidth * 1.2;
 
-                              return ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight: maxImageHeight,
-                                ),
-                                child:
-                                    imageUrls.isNotEmpty &&
-                                            imageUrls[0].isNotEmpty
-                                        ? Stack(
-                                          children: [
-                                            SizedBox(
-                                              height: maxImageHeight,
-                                              width: double.infinity,
-                                              child: PageView.builder(
-                                                itemCount: imageUrls.length,
-                                                onPageChanged: (index) {
-                                                  currentImageIndex.value =
-                                                      index;
-                                                },
-                                                itemBuilder:
-                                                    (context, index) {
-                                                  final imageUrl =
-                                                      imageUrls[index];
-                                                  return _buildSingleImage(
-                                                    imageUrl,
-                                                    maxImageHeight,
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            if (imageUrls.length > 1)
-                                              Positioned(
-                                                bottom: 8,
-                                                left: 0,
-                                                right: 0,
-                                                child:
-                                                    ValueListenableBuilder<int>(
-                                                  valueListenable:
-                                                      currentImageIndex,
-                                                  builder:
-                                                      (context, index, child) {
-                                                    return DotIndicator(
-                                                      count:
-                                                          imageUrls.length,
-                                                      currentIndex: index,
+                                return ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: maxImageHeight,
+                                  ),
+                                  child:
+                                      imageUrls.isNotEmpty &&
+                                              imageUrls[0].isNotEmpty
+                                          ? Stack(
+                                            children: [
+                                              SizedBox(
+                                                height: maxImageHeight,
+                                                width: double.infinity,
+                                                child: PageView.builder(
+                                                  itemCount: imageUrls.length,
+                                                  onPageChanged: (index) {
+                                                    currentImageIndex.value =
+                                                        index;
+                                                  },
+                                                  itemBuilder: (
+                                                    context,
+                                                    index,
+                                                  ) {
+                                                    final imageUrl =
+                                                        imageUrls[index];
+                                                    return _buildSingleImage(
+                                                      imageUrl,
+                                                      maxImageHeight,
                                                     );
                                                   },
                                                 ),
                                               ),
-                                          ],
-                                        )
-                                        : _buildSingleImage(
-                                          '',
-                                          maxImageHeight,
-                                        ),
-                              );
-                            },
+                                              if (imageUrls.length > 1)
+                                                Positioned(
+                                                  bottom: 8,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: ValueListenableBuilder<
+                                                    int
+                                                  >(
+                                                    valueListenable:
+                                                        currentImageIndex,
+                                                    builder: (
+                                                      context,
+                                                      index,
+                                                      child,
+                                                    ) {
+                                                      return DotIndicator(
+                                                        count: imageUrls.length,
+                                                        currentIndex: index,
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                            ],
+                                          )
+                                          : _buildSingleImage(
+                                            '',
+                                            maxImageHeight,
+                                          ),
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: isLargeScreen ? 16 : 8),
-                      Flexible(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.all(
-                                  isLargeScreen ? 16 : 12),
-                              child: Table(
-                                columnWidths: const {
-                                  0: IntrinsicColumnWidth(),
-                                  1: FixedColumnWidth(8),
-                                  2: FlexColumnWidth(),
-                                },
-                                defaultVerticalAlignment:
-                                    TableCellVerticalAlignment.middle,
-                                children: [
-                                  TableRow(
-                                    children: [
-                                      _buildLabelText('Design'),
-                                      const Text(':'),
-                                      Text(
-                                        item.styleCodeWithcount,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize:
-                                              isLargeScreen ? 20 : 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  _buildSpacerRow(),
-                                  if (showShades && shades.isNotEmpty)
+                        SizedBox(width: isLargeScreen ? 16 : 8),
+                        Flexible(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isLargeScreen ? 16 : 12,
+                                ),
+                                child: Table(
+                                  columnWidths: const {
+                                    0: IntrinsicColumnWidth(),
+                                    1: FixedColumnWidth(8),
+                                    2: FlexColumnWidth(),
+                                  },
+                                  defaultVerticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  children: [
                                     TableRow(
                                       children: [
-                                        _buildLabelText('Shade'),
+                                        _buildLabelText('Design'),
                                         const Text(':'),
                                         Text(
-                                          shades.join(', '),
+                                          item.styleCodeWithcount,
                                           style: TextStyle(
-                                            fontSize:
-                                                isLargeScreen ? 14 : 13,
-                                            color: Colors.grey[700],
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: isLargeScreen ? 20 : 16,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  if (showShades && shades.isNotEmpty)
                                     _buildSpacerRow(),
-                                  if (showMRP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('MRP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.mrp
-                                              .toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showMRP) _buildSpacerRow(),
-                                  if (showWSP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('WSP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.wsp
-                                              .toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showWSP) _buildSpacerRow(),
-                                  if (item.sizeName.isNotEmpty &&
-                                      showSizes)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Size'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection:
-                                              Axis.horizontal,
-                                          child: Text(
-                                            _getSizeText(item),
-                                            style:
-                                                _valueTextStyle(),
+                                    if (showShades && shades.isNotEmpty)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Shade'),
+                                          const Text(':'),
+                                          Text(
+                                            shades.join(', '),
+                                            style: TextStyle(
+                                              fontSize: isLargeScreen ? 14 : 13,
+                                              color: Colors.grey[700],
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (item.sizeName.isNotEmpty &&
-                                      showSizes)
-                                    _buildSpacerRow(),
-                                  if (showProduct)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Product'),
-                                        const Text(':'),
-                                        Text(
-                                          item.itemName,
-                                          style:
-                                              _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showProduct) _buildSpacerRow(),
-                                  if (showRemark)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Remark'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection:
-                                              Axis.horizontal,
-                                          child: Text(
-                                            item.remark
-                                                        ?.trim()
-                                                        .isNotEmpty ==
-                                                    true
-                                                ? item.remark!
-                                                : '--',
-                                            style:
-                                                _valueTextStyle(),
+                                        ],
+                                      ),
+                                    if (showShades && shades.isNotEmpty)
+                                      _buildSpacerRow(),
+                                    if (showMRP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('MRP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.mrp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
+                                        ],
+                                      ),
+                                    if (showMRP) _buildSpacerRow(),
+                                    if (showWSP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('WSP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.wsp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showWSP) _buildSpacerRow(),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Size'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              _getSizeText(item),
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      _buildSpacerRow(),
+                                    if (showProduct)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Product'),
+                                          const Text(':'),
+                                          Text(
+                                            item.itemName,
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showProduct) _buildSpacerRow(),
+                                    if (showRemark)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Remark'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              item.remark?.trim().isNotEmpty ==
+                                                      true
+                                                  ? item.remark!
+                                                  : '--',
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (isSelected)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle,
-                        color: AppColors.primaryColor,
-                        size: 24,
-                      ),
+                      ],
                     ),
                   ),
-              ],
+
+                  if (isSelected)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle,
+                          color: AppColors.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   Widget _buildExpandedView(bool isLargeScreen) {
     final filteredItems = _getFilteredItems();
@@ -1805,116 +1792,152 @@ Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
   List<String> _getImageUrl(Catalog catalog) {
     final shadeImages = catalog.shadeImages ?? '';
     final fullImagePath = catalog.fullImagePath ?? '';
-    print('ShadeImages for catalog ${catalog.styleCode}: $shadeImages');
-    print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
-    print('Base URL: ${AppConstants.BASE_URL}');
+
+    print('Getting image URL for ${catalog.styleCode}:');
+    print('  shadeImages: "$shadeImages"');
+    print('  fullImagePath: "$fullImagePath"');
+    print('  imageDependsOn: "${UserSession.imageDependsOn}"');
 
     if (shadeImages.isNotEmpty && UserSession.imageDependsOn == 'S') {
       final imageEntries =
           shadeImages.split(',').map((entry) => entry.trim()).toList();
       List<String> imageUrls = [];
+
       for (var entry in imageEntries) {
         final parts = entry.split(':');
         if (parts.length < 2) continue;
+
         final path = parts.sublist(1).join(':').trim();
         if (path.isEmpty) continue;
+
         final fileName = path.split('/').last.split('\\').last;
         if (fileName.isEmpty) continue;
+
+        if (fileName.toLowerCase() == 'noimage.jpg') {
+          print('  SKIPPING NoImage.jpg for ${catalog.styleCode}');
+          continue;
+        }
+
         final url = '${AppConstants.BASE_URL}/images/$fileName';
+        print('  Generated shade image URL: $url');
         imageUrls.add(url);
       }
-      return imageUrls.isEmpty ? [''] : imageUrls;
+
+      return imageUrls;
     } else if (fullImagePath.isNotEmpty) {
+      if (fullImagePath.startsWith('http')) {
+        if (fullImagePath.toLowerCase().contains('noimage.jpg')) {
+          print('  SKIPPING NoImage.jpg URL: $fullImagePath');
+          return [];
+        }
+        print('  Using full URL: $fullImagePath');
+        return [fullImagePath];
+      }
+
       final fileName = fullImagePath.split('/').last.split('?').first;
-      if (fileName.isEmpty) return [''];
+      if (fileName.isEmpty) {
+        print('  ERROR: Empty filename from $fullImagePath');
+        return [];
+      }
+
+      if (fileName.toLowerCase() == 'noimage.jpg') {
+        print('  SKIPPING NoImage.jpg from path: $fullImagePath');
+        return [];
+      }
+
       final url = '${AppConstants.BASE_URL}/images/$fileName';
-      // return [url];
-      return [fullImagePath];
+      print('  Constructed URL: $url');
+      return [url];
     }
 
-    return [''];
+    print('  No images found');
+    return [];
   }
 
-  void _showFilterDialog() async {
-    final result = await Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
-        settings: RouteSettings(
-          arguments: {
-            'itemKey': itemKey,
-            'itemSubGrpKey': itemSubGrpKey,
-            'coBr': coBr,
-            'fcYrId': fcYrId,
-            'styles': styles,
-            'shades': shades,
-            'sizes': sizes,
-            'selectedShades': selectedShades,
-            'selectedSizes': selectedSize,
-            'selectedStyles': selectedStyles,
-            'fromMRP': fromMRP,
-            'toMRP': toMRP,
-            'WSPfrom': WSPfrom,
-            'WSPto': WSPto,
-            'sortBy': sortBy,
-            'fromDate': fromDate,
-            'toDate': toDate,
-            'brands': brands.isEmpty ? [] : brands,
-            // 'selectedBrands': selectedBrands,
-          },
-        ),
-        transitionDuration: Duration(milliseconds: 500),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return ScaleTransition(
-            scale: animation,
-            alignment: Alignment.bottomRight,
-            child: FadeTransition(opacity: animation, child: child),
-          );
+void _showFilterDialog() async {
+  final result = await Navigator.push(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
+      settings: RouteSettings(
+        arguments: {
+          'itemKey': itemKey,
+          'itemSubGrpKey': itemSubGrpKey,
+          'coBr': coBr,
+          'fcYrId': fcYrId,
+          'styles': styles,
+          'shades': shades,
+          'sizes': sizes,
+          'selectedShades': selectedShades,
+          'selectedSizes': selectedSize,
+          'selectedStyles': selectedStyles,
+          'fromMRP': fromMRP,
+          'toMRP': toMRP,
+          'WSPfrom': WSPfrom,
+          'WSPto': WSPto,
+          'sortBy': sortBy,
+          'fromDate': fromDate,
+          'toDate': toDate,
+          'brands': brands.isEmpty ? [] : brands,
+          'stockFilter': stockFilter,  // Add this
+          'imageFilter': imageFilter,   // Add this
         },
       ),
-    );
+      transitionDuration: Duration(milliseconds: 500),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: animation,
+          alignment: Alignment.bottomRight,
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+    ),
+  );
 
-    if (result != null) {
-      Map<String, dynamic> selectedFilters = result;
-      setState(() {
-        selectedStyles = selectedFilters['styles'];
-        selectedSize = selectedFilters['sizes'];
-        selectedShades = selectedFilters['shades'];
-        fromMRP = selectedFilters['fromMRP'];
-        toMRP = selectedFilters['toMRP'];
-        WSPfrom = selectedFilters['WSPfrom'];
-        WSPto = selectedFilters['WSPto'];
-        sortBy = selectedFilters['sortBy'];
-        fromDate = selectedFilters['fromDate'];
-        toDate = selectedFilters['toDate'];
-        //selectedBrands = selectedFilters['selectedBrands'];
-        // Reset pagination
-        pageNo = 1;
-        catalogItems = [];
-        hasMore = true;
-      });
-      print("fromDate  ${selectedFilters['fromDate']}");
-      print("todate  ${selectedFilters['toDate']}");
-      print("aaaaaaaa  ${selectedFilters['styles']}");
-      print("aaaaaaaa  ${selectedFilters['WSPfrom']}");
-      print("aaaaaaaa  ${selectedFilters['WSPto']}");
-      print("aaaaaaaa  ${selectedFilters['styles']}");
-      if (!(selectedStyles.isEmpty &&
-          selectedSize.isEmpty &&
-          selectedShades.isEmpty &&
-          fromMRP == "" &&
-          toMRP == "" &&
-          WSPfrom == "" &&
-          WSPto == "" &&
-          selectedBrands.isEmpty &&
-          sortBy == "" &&
-          fromDate == "" &&
-          toDate == "")) {
-        _fetchCatalogItems();
-      }
+  if (result != null) {
+    Map<String, dynamic> selectedFilters = result;
+    setState(() {
+      selectedStyles = selectedFilters['styles'];
+      selectedSize = selectedFilters['sizes'];
+      selectedShades = selectedFilters['shades'];
+      fromMRP = selectedFilters['fromMRP'];
+      toMRP = selectedFilters['toMRP'];
+      WSPfrom = selectedFilters['WSPfrom'];
+      WSPto = selectedFilters['WSPto'];
+      sortBy = selectedFilters['sortBy'];
+      fromDate = selectedFilters['fromDate'];
+      toDate = selectedFilters['toDate'];
+      stockFilter = selectedFilters['stockFilter'];  // Add this
+      imageFilter = selectedFilters['imageFilter'];   // Add this
+      
+      // Reset pagination
+      pageNo = 1;
+      catalogItems = [];
+      hasMore = true;
+    });
+    
+    print("fromDate  ${selectedFilters['fromDate']}");
+    print("todate  ${selectedFilters['toDate']}");
+    print("stockFilter  ${selectedFilters['stockFilter']}");  // Add this
+    print("imageFilter  ${selectedFilters['imageFilter']}");   // Add this
+    
+    if (!(selectedStyles.isEmpty &&
+        selectedSize.isEmpty &&
+        selectedShades.isEmpty &&
+        fromMRP == "" &&
+        toMRP == "" &&
+        WSPfrom == "" &&
+        WSPto == "" &&
+        selectedBrands.isEmpty &&
+        sortBy == "" &&
+        fromDate == "" &&
+        toDate == "" &&
+        stockFilter == "" &&  // Add this
+        imageFilter == "")) {  // Add this
+      _fetchCatalogItems();
     }
   }
-
+}
   Future<void> _shareSelectedItemsPDF({
     required String shareType,
     bool includeDesign = true,
@@ -2220,13 +2243,21 @@ Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
         ),
       );
 
-      final List<Map<String, String>> catalogItems = [];
+      final List<Map<String, dynamic>> catalogItems = [];
+      int totalImages = 0;
+
       for (var item in selectedItems) {
         final imageUrls = _getImageUrl(item);
-        print('Image URLs before use: $imageUrls');
+        print('Image URLs for ${item.styleCode}: $imageUrls');
 
         for (var imageUrl in imageUrls) {
-          if (imageUrl.isEmpty) continue;
+          if (imageUrl.isEmpty || imageUrl.contains('NoImage.jpg')) {
+            print('Skipping invalid URL for ${item.styleCode}: $imageUrl');
+            continue;
+          }
+
+          totalImages++;
+
           String sizeValue = '';
           if (includeSize) {
             if (includeSizeMrp && includeSizeWsp) {
@@ -2238,74 +2269,194 @@ Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
             }
           }
 
-          catalogItems.add({
-            'fullImagePath': imageUrl,
-            'design': includeDesign ? item.styleCode : '',
-            'shade': includeShade ? item.shadeName : '',
-            'rate': includeRate ? item.mrp.toString() : '',
-            'wsp': includeWsp ? item.wsp.toString() : '',
-            'size': sizeValue,
-            'product': includeProduct ? item.itemName : '',
-            'remark': includeRemark ? item.remark : '',
-          });
+          // Create item with ALL information including the image URL
+          Map<String, dynamic> catalogItem = {
+            'imageUrl': imageUrl, // CRITICAL: Send the image URL
+          };
+
+          if (includeDesign) catalogItem['styleCode'] = item.styleCode;
+          if (includeShade) catalogItem['shade'] = item.shadeName;
+          if (includeRate) catalogItem['rate'] = item.mrp.toString();
+          if (includeWsp) catalogItem['wsp'] = item.wsp.toString();
+          if (includeSize && sizeValue.isNotEmpty)
+            catalogItem['size'] = sizeValue;
+          if (includeProduct) catalogItem['product'] = item.itemName;
+          if (includeRemark && item.remark != null && item.remark!.isNotEmpty) {
+            catalogItem['remark'] = item.remark;
+          }
+
+          catalogItems.add(catalogItem);
         }
       }
+
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No items with valid images to share'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      print(
+        'Sending ${catalogItems.length} items to server (from $totalImages images)',
+      );
+
+      // Send both the catalog items AND the include flags
+      final Map<String, dynamic> requestBody = {
+        'catalogItems': catalogItems,
+        'includeDesign': includeDesign,
+        'includeShade': includeShade,
+        'includeRate': includeRate,
+        'includeSize': includeSize,
+        'includeProduct': includeProduct,
+        'includeRemark': includeRemark,
+      };
+
+      if (includeWsp) {
+        requestBody['includeWsp'] = includeWsp;
+      }
+
+      print('Request body: ${jsonEncode(requestBody)}');
 
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'catalogItems': catalogItems,
-          'includeDesign': includeDesign,
-          'includeShade': includeShade,
-          'includeRate': includeRate,
-          'includeWsp': includeWsp,
-          'includeSize': includeSize,
-          'includeProduct': includeProduct,
-          'includeRemark': includeRemark,
-        }),
+        body: jsonEncode(requestBody),
       );
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as List;
-        final tempDir = await getTemporaryDirectory();
-        List<String> filePaths = [];
+        final responseData = jsonDecode(response.body);
 
-        for (var imageData in responseData) {
-          try {
-            final imageBytes = base64Decode(imageData['image']);
-            final file = File(
-              '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        if (responseData is List) {
+          if (responseData.isEmpty) {
+            // Server returned empty list - maybe it processes in background
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Processing ${catalogItems.length} images...'),
+                duration: Duration(seconds: 2),
+              ),
             );
-            await file.writeAsBytes(imageBytes);
-            filePaths.add(file.path);
-          } catch (e) {
-            print('Error saving image: $e');
+
+            // Try alternative approach - download images directly
+            await _downloadAndShareImagesDirectly(catalogItems);
+          } else {
+            // Server returned images
+            await _saveAndShareImages(responseData);
           }
+        } else if (responseData is Map && responseData.containsKey('message')) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(responseData['message'])));
+        } else {
+          print('Unexpected response: $responseData');
+          // Try direct download as fallback
+          await _downloadAndShareImagesDirectly(catalogItems);
         }
 
-        if (filePaths.isNotEmpty) {
-          await Share.shareFiles(filePaths);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Images shared successfully')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No valid images to share')),
-          );
-        }
+        setState(() {
+          selectedItems = [];
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate images: ${response.statusCode}'),
-          ),
+          SnackBar(content: Text('Failed to share: ${response.statusCode}')),
         );
       }
     } catch (e) {
+      print('Error in _shareSelectedItems: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
-      print('Error in _shareSelectedItems: $e');
+    }
+  }
+
+  // Add this new method to download images directly if server doesn't return them
+  Future<void> _downloadAndShareImagesDirectly(
+    List<Map<String, dynamic>> catalogItems,
+  ) async {
+    try {
+      print('Downloading images directly...');
+      final tempDir = await getTemporaryDirectory();
+      List<String> filePaths = [];
+      int successCount = 0;
+
+      for (var item in catalogItems) {
+        if (!item.containsKey('imageUrl')) continue;
+
+        final imageUrl = item['imageUrl'] as String;
+        print('Downloading: $imageUrl');
+
+        try {
+          final response = await http.get(Uri.parse(imageUrl));
+          if (response.statusCode == 200) {
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final file = File(
+              '${tempDir.path}/share_${timestamp}_$successCount.jpg',
+            );
+            await file.writeAsBytes(response.bodyBytes);
+            filePaths.add(file.path);
+            successCount++;
+            print('Downloaded image $successCount');
+          }
+        } catch (e) {
+          print('Error downloading $imageUrl: $e');
+        }
+      }
+
+      if (filePaths.isNotEmpty) {
+        await Share.shareFiles(filePaths);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$successCount images shared successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to download images')),
+        );
+      }
+    } catch (e) {
+      print('Error in direct download: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _saveAndShareImages(List<dynamic> responseData) async {
+    final tempDir = await getTemporaryDirectory();
+    List<String> filePaths = [];
+    int successCount = 0;
+
+    for (var imageData in responseData) {
+      try {
+        String base64Image;
+        if (imageData is String) {
+          base64Image = imageData;
+        } else if (imageData is Map && imageData.containsKey('image')) {
+          base64Image = imageData['image'] as String;
+        } else {
+          continue;
+        }
+
+        final imageBytes = base64Decode(base64Image);
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final file = File(
+          '${tempDir.path}/share_${timestamp}_$successCount.jpg',
+        );
+        await file.writeAsBytes(imageBytes);
+        filePaths.add(file.path);
+        successCount++;
+      } catch (e) {
+        print('Error saving image: $e');
+      }
+    }
+
+    if (filePaths.isNotEmpty) {
+      await Share.shareFiles(filePaths);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$successCount images shared successfully')),
+      );
     }
   }
 

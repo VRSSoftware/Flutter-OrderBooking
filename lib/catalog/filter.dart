@@ -39,11 +39,37 @@ class _FilterPageState extends State<FilterPage> {
   bool isShadeExpanded = true;
   bool isCheckboxModeSize = true;
   bool isSizeExpanded = true;
+  
+  // Changed from radio to dropdown selection
   String? sortBy;
-  String? sortType;
+  
+  // New dropdown values
+  String? stockFilter;
+  String? imageFilter;
+  
   DateTime? fromDate;
   DateTime? toDate;
   bool _isInitialized = false;
+
+  // Dropdown options
+  final List<Map<String, String>> sortOptions = [
+    {'value': 'design desc', 'label': 'Design: New to Old'},
+    {'value': 'design asc', 'label': 'Design: Old to New'},
+    {'value': 'MRP asc', 'label': 'Price: Low to High'},
+    {'value': 'MRP desc', 'label': 'Price: High to Low'},
+  ];
+
+  final List<Map<String, String>> stockOptions = [
+    {'value': '', 'label': 'All'},
+    {'value': 'upcoming', 'label': 'Upcoming'},
+    {'value': 'ready', 'label': 'Ready Stock'},
+  ];
+
+  final List<Map<String, String>> imageOptions = [
+    {'value': 'All', 'label': 'All'},
+    {'value': 'Having Image', 'label': 'Having Image'},
+    {'value': 'Not Having Image', 'label': 'Not Having Image'},
+  ];
 
   @override
   void didChangeDependencies() {
@@ -82,6 +108,8 @@ class _FilterPageState extends State<FilterPage> {
       toDate = DateTime.tryParse(args['toDate'] ?? '');
 
       sortBy = args['sortBy'];
+      stockFilter = args['stockFilter'];
+      imageFilter = args['imageFilter'];
     }
   }
 
@@ -248,6 +276,61 @@ class _FilterPageState extends State<FilterPage> {
     );
   }
 
+  // New dropdown builder method
+  Widget _buildDropdownField<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    required String Function(T) itemLabel,
+    required void Function(T?) onChanged,
+    String? hintText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
+          floatingLabelStyle: GoogleFonts.plusJakartaSans(
+            color: AppColors.primaryColor,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        items: items.map((item) {
+          return DropdownMenuItem<T>(
+            value: item,
+            child: Text(
+              itemLabel(item),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+        hint: hintText != null
+            ? Text(
+                hintText,
+                style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
+              )
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -277,43 +360,110 @@ class _FilterPageState extends State<FilterPage> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                 child: Column(
                   children: [
+                    // Sort By Dropdown
                     _buildExpansionTile(
                       title: 'Sort By',
                       initiallyExpanded: true,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical:0,
+                        _buildDropdownField<Map<String, String>>(
+                          label: 'Select Sort Option',
+                          value: sortOptions.firstWhere(
+                            (option) => option['value'] == sortBy,
+                            orElse: () => sortOptions.first,
                           ),
-                          child: Column(
-                            children: [
-                              _buildRadioOption(
-                                'Latest Design',
-                                isSelected: sortBy == 'design desc',
-                                onTap:
-                                    () => setState(() {
-                                      sortBy = 'design desc';
-                                    }),
-                              ),
-                              _buildRadioOption(
-                                'Price: Low to High',
-                                isSelected: sortBy == 'MRP asc',
-                                onTap:
-                                    () => setState(() {
-                                      sortBy = 'MRP asc';
-                                    }),
-                              ),
-                              _buildRadioOption(
-                                'Price: High to Low',
-                                isSelected: sortBy == 'MRP desc',
-                                onTap:
-                                    () => setState(() {
-                                      sortBy = 'MRP desc';
-                                    }),
-                              ),
-                            ],
+                          items: sortOptions,
+                          itemLabel: (option) => option['label']!,
+                          onChanged: (selectedOption) {
+                            setState(() {
+                              sortBy = selectedOption?['value'];
+                            });
+                          },
+                          hintText: 'Choose sorting order',
+                        ),
+                      ],
+                    ),
+
+                      const SizedBox(height: 5),
+
+                    _buildExpansionTile(
+                      title: 'MRP Range',
+                      children: [
+                        _buildRangeInputs(
+                          fromMRPController,
+                          toMRPController,
+                          'From MRP',
+                          'To MRP',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    _buildExpansionTile(
+                      title: 'WSP Range',
+                      children: [
+                        _buildRangeInputs(
+                          wspFromController,
+                          wspToController,
+                          'From WSP',
+                          'To WSP',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    _buildExpansionTile(
+                      title: 'Date Range',
+                      children: [_buildDateInputs()],
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Stock Filter Dropdown
+                    _buildExpansionTile(
+                      title: 'Stock',
+                      initiallyExpanded: true,
+                      children: [
+                        _buildDropdownField<Map<String, String>>(
+                          label: 'Select Stock Type',
+                          value: stockOptions.firstWhere(
+                            (option) => option['value'] == stockFilter,
+                            orElse: () => stockOptions.first,
                           ),
+                          items: stockOptions,
+                          itemLabel: (option) => option['label']!,
+                          onChanged: (selectedOption) {
+                            setState(() {
+                              stockFilter = selectedOption?['value'];
+                            });
+                          },
+                          hintText: 'Choose stock filter',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Image Filter Dropdown
+                    _buildExpansionTile(
+                      title: 'Image',
+                      initiallyExpanded: true,
+                      children: [
+                        _buildDropdownField<Map<String, String>>(
+                          label: 'Select Image Option',
+                          value: imageOptions.firstWhere(
+                            (option) => option['value'] == imageFilter,
+                            orElse: () => imageOptions.first,
+                          ),
+                          items: imageOptions,
+                          itemLabel: (option) => option['label']!,
+                          onChanged: (selectedOption) {
+                            setState(() {
+                              imageFilter = selectedOption?['value'];
+                            });
+                          },
+                          hintText: 'Choose image filter',
                         ),
                       ],
                     ),
@@ -361,7 +511,7 @@ class _FilterPageState extends State<FilterPage> {
                                   ),
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 16,
-                                    vertical: 8, // Reduced from 12
+                                    vertical: 8,
                                   ),
                                 ),
                               ),
@@ -425,7 +575,7 @@ class _FilterPageState extends State<FilterPage> {
                                 ),
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 8, // Reduced from 12
+                                  vertical: 8,
                                 ),
                                 filled: true,
                                 fillColor: Colors.white,
@@ -638,40 +788,7 @@ class _FilterPageState extends State<FilterPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 5),
-
-                    _buildExpansionTile(
-                      title: 'MRP Range',
-                      children: [
-                        _buildRangeInputs(
-                          fromMRPController,
-                          toMRPController,
-                          'From MRP',
-                          'To MRP',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    _buildExpansionTile(
-                      title: 'WSP Range',
-                      children: [
-                        _buildRangeInputs(
-                          wspFromController,
-                          wspToController,
-                          'From WSP',
-                          'To WSP',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    _buildExpansionTile(
-                      title: 'Date Range',
-                      children: [_buildDateInputs()],
-                    ),
+                  
                   ],
                 ),
               ),
@@ -721,6 +838,8 @@ class _FilterPageState extends State<FilterPage> {
                               'WSPfrom': wspFromController.text,
                               'WSPto': wspToController.text,
                               'sortBy': sortBy,
+                              'stockFilter': stockFilter,
+                              'imageFilter': imageFilter,
                             };
                             Navigator.pop(context, selectedFilters);
                           },
@@ -756,10 +875,12 @@ class _FilterPageState extends State<FilterPage> {
                             wspFromController.clear();
                             wspToController.clear();
                             sortBy = null;
+                            stockFilter = '';
+                            imageFilter = '';
                             setState(() {});
                           },
                           child: Text(
-                            'Clear',
+                            'Clear All',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -898,7 +1019,7 @@ class _FilterPageState extends State<FilterPage> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Reduced from 12
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),
       ),
@@ -921,7 +1042,7 @@ class _FilterPageState extends State<FilterPage> {
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Reduced from 12
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           filled: true,
           fillColor: Colors.white,
         ),
@@ -988,7 +1109,7 @@ class _FilterPageState extends State<FilterPage> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4), // Reduced from 6
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         filled: true,
         fillColor: Colors.white,
       ),
@@ -1026,7 +1147,7 @@ class _FilterPageState extends State<FilterPage> {
         suffixIcon: IconButton(
           icon: Icon(Icons.calendar_today, color: AppColors.primaryColor),
           onPressed: () => _selectDate(context, controller, date),
-          padding: EdgeInsets.zero, // Reduced icon button padding
+          padding: EdgeInsets.zero,
           constraints: BoxConstraints(),
         ),
         border: OutlineInputBorder(
@@ -1041,49 +1162,11 @@ class _FilterPageState extends State<FilterPage> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 2), // Reduced from 4
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         filled: true,
         fillColor: Colors.white,
       ),
       style: GoogleFonts.plusJakartaSans(),
-    );
-  }
-
-  Widget _buildRadioOption(
-    String title, {
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: Radio<bool>(
-                value: isSelected,
-                groupValue: true,
-                activeColor: AppColors.primaryColor,
-                onChanged: (_) => onTap(),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppColors.primaryColor : Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1125,8 +1208,8 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
             _isExpanded
                 ? Border.all(color: Colors.grey.shade200, width: 1)
                 : Border(
-                  left: BorderSide(color: AppColors.primaryColor, width: 4),
-                ),
+                    left: BorderSide(color: AppColors.primaryColor, width: 4),
+                  ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
