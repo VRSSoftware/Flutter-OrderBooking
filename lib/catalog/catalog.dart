@@ -2250,8 +2250,8 @@ class _CatalogPageState extends State<CatalogPage> {
             }
           }
 
-          catalogItems.add({
-            'fullImagePath': imageUrl,
+           catalogItems.add({
+              'imageUrl': imageUrl,
             'design': includeDesign ? item.styleCode : '',
             'shade': includeShade ? item.shadeName : '',
             'rate': includeRate ? item.mrp.toString() : '',
@@ -2672,8 +2672,8 @@ class _CatalogPageState extends State<CatalogPage> {
               }
             }
 
-            catalogItems.add({
-              'fullImagePath': imageUrl,
+             catalogItems.add({
+              'imageUrl': imageUrl,
               'design': includeDesign ? item.styleCode : '',
               'shade': includeShade ? item.shadeName : '',
               'rate': includeRate ? item.mrp.toString() : '',
