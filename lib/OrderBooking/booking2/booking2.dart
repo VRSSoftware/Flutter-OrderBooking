@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/models/CatalogOrderData.dart';
@@ -590,18 +591,40 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  catalog.fullImagePath.contains("http")
-                      ? catalog.fullImagePath
-                      : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                  width: 60,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) =>
-                          const Icon(Icons.error, size: 60),
+              GestureDetector(
+                onTap: () {
+                  final imageUrl =
+                      catalog.fullImagePath.contains("http")
+                          ? catalog.fullImagePath
+                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ImageZoomScreen(
+                            imageUrls: [imageUrl],
+                            initialIndex: 0,
+                          ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    catalog.fullImagePath.contains("http")
+                        ? catalog.fullImagePath
+                        : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                    width: 60,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => Container(
+                          width: 60,
+                          height: 80,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.error, size: 30),
+                        ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -624,61 +647,81 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                         Row(
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.copy,
-                                size: 16,
-                                color: Colors.grey,
+                            // Copy button with circular background
+                            Container(
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors
+                                        .blue
+                                        .shade50, // Light blue background
+                                shape: BoxShape.circle, // Circular shape
                               ),
-                              padding: EdgeInsets.zero,
-                              constraints: BoxConstraints(),
-                              onPressed: () async {
-                                final result = await showDialog<Set<String>>(
-                                  context: context,
-                                  builder:
-                                      (context) => CopyToStylesDialog(
-                                        styleKeys:
-                                            catalogOrderList
-                                                .map(
-                                                  (order) =>
-                                                      order.catalog.styleKey,
-                                                )
-                                                .where(
-                                                  (key) =>
-                                                      key != catalog.styleKey,
-                                                )
-                                                .toList(),
-                                        styleCodes:
-                                            catalogOrderList
-                                                .map(
-                                                  (order) =>
-                                                      order.catalog.styleCode,
-                                                )
-                                                .toList(),
-                                        sourceStyleKey: catalog.styleKey,
-                                        sourceStyleCode: catalog.styleCode,
-                                      ),
-                                );
-
-                                if (result != null && result.isNotEmpty) {
-                                  _copyStyleQuantities(
-                                    catalog.styleKey,
-                                    result,
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.copy,
+                                  size: 16,
+                                  color: Colors.blue.shade700, // Dark blue icon
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                constraints: const BoxConstraints(),
+                                onPressed: () async {
+                                  final result = await showDialog<Set<String>>(
+                                    context: context,
+                                    builder:
+                                        (context) => CopyToStylesDialog(
+                                          styleKeys:
+                                              catalogOrderList
+                                                  .map(
+                                                    (order) =>
+                                                        order.catalog.styleKey,
+                                                  )
+                                                  .where(
+                                                    (key) =>
+                                                        key != catalog.styleKey,
+                                                  )
+                                                  .toList(),
+                                          styleCodes:
+                                              catalogOrderList
+                                                  .map(
+                                                    (order) =>
+                                                        order.catalog.styleCode,
+                                                  )
+                                                  .toList(),
+                                          sourceStyleKey: catalog.styleKey,
+                                          sourceStyleCode: catalog.styleCode,
+                                        ),
                                   );
-                                }
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete,
-                                size: 16,
-                                color: Colors.red,
+
+                                  if (result != null && result.isNotEmpty) {
+                                    _copyStyleQuantities(
+                                      catalog.styleKey,
+                                      result,
+                                    );
+                                  }
+                                },
                               ),
-                              padding: EdgeInsets.zero,
-                              constraints: BoxConstraints(),
-                              onPressed: () {
-                                _deleteStyle(catalog.styleKey);
-                              },
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Delete button with circular background
+                            Container(
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors.red.shade50, // Light red background
+                                shape: BoxShape.circle, // Circular shape
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.delete,
+                                  size: 16,
+                                  color: Colors.red.shade700, // Dark red icon
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  _deleteStyle(catalog.styleKey);
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -699,6 +742,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ],
           ),
         ),
+      
+      
         const SizedBox(height: 15),
         ...selectedColors.map(
           (color) => Column(

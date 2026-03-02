@@ -1276,7 +1276,7 @@ class _StyleCard2State extends State<StyleCard2> {
                   child: AspectRatio(
                     aspectRatio: 3 / 4,
                     child: GestureDetector(
-                      onDoubleTap: () {
+                      onTap: () {
                         final imageUrl = catalog.fullImagePath.contains("http")
                             ? catalog.fullImagePath
                             : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
@@ -1896,101 +1896,109 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
     );
   }
 
-  Future<void> _submitDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm Deletion"),
-          content: const Text("Are you sure you want to delete this style?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    String sCode = widget.styleCode;
-    String bCode = "";
-    if (sCode.contains('---')) {
-      final parts = widget.styleCode.split('---');
-      sCode = parts[0];
-      bCode = parts.length > 1 ? parts[1] : "";
-    }
-
-    final payload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "data": {
-        "designcode": sCode,
-        "mrp": '0',
-        "WSP": '0',
-        "size": '',
-        "TotQty": '0',
-        "Note": '',
-        "color": "",
-        "Qty": "",
-        "cobrid": UserSession.coBrId ?? '',
-        "user": "admin",
-        "barcode": bCode,
-      },
-      "typ": 2,
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
+Future<void> _submitDelete(BuildContext context) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Confirm Deletion"),
+        content: const Text("Are you sure you want to delete this style?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
       );
+    },
+  );
 
-      setState(() {
-        _isLoading = false;
-      });
+  if (confirmed != true) return;
 
-      if (response.statusCode == 200) {
-        widget.styleManager.removeStyle(widget.styleCode);
-        widget.onUpdate();
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Success"),
-              content: const Text("Style deleted successfully"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("OK"),
-                ),
-              ],
-            );
-          },
-        );
-      } else {
-        _showErrorDialog(context, "Failed to delete style: ${response.statusCode}");
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorDialog(context, "Error deleting style: $e");
-    }
+  setState(() {
+    _isLoading = true;
+  });
+
+  String sCode = widget.styleCode;
+  String bCode = "";
+  if (sCode.contains('---')) {
+    final parts = widget.styleCode.split('---');
+    sCode = parts[0];
+    bCode = parts.length > 1 ? parts[1] : "";
   }
 
+  final payload = {
+    "userId": UserSession.userName ?? '',
+    "coBrId": UserSession.coBrId ?? '',
+    "fcYrId": UserSession.userFcYr ?? '',
+    "data": {
+      "designcode": sCode,
+      "mrp": '0',
+      "WSP": '0',
+      "size": '',
+      "TotQty": '0',
+      "Note": '',
+      "color": "",
+      "Qty": "",
+      "cobrid": UserSession.coBrId ?? '',
+      "user": "admin",
+      "barcode": bCode,
+    },
+    "typ": 2,
+  };
+
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response.statusCode == 200) {
+      // Remove from CartModel
+      if (!mounted) return;
+      
+      // Get the cart model and remove this item
+      final cartModel = Provider.of<CartModel>(context, listen: false);
+      cartModel.removeItem(widget.styleCode);
+      
+      // Also remove from style manager
+      widget.styleManager.removeStyle(widget.styleCode);
+      widget.onUpdate();
+      
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Success"),
+            content: const Text("Style deleted successfully"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      _showErrorDialog(context, "Failed to delete style: ${response.statusCode}");
+    }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
+    _showErrorDialog(context, "Error deleting style: $e");
+  }
+}
   Future<void> _submitUpdate(BuildContext context) async {
     int totalQty = _calculateCatalogQuantity();
     if (totalQty <= 0) {

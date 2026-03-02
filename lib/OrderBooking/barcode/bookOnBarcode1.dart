@@ -699,7 +699,8 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
         iconTheme: const IconThemeData(color: Colors.white),
        
       ),
-      body:Column(
+      body:SafeArea(
+        child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
@@ -781,7 +782,8 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                   ],
                 ),
               ),
-         )])   );
+        )
+        ]) )  );
   }
 
   Widget _buildOrderItem(CatalogOrderData catalogOrder) {

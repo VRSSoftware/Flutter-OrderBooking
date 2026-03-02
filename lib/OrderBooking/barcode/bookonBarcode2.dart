@@ -603,7 +603,8 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
@@ -700,7 +701,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
           ),
         ],
       ),
-    );
+   ) );
   }
 
   int _calculateTotalQuantity() {
@@ -752,7 +753,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onDoubleTap: () {
+                onTap: () {
                   final imageUrl =
                       catalog.fullImagePath.contains("http")
                           ? catalog.fullImagePath

@@ -1278,7 +1278,7 @@ class _StyleCardState extends State<StyleCard> {
                   child: AspectRatio(
                     aspectRatio: 3 / 4,
                     child: GestureDetector(
-                      onDoubleTap: () {
+                      onTap: () {
                         final imageUrl = catalog.fullImagePath.contains("http")
                             ? catalog.fullImagePath
                             : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
