@@ -12,8 +12,12 @@ import 'package:vrs_erp/models/catalog.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final List<Catalog> catalogs;
-  final VoidCallback onSuccess; 
-  const CreateOrderScreen({Key? key, required this.catalogs,required this.onSuccess,}) : super(key: key);
+  final VoidCallback onSuccess;
+  const CreateOrderScreen({
+    Key? key,
+    required this.catalogs,
+    required this.onSuccess,
+  }) : super(key: key);
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -68,9 +72,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         "itemSubGrpKey": item.itemSubGrpKey,
         "itemKey": item.itemKey,
         "styleKey": item.styleKey,
-        "userId": UserSession.userName??'',
-        "coBrId": UserSession.coBrId??'',
-        "fcYrId": UserSession.userFcYr??'',
+        "userId": UserSession.userName ?? '',
+        "coBrId": UserSession.coBrId ?? '',
+        "fcYrId": UserSession.userFcYr ?? '',
       };
 
       try {
@@ -194,9 +198,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       quantities[styleKey]!.putIfAbsent(sourceShade, () => {});
       // Get the quantity of the first size in the source shade, default to 0 if not set
       final firstSize = validSizes.isNotEmpty ? validSizes.first : null;
-      final quantityToCopy = firstSize != null
-          ? quantities[styleKey]![sourceShade]![firstSize] ?? 0
-          : 0;
+      final quantityToCopy =
+          firstSize != null
+              ? quantities[styleKey]![sourceShade]![firstSize] ?? 0
+              : 0;
 
       // Copy the quantity to all sizes in the source shade
       for (var size in validSizes) {
@@ -209,174 +214,190 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     });
   }
 
-Future<void> _submitAllOrders() async {
-  List<Future<http.Response>> apiCalls = [];
-  List<String> apiCallStyles = [];
-  final cartModel = Provider.of<CartModel>(context, listen: false);
+  Future<void> _submitAllOrders() async {
+    List<Future<http.Response>> apiCalls = [];
+    List<String> apiCallStyles = [];
+    final cartModel = Provider.of<CartModel>(context, listen: false);
 
-  // Filter out already added items to prevent duplicate submissions
-  for (var catalogOrder in catalogOrderList) {
-    final catalog = catalogOrder.catalog;
-    final matrix = catalogOrder.orderMatrix;
-    final styleCode = catalog.styleCode;
+    // Filter out already added items to prevent duplicate submissions
+    for (var catalogOrder in catalogOrderList) {
+      final catalog = catalogOrder.catalog;
+      final matrix = catalogOrder.orderMatrix;
+      final styleCode = catalog.styleCode;
 
-    // Skip if the item is already in the cart
-    if (cartModel.addedItems.contains(styleCode)) {
-      continue;
-    }
+      // Skip if the item is already in the cart
+      if (cartModel.addedItems.contains(styleCode)) {
+        continue;
+      }
 
-    final quantityMap = quantities[catalog.styleKey];
-    if (quantityMap != null) {
-      for (var shade in quantityMap.keys) {
-        final shadeIndex = matrix.shades.indexOf(shade.trim());
-        if (shadeIndex == -1) continue;
+      final quantityMap = quantities[catalog.styleKey];
+      if (quantityMap != null) {
+        for (var shade in quantityMap.keys) {
+          final shadeIndex = matrix.shades.indexOf(shade.trim());
+          if (shadeIndex == -1) continue;
 
-        for (var size in quantityMap[shade]!.keys) {
-          final sizeIndex = matrix.sizes.indexOf(size.trim());
-          if (sizeIndex == -1) continue;
+          for (var size in quantityMap[shade]!.keys) {
+            final sizeIndex = matrix.sizes.indexOf(size.trim());
+            if (sizeIndex == -1) continue;
 
-          final quantity = quantityMap[shade]![size]!;
-          if (quantity > 0) {
-            final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
-            final payload = {
-              "userId": UserSession.userName??'',
-              "coBrId": UserSession.coBrId??'',
-              "fcYrId": UserSession.userFcYr??'',
-              "data": {
-                "designcode": styleCode,
-                "mrp": matrixData[0],
-                "WSP": matrixData.length > 2 ? matrixData[2] : matrixData[0],
-                "size": size,
-                "TotQty": _calculateCatalogQuantity(catalog.styleKey).toString(),
-                "Note": "",
-                "color": shade,
-                "Qty": quantity.toString(),
-                "cobrid": UserSession.coBrId??'',
-                "user": "admin",
-                "barcode": "",
-              },
-              "typ": 0,
-            };
+            final quantity = quantityMap[shade]![size]!;
+            if (quantity > 0) {
+              final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(
+                ',',
+              );
+              final payload = {
+                "userId": UserSession.userName ?? '',
+                "coBrId": UserSession.coBrId ?? '',
+                "fcYrId": UserSession.userFcYr ?? '',
+                "data": {
+                  "designcode": styleCode,
+                  "mrp": matrixData[0],
+                  "WSP": matrixData.length > 2 ? matrixData[2] : matrixData[0],
+                  "size": size,
+                  "TotQty":
+                      _calculateCatalogQuantity(catalog.styleKey).toString(),
+                  "Note": "",
+                  "color": shade,
+                  "Qty": quantity.toString(),
+                  "cobrid": UserSession.coBrId ?? '',
+                  "user": "admin",
+                  "barcode": "",
+                },
+                "typ": 0,
+              };
 
-            apiCalls.add(
-              http.post(
-                Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode(payload),
-              ),
-            );
-            apiCallStyles.add(styleCode);
+              apiCalls.add(
+                http.post(
+                  Uri.parse(
+                    '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+                  ),
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(payload),
+                ),
+              );
+              apiCallStyles.add(styleCode);
+            }
           }
         }
       }
     }
-  }
 
-  if (apiCalls.isEmpty) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("Warning"),
-          content: const Text("No new items to submit."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
+    if (apiCalls.isEmpty) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: const Text("Warning"),
+                content: const Text("No new items to submit."),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("OK"),
+                  ),
+                ],
+              ),
+        );
+      }
+      return;
     }
-    return;
-  }
 
-  try {
-    final responses = await Future.wait(apiCalls);
-    final successfulStyles = <String>{};
+    try {
+      final responses = await Future.wait(apiCalls);
+      final successfulStyles = <String>{};
 
-    for (int i = 0; i < responses.length; i++) {
-      final response = responses[i];
-      if (response.statusCode == 200) {
-        try {
-          // Try parsing as JSON first
-          final responseBody = jsonDecode(response.body);
-          if (responseBody is Map<String, dynamic> && responseBody['success'] == true) {
-            successfulStyles.add(apiCallStyles[i]);
-            cartModel.addItem(apiCallStyles[i]);
+      for (int i = 0; i < responses.length; i++) {
+        final response = responses[i];
+        if (response.statusCode == 200) {
+          try {
+            // Try parsing as JSON first
+            final responseBody = jsonDecode(response.body);
+            if (responseBody is Map<String, dynamic> &&
+                responseBody['success'] == true) {
+              successfulStyles.add(apiCallStyles[i]);
+              cartModel.addItem(apiCallStyles[i]);
+            }
+          } catch (e) {
+            // Handle plain text "Success" response
+            if (response.body.trim() == "Success") {
+              successfulStyles.add(apiCallStyles[i]);
+              cartModel.addItem(apiCallStyles[i]);
+            } else {
+              print(
+                'Failed to parse response for style ${apiCallStyles[i]}: $e, response: ${response.body}',
+              );
+            }
           }
-        } catch (e) {
-          // Handle plain text "Success" response
-          if (response.body.trim() == "Success") {
-            successfulStyles.add(apiCallStyles[i]);
-            cartModel.addItem(apiCallStyles[i]);
-          } else {
-            print('Failed to parse response for style ${apiCallStyles[i]}: $e, response: ${response.body}');
-          }
+        } else {
+          print(
+            'API call failed for style ${apiCallStyles[i]}: ${response.statusCode}, response: ${response.body}',
+          );
+        }
+      }
+
+      if (successfulStyles.isNotEmpty) {
+        cartModel.updateCount(cartModel.count + successfulStyles.length);
+        widget.onSuccess();
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text("Success"),
+                  content: Text(
+                    "Successfully submitted ${successfulStyles.length} item${successfulStyles.length > 1 ? 's' : ''}",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      }, // Pop only the dialog
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+          );
         }
       } else {
-        print('API call failed for style ${apiCallStyles[i]}: ${response.statusCode}, response: ${response.body}');
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text("Error"),
+                  content: const Text("No items were successfully submitted"),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+          );
+        }
       }
-    }
-
-    if (successfulStyles.isNotEmpty) {
-      cartModel.updateCount(cartModel.count + successfulStyles.length);
-      widget.onSuccess();
-
+    } catch (e) {
       if (mounted) {
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text("Success"),
-            content: Text("Successfully submitted ${successfulStyles.length} item${successfulStyles.length > 1 ? 's' : ''}"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                   Navigator.pop(context);
-                    Navigator.pop(context);
-
-                }, // Pop only the dialog
-                child: const Text("OK"),
+          builder:
+              (_) => AlertDialog(
+                title: const Text("Error"),
+                content: Text("Failed to submit orders: $e"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("OK"),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
-    } else {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text("Error"),
-            content: const Text("No items were successfully submitted"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-  } catch (e) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("Error"),
-          content: Text("Failed to submit orders: $e"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
     }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -421,70 +442,73 @@ Future<void> _submitAllOrders() async {
           ),
         ),
       ),
-      body: isLoading
-          ? Stack(
-              children: [
-                Container(color: Colors.black.withOpacity(0.2)),
-                Center(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(3.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: Offset(0, 3),
+      body: SafeArea(
+        child:
+            isLoading
+                ? Stack(
+                  children: [
+                    Container(color: Colors.black.withOpacity(0.2)),
+                    Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Please Wait...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(3.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 12),
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.primaryColor,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Please Wait...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
+                  ],
+                )
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      ...catalogOrderList.map(
+                        (catalogOrder) => Column(
+                          children: [
+                            buildOrderItem(catalogOrder),
+                            const Divider(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  ...catalogOrderList.map(
-                    (catalogOrder) => Column(
-                      children: [
-                        buildOrderItem(catalogOrder),
-                        const Divider(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      ),
       bottomNavigationBar: BottomAppBar(
         height: 60,
         child: Padding(
@@ -499,11 +523,15 @@ Future<void> _submitAllOrders() async {
                 child: Text('BACK', style: GoogleFonts.montserrat()),
               ),
               TextButton(
-                onPressed: _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
+                onPressed:
+                    _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
                 child: Text(
                   'SAVE',
                   style: GoogleFonts.montserrat(
-                    color: _calculateTotalQuantity() > 0 ? Colors.black : Colors.grey,
+                    color:
+                        _calculateTotalQuantity() > 0
+                            ? Colors.black
+                            : Colors.grey,
                   ),
                 ),
               ),
@@ -537,7 +565,11 @@ Future<void> _submitAllOrders() async {
         for (var size in quantities[styleKey]![shade]!.keys) {
           final sizeIndex = matrix.sizes.indexOf(size.trim());
           if (sizeIndex == -1) continue;
-          final rate = double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ?? 0;
+          final rate =
+              double.tryParse(
+                matrix.matrix[shadeIndex][sizeIndex].split(',')[0],
+              ) ??
+              0;
           final quantity = quantities[styleKey]![shade]![size]!;
           total += rate * quantity;
         }
@@ -567,7 +599,9 @@ Future<void> _submitAllOrders() async {
                   width: 60,
                   height: 80,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 60),
+                  errorBuilder:
+                      (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 60),
                 ),
               ),
               const SizedBox(width: 12),
@@ -601,17 +635,29 @@ Future<void> _submitAllOrders() async {
                               onPressed: () async {
                                 final result = await showDialog<Set<String>>(
                                   context: context,
-                                  builder: (context) => CopyToStylesDialog(
-                                    styleKeys: catalogOrderList
-                                        .map((order) => order.catalog.styleKey)
-                                        .where((key) => key != catalog.styleKey)
-                                        .toList(),
-                                    styleCodes: catalogOrderList
-                                        .map((order) => order.catalog.styleCode)
-                                        .toList(),
-                                    sourceStyleKey: catalog.styleKey,
-                                    sourceStyleCode: catalog.styleCode,
-                                  ),
+                                  builder:
+                                      (context) => CopyToStylesDialog(
+                                        styleKeys:
+                                            catalogOrderList
+                                                .map(
+                                                  (order) =>
+                                                      order.catalog.styleKey,
+                                                )
+                                                .where(
+                                                  (key) =>
+                                                      key != catalog.styleKey,
+                                                )
+                                                .toList(),
+                                        styleCodes:
+                                            catalogOrderList
+                                                .map(
+                                                  (order) =>
+                                                      order.catalog.styleCode,
+                                                )
+                                                .toList(),
+                                        sourceStyleKey: catalog.styleKey,
+                                        sourceStyleCode: catalog.styleCode,
+                                      ),
                                 );
 
                                 if (result != null && result.isNotEmpty) {
@@ -727,23 +773,25 @@ Future<void> _submitAllOrders() async {
                             padding: EdgeInsets.zero,
                             constraints: BoxConstraints(),
                             onPressed: () async {
-                              final result = await showDialog<Map<String, dynamic>>(
-                                context: context,
-                                builder: (context) => ShadeSelectionDialog(
-                                  shades: allShades.where((s) => s != shade).toList(),
-                                  sourceShade: shade,
-                                ),
-                              );
+                              final result =
+                                  await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder:
+                                        (context) => ShadeSelectionDialog(
+                                          shades:
+                                              allShades
+                                                  .where((s) => s != shade)
+                                                  .toList(),
+                                          sourceShade: shade,
+                                        ),
+                                  );
 
                               if (result != null) {
                                 if (result['option'] == 'all_sizes') {
-                                  _copyShadeToAllSizes(
-                                    styleKey,
-                                    shade,
-                                    sizes,
-                                  );
+                                  _copyShadeToAllSizes(styleKey, shade, sizes);
                                 } else if (result['option'] == 'other_shades') {
-                                  final selectedShades = result['selectedShades'] as Set<String>;
+                                  final selectedShades =
+                                      result['selectedShades'] as Set<String>;
                                   if (selectedShades.isNotEmpty) {
                                     _copyShadeQuantities(
                                       styleKey,
@@ -760,7 +808,7 @@ Future<void> _submitAllOrders() async {
                     ),
                   ),
                   _buildHeader("Quantity", 1),
-                  _buildHeader("Price", 1),
+                  _buildHeader("Amount", 1),
                 ],
               ),
               Divider(height: 1, color: Colors.grey.shade300),
@@ -851,19 +899,19 @@ Future<void> _submitAllOrders() async {
   }
 
   Widget _buildHeader(String text, int flex) => Expanded(
-        flex: flex,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            border: Border(right: BorderSide(color: Colors.grey.shade300)),
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-        ),
-      );
+    flex: flex,
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+    ),
+  );
 
   int _calculateShadeQuantity(String styleKey, String shade) {
     int total = 0;
@@ -882,7 +930,9 @@ Future<void> _submitAllOrders() async {
     for (var size in quantities[styleKey]?[shade]?.keys ?? []) {
       final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
       if (sizeIndex == -1) continue;
-      final rate = double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ?? 0;
+      final rate =
+          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
+          0;
       final quantity = quantities[styleKey]![shade]![size]!;
       total += rate * quantity;
     }
@@ -934,7 +984,8 @@ Future<void> _submitAllOrders() async {
                 IconButton(
                   onPressed: () {
                     _setQuantity(styleKey, shade, size, quantity - 1);
-                    controller.text = _getQuantity(styleKey, shade, size).toString();
+                    controller.text =
+                        _getQuantity(styleKey, shade, size).toString();
                   },
                   icon: const Icon(Icons.remove, size: 20),
                 ),
@@ -954,7 +1005,8 @@ Future<void> _submitAllOrders() async {
                       LengthLimitingTextInputFormatter(4),
                     ],
                     onChanged: (value) {
-                      final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                      final newQuantity =
+                          int.tryParse(value.isEmpty ? '0' : value) ?? 0;
                       _setQuantity(styleKey, shade, size, newQuantity);
                     },
                   ),
@@ -962,7 +1014,8 @@ Future<void> _submitAllOrders() async {
                 IconButton(
                   onPressed: () {
                     _setQuantity(styleKey, shade, size, quantity + 1);
-                    controller.text = _getQuantity(styleKey, shade, size).toString();
+                    controller.text =
+                        _getQuantity(styleKey, shade, size).toString();
                   },
                   icon: const Icon(Icons.add, size: 20),
                 ),
@@ -978,19 +1031,19 @@ Future<void> _submitAllOrders() async {
   }
 
   Widget _buildCell(String text, int flex) => Expanded(
-        flex: flex,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            border: Border(right: BorderSide(color: Colors.grey.shade300)),
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.roboto(fontSize: 14),
-          ),
-        ),
-      );
+    flex: flex,
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.roboto(fontSize: 14),
+      ),
+    ),
+  );
 }
 
 class ShadeSelectionDialog extends StatefulWidget {
@@ -1065,7 +1118,11 @@ class _ShadeSelectionDialogState extends State<ShadeSelectionDialog> {
                           style: GoogleFonts.roboto(),
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                     ],
                   ),
                 ),

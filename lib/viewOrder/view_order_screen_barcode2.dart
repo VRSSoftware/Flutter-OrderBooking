@@ -23,12 +23,12 @@ import 'package:vrs_erp/models/CatalogOrderData.dart';
 
 enum ActiveTab { transaction, customerDetails }
 
-class ViewOrderScreenBarcode extends StatefulWidget {
+class ViewOrderScreenBarcode2 extends StatefulWidget {
   @override
   _ViewOrderScreenBarcodeState createState() => _ViewOrderScreenBarcodeState();
 }
 
-class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
+class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
   final _formKey = GlobalKey<FormState>();
   Map<String, dynamic> _additionalInfo = {};
   bool _showForm = false;
@@ -225,7 +225,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
         body: jsonEncode(body),
       );
 
-      print("response body:${response.body}");
+      print("rrrrrrrrrresponse body:${response.body}");
       if (response.statusCode == 200) {
         print('Success: ${response.body}');
         ScaffoldMessenger.of(
@@ -323,11 +323,12 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     return DateFormat('yyyy-MM-dd').format(futureDate);
   }
 
-  String getTodayWithZeroTime() {
+    String getTodayWithZeroTime() {
     final now = DateTime.now();
     final zeroTime = DateTime(now.year, now.month, now.day);
     return DateFormat('yyyy-MM-dd HH:mm:ss.SSS').format(zeroTime);
   }
+
 
   String calculateDueDate() {
     final paymentDays = _additionalInfo['paymentdays'];
@@ -387,7 +388,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           '0',
       "duedate": calculateDueDate(),
       "refno": _additionalInfo['refno'] ?? '',
-      "date": getTodayWithZeroTime(),
+     "date": getTodayWithZeroTime(),
       "bookingtype": _additionalInfo['bookingtype'] ?? '',
       "salesman":
           _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
@@ -399,7 +400,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
 
     try {
       final orderNumber = await insertFinalSalesOrder(orderDataJson);
-      if (orderNumber != null && orderNumber != "fail") {
+      if (orderNumber != null) {
         final formattedOrderNo = "SO$orderNumber";
         print("formattedOrderNo: ${formattedOrderNo}");
         
@@ -636,7 +637,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
                   ),
                 ),
                 child: Text(
-                  'Transaction',
+                  'Transactionaa',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color:
@@ -1144,75 +1145,74 @@ class _StyleCardsView extends StatelessWidget {
     }
   }
 
-CatalogOrderData _convertToCatalogOrderData(
-  String styleKey,
-  List<dynamic> items,
-) {
-  final shades =
-      items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
-  final sizes =
-      items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
-  final firstItem = items.first;
+  CatalogOrderData _convertToCatalogOrderData(
+    String styleKey,
+    List<dynamic> items,
+  ) {
+    final shades =
+        items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
+    final sizes =
+        items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
+    final firstItem = items.first;
 
-  // Create matrix with sizes as rows and shades as columns
-  final matrix = List.generate(sizes.length, (sizeIndex) {
-    return List.generate(shades.length, (shadeIndex) {
-      final item = items.firstWhere(
-        (i) =>
-            (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
-            (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
-        orElse: () => {},
-      );
-      final mrp = item['mrp']?.toString() ?? '0';
-      final wsp = item['wsp']?.toString() ?? '0';
-      final qty = item['clqty']?.toString() ?? '0';
-      return '$mrp,$wsp,$qty';
+    final matrix = List.generate(shades.length, (shadeIndex) {
+      return List.generate(sizes.length, (sizeIndex) {
+        final item = items.firstWhere(
+          (i) =>
+              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+          orElse: () => {},
+        );
+        final mrp = item['mrp']?.toString() ?? '0';
+        final wsp = item['wsp']?.toString() ?? '0';
+        final qty = item['data2']?.toString() ?? '0';
+        return '$mrp,$wsp,$qty';
+      });
     });
-  });
 
-  return CatalogOrderData(
-    catalog: Catalog(
-      itemSubGrpKey: '',
-      itemSubGrpName: '',
-      itemKey: '',
-      itemName: firstItem['itemName']?.toString() ?? 'Unknown',
-      brandKey: '',
-      brandName: '',
-      styleKey: styleKey,
-      styleCode: firstItem['styleCode']?.toString() ?? styleKey,
-      shadeKey: '',
-      shadeName: shades.join(','),
-      styleSizeId: '',
-      sizeName: sizes.join(','),
-      mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-      wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
-      onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-      clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
-      total: items.fold(
-        0,
-        (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+    return CatalogOrderData(
+      catalog: Catalog(
+        itemSubGrpKey: '',
+        itemSubGrpName: '',
+        itemKey: '',
+        itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+        brandKey: '',
+        brandName: '',
+        styleKey: styleKey,
+        styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+        shadeKey: '',
+        shadeName: shades.join(','),
+        styleSizeId: '',
+        sizeName: sizes.join(','),
+        mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+        onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+        total: items.fold(
+          0,
+          (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+        ),
+        fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+        remark: firstItem['remark']?.toString() ?? '',
+        imageId: '',
+        sizeDetails: sizes
+            .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+            .join(','),
+        sizeDetailsWithoutWSp: sizes
+            .map((s) => '$s (${firstItem['mrp']})')
+            .join(','),
+        sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+        styleCodeWithcount: styleKey,
+        onlySizes: sizes.join(','),
+        sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+        createdDate: '',
+        shadeImages: '',
+        upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
+
       ),
-      fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
-      remark: firstItem['remark']?.toString() ?? '',
-      imageId: '',
-      sizeDetails: sizes
-          .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
-          .join(','),
-      sizeDetailsWithoutWSp: sizes
-          .map((s) => '$s (${firstItem['mrp']})')
-          .join(','),
-      sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
-      styleCodeWithcount: styleKey,
-      onlySizes: sizes.join(','),
-      sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
-      createdDate: '',
-      shadeImages: '',
-      upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
-    ),
-    orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
-  );
-}
-
+      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
+    );
+  }
 }
 
 class StyleCard extends StatefulWidget {
@@ -1256,66 +1256,6 @@ class _StyleCardState extends State<StyleCard> {
         ));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: buildOrderItem(widget.catalogOrder, context),
-          ),
-          if (_isLoading)
-            ModalBarrier(
-              dismissible: false,
-              color: Colors.black.withOpacity(0.4),
-            ),
-          if (_isLoading)
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Updating...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
     final catalog = catalogOrder.catalog;
 
@@ -1330,7 +1270,7 @@ class _StyleCardState extends State<StyleCard> {
               Container(
                 height: 160,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(4.0),
                 ),
                 child: SizedBox(
@@ -1584,9 +1524,9 @@ class _StyleCardState extends State<StyleCard> {
   int _calculateStockQuantity() {
     int total = 0;
     final matrix = widget.catalogOrder.orderMatrix;
-    for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
-      for (var shadeIndex = 0; shadeIndex < matrix.shades.length; shadeIndex++) {
-        final matrixData = matrix.matrix[sizeIndex][shadeIndex].split(',');
+    for (var shadeIndex = 0; shadeIndex < matrix.shades.length; shadeIndex++) {
+      for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
+        final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
         final stock =
             int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
         total += stock;
@@ -1605,7 +1545,7 @@ class _StyleCardState extends State<StyleCard> {
         final sizeIndex = matrix.sizes.indexOf(size.trim());
         if (sizeIndex == -1) continue;
         final rate =
-            double.tryParse(matrix.matrix[sizeIndex][shadeIndex].split(',')[0]) ??
+            double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
             0;
         final quantity = widget.quantities[shade]![size]!;
         total += rate * quantity;
@@ -1614,222 +1554,170 @@ class _StyleCardState extends State<StyleCard> {
     return total;
   }
 
-Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-  final matrix = catalogOrder.orderMatrix;
-  final shadeIndex = matrix.shades.indexOf(shade.trim());
-  
-  if (shadeIndex == -1) return SizedBox.shrink();
+  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+    final sizes = catalogOrder.orderMatrix.sizes;
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey.shade400),
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header row
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
+            border: Border.all(color: Colors.grey.shade300),
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Shade\Size header cell
-                Container(
-                  width: 100,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade400),
-                    ),
-                    color: Colors.grey.shade300,
-                  ),
-                  child: Text(
-                    "Shade\\Size",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.lora(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                // Size headers
-                ...matrix.sizes.asMap().entries.map((entry) {
-                  final sizeIndex = entry.key;
-                  final size = entry.value;
-                  
-                  return Container(
-                    width: 80,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: sizeIndex == matrix.sizes.length - 1 
-                            ? BorderSide.none 
-                            : BorderSide(color: Colors.grey.shade400),
-                      ),
-                      color: Colors.grey.shade300,
-                    ),
-                    child: Text(
-                      size,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lora(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-        ),
-        
-        // Shade row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+          child: Column(
             children: [
-              // Shade name cell with color from getColor function
-              Container(
-                width: 100,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    right: BorderSide(color: Colors.grey.shade400),
-                  ),
-                  color: Colors.grey.shade50,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Color indicator circle
-                    Container(
-                      width: 12,
-                      height: 12,
-                      margin: const EdgeInsets.only(right: 4),
+              Divider(height: 1, color: Colors.grey.shade300),
+              Row(
+                children: [
+                  _buildHeader("Size", 1),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: widget.getColor(shade),
-                        shape: BoxShape.circle,
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
                       ),
-                    ),
-                    // Shade name
-                    Expanded(
                       child: Text(
-                        shade,
+                        "Qty",
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: Colors.black87,
+                        style: GoogleFonts.lora(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.red.shade900,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  _buildHeader("MRP", 1),
+                  _buildHeader("WSP", 1),
+                  _buildHeader("Stock", 1),
+                ],
               ),
-              
-              // Size cells with MRP and Quantity
-              ...matrix.sizes.asMap().entries.map((entry) {
-                final sizeIndex = entry.key;
-                final size = entry.value;
-                
-                final matrixData = matrix.matrix[sizeIndex][shadeIndex].split(',');
-                final mrp = matrixData[0];
-                
-                final controller = widget.styleManager.controllers[widget.styleCode]?[shade]?[size];
-                final quantity = widget.quantities[shade]?[size] ?? 0;
-                
-                return Container(
-                  width: 80,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: sizeIndex == matrix.sizes.length - 1 
-                          ? BorderSide.none 
-                          : BorderSide(color: Colors.grey.shade400),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // MRP
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade300),
-                          ),
-                        ),
-                        child: Text(
-                          '₹$mrp',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                      // Quantity input field
-                      SizedBox(
-                        height: 32,
-                        child: TextField(
-                          controller: controller,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                            hintText: quantity.toString(),
-                            hintStyle: GoogleFonts.roboto(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          style: GoogleFonts.roboto(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(4),
-                          ],
-                          onChanged: (value) {
-                            final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
-                            if (widget.quantities[shade] != null) {
-                              setState(() {
-                                widget.quantities[shade]![size] = newQuantity;
-                                _hasQuantityChanged = _checkQuantityChanged();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+              Divider(height: 1, color: Colors.grey.shade300),
+              for (var size in sizes) ...[
+                _buildSizeRow(catalogOrder, shade, size),
+                Divider(height: 1, color: Colors.grey.shade300),
+              ],
             ],
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildHeader(String text, int flex) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        decoration: BoxDecoration(
+          border: Border(right: BorderSide(color: Colors.grey.shade300)),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.lora(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.red.shade900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSizeRow(
+    CatalogOrderData catalogOrder,
+    String shade,
+    String size,
+  ) {
+    final matrix = catalogOrder.orderMatrix;
+    final shadeIndex = matrix.shades.indexOf(shade.trim());
+    final sizeIndex = matrix.sizes.indexOf(size.trim());
+
+    String rate = '';
+    String stock = '0';
+    String wsp = '0';
+    TextEditingController? controller;
+
+    if (shadeIndex != -1 && sizeIndex != -1) {
+      final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
+      rate = matrixData[0];
+      wsp = matrixData.length > 1 ? matrixData[1] : '0';
+      stock = matrixData[2] ?? '0';
+      controller = widget.styleManager.controllers[widget.styleCode]?[shade]?[size];
+    }
+
+    final quantity = widget.quantities[shade]?[size] ?? 0;
+
+    return Row(
+      children: [
+        _buildCell(size, 1),
+        Expanded(
+          flex: 2,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: SizedBox(
+              width: 60,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  hintText: stock,
+                  hintStyle: GoogleFonts.roboto(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                style: GoogleFonts.roboto(fontSize: 14),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                onChanged: (value) {
+                  final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                  if (widget.quantities[shade] != null) {
+                    setState(() {
+                      widget.quantities[shade]![size] = newQuantity;
+                      _hasQuantityChanged = _checkQuantityChanged();
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+        _buildCell(rate, 1),
+        _buildCell(wsp, 1),
+        _buildCell(stock, 1),
+      ],
+    );
+  }
+
+  Widget _buildCell(String text, int flex) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        decoration: BoxDecoration(
+          border: Border(right: BorderSide(color: Colors.grey.shade300)),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.roboto(fontSize: 14),
+        ),
+      ),
+    );
+  }
+
   bool _checkQuantityChanged() {
     for (var shade in widget.quantities.keys) {
       for (var size in widget.quantities[shade]!.keys) {
@@ -2111,6 +1999,57 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
       print('Error updating style: $e');
       _showErrorDialog(context, "Error updating style: $e");
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        buildOrderItem(widget.catalogOrder, context),
+        
+        if (_isLoading)
+          ModalBarrier(
+            dismissible: false,
+            color: Colors.black.withOpacity(0.4),
+          ),
+        if (_isLoading)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Updating...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -2650,6 +2589,7 @@ Widget buildFullField(
     child: buildTextField(context, label, controller, isText: isText ?? false),
   );
 }
+
 class AddMoreInfoDialog extends StatefulWidget {
   final List<Map<String, String>> salesPersonList;
   final String? partyLedKey;

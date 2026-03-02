@@ -29,7 +29,9 @@ import 'package:vrs_erp/viewOrder/TemptestPage.dart';
 import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
 import 'package:vrs_erp/viewOrder/view_order.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen.dart';
+import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
+import 'package:vrs_erp/viewOrder/view_order_screen_barcode2.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() {
@@ -78,6 +80,7 @@ class MyApp extends StatelessWidget {
         '/orderpage': (context) => OrderPage(),
         '/viewOrders': (context) => ViewOrderScreens(),
         '/viewOrder': (context) => ViewOrderScreen(),
+        '/viewOrder2': (context) => ViewOrderScreen2(),
         '/viewOrderBarcode': (context) => ViewOrderScreenBarcode(),
         '/registerOrders': (context) => RegisterPage(),
         '/stockReport': (context) => StockReportPage(),

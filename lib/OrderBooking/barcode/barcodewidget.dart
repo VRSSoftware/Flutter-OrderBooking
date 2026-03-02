@@ -354,6 +354,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vrs_erp/OrderBooking/barcode/QRCodeScannerScreen.dart';
 import 'package:vrs_erp/OrderBooking/barcode/barcode_scanner.dart';
+import 'package:vrs_erp/OrderBooking/barcode/bookOnBarcode1.dart';
 import 'package:vrs_erp/OrderBooking/barcode/bookonBarcode2.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 
@@ -466,76 +467,127 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     });
   }
 
-  void _validateAndNavigate(String barcode) async {
-    if (barcode.isEmpty) {
-      _showAlertDialog(
-        context,
-        'Missing Barcode',
-        'Please enter or scan a barcode first.',
-      );
-      _barcodeFocusNode.requestFocus(); // Request focus on error
-      return;
-    }
-
-    String upperBarcode = barcode.toUpperCase();
-    print("Checking barcode: $upperBarcode, addedItems: $addedItems");
-    if (addedItems.contains(upperBarcode)) {
-      _showAlertDialog(
-        context,
-        'Already Added',
-        'This barcode is already added',
-      );
-      _barcodeFocusNode.requestFocus(); // Request focus on error
-      return;
-    }
-
-    print("Navigating to BookOnBarcode2 with barcode: $upperBarcode");
-    final result = await Navigator.push(
+ void _validateAndNavigate(String barcode) async {
+  if (barcode.isEmpty) {
+    _showAlertDialog(
       context,
-      MaterialPageRoute(
-        builder:
-            (context) => BookOnBarcode2(
-              barcode: upperBarcode,
-              onSuccess: () {
-                setState(() {
-                  addedItems.add(upperBarcode);
-                  print(
-                    "Added barcode: $upperBarcode, addedItems: $addedItems",
-                  );
-                  _barcodeController.clear();
-                  _noDataFound = false;
-                });
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _barcodeFocusNode.requestFocus();
-                });
-              },
-              onCancel: () {
-                _barcodeController.clear();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _barcodeFocusNode.requestFocus();
-                });
-              },
-              edit: widget.edit, // Pass edit parameter
-            ),
-      ),
+      'Missing Barcode',
+      'Please enter or scan a barcode first.',
     );
-
-    // Check the result from BookOnBarcode2
-    if (result == false) {
-      setState(() {
-        _noDataFound = true;
-      });
-    } else {
-      setState(() {
-        _noDataFound = false;
-      });
-    }
-    // Request focus after navigation returns
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _barcodeFocusNode.requestFocus();
-    });
+    _barcodeFocusNode.requestFocus(); // Request focus on error
+    return;
   }
 
+  String upperBarcode = barcode.toUpperCase();
+  print("Checking barcode: $upperBarcode, addedItems: $addedItems");
+  if (addedItems.contains(upperBarcode)) {
+    _showAlertDialog(
+      context,
+      'Already Added',
+      'This barcode is already added',
+    );
+    _barcodeFocusNode.requestFocus(); // Request focus on error
+    return;
+  }
+
+  print("Navigating with barcode: $upperBarcode, bookingType: ${AppConstants.bookingType}");
+  
+  // Determine which screen to use based on bookingType
+  Widget screen;
+  
+  if (AppConstants.bookingType == "1") {
+    // For bookingType "1", use BookOnBarcode1
+    screen = BookOnBarcode1(
+      barcode: upperBarcode,
+      onSuccess: () {
+        setState(() {
+          addedItems.add(upperBarcode);
+          print("Added barcode: $upperBarcode, addedItems: $addedItems");
+          _barcodeController.clear();
+          _noDataFound = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      onCancel: () {
+        _barcodeController.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      edit: widget.edit,
+    );
+  } else if (AppConstants.bookingType == "2") {
+    // For bookingType "2", use BookOnBarcode2
+    screen = BookOnBarcode2(
+      barcode: upperBarcode,
+      onSuccess: () {
+        setState(() {
+          addedItems.add(upperBarcode);
+          print("Added barcode: $upperBarcode, addedItems: $addedItems");
+          _barcodeController.clear();
+          _noDataFound = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      onCancel: () {
+        _barcodeController.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      edit: widget.edit,
+    );
+  } else {
+    // For bookingType "3" or default, you might want to use a default screen
+    // You can decide which one to use as default (BookOnBarcode2 is current default)
+    screen = BookOnBarcode2(
+      barcode: upperBarcode,
+      onSuccess: () {
+        setState(() {
+          addedItems.add(upperBarcode);
+          print("Added barcode: $upperBarcode, addedItems: $addedItems");
+          _barcodeController.clear();
+          _noDataFound = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      onCancel: () {
+        _barcodeController.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _barcodeFocusNode.requestFocus();
+        });
+      },
+      edit: widget.edit,
+    );
+  }
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => screen),
+  );
+
+  // Check the result from the booking screen
+  if (result == false) {
+    setState(() {
+      _noDataFound = true;
+    });
+  } else {
+    setState(() {
+      _noDataFound = false;
+    });
+  }
+  
+  // Request focus after navigation returns
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _barcodeFocusNode.requestFocus();
+  });
+}
   void _showAlertDialog(BuildContext context, String title, String message) {
     showDialog(
       context: context,

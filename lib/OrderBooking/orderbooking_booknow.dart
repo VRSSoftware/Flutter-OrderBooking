@@ -425,50 +425,61 @@ class _OrderPageState extends State<OrderPage> {
             Navigator.pop(context);
           },
         ),
-        actions: [
-          isEdit
-              ? Container()
-              : IconButton(
-                icon: Stack(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.cart_badge_plus,
-                      color: Colors.white,
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          '${cartModel.count}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/viewOrder',
-                    arguments: {'mrkDown': selectedParty?.splMkDown ?? 0.00},
-                  );
-                  _fetchCartCount();
-                },
+      actions: [
+  isEdit
+      ? Container()
+      : IconButton(
+          icon: Stack(
+            children: [
+              const Icon(
+                CupertinoIcons.cart_badge_plus,
+                color: Colors.white,
               ),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
+                  child: Text(
+                    '${cartModel.count}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          onPressed: () {
+            String viewOrderRoute;
+            
+            if (AppConstants.bookingType == "1") {
+              viewOrderRoute = '/viewOrder';
+            } else if (AppConstants.bookingType == "2") {
+              viewOrderRoute = '/viewOrder2';
+            } else {
+              viewOrderRoute = '/viewOrder'; // Default fallback
+            }
+            
+            Navigator.pushNamed(
+              context,
+              viewOrderRoute,
+              arguments: {'mrkDown': selectedParty?.splMkDown ?? 0.00},
+            );
+            _fetchCartCount();
+          },
+        ),
+
           IconButton(
             icon: Icon(
               viewOption == 0
@@ -1798,35 +1809,98 @@ void _showFilterDialog() async {
     }
   }
 }
-  void _showBookingDialog(BuildContext context, Catalog item, String typee) {
-    debugPrint(typee);
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            insetPadding: EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            child: CatalogBookingTable(
-              itemSubGrpKey: item.itemSubGrpKey.toString(),
-              itemKey: item.itemKey.toString(),
-              styleKey: item.styleKey.toString(),
-              isEdit: isEdit,
-              markDwn: selectedParty?.splMkDown ?? 0.00,
-              type: typee,
-              onSuccess: () {
-                if (!isEdit) {
-                  Provider.of<CartModel>(
-                    context,
-                    listen: false,
-                  ).addItem(item.styleCode);
-                  _fetchCartCount();
-                }
-              },
-            ),
-          ),
+  // void _showBookingDialog(BuildContext context, Catalog item, String typee) {
+  //   debugPrint(typee);
+  //   showDialog(
+  //     context: context,
+  //     builder:
+  //         (context) => Dialog(
+  //           insetPadding: EdgeInsets.all(16),
+  //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+  //           child: CatalogBookingTable(
+  //             itemSubGrpKey: item.itemSubGrpKey.toString(),
+  //             itemKey: item.itemKey.toString(),
+  //             styleKey: item.styleKey.toString(),
+  //             isEdit: isEdit,
+  //             markDwn: selectedParty?.splMkDown ?? 0.00,
+  //             type: typee,
+  //             onSuccess: () {
+  //               if (!isEdit) {
+  //                 Provider.of<CartModel>(
+  //                   context,
+  //                   listen: false,
+  //                 ).addItem(item.styleCode);
+  //                 _fetchCartCount();
+  //               }
+  //             },
+  //           ),
+  //         ),
+  //   );
+  // }
+
+
+void _showBookingDialog(BuildContext context, Catalog item, String typee) {
+  debugPrint(typee);
+  
+  // Close any existing dialogs first
+  Navigator.of(context).pop();
+  
+  // Determine which screen to show based on bookingType
+  Widget screen;
+  
+  if (AppConstants.bookingType == "1") {
+    // For bookingType "1", show MultiCatalogBookingPage with single item
+    screen = MultiCatalogBookingPage(
+      catalogs: [item],
+      onSuccess: () {
+        setState(() {
+          selectedItems.remove(item);
+        });
+        if (!isEdit) {
+          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
+          _fetchCartCount();
+          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+        }
+      },
+    );
+  } else if (AppConstants.bookingType == "2") {
+    // For bookingType "2", show CreateOrderScreen with single item
+    screen = CreateOrderScreen(
+      catalogs: [item],
+      onSuccess: () {
+        setState(() {
+          selectedItems.remove(item);
+        });
+        if (!isEdit) {
+          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
+          _fetchCartCount();
+          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+        }
+      },
+    );
+  } else {
+    // For bookingType "3" or default, show CreateOrderScreen3 with single item
+    screen = CreateOrderScreen3(
+      catalogs: [item],
+      onSuccess: () {
+        setState(() {
+          selectedItems.remove(item);
+        });
+        if (!isEdit) {
+          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
+          _fetchCartCount();
+          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+        }
+      },
     );
   }
-
+  
+  // Navigate to the appropriate screen
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => screen),
+  );
+}
   Widget _buildToggleRow(String title, bool value, Function(bool) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

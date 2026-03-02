@@ -192,52 +192,63 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
         automaticallyImplyLeading: false,
         actions: [
           // Cart Icon for both modes (Order Booking and Barcode)
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
-                if (cartModel.count >= 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 14,
-                        minHeight: 14,
-                      ),
-                      child: Text(
-                        '${cartModel.count}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
+      IconButton(
+  icon: Stack(
+    children: [
+      const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
+      if (cartModel.count >= 0)
+        Positioned(
+          right: 0,
+          top: 0,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(6),
             ),
-            onPressed: () {
-              if (showBarcodeWidget) {
-                Navigator.pushNamed(
-                  context,
-                  '/viewOrderBarcode',
-                  arguments: {Constants.barcode: showBarcodeWidget},
-                ).then((_) => _fetchCartCount());
-              } else {
-                Navigator.pushNamed(
-                  context,
-                  '/viewOrder',
-                  arguments: {Constants.barcode: showBarcodeWidget},
-                ).then((_) => _fetchCartCount());
-              }
-            },
+            constraints: const BoxConstraints(
+              minWidth: 14,
+              minHeight: 14,
+            ),
+            child: Text(
+              '${cartModel.count}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
+        ),
+    ],
+  ),
+  onPressed: () {
+    if (showBarcodeWidget) {
+      Navigator.pushNamed(
+        context,
+        '/viewOrderBarcode',
+        arguments: {Constants.barcode: showBarcodeWidget},
+      ).then((_) => _fetchCartCount());
+    } else {
+      // Determine which view order route to use based on booking type
+      String viewOrderRoute;
+      
+      if (AppConstants.bookingType == "1") {
+        viewOrderRoute = '/viewOrder';
+      } else if (AppConstants.bookingType == "2") {
+        viewOrderRoute = '/viewOrder2';
+      } else {
+        viewOrderRoute = '/viewOrder'; // Default fallback
+      }
+      
+      Navigator.pushNamed(
+        context,
+        viewOrderRoute,
+        arguments: {Constants.barcode: showBarcodeWidget},
+      ).then((_) => _fetchCartCount());
+    }
+  },
+),
 
           // Orders icon
           IconButton(
