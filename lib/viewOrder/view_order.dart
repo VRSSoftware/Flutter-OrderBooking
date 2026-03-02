@@ -48,7 +48,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreens> {
   }
 
   Future<void> fetchOrderItems() async {
-    final url = Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder');
+    final url = Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
+      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
+      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

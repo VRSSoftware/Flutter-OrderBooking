@@ -11,6 +11,8 @@ class AppConstants {
   //static String? BASE_URL = "https://43.227.186.253:8080/vrs_erp/api/v1";
   static String? whatsappKey;
   static String? bookingType="1";
+  static String? whatsappType="O";
+  static String? seprateBarcodeWiseBooking = "0";
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com";
   // static  String Pdf_url = "https://localhost:44303";
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com/";

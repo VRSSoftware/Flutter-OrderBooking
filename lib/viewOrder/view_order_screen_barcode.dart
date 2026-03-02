@@ -219,7 +219,9 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     try {
       final response = await http.post(
         Uri.parse(
-          '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder',
+          AppConstants.seprateBarcodeWiseBooking =="1" ?  
+         '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
+         : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
