@@ -984,7 +984,9 @@ class _StyleManager2 {
 
   Future<void> fetchOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
+      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
+      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
+      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1003,7 +1005,9 @@ class _StyleManager2 {
 
   Future<void> refreshOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
+      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
+      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
+      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
