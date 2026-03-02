@@ -800,295 +800,318 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header with image and details
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                final imageUrl =
-                    catalog.fullImagePath.contains("http")
-                        ? catalog.fullImagePath
-                        : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ImageZoomScreen(
-                          imageUrls: [imageUrl],
-                          initialIndex: 0,
-                        ),
-                  ),
-                );
-              },
-              child: Container(
-                width: 80,
-                height: 120,
-                margin: const EdgeInsets.only(left: 8, top: 8, right: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    catalog.fullImagePath.contains("http")
-                        ? catalog.fullImagePath
-                        : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(
-                            Icons.error,
-                            size: 30,
-                            color: Colors.grey,
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 0.1, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  final imageUrl =
+                      catalog.fullImagePath.contains("http")
+                          ? catalog.fullImagePath
+                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => ImageZoomScreen(
+                            imageUrls: [imageUrl],
+                            initialIndex: 0,
                           ),
-                        ),
-                      );
-                    },
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 80,
+                  height: 115,
+                  margin: const EdgeInsets.only(left: 8, top: 8, right: 8,bottom:8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      catalog.fullImagePath.contains("http")
+                          ? catalog.fullImagePath
+                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Icon(
+                              Icons.error,
+                              size: 30,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          catalog.styleCode,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Colors.red.shade900,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Style code as tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Text(
+                            catalog.styleCode,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.red.shade900,
+                            ),
                           ),
                         ),
-                      ),
-                      Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white38, // White background
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.copy_outlined,
-                            size: 18,
-                            color: Colors.blue,
+                        const Spacer(),
+                        // Copy icon with circular background
+                        Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
                           ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext dialogContext) {
-                                return AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  title: const Text('Select an Action'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.of(dialogContext).pop();
-                                          _copySizeQtyToOtherStyles(
-                                            catalog.styleKey,
-                                          );
-                                        },
-                                        child: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 10,
-                                          ),
-                                          margin: const EdgeInsets.only(
-                                            bottom: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.copy_outlined,
+                              size: 18,
+                              color: Colors.blue,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext dialogContext) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    title: const Text('Select an Action'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.of(dialogContext).pop();
+                                            _copySizeQtyToOtherStyles(
+                                              catalog.styleKey,
+                                            );
+                                          },
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10,
                                             ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: const Text(
-                                            'Copy Size Qty to other Styles',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 13,
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: const Text(
+                                              'Copy Size Qty to other Styles',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => _deleteStyle(catalog.styleKey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      // Order - always show
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Order: ${_calculateCatalogQuantity(catalog.styleKey)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blue,
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
-                      ),
-
-                      // Stock - always show
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Stock: ${_calculateStockQuantity(catalog.styleKey)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.green,
+                        const SizedBox(width: 4),
+                        // Delete icon with circular background
+                        Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            onPressed: () => _deleteStyle(catalog.styleKey),
                           ),
                         ),
-                      ),
-
-                      // Amount - always show
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Amt: ₹${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.purple,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        // Order - always show
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Order: ${_calculateCatalogQuantity(catalog.styleKey)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
-                      ),
 
-                      // Stock Type - always show with dynamic value
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Stock Type:',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
+                        // Stock - always show
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Stock: ${_calculateStockQuantity(catalog.styleKey)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.green,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              catalog.upcoming_Stk == '1'
-                                  ? 'Upcoming'
-                                  : 'Ready',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color:
-                                    catalog.upcoming_Stk == '1'
-                                        ? Colors.orange.shade800
-                                        : Colors.green.shade800,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
 
-                      // Remark - always show with dynamic value
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Remark:',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
+                        // Amount - always show
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Amt: ₹${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.purple,
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                catalog.remark.isNotEmpty
-                                    ? catalog.remark
-                                    : 'No remarks',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black87,
-                                  fontStyle: FontStyle.italic,
+                          ),
+                        ),
+
+                        // Stock Type - always show with dynamic value
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Stock Type:',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.blueGrey,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                catalog.upcoming_Stk == '1'
+                                    ? 'Upcoming'
+                                    : 'Ready',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color:
+                                      catalog.upcoming_Stk == '1'
+                                          ? Colors.orange.shade800
+                                          : Colors.green.shade800,
+                                ),
+                              ),
+                            
+                            const SizedBox(width: 4),
+                              const Text(
+                                'Remark:',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  catalog.remark.isNotEmpty
+                                      ? catalog.remark
+                                      : 'No remarks',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                    //fontStyle: FontStyle.italic,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                ],
+
+                    
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
+
+        const SizedBox(height: 0.5),
 
         // Table for each shade
         ...selectedColors.map(
@@ -1139,7 +1162,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
             ],
           ),
         ),
-        const Divider(thickness: 1, height: 24),
+     
       ],
     );
   }
@@ -1151,7 +1174,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
     final sizeWsp = sizeWspMap[styleKey] ?? {};
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 0.2, vertical: 4),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade400),
         borderRadius: BorderRadius.circular(6),
@@ -1212,7 +1235,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
         TableCell(
           verticalAlignment: TableCellVerticalAlignment.middle,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
             child: Text(
               label,
               style: TextStyle(
@@ -1319,7 +1342,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
         TableCell(
           verticalAlignment: TableCellVerticalAlignment.middle,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
