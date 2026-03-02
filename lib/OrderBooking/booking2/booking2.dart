@@ -881,7 +881,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 children: [
                   _buildHeader("Size", 1),
                   _buildHeader("Qty", 2),
-                  _buildHeader("Rate", 1),
+                  _buildHeader("MRP", 1),
                   _buildHeader("WSP", 1),
                   _buildHeader("Stock", 1),
                 ],

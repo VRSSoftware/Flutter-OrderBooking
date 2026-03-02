@@ -67,6 +67,7 @@ dependencies:
   multicast_dns: ^0.3.3
   badges: ^3.1.2
   dropdown_button2: ^2.3.9
+  photo_view: ^0.15.0
 
  # android_intent_plus: ^4.0.2
   #device_apps: ^2.2.0

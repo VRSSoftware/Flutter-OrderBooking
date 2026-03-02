@@ -82,6 +82,7 @@ class MyApp extends StatelessWidget {
         '/viewOrder': (context) => ViewOrderScreen(),
         '/viewOrder2': (context) => ViewOrderScreen2(),
         '/viewOrderBarcode': (context) => ViewOrderScreenBarcode(),
+        '/viewOrderBarcode2': (context) => ViewOrderScreenBarcode2(),
         '/registerOrders': (context) => RegisterPage(),
         '/stockReport': (context) => StockReportPage(),
         '/dashboard': (context) => OrderSummaryPage(),

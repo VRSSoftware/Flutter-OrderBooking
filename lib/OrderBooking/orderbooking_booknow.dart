@@ -237,6 +237,7 @@ class _OrderPageState extends State<OrderPage> {
         fcYrId: UserSession.userFcYr ?? '',
         barcode: '',
       );
+      if (!mounted) return; 
       final cartModel = Provider.of<CartModel>(context, listen: false);
       cartModel.updateCount(data['cartItemCount'] ?? 0);
     } catch (e) {
@@ -655,7 +656,8 @@ class _OrderPageState extends State<OrderPage> {
           ),
         ],
       ),
-      body: Column(
+      body:SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: RefreshIndicator(
@@ -720,6 +722,7 @@ class _OrderPageState extends State<OrderPage> {
           _buildBottomButtons(isLargeScreen),
         ],
       ),
+    ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50),
         child: FloatingActionButton(
@@ -1852,46 +1855,67 @@ void _showBookingDialog(BuildContext context, Catalog item, String typee) {
     // For bookingType "1", show MultiCatalogBookingPage with single item
     screen = MultiCatalogBookingPage(
       catalogs: [item],
-      onSuccess: () {
-        setState(() {
-          selectedItems.remove(item);
-        });
-        if (!isEdit) {
-          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
-          _fetchCartCount();
-          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
-        }
-      },
+  onSuccess: () {
+  if (!mounted) return;
+
+  setState(() {
+    selectedItems.remove(item);
+  });
+
+  if (!isEdit) {
+    Provider.of<CartModel>(context, listen: false)
+        .addItem(item.styleCode);
+
+    _fetchCartCount();
+
+    Provider.of<CartModel>(context, listen: false)
+        .refreshAddedItems();
+  }
+}
     );
   } else if (AppConstants.bookingType == "2") {
     // For bookingType "2", show CreateOrderScreen with single item
     screen = CreateOrderScreen(
       catalogs: [item],
-      onSuccess: () {
-        setState(() {
-          selectedItems.remove(item);
-        });
-        if (!isEdit) {
-          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
-          _fetchCartCount();
-          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
-        }
-      },
+    onSuccess: () {
+  if (!mounted) return;
+
+  setState(() {
+    selectedItems.remove(item);
+  });
+
+  if (!isEdit) {
+    Provider.of<CartModel>(context, listen: false)
+        .addItem(item.styleCode);
+
+    _fetchCartCount();
+
+    Provider.of<CartModel>(context, listen: false)
+        .refreshAddedItems();
+  }
+}
     );
   } else {
     // For bookingType "3" or default, show CreateOrderScreen3 with single item
     screen = CreateOrderScreen3(
       catalogs: [item],
-      onSuccess: () {
-        setState(() {
-          selectedItems.remove(item);
-        });
-        if (!isEdit) {
-          Provider.of<CartModel>(context, listen: false).addItem(item.styleCode);
-          _fetchCartCount();
-          Provider.of<CartModel>(context, listen: false).refreshAddedItems();
-        }
-      },
+    onSuccess: () {
+  if (!mounted) return;
+
+  setState(() {
+    selectedItems.remove(item);
+  });
+
+  if (!isEdit) {
+    Provider.of<CartModel>(context, listen: false)
+        .addItem(item.styleCode);
+
+    _fetchCartCount();
+
+    Provider.of<CartModel>(context, listen: false)
+        .refreshAddedItems();
+  }
+}
     );
   }
   

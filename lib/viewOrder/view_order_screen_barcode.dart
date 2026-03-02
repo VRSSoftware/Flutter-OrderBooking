@@ -64,7 +64,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
 
   Future<void> _handleSave() async {
     if (_isSaving) return;
-    
+
     setState(() => _isSaving = true);
     try {
       await _saveOrderLocally();
@@ -231,7 +231,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Order saved successfully')));
-         return response.body;
+        return response.body;
       } else {
         print('Error: ${response.statusCode}');
         print('Response Body: ${response.body}');
@@ -349,15 +349,16 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
       final selectedConsignee = consignees.firstWhere(
         (consignee) => consignee.ledName == selectedConsigneeName,
-        orElse: () => Consignee(
-          ledKey: '',
-          ledName: '',
-          stnKey: '',
-          stnName: '',
-          paymentTermsKey: '',
-          paymentTermsName: '',
-          pytTermDiscdays: '0',
-        ),
+        orElse:
+            () => Consignee(
+              ledKey: '',
+              ledName: '',
+              stnKey: '',
+              stnName: '',
+              paymentTermsKey: '',
+              paymentTermsName: '',
+              pytTermDiscdays: '0',
+            ),
       );
       consigneeLedKey = selectedConsignee.ledKey;
       stationStnKey = selectedConsignee.stnKey;
@@ -402,44 +403,45 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       if (orderNumber != null && orderNumber != "fail") {
         final formattedOrderNo = "SO$orderNumber";
         print("formattedOrderNo: ${formattedOrderNo}");
-        
+
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Order Saved'),
-            content: Text(
-              'Order $formattedOrderNo saved successfully',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PdfViewerScreen(
-                        rptName: 'SalesOrder',
-                        orderNo: formattedOrderNo,
-                        whatsappNo: _orderControllers.whatsAppMobileNo,
-                        partyName: _orderControllers.selectedPartyName ?? '', 
-                        orderDate: _orderControllers.date.text,
-                      ),
-                    ),
-                  );
-                },
-                child: Text('View PDF'),
+          builder:
+              (context) => AlertDialog(
+                title: Text('Order Saved'),
+                content: Text('Order $formattedOrderNo saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => PdfViewerScreen(
+                                rptName: 'SalesOrder',
+                                orderNo: formattedOrderNo,
+                                whatsappNo: _orderControllers.whatsAppMobileNo,
+                                partyName:
+                                    _orderControllers.selectedPartyName ?? '',
+                                orderDate: _orderControllers.date.text,
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text('View PDF'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                    child: Text('Done'),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-                child: Text('Done'),
-              ),
-            ],
-          ),
         );
       }
     } catch (e) {
@@ -509,7 +511,10 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 8.0,
+              horizontal: 16.0,
+            ),
             color: primaryBlue,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -533,7 +538,10 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
                 Flexible(
                   child: Text(
                     'Items: ${_calculateTotalItems()}',
-                    style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -546,7 +554,10 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
                 Flexible(
                   child: Text(
                     'Qty: ${_calculateTotalQuantity()}',
-                    style: GoogleFonts.roboto(color: Colors.white, fontSize: 12),
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -816,6 +827,9 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
         return Colors.black;
       case 'white':
         return Colors.grey;
+       case 'brown':
+        return Colors.brown;
+          
       default:
         return Colors.black;
     }
@@ -862,7 +876,7 @@ class _OrderControllers {
     creditPeriod = details['creditPeriod'] as int?;
     salesLedKey = details['salesLedKey']?.toString();
     ledgerName = details['ledgerName']?.toString();
-    selectedPartyName = selectedPartyName ?? details['ledgerName']?.toString(); 
+    selectedPartyName = selectedPartyName ?? details['ledgerName']?.toString();
     final partyBrokerKey = details['brokerKey']?.toString() ?? '';
     if (partyBrokerKey.isNotEmpty) {
       final broker = brokers.firstWhere(
@@ -1144,75 +1158,74 @@ class _StyleCardsView extends StatelessWidget {
     }
   }
 
-CatalogOrderData _convertToCatalogOrderData(
-  String styleKey,
-  List<dynamic> items,
-) {
-  final shades =
-      items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
-  final sizes =
-      items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
-  final firstItem = items.first;
+  CatalogOrderData _convertToCatalogOrderData(
+    String styleKey,
+    List<dynamic> items,
+  ) {
+    final shades =
+        items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
+    final sizes =
+        items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
+    final firstItem = items.first;
 
-  // Create matrix with sizes as rows and shades as columns
-  final matrix = List.generate(sizes.length, (sizeIndex) {
-    return List.generate(shades.length, (shadeIndex) {
-      final item = items.firstWhere(
-        (i) =>
-            (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
-            (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
-        orElse: () => {},
-      );
-      final mrp = item['mrp']?.toString() ?? '0';
-      final wsp = item['wsp']?.toString() ?? '0';
-      final qty = item['clqty']?.toString() ?? '0';
-      return '$mrp,$wsp,$qty';
+    // Create matrix with sizes as rows and shades as columns
+    final matrix = List.generate(sizes.length, (sizeIndex) {
+      return List.generate(shades.length, (shadeIndex) {
+        final item = items.firstWhere(
+          (i) =>
+              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+          orElse: () => {},
+        );
+        final mrp = item['mrp']?.toString() ?? '0';
+        final wsp = item['wsp']?.toString() ?? '0';
+        final qty = item['clqty']?.toString() ?? '0';
+        return '$mrp,$wsp,$qty';
+      });
     });
-  });
 
-  return CatalogOrderData(
-    catalog: Catalog(
-      itemSubGrpKey: '',
-      itemSubGrpName: '',
-      itemKey: '',
-      itemName: firstItem['itemName']?.toString() ?? 'Unknown',
-      brandKey: '',
-      brandName: '',
-      styleKey: styleKey,
-      styleCode: firstItem['styleCode']?.toString() ?? styleKey,
-      shadeKey: '',
-      shadeName: shades.join(','),
-      styleSizeId: '',
-      sizeName: sizes.join(','),
-      mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-      wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
-      onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-      clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
-      total: items.fold(
-        0,
-        (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+    return CatalogOrderData(
+      catalog: Catalog(
+        itemSubGrpKey: '',
+        itemSubGrpName: '',
+        itemKey: '',
+        itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+        brandKey: '',
+        brandName: '',
+        styleKey: styleKey,
+        styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+        shadeKey: '',
+        shadeName: shades.join(','),
+        styleSizeId: '',
+        sizeName: sizes.join(','),
+        mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+        onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+        total: items.fold(
+          0,
+          (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+        ),
+        fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+        remark: firstItem['remark']?.toString() ?? '',
+        imageId: '',
+        sizeDetails: sizes
+            .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+            .join(','),
+        sizeDetailsWithoutWSp: sizes
+            .map((s) => '$s (${firstItem['mrp']})')
+            .join(','),
+        sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+        styleCodeWithcount: styleKey,
+        onlySizes: sizes.join(','),
+        sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+        createdDate: '',
+        shadeImages: '',
+        upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
       ),
-      fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
-      remark: firstItem['remark']?.toString() ?? '',
-      imageId: '',
-      sizeDetails: sizes
-          .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
-          .join(','),
-      sizeDetailsWithoutWSp: sizes
-          .map((s) => '$s (${firstItem['mrp']})')
-          .join(','),
-      sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
-      styleCodeWithcount: styleKey,
-      onlySizes: sizes.join(','),
-      sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
-      createdDate: '',
-      shadeImages: '',
-      upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
-    ),
-    orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
-  );
-}
-
+      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
+    );
+  }
 }
 
 class StyleCard extends StatefulWidget {
@@ -1250,10 +1263,9 @@ class _StyleCardState extends State<StyleCard> {
   @override
   void initState() {
     super.initState();
-    _lastSavedQuantities = widget.quantities.map((shade, sizes) => MapEntry(
-          shade,
-          Map<String, int>.from(sizes),
-        ));
+    _lastSavedQuantities = widget.quantities.map(
+      (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
+    );
   }
 
   @override
@@ -1261,9 +1273,7 @@ class _StyleCardState extends State<StyleCard> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Stack(
         children: [
           Padding(
@@ -1339,16 +1349,18 @@ class _StyleCardState extends State<StyleCard> {
                     aspectRatio: 3 / 4,
                     child: GestureDetector(
                       onDoubleTap: () {
-                        final imageUrl = catalog.fullImagePath.contains("http")
-                            ? catalog.fullImagePath
-                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                        final imageUrl =
+                            catalog.fullImagePath.contains("http")
+                                ? catalog.fullImagePath
+                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ImageZoomScreen(
-                              imageUrls: [imageUrl],
-                              initialIndex: 0,
-                            ),
+                            builder:
+                                (context) => ImageZoomScreen(
+                                  imageUrls: [imageUrl],
+                                  initialIndex: 0,
+                                ),
                           ),
                         );
                       },
@@ -1357,8 +1369,9 @@ class _StyleCardState extends State<StyleCard> {
                             ? catalog.fullImagePath
                             : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.error, size: 60),
+                        errorBuilder:
+                            (context, error, stackTrace) =>
+                                const Icon(Icons.error, size: 60),
                       ),
                     ),
                   ),
@@ -1432,7 +1445,7 @@ class _StyleCardState extends State<StyleCard> {
           ),
         ),
         const SizedBox(height: 15),
-      
+
         ...widget.selectedColors.map(
           (color) => Column(
             children: [
@@ -1443,7 +1456,8 @@ class _StyleCardState extends State<StyleCard> {
                 children: [
                   Expanded(
                     child: TextButton.icon(
-                      onPressed: _isLoading ? null : () => _submitDelete(context),
+                      onPressed:
+                          _isLoading ? null : () => _submitDelete(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
@@ -1468,9 +1482,10 @@ class _StyleCardState extends State<StyleCard> {
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: TextButton(
-                      onPressed: _isLoading || !_hasQuantityChanged
-                          ? null
-                          : () => _submitUpdate(context),
+                      onPressed:
+                          _isLoading || !_hasQuantityChanged
+                              ? null
+                              : () => _submitUpdate(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
@@ -1480,59 +1495,64 @@ class _StyleCardState extends State<StyleCard> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         side: BorderSide(
-                          color: _hasQuantityChanged
-                              ? Colors.blue
-                              : Colors.grey.shade400,
+                          color:
+                              _hasQuantityChanged
+                                  ? Colors.blue
+                                  : Colors.grey.shade400,
                         ),
-                        backgroundColor: _hasQuantityChanged
-                            ? Colors.blue.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
+                        backgroundColor:
+                            _hasQuantityChanged
+                                ? Colors.blue.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
                       ),
-                      child: _isLoading
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Updating...',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w600,
+                      child:
+                          _isLoading
+                              ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Updating...',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.blue,
+                                  const SizedBox(width: 12),
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.blue,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.save,
-                                  color: _hasQuantityChanged
-                                      ? Colors.blue
-                                      : Colors.grey.shade400,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Update',
-                                  style: TextStyle(
-                                    color: _hasQuantityChanged
-                                        ? Colors.blue
-                                        : Colors.grey.shade400,
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w600,
+                                ],
+                              )
+                              : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.save,
+                                    color:
+                                        _hasQuantityChanged
+                                            ? Colors.blue
+                                            : Colors.grey.shade400,
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Update',
+                                    style: TextStyle(
+                                      color:
+                                          _hasQuantityChanged
+                                              ? Colors.blue
+                                              : Colors.grey.shade400,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                     ),
                   ),
                 ],
@@ -1585,7 +1605,11 @@ class _StyleCardState extends State<StyleCard> {
     int total = 0;
     final matrix = widget.catalogOrder.orderMatrix;
     for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
-      for (var shadeIndex = 0; shadeIndex < matrix.shades.length; shadeIndex++) {
+      for (
+        var shadeIndex = 0;
+        shadeIndex < matrix.shades.length;
+        shadeIndex++
+      ) {
         final matrixData = matrix.matrix[sizeIndex][shadeIndex].split(',');
         final stock =
             int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
@@ -1605,7 +1629,9 @@ class _StyleCardState extends State<StyleCard> {
         final sizeIndex = matrix.sizes.indexOf(size.trim());
         if (sizeIndex == -1) continue;
         final rate =
-            double.tryParse(matrix.matrix[sizeIndex][shadeIndex].split(',')[0]) ??
+            double.tryParse(
+              matrix.matrix[sizeIndex][shadeIndex].split(',')[0],
+            ) ??
             0;
         final quantity = widget.quantities[shade]![size]!;
         total += rate * quantity;
@@ -1614,194 +1640,222 @@ class _StyleCardState extends State<StyleCard> {
     return total;
   }
 
-Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-  final matrix = catalogOrder.orderMatrix;
-  final shadeIndex = matrix.shades.indexOf(shade.trim());
-  
-  if (shadeIndex == -1) return SizedBox.shrink();
+  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+    final matrix = catalogOrder.orderMatrix;
+    final shadeIndex = matrix.shades.indexOf(shade.trim());
+    if (shadeIndex == -1) return const SizedBox.shrink();
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey.shade400),
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header row
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Shade\Size header cell
-                Container(
-                  width: 100,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade400),
-                    ),
-                    color: Colors.grey.shade300,
-                  ),
-                  child: Text(
-                    "Shade\\Size",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.lora(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                // Size headers
-                ...matrix.sizes.asMap().entries.map((entry) {
-                  final sizeIndex = entry.key;
-                  final size = entry.value;
-                  
-                  return Container(
-                    width: 80,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: sizeIndex == matrix.sizes.length - 1 
-                            ? BorderSide.none 
-                            : BorderSide(color: Colors.grey.shade400),
-                      ),
-                      color: Colors.grey.shade300,
-                    ),
-                    child: Text(
-                      size,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lora(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-        ),
-        
-        // Shade row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+    // Calculate required width based on number of sizes
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseTableWidth = 120 + (90 * matrix.sizes.length);
+    final requiredTableWidth =
+        screenWidth > baseTableWidth ? screenWidth : baseTableWidth.toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: requiredTableWidth),
+          child: Table(
+            border: TableBorder.all(color: Colors.grey.shade400, width: 1),
+            columnWidths: {
+              0: const FixedColumnWidth(120),
+              for (int i = 0; i < matrix.sizes.length; i++)
+                i + 1: const FixedColumnWidth(90),
+            },
             children: [
-              // Shade name cell with color from getColor function
-              Container(
-                width: 100,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    right: BorderSide(color: Colors.grey.shade400),
-                  ),
-                  color: Colors.grey.shade50,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Color indicator circle
-                    Container(
-                      width: 12,
-                      height: 12,
-                      margin: const EdgeInsets.only(right: 4),
-                      decoration: BoxDecoration(
-                        color: widget.getColor(shade),
-                        shape: BoxShape.circle,
+  
+              /// HEADER ROW with diagonal line (Shade/Size)
+              TableRow(
+                children: [
+                  Container(
+                    height: 42,
+                    color: const Color.fromARGB(255, 236, 212, 204),
+                    child: CustomPaint(
+                      painter: _DiagonalLinePainter(),
+                      child: const Stack(
+                        children: [
+                          Positioned(
+                            left: 8,
+                            top: 20,
+                            child: Text(
+                              'Shade',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            bottom: 20,
+                            child: Text(
+                              'Size',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    // Shade name
-                    Expanded(
-                      child: Text(
-                        shade,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Size cells with MRP and Quantity
-              ...matrix.sizes.asMap().entries.map((entry) {
-                final sizeIndex = entry.key;
-                final size = entry.value;
-                
-                final matrixData = matrix.matrix[sizeIndex][shadeIndex].split(',');
-                final mrp = matrixData[0];
-                
-                final controller = widget.styleManager.controllers[widget.styleCode]?[shade]?[size];
-                final quantity = widget.quantities[shade]?[size] ?? 0;
-                
-                return Container(
-                  width: 80,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: sizeIndex == matrix.sizes.length - 1 
-                          ? BorderSide.none 
-                          : BorderSide(color: Colors.grey.shade400),
-                    ),
                   ),
-                  child: Column(
-                    children: [
-                      // MRP
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade300),
+                  ...matrix.sizes
+                      .map(
+                        (size) => Container(
+                          height: 42,
+                          color: const Color.fromARGB(255, 236, 212, 204),
+                          alignment: Alignment.center,
+                          child: Text(
+                            size,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
+                      )
+                      .toList(),
+                ],
+              ),
+
+                           /// MRP ROW
+              TableRow(
+                decoration: const BoxDecoration(color: Colors.white),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: Text(
+                        'MRP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...matrix.sizes.asMap().entries.map((entry) {
+                    final sizeIndex = entry.key;
+                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
+                        .split(',');
+                    final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      color: Colors.grey.shade100,
+                      child: Center(
                         child: Text(
-                          '₹$mrp',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(
+                          "$mrp",
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
                           ),
                         ),
                       ),
-                      // Quantity input field
-                      SizedBox(
-                        height: 32,
+                    );
+                  }).toList(),
+                ],
+              ),
+
+              /// WSP ROW
+              TableRow(
+                decoration: const BoxDecoration(color: Colors.white),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: Text('WSP', style: TextStyle(fontSize: 13)),
+                    ),
+                  ),
+                  ...matrix.sizes.asMap().entries.map((entry) {
+                    final sizeIndex = entry.key;
+                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
+                        .split(',');
+                    final wsp = matrixData.length > 1 ? matrixData[1] : '0';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      color: Colors.grey.shade100,
+                      child: Center(
+                        child: Text(
+                          "$wsp",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+
+         
+              /// SHADE ROW with color-coded shade name
+              TableRow(
+                children: [
+                  Container(
+                    height: 40,
+                    color: Colors.grey.shade50,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                       
+                          Text(
+                            shade,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: widget.getColor(shade),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  ...matrix.sizes.asMap().entries.map((entry) {
+                    final sizeIndex = entry.key;
+                    final size = entry.value;
+
+                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
+                        .split(',');
+                    final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
+                    final currentQty = widget.quantities[shade]?[size] ?? 0;
+
+                    return Container(
+                      height: 40,
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(4),
+                      child: Center(
                         child: TextField(
-                          controller: controller,
+                          controller:
+                              widget.styleManager.controllers[widget
+                                  .styleCode]?[shade]?[size],
                           textAlign: TextAlign.center,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                            hintText: quantity.toString(),
-                            hintStyle: GoogleFonts.roboto(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                            isDense: true,
+                            hintText: currentQty.toString(),
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade400,
                             ),
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
                           ),
-                          style: GoogleFonts.roboto(
-                            fontSize: 12,
+                          style: const TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                           inputFormatters: [
@@ -1809,7 +1863,8 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
                             LengthLimitingTextInputFormatter(4),
                           ],
                           onChanged: (value) {
-                            final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                            final newQuantity =
+                                int.tryParse(value.isEmpty ? '0' : value) ?? 0;
                             if (widget.quantities[shade] != null) {
                               setState(() {
                                 widget.quantities[shade]![size] = newQuantity;
@@ -1819,17 +1874,17 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
                           },
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
+                ],
+              ),
             ],
           ),
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
+
   bool _checkQuantityChanged() {
     for (var shade in widget.quantities.keys) {
       for (var size in widget.quantities[shade]!.keys) {
@@ -1918,7 +1973,9 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
@@ -1946,7 +2003,10 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
           },
         );
       } else {
-        _showErrorDialog(context, "Failed to delete style: ${response.statusCode}");
+        _showErrorDialog(
+          context,
+          "Failed to delete style: ${response.statusCode}",
+        );
       }
     } catch (e) {
       setState(() {
@@ -1996,7 +2056,9 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
 
     try {
       final initialResponse = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(initialPayload),
       );
@@ -2042,11 +2104,15 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
               "typ": 0,
             };
 
-            requests.add(http.post(
-              Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(payload),
-            ));
+            requests.add(
+              http.post(
+                Uri.parse(
+                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+                ),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode(payload),
+              ),
+            );
           }
         }
 
@@ -2071,10 +2137,9 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
           setState(() {
             _isUpdated = false;
             _hasQuantityChanged = false;
-            _lastSavedQuantities = widget.quantities.map((shade, sizes) => MapEntry(
-                  shade,
-                  Map<String, int>.from(sizes),
-                ));
+            _lastSavedQuantities = widget.quantities.map(
+              (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
+            );
           });
           widget.onUpdate();
           await showDialog(
@@ -2102,7 +2167,10 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
         setState(() {
           _isLoading = false;
         });
-        _showErrorDialog(context, "No quantities found for style: ${widget.styleCode}");
+        _showErrorDialog(
+          context,
+          "No quantities found for style: ${widget.styleCode}",
+        );
       }
     } catch (e) {
       setState(() {
@@ -2390,34 +2458,35 @@ class _OrderFormState extends State<_OrderForm> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: widget.isSaving
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Saving...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                child:
+                    widget.isSaving
+                        ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Saving...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
+                            const SizedBox(width: 12),
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : const Text(
-                        'Save',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                          ],
+                        )
+                        : const Text(
+                          'Save',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
               ),
             ),
           ],
@@ -2650,6 +2719,7 @@ Widget buildFullField(
     child: buildTextField(context, label, controller, isText: isText ?? false),
   );
 }
+
 class AddMoreInfoDialog extends StatefulWidget {
   final List<Map<String, String>> salesPersonList;
   final String? partyLedKey;
@@ -2705,7 +2775,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
       text: widget.additionalInfo['station'] ?? '',
     );
     _paymentDaysController = TextEditingController(
-      text: widget.additionalInfo['paymentdays'] ?? widget.creditPeriod?.toString() ?? '',
+      text:
+          widget.additionalInfo['paymentdays'] ??
+          widget.creditPeriod?.toString() ??
+          '',
     );
     _selectedSalesman =
         widget.salesPersonList.firstWhere(
@@ -2736,7 +2809,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 20.0,
+      ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         constraints: BoxConstraints(
@@ -2752,14 +2828,18 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                 children: [
                   Text(
                     "Additional Information",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: primaryBlue,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Divider(color: Colors.grey.shade300, height: 1),
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -2782,7 +2862,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         });
                       },
                     ),
-                    
+
                     _buildDropdown(
                       "Consignee",
                       widget.consignees.map((e) => e.ledName).toList(),
@@ -2790,7 +2870,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedConsignee = val),
                     ),
-                    
+
                     _buildDropdown(
                       "Payment Terms",
                       widget.paymentTerms.map((e) => e.name).toList(),
@@ -2798,7 +2878,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedPaymentTerm = val),
                     ),
-                    
+
                     _buildDropdown(
                       "Booking Type",
                       widget.bookingTypes.map((e) => e.itemName).toList(),
@@ -2806,23 +2886,23 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                       true,
                       (val) => setState(() => _selectedBookingType = val),
                     ),
-                    
+
                     _buildTextField("Reference No", _refNoController),
-                    
+
                     _buildTextField("Station", _stationController),
-                    
+
                     _buildTextField(
-                      "Payment Days", 
+                      "Payment Days",
                       _paymentDaysController,
                       keyboardType: TextInputType.number,
                     ),
-                    
+
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-            
+
             Container(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               child: Row(
@@ -2835,9 +2915,14 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                      child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        "Save",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2848,9 +2933,14 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -2875,7 +2965,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: Colors.grey.shade400),
             borderRadius: BorderRadius.circular(6),
@@ -2884,7 +2977,11 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
             borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
             borderRadius: BorderRadius.circular(6),
           ),
-          labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+          labelStyle: const TextStyle(
+            color: Color(0xFF475569),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -2909,8 +3006,13 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
           searchFieldProps: TextFieldProps(
             decoration: InputDecoration(
               hintText: "Search $label",
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
               isDense: true,
             ),
           ),
@@ -2926,7 +3028,10 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(6),
@@ -2935,15 +3040,28 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
               borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
               borderRadius: BorderRadius.circular(6),
             ),
-            labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+            labelStyle: const TextStyle(
+              color: Color(0xFF475569),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        dropdownButtonProps: const DropdownButtonProps(icon: Icon(Icons.keyboard_arrow_down)),
+        dropdownButtonProps: const DropdownButtonProps(
+          icon: Icon(Icons.keyboard_arrow_down),
+        ),
         dropdownBuilder: (context, selectedItem) {
           if (selectedItem == null || selectedItem.isEmpty) {
-            return Text("Select $label", style: const TextStyle(fontSize: 13, color: Colors.grey));
+            return Text(
+              "Select $label",
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            );
           }
-          return Text(selectedItem, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis);
+          return Text(
+            selectedItem,
+            style: const TextStyle(fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          );
         },
         filterFn: (item, filter) {
           if (filter.isEmpty) return true;
@@ -2966,4 +3084,19 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
     widget.onValueChanged(newInfo);
     Navigator.pop(context, newInfo);
   }
+}
+
+class _DiagonalLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = Colors.grey.shade400
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset.zero, Offset(size.width, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

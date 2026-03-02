@@ -352,18 +352,18 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     }
   }
 
-  String _getImageUrl(Catalog catalog) {
-    final path = catalog.fullImagePath ?? '';
-    if (UserSession.onlineImage == '0') {
-      final imageName = path.split('/').last.split('?').first;
-      return imageName.isEmpty
-          ? ''
-          : '${AppConstants.BASE_URL}/images/$imageName';
-    } else if (UserSession.onlineImage == '1') {
-      return path;
-    }
-    return '';
+String _getImageUrl(Catalog catalog) {
+  final path = catalog.fullImagePath ?? '';
+  if (UserSession.onlineImage == '0') {
+    final imageName = path.split('/').last.split('?').first;
+    return imageName.isEmpty
+        ? ''
+        : '${AppConstants.BASE_URL}/images/$imageName';
+  } else if (UserSession.onlineImage == '1') {
+    return path;
   }
+  return '';
+}
 
   @override
   Widget build(BuildContext context) {
@@ -415,32 +415,39 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
           ),
         ),
       ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : widget.catalogs.isEmpty
-              ? const Center(child: Text("No items selected"))
-              : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          ...List.generate(widget.catalogs.length, (index) {
-                            final catalog = widget.catalogs[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: _buildItemBookingSection(context, catalog),
-                            );
-                          }),
-                        ],
+
+      body: SafeArea(
+        // Added SafeArea here
+        child:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : widget.catalogs.isEmpty
+                ? const Center(child: Text("No items selected"))
+                : Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            ...List.generate(widget.catalogs.length, (index) {
+                              final catalog = widget.catalogs[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: _buildItemBookingSection(
+                                  context,
+                                  catalog,
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  _buildBottomBar(), // Fixed at the bottom
-                ],
-              ),
-      // bottomNavigationBar: _buildBottomBar(),
+                    _buildBottomBar(), // Fixed at the bottom
+                  ],
+                ),
+        // bottomNavigationBar: _buildBottomBar(),
+      ),
     );
   }
 
@@ -485,7 +492,14 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.copy_outlined),
+
                         iconSize: 20,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.blue.shade50,
+                          shape: const CircleBorder(),
+                          padding: const EdgeInsets.all(8),
+                          foregroundColor: Colors.blue.shade700,
+                        ),
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -584,12 +598,21 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                           );
                         },
                       ),
+
                       IconButton(
                         icon: const Icon(
                           Icons.delete_outline,
                           color: Colors.red,
                         ),
                         iconSize: 24,
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              Colors.red.shade50, // Light red background
+                          shape: const CircleBorder(), // Circular shape
+                          padding: const EdgeInsets.all(
+                            8,
+                          ), // Padding around icon
+                        ),
                         onPressed: () => _deleteCatalog(catalog),
                       ),
                     ],
@@ -650,9 +673,9 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
       child: Text(
         styleCode,
         style: const TextStyle(
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+           color: Color(0xFF800000),
         ),
       ),
     );
