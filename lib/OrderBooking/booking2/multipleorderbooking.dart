@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/models/catalog.dart';
@@ -352,18 +353,18 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     }
   }
 
-String _getImageUrl(Catalog catalog) {
-  final path = catalog.fullImagePath ?? '';
-  if (UserSession.onlineImage == '0') {
-    final imageName = path.split('/').last.split('?').first;
-    return imageName.isEmpty
-        ? ''
-        : '${AppConstants.BASE_URL}/images/$imageName';
-  } else if (UserSession.onlineImage == '1') {
-    return path;
+  String _getImageUrl(Catalog catalog) {
+    final path = catalog.fullImagePath ?? '';
+    if (UserSession.onlineImage == '0') {
+      final imageName = path.split('/').last.split('?').first;
+      return imageName.isEmpty
+          ? ''
+          : '${AppConstants.BASE_URL}/images/$imageName';
+    } else if (UserSession.onlineImage == '1') {
+      return path;
+    }
+    return '';
   }
-  return '';
-}
 
   @override
   Widget build(BuildContext context) {
@@ -466,17 +467,32 @@ String _getImageUrl(Catalog catalog) {
               margin: const EdgeInsets.only(left: 16, top: 8),
               width: 100,
               height: 100,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  _getImageUrl(catalog),
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey.shade300,
-                      child: const Center(child: Icon(Icons.error)),
-                    );
-                  },
+              child: GestureDetector(
+                onTap: () {
+                  final imageUrl = _getImageUrl(catalog);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ImageZoomScreen(
+                            imageUrls: [imageUrl],
+                            initialIndex: 0,
+                          ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    _getImageUrl(catalog),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey.shade300,
+                        child: const Center(child: Icon(Icons.error)),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -675,7 +691,7 @@ String _getImageUrl(Catalog catalog) {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-           color: Color(0xFF800000),
+          color: Color(0xFF800000),
         ),
       ),
     );

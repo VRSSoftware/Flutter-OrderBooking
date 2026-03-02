@@ -843,7 +843,7 @@ class _StyleCardState extends State<StyleCard> {
     final imageUrl = imageUrls.isNotEmpty && imageUrls[0].isNotEmpty ? imageUrls[0] : '${AppConstants.BASE_URL}/images/NoImage.jpg';
 
     return GestureDetector(
-      onDoubleTap: () => _openImageZoom(context, imagePath),
+      onTap: () => _openImageZoom(context, imagePath),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 100),
         height: 100,

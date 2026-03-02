@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:vrs_erp/catalog/image_zoom1.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/models/CatalogOrderData.dart';
@@ -694,96 +695,100 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
           'Order Booking - BarcodeWise',
           style: TextStyle(color: Colors.white),
         ),
-       backgroundColor: Colors.blue,
+        backgroundColor: Colors.blue,
         elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
-       
       ),
-      body:SafeArea(
+      body: SafeArea(
         child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.white,
-            child: Row(
-              children: [
-                const Text(
-                  "Barcode:",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  const Text(
+                    "Barcode:",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.barcode,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade900,
+                  const SizedBox(width: 10),
+                  Text(
+                    widget.barcode,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade900,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child:
-          isLoading
-              ? Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Please Wait...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
+            Expanded(
+              child:
+                  isLoading
+                      ? Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                'Please Wait...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      : SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...catalogOrderList.map(
+                              (catalogOrder) => Padding(
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: _buildOrderItem(catalogOrder),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(width: 16),
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2.5),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...catalogOrderList.map(
-                      (catalogOrder) => Padding(
-                        padding: const EdgeInsets.only(bottom: 24),
-                        child: _buildOrderItem(catalogOrder),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        )
-        ]) )  );
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildOrderItem(CatalogOrderData catalogOrder) {
@@ -799,7 +804,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
-              onDoubleTap: () {
+              onTap: () {
                 final imageUrl =
                     catalog.fullImagePath.contains("http")
                         ? catalog.fullImagePath
@@ -808,17 +813,9 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (_) => ImageZoomScreen1(
+                        (_) => ImageZoomScreen(
                           imageUrls: [imageUrl],
-                          item: catalog,
-                          showShades: true,
-                          showMRP: true,
-                          showWSP: true,
-                          showSizes: true,
-                          showProduct: true,
-                          showRemark: true,
-                          isLargeScreen:
-                              MediaQuery.of(context).size.width > 600,
+                          initialIndex: 0,
                         ),
                   ),
                 );
@@ -871,60 +868,71 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.copy_outlined, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext dialogContext) {
-                              return AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                title: const Text('Select an Action'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copySizeQtyToOtherStyles(
-                                          catalog.styleKey,
-                                        );
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        margin: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
+                      Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white38, // White background
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.copy_outlined,
+                            size: 18,
+                            color: Colors.blue,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext dialogContext) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  title: const Text('Select an Action'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copySizeQtyToOtherStyles(
+                                            catalog.styleKey,
+                                          );
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
                                           ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Size Qty to other Styles',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 13,
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Size Qty to other Styles',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
+
                       IconButton(
                         icon: const Icon(
                           Icons.delete_outline,

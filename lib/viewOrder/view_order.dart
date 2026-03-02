@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/viewOrder/add_more_info.dart';
@@ -94,8 +95,20 @@ class _ViewOrderScreenState extends State<ViewOrderScreens> {
     return '${AppConstants.BASE_URL}/images/NoImage.jpg';
   }
 
-  Widget _buildImageSection(String imageUrl) {
-    return Stack(
+Widget _buildImageSection(String imageUrl) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageZoomScreen(
+            imageUrls: [imageUrl],
+            initialIndex: 0,
+          ),
+        ),
+      );
+    },
+    child: Stack(
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
@@ -111,8 +124,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreens> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildImageError() {
     return Center(
