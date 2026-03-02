@@ -2167,93 +2167,827 @@ Map<String, dynamic> _buildCatalogItem(
   
   return catalogItem;
 }
+Future<void> _sendViaUnifiedWhatsAppAPI({
+  required String mobileNo,
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  try {
+    List<Map<String, dynamic>> catalogItems = [];
 
-  Future<void> _shareSelectedWhatsApp({
-    required String shareType,
-    bool includeDesign = true,
-    bool includeShade = true,
-    bool includeRate = true,
-    bool includeSize = true,
-    bool includeProduct = true,
-    bool includeRemark = true,
-    bool includeLabel = false,
-    bool shadeWiseImage = false
-  }) async {
-    if (selectedItems.isEmpty) {
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList = item.shadeName.isNotEmpty 
+          ? item.shadeName.split(',').map((s) => s.trim()).toList()
+          : [];
+
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
+            
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
+                
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
+                }
+                
+                Map<String, dynamic> shadeCatalogItem = _buildCatalogItemForWhatsApp(
+                  item,
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                  
+                );
+                
+                if (shareType == "pdf") {
+                  shadeCatalogItem['fullImagePath'] = allImageUrls[imageIndex];
+                  if (includeShade) shadeCatalogItem['shade'] = imageSpecificShade;
+                } else {
+                  shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
+                  if (includeShade) shadeCatalogItem['shade'] = imageSpecificShade;
+                }
+                
+                catalogItems.add(shadeCatalogItem);
+              }
+            }
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, dynamic> extraCatalogItem = _buildCatalogItemForWhatsApp(
+                  item,
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                
+                if (shareType == "pdf") {
+                  extraCatalogItem['fullImagePath'] = allImageUrls[i];
+                  if (includeShade) extraCatalogItem['shade'] = '';
+                } else {
+                  extraCatalogItem['imageUrl'] = allImageUrls[i];
+                  if (includeShade) extraCatalogItem['shade'] = '';
+                }
+                
+                catalogItems.add(extraCatalogItem);
+              }
+            }
+          }
+        }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
+            item,
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
+          
+          if (shareType == "pdf") {
+            catalogItem['fullImagePath'] = allImageUrls.first;
+            if (includeShade) catalogItem['shade'] = item.shadeName;
+          } else {
+            catalogItem['imageUrl'] = allImageUrls.first;
+            if (includeShade) catalogItem['shade'] = item.shadeName;
+          }
+          
+          catalogItems.add(catalogItem);
+        }
+      }
+    }
+
+    if (catalogItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select items to share')),
+        const SnackBar(content: Text('No items to share based on selection')),
       );
       return;
     }
 
-    try {
-      //String mobileNo = await _showMobileNumberDialog();
-      final result = await _showMobileNumberDialog();
+final requestBody = {
+  "catalogItems": catalogItems,
+  "includeDesign": includeDesign,
+  "includeShade": includeShade,
+  "includeRate": includeRate,
+  "includeWsp": includeWsp,
+  "includeSize": includeSize,
+  "includeProduct": includeProduct,
+  "includeRemark": includeRemark,
+  "mobile": "91$mobileNo",
+};
 
-      if (result == null) return;
+    String apiUrl;
+    if (shareType == "pdf") {
+      apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
+    } else {
+      apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
+    }
+    
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
 
-      String mobileNo = result['mobileNo'] ?? '';
-      String shareType = result['shareType'] ?? 'image';
-      if (shareType != "image") {
-        if (mobileNo.isNotEmpty) {
-          for (var item in selectedItems) {
-            final imageUrls = _getImageUrl(item);
-            for (var url in imageUrls) {
-              if (url.isEmpty) continue;
-              final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'WhatsApp ${shareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
+          ),
+        ),
+      );
+      setState(() {
+        selectedItems = [];
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send via WhatsApp: ${response.statusCode}'),
+        ),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${e.toString()}')),
+    );
+  }
+}
 
-              if (response.statusCode == 200) {
-                final imageBytes = response.bodyBytes;
+Map<String, dynamic> _buildCatalogItemForWhatsApp(
+  Catalog item,
+  bool includeDesign,
+  bool includeShade,
+  bool includeRate,
+  bool includeWsp,
+  bool includeSize,
+  bool includeSizeMrp,
+  bool includeSizeWsp,
+  bool includeProduct,
+  bool includeRemark,
+) {
+  Map<String, dynamic> catalogItem = {};
+  
+  if (includeDesign) catalogItem['design'] = item.styleCode;
+  if (includeRate) catalogItem['rate'] = item.mrp;
+  if (includeWsp) catalogItem['wsp'] = item.wsp;
+  
+  if (includeSize) {
+    if (includeSizeMrp && includeSizeWsp) {
+      catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
+    } else if (!includeSizeMrp && !includeSizeWsp) {
+      catalogItem['onlySizes'] = item.onlySizes ?? '';
+    } else {
+      catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
+    }
+  }
+  
+  if (includeProduct) catalogItem['product'] = item.itemName;
+  if (includeRemark) catalogItem['remark'] = item.remark ?? '';
+  
+  return catalogItem;
+}
 
-                String caption = '';
-                if (includeDesign)
-                  caption += '*Design*\t\t: ${item.styleCode}\n';
-                if (includeShade) caption += '*Shade*\t\t: ${item.shadeName}\n';
-                if (includeRate)
-                  caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
-                if (includeSize) {
-                  caption +=
-                      '*Sizes*\t\t\t: ${includeLabel ? item.sizeDetails : formatSizes(item.sizeWithMrp)}\n';
-                }
-                if (includeProduct)
-                  caption += '*Product*\t: ${item.itemName}\n';
-                if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
-          
+Future<void> _sendPDFViaOldWhatsAppAPI({
+  required String mobileNo,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+    List<Map<String, dynamic>> catalogItems = [];
+
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList = item.shadeName.isNotEmpty 
+          ? item.shadeName.split(',').map((s) => s.trim()).toList()
+          : [];
+
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
+            
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
                 
-                bool result = await sendWhatsAppFile(
-                  fileBytes: imageBytes,
-                  mobileNo: mobileNo,
-                  fileType: 'image',
-                  caption: caption,
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
+                }
+                
+                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[imageIndex],
+                  imageSpecificShade,
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
                 );
+                catalogItems.add(shadeCatalogItem);
+              }
+            }
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[i],
+                  '',
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(extraCatalogItem);
+              }
+            }
+          }
+        }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, dynamic> catalogItem = _buildCatalogItem(
+            item,
+            allImageUrls.first,
+            includeShade ? item.shadeName : '',
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
+          catalogItems.add(catalogItem);
+        }
+      }
+    }
 
-                if (!result) {
-                  print("Failed to send image for ${item.itemName}.");
+    if (catalogItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No items to share based on selection')),
+      );
+      return;
+    }
+
+    final requestBody = {
+      "company": UserSession.coBrName ?? "VRS Software",
+      "createdBy": "admin",
+      "mobile": "",
+      "catalogItems": catalogItems,
+    };
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200) {
+      final file = File(
+        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(response.bodyBytes);
+      
+      final imageBytes = await file.readAsBytes();
+      
+      String caption = 'Catalog PDF';
+      
+      bool result = await sendWhatsAppFile(
+        fileBytes: imageBytes,
+        mobileNo: mobileNo,
+        fileType: 'pdf',
+        caption: caption,
+      );
+
+      if (result) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF sent successfully to $mobileNo')),
+        );
+        setState(() {
+          selectedItems = [];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send PDF via WhatsApp')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate PDF: ${response.statusCode}'),
+        ),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${e.toString()}')),
+    );
+  }
+}
+
+Future<void> _sendImagesViaOldWhatsAppAPI({
+  required String mobileNo,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  try {
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList = item.shadeName.isNotEmpty 
+          ? item.shadeName.split(',').map((s) => s.trim()).toList()
+          : [];
+
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
+            
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
+                
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
                 }
                 
-              } else {
-                print(
-                  "Failed to download the image for ${item.itemName}. Status Code: ${response.statusCode}",
+                await _sendSingleImageToWhatsApp(
+                  item: item,
+                  imageUrl: allImageUrls[imageIndex],
+                  shadeValue: imageSpecificShade,
+                  mobileNo: mobileNo,
+                  includeDesign: includeDesign,
+                  includeShade: includeShade,
+                  includeRate: includeRate,
+                  includeWsp: includeWsp,
+                  includeSize: includeSize,
+                  includeSizeMrp: includeSizeMrp,
+                  includeSizeWsp: includeSizeWsp,
+                  includeProduct: includeProduct,
+                  includeRemark: includeRemark,
+                );
+              }
+            }
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                await _sendSingleImageToWhatsApp(
+                  item: item,
+                  imageUrl: allImageUrls[i],
+                  shadeValue: '',
+                  mobileNo: mobileNo,
+                  includeDesign: includeDesign,
+                  includeShade: includeShade,
+                  includeRate: includeRate,
+                  includeWsp: includeWsp,
+                  includeSize: includeSize,
+                  includeSizeMrp: includeSizeMrp,
+                  includeSizeWsp: includeSizeWsp,
+                  includeProduct: includeProduct,
+                  includeRemark: includeRemark,
                 );
               }
             }
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Images sent successfully...')),
+        }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          await _sendSingleImageToWhatsApp(
+            item: item,
+            imageUrl: allImageUrls.first,
+            shadeValue: includeShade ? item.shadeName : '',
+            mobileNo: mobileNo,
+            includeDesign: includeDesign,
+            includeShade: includeShade,
+            includeRate: includeRate,
+            includeWsp: includeWsp,
+            includeSize: includeSize,
+            includeSizeMrp: includeSizeMrp,
+            includeSizeWsp: includeSizeWsp,
+            includeProduct: includeProduct,
+            includeRemark: includeRemark,
           );
-          setState(() {
-            selectedItems = [];
-          });
         }
       }
-    } catch (e) {
-      print(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Images sent successfully...')),
+    );
+    setState(() {
+      selectedItems = [];
+    });
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${e.toString()}')),
+    );
+  }
+}
+
+Future<void> _sendSingleImageToWhatsApp({
+  required Catalog item,
+  required String imageUrl,
+  required String shadeValue,
+  required String mobileNo,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+}) async {
+  try {
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode == 200) {
+      final imageBytes = response.bodyBytes;
+
+      String caption = '';
+      if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
+      if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
+      if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
+      if (includeSize) {
+        String sizeValue = '';
+        if (includeSizeMrp && includeSizeWsp) {
+          sizeValue = item.sizeDetailsWithoutWSp ?? '';
+        } else if (!includeSizeMrp && !includeSizeWsp) {
+          sizeValue = item.onlySizes ?? '';
+        } else {
+          sizeValue = item.sizeWithMrp ?? '';
+        }
+        caption += '*Sizes*\t\t\t: $sizeValue\n';
+      }
+      if (includeProduct) caption += '*Product*\t: ${item.itemName}\n';
+      if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
+      
+      await sendWhatsAppFile(
+        fileBytes: imageBytes,
+        mobileNo: mobileNo,
+        fileType: 'image',
+        caption: caption,
       );
     }
+  } catch (e) {
+    print("Failed to send image for ${item.itemName}: $e");
+  }
+}
+
+Future<void> _sendPDFViaNodeAPI({
+  required String mobileNo,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+    List<Map<String, dynamic>> catalogItems = [];
+
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList = item.shadeName.isNotEmpty 
+          ? item.shadeName.split(',').map((s) => s.trim()).toList()
+          : [];
+
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
+            
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
+                
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
+                }
+                
+                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[imageIndex],
+                  imageSpecificShade,
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(shadeCatalogItem);
+              }
+            }
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[i],
+                  '',
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(extraCatalogItem);
+              }
+            }
+          }
+        }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, dynamic> catalogItem = _buildCatalogItem(
+            item,
+            allImageUrls.first,
+            includeShade ? item.shadeName : '',
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
+          catalogItems.add(catalogItem);
+        }
+      }
+    }
+
+    if (catalogItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No items to share based on selection')),
+      );
+      return;
+    }
+
+    final requestBody = {
+      "company": UserSession.coBrName ?? "VRS Software",
+      "createdBy": "admin",
+      "mobile": "",
+      "catalogItems": catalogItems,
+    };
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200) {
+      final file = File(
+        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(response.bodyBytes);
+      
+      final pdfBytes = await file.readAsBytes();
+      
+      String fileBase64 = base64Encode(pdfBytes);
+      
+      final nodeResponse = await http.post(
+        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+        body: {
+          'data': fileBase64,
+          'filename': 'catalog.pdf',
+          'key': AppConstants.whatsappKey,
+          'number': '91$mobileNo',
+          'caption': 'Catalog PDF',
+        },
+      );
+
+      if (nodeResponse.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF sent successfully to $mobileNo via Node API')),
+        );
+        setState(() {
+          selectedItems = [];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send PDF via Node API')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate PDF: ${response.statusCode}'),
+        ),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: ${e.toString()}')),
+    );
+  }
+}
+
+Future<void> _shareSelectedWhatsApp({
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeSize = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool includeLabel = false,
+  bool shadeWiseImage = false
+}) async {
+  if (selectedItems.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select items to share')),
+    );
+    return;
   }
 
+  try {
+    final result = await _showMobileNumberDialog();
+
+    if (result == null) return;
+
+    String mobileNo = result['mobileNo'] ?? '';
+    String selectedShareType = result['shareType'] ?? 'image';
+    
+    String whatsappType = AppConstants.whatsappType ?? "2";
+    
+    if (whatsappType.toUpperCase() == "2") {
+      await _sendViaUnifiedWhatsAppAPI(
+        mobileNo: mobileNo,
+        shareType: selectedShareType,
+        includeDesign: includeDesign,
+        includeShade: includeShade,
+        includeRate: includeRate,
+        includeWsp: true,
+        includeSize: includeSize,
+        includeSizeMrp: true,
+        includeSizeWsp: false,
+        includeProduct: includeProduct,
+        includeRemark: includeRemark,
+        shadeWiseImage: shadeWiseImage,
+      );
+    } else if (whatsappType.toUpperCase() == "1") {
+      // For type U, use node API for PDF
+      if (selectedShareType == "pdf") {
+        await _sendPDFViaNodeAPI(
+          mobileNo: mobileNo,
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: true,
+          includeSize: includeSize,
+          includeSizeMrp: true,
+          includeSizeWsp: false,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: shadeWiseImage,
+        );
+      } else {
+        await _sendImagesViaOldWhatsAppAPI(
+          mobileNo: mobileNo,
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: true,
+          includeSize: includeSize,
+          includeSizeMrp: true,
+          includeSizeWsp: false,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: shadeWiseImage,
+        );
+      }
+    } else {
+      if (selectedShareType == "pdf") {
+        await _sendPDFViaOldWhatsAppAPI(
+          mobileNo: mobileNo,
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: true,
+          includeSize: includeSize,
+          includeSizeMrp: true,
+          includeSizeWsp: false,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: shadeWiseImage,
+        );
+      } else {
+        await _sendImagesViaOldWhatsAppAPI(
+          mobileNo: mobileNo,
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: true,
+          includeSize: includeSize,
+          includeSizeMrp: true,
+          includeSizeWsp: false,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: shadeWiseImage,
+        );
+      }
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+    );
+  }
+}
   Future<Map<String, String>?> _showMobileNumberDialog() async {
     TextEditingController mobileController = TextEditingController();
     String selectedType = 'image'; // default selection
