@@ -742,8 +742,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ],
           ),
         ),
-      
-      
+
         const SizedBox(height: 15),
         ...selectedColors.map(
           (color) => Column(
@@ -774,6 +773,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final allShades =
         catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
 
+    // Debug print to see what's available
+    print('Building color section for shade: $shade');
+    print('Catalog shadeImages: ${catalogOrder.catalog.shadeImages}');
+
+    final imageUrl = _getShadeImageUrl(catalogOrder.catalog, shade);
+    print('Image URL for $shade: $imageUrl');
+    print('Should show icon: ${imageUrl != null}');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -783,6 +790,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
           child: Column(
             children: [
+              // Header row with Shade text and copy icon
               Row(
                 children: [
                   Expanded(
@@ -809,6 +817,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          // Copy icon - keep as is
                           IconButton(
                             icon: Icon(
                               Icons.copy_all_outlined,
@@ -856,7 +865,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   _buildHeader("Amount", 1),
                 ],
               ),
+
               Divider(height: 1, color: Colors.grey.shade300),
+
+              // Shade value row with image icon
               Row(
                 children: [
                   Expanded(
@@ -871,13 +883,61 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           right: BorderSide(color: Colors.grey.shade300),
                         ),
                       ),
-                      child: Text(
-                        shade,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          color: _getColorCode(shade),
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Shade name
+                          Expanded(
+                            child: Text(
+                              shade,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                color: _getColorCode(shade),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          // Always show a container for debugging
+                          if (UserSession.imageDependsOn == 'S') 
+                          Container(
+                            margin: const EdgeInsets.only(left: 0),
+
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.image,
+                                size: 24, // increased icon size
+                                color:
+                                    imageUrl != null
+                                        ? Colors.blue.shade700
+                                        : Colors.red.shade700,
+                              ),
+
+                              splashColor:
+                                  Colors.transparent, // removes splash shadow
+                              highlightColor:
+                                  Colors.transparent, // removes highlight
+                              tooltip:
+                                  imageUrl != null
+                                      ? 'View shade image'
+                                      : 'No image available',
+                              onPressed:
+                                  imageUrl != null
+                                      ? () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => ImageZoomScreen(
+                                                  imageUrls: [imageUrl],
+                                                  initialIndex: 0,
+                                                ),
+                                          ),
+                                        );
+                                      }
+                                      : null,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -921,7 +981,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                 ],
               ),
+
               Divider(height: 1, color: Colors.grey.shade300),
+
+              // Size headers
               Row(
                 children: [
                   _buildHeader("Size", 1),
@@ -931,7 +994,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   _buildHeader("Stock", 1),
                 ],
               ),
+
               Divider(height: 1, color: Colors.grey.shade300),
+
+              // Size rows
               for (var size in sizes) ...[
                 _buildSizeRow(catalogOrder, shade, size),
                 Divider(height: 1, color: Colors.grey.shade300),
@@ -941,6 +1007,60 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         ),
       ],
     );
+  }
+
+  String? _getShadeImageUrl(Catalog catalog, String shadeName) {
+    if (catalog.shadeImages.isEmpty) {
+      print('shadeImages is empty');
+      return null;
+    }
+
+    print('Raw shadeImages: "${catalog.shadeImages}"');
+    print('Looking for shade: "$shadeName"');
+
+    // Clean the shade name
+    final cleanShadeName = shadeName.trim().toLowerCase();
+
+    // Try different parsing approaches
+    String shadeImagesStr = catalog.shadeImages;
+
+    // Approach 1: Split by ', ' first
+    List<String> entries = shadeImagesStr.split(', ');
+
+    // Approach 2: If that gives only one item but there are commas, try split by ','
+    if (entries.length == 1 && shadeImagesStr.contains(',')) {
+      entries = shadeImagesStr.split(',');
+    }
+
+    print('Entries after split: $entries');
+
+    for (var entry in entries) {
+      entry = entry.trim();
+      if (entry.isEmpty) continue;
+
+      print('Processing entry: "$entry"');
+
+      // Find the first colon
+      final colonIndex = entry.indexOf(':');
+      if (colonIndex > 0) {
+        final shade = entry.substring(0, colonIndex).trim().toLowerCase();
+        final imageUrl = entry.substring(colonIndex + 1).trim();
+
+        print('  Extracted shade: "$shade", URL: "$imageUrl"');
+
+        if (shade == cleanShadeName) {
+          print('  ✓ Match found!');
+          return imageUrl;
+        } else {
+          print('  ✗ No match (shade: "$shade" vs "$cleanShadeName")');
+        }
+      } else {
+        print('  No colon found in entry');
+      }
+    }
+
+    print('No matching shade found for: $shadeName');
+    return null;
   }
 
   Widget _buildHeader(String text, int flex) => Expanded(
