@@ -582,7 +582,8 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
             IconButton(icon: const Icon(Icons.search), onPressed: () {})
           ],
         ),
-        body: SlideTransition(
+        body:SafeArea(
+          child: SlideTransition(
           position: _slideAnim,
           child: Column(
             children: [
@@ -756,7 +757,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
             ],
           ),
         ),
-      ),
+      )  ),
     );
   }
 }

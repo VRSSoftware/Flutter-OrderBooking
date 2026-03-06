@@ -361,7 +361,8 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
           foregroundColor: Colors.white,
           elevation: 0,
         ),
-        body: SlideTransition(
+        body:SafeArea(
+          child: SlideTransition(
           position: _slideAnim,
           child: Column(
             children: [
@@ -544,7 +545,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
             ],
           ),
         ),
-      ),
+    )),
     );
   }
 }

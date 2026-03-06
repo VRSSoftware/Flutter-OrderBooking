@@ -3,7 +3,6 @@ import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/production/jobCardDetailScreen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 
-
 class JobCardListScreen extends StatefulWidget {
   const JobCardListScreen({super.key});
 
@@ -67,6 +66,35 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
         {'Fabric': 'COTTON', 'Color': 'WHITE', 'Meters Used': '300'},
       ],
     },
+    {
+      'docNo': 'JC00003',
+      'docDt': '21/09/2025',
+      'soNo': 'SO003',
+      'jobber': 'SELF',
+      'station': 'SURAT',
+      'totQty': 250,
+      'totPcs': 250,
+      'wasteQty': 5,
+      'jobChgPc': 45.0,
+      'jobAmt': 11250.0,
+      'otherProctAmt': 250.0,
+      'otherChargeAmt': 100.0,
+      'netAmt': 11600.0,
+      'createdBy': 'Admin',
+      'createdOn': '20/09/2025 11:00 AM',
+      'updatedBy': 'Admin',
+      'updatedOn': '21/09/2025 09:00 AM',
+      'status': 'Completed',
+      'finishDetails': [
+        {'Finish Type': 'WASH', 'Quantity': '250', 'Status': 'Done'},
+        {'Finish Type': 'IRON', 'Quantity': '250', 'Status': 'Done'},
+        {'Finish Type': 'PACKING', 'Quantity': '250', 'Status': 'Done'},
+      ],
+      'fabricDetails': [
+        {'Fabric': 'LINEN', 'Color': 'BEIGE', 'Meters Used': '300'},
+        {'Fabric': 'COTTON', 'Color': 'NAVY', 'Meters Used': '150'},
+      ],
+    },
   ];
 
   void _navigateToJobCardDetail(Map<String, dynamic>? jobCard) {
@@ -81,15 +109,30 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'In Progress':
-        return Colors.green;
+        return Colors.blue;
       case 'Planned':
         return Colors.orange;
       case 'Completed':
-        return Colors.blue;
+        return Colors.green;
       case 'Delayed':
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  Color _getStatusBackgroundColor(String status) {
+    switch (status) {
+      case 'In Progress':
+        return Colors.blue.shade50;
+      case 'Planned':
+        return Colors.orange.shade50;
+      case 'Completed':
+        return Colors.green.shade50;
+      case 'Delayed':
+        return Colors.red.shade50;
+      default:
+        return Colors.grey.shade50;
     }
   }
 
@@ -157,86 +200,25 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
     }
   }
 
-  Widget _buildDetailRow(String label1, String value1, String label2, String value2) {
-    final isValue1Big = (value1.length > 15 || (double.tryParse(value1) != null && value1.replaceAll('.', '').length > 5));
-    final isValue2Big = (value2.length > 15 || (double.tryParse(value2) != null && value2.replaceAll('.', '').length > 5));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 100, // Increased width to fit "Other Chg Amt: "
-                  child: Text(
-                    '$label1: ',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    value1.isNotEmpty ? value1 : '-',
-                    style: TextStyle(
-                      fontSize: isValue1Big ? 12 : 14,
-                      color: Colors.black87,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 100, // Increased width to fit "Other Chg Amt: "
-                  child: Text(
-                    '$label2: ',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    value2.isNotEmpty ? value2 : '-',
-                    style: TextStyle(
-                      fontSize: isValue2Big ? 12 : 14,
-                      color: Colors.black87,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatCurrency(double amount) {
+    return '₹ ${amount.toStringAsFixed(2)}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       drawer: DrawerScreen(),
+      drawer: DrawerScreen(),
       appBar: AppBar(
-        title: const Text('Job Cards'),
+        title: const Text(
+          'Job Cards',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: const Color(0xFF4A90E2),
         foregroundColor: Colors.white,
         elevation: 0,
-            leading: Builder(
+        leading: Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.menu, color: AppColors.white),
+            icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -263,138 +245,548 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
           ),
         ],
       ),
-      body:SafeArea(
-  child: ListView.builder(
-        itemCount: _jobCards.length,
-        itemBuilder: (context, index) {
-          final jobCard = _jobCards[index];
-          return Card(
-            margin: const EdgeInsets.all(8),
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: ExpansionTile(
-                leading: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(jobCard['status']?.toString() ?? 'Unknown'),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                title: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        jobCard['docNo']?.toString() ?? 'JC00000',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4A90E2),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Dt: ${jobCard['docDt']?.toString() ?? '01/12/1999'}',
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'SO: ${jobCard['soNo']?.toString() ?? 'SO0001'}',
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                trailing: const Icon(Icons.arrow_drop_down, size: 24, color: Color(0xFF4A90E2)),
-                backgroundColor: Colors.grey.shade50,
-                collapsedBackgroundColor: Colors.white,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+        ),
+        child: SafeArea(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: _jobCards.length,
+            itemBuilder: (context, index) {
+              final jobCard = _jobCards[index];
+              final status = jobCard['status']?.toString() ?? 'Unknown';
+              final statusColor = _getStatusColor(status);
+              final statusBgColor = _getStatusBackgroundColor(status);
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
                     ),
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDetailRow(
-                          'Jobber',
-                          jobCard['jobber']?.toString() ?? '-',
-                          'Station',
-                          jobCard['station']?.toString() ?? '-',
-                        ),
-                        _buildDetailRow(
-                          'Total Qty',
-                          jobCard['totQty']?.toString() ?? '0',
-                          'Total Pcs',
-                          jobCard['totPcs']?.toString() ?? '0',
-                        ),
-                        _buildDetailRow(
-                          'Waste Qty',
-                          jobCard['wasteQty']?.toString() ?? '0',
-                          'Job Chg/Pc',
-                          jobCard['jobChgPc']?.toStringAsFixed(2) ?? '0.00',
-                        ),
-                        _buildDetailRow(
-                          'Job Amt',
-                          jobCard['jobAmt']?.toStringAsFixed(2) ?? '0.00',
-                          'Other Proc Amt',
-                          jobCard['otherProctAmt']?.toStringAsFixed(2) ?? '0.00',
-                        ),
-                        _buildDetailRow(
-                          'Other Chg Amt',
-                          jobCard['otherChargeAmt']?.toStringAsFixed(2) ?? '0.00',
-                          'Net Amt',
-                          jobCard['netAmt']?.toStringAsFixed(2) ?? '0.00',
-                        ),
-                        _buildDetailRow(
-                          'Created By',
-                          jobCard['createdBy']?.toString() ?? '-',
-                          'Created On',
-                          jobCard['createdOn']?.toString() ?? '-',
-                        ),
-                        _buildDetailRow(
-                          'Updated By',
-                          jobCard['updatedBy']?.toString() ?? '-',
-                          'Updated On',
-                          jobCard['updatedOn']?.toString() ?? '-',
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () => _navigateToJobCardDetail(jobCard),
-                            child: const Text(
-                              'View Details',
-                              style: TextStyle(
-                                color: Color(0xFF4A90E2),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                  ],
+                ),
+                child: Card(
+                  elevation: 0,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade200, width: 1),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        childrenPadding: EdgeInsets.zero,
+                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: statusBgColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            jobCard['status'] == 'Completed' 
+                                ? Icons.check_circle_outline
+                                : jobCard['status'] == 'In Progress'
+                                    ? Icons.autorenew
+                                    : Icons.schedule,
+                            color: statusColor,
+                            size: 22,
                           ),
                         ),
-                      ],
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    jobCard['docNo']?.toString() ?? 'JC00000',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusBgColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                                  ),
+                                  child: Text(
+                                    status,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${jobCard['docDt']?.toString() ?? 'N/A'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.shopping_cart, size: 12, color: Colors.grey.shade600),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'SO: ${jobCard['soNo']?.toString() ?? 'N/A'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Color(0xFF4A90E2),
+                            size: 18,
+                          ),
+                        ),
+                        backgroundColor: Colors.white,
+                        collapsedBackgroundColor: Colors.white,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              border: Border(
+                                top: BorderSide(color: Colors.grey.shade200),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Jobber & Station Row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDetailChip(
+                                        icon: Icons.person,
+                                        label: 'Jobber',
+                                        value: jobCard['jobber']?.toString() ?? '-',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildDetailChip(
+                                        icon: Icons.pin_drop,
+                                        label: 'Station',
+                                        value: jobCard['station']?.toString() ?? '-',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                
+                                // Quantity Section with 3 columns
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade200),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildMetricItem(
+                                          label: 'Total Qty',
+                                          value: jobCard['totQty']?.toString() ?? '0',
+                                          icon: Icons.inventory,
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 30,
+                                        width: 1,
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      Expanded(
+                                        child: _buildMetricItem(
+                                          label: 'Total Pcs',
+                                          value: jobCard['totPcs']?.toString() ?? '0',
+                                          icon: Icons.shopping_bag,
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 30,
+                                        width: 1,
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      Expanded(
+                                        child: _buildMetricItem(
+                                          label: 'Waste',
+                                          value: jobCard['wasteQty']?.toString() ?? '0',
+                                          icon: Icons.delete_outline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                
+                                // Financial Summary - Compact
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4A90E2).withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.2)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildFinancialItem(
+                                              label: 'Net Amt',
+                                              value: _formatCurrency(jobCard['netAmt'] ?? 0),
+                                              icon: Icons.currency_rupee,
+                                              highlight: true,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildFinancialItem(
+                                              label: 'Job Amt',
+                                              value: _formatCurrency(jobCard['jobAmt'] ?? 0),
+                                              icon: Icons.work_outline,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildFinancialItem(
+                                              label: 'Job Chg/Pc',
+                                              value: '₹ ${jobCard['jobChgPc']?.toStringAsFixed(2) ?? '0.00'}',
+                                              icon: Icons.price_change,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildFinancialItem(
+                                              label: 'Other Proc',
+                                              value: _formatCurrency(jobCard['otherProctAmt'] ?? 0),
+                                              icon: Icons.build,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildFinancialItem(
+                                              label: 'Other Chg',
+                                              value: _formatCurrency(jobCard['otherChargeAmt'] ?? 0),
+                                              icon: Icons.add_chart,
+                                            ),
+                                          ),
+                                          const Expanded(child: SizedBox.shrink()),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                
+                                // Audit Info - Compact Grid
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade200),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildAuditItem(
+                                              label: 'Created By',
+                                              value: jobCard['createdBy']?.toString() ?? '-',
+                                              icon: Icons.person_add,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildAuditItem(
+                                              label: 'Created On',
+                                              value: jobCard['createdOn']?.toString() ?? '-',
+                                              icon: Icons.access_time,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildAuditItem(
+                                              label: 'Updated By',
+                                              value: jobCard['updatedBy']?.toString() ?? '-',
+                                              icon: Icons.update,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildAuditItem(
+                                              label: 'Updated On',
+                                              value: jobCard['updatedOn']?.toString() ?? '-',
+                                              icon: Icons.update,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                
+                                // View Details Button
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => _navigateToJobCardDetail(jobCard),
+                                        icon: const Icon(Icons.visibility, size: 16),
+                                        label: const Text('VIEW DETAILS', style: TextStyle(fontSize: 12)),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(0xFF4A90E2),
+                                          side: const BorderSide(color: Color(0xFF4A90E2)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
-       ) ),
-      floatingActionButton: FloatingActionButton(
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToJobCardDetail(null),
         backgroundColor: const Color(0xFF4A90E2),
-        tooltip: 'Add New Job Card',
-        child: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: Colors.white, size: 18),
+        label: const Text(
+          'JOB CARD SHEET',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12,color: Colors.white),
+        ),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailChip({required IconData icon, required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 12, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF2C3E50),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricItem({required String label, required String value, required IconData icon}) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: Colors.grey.shade600),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 8,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinancialItem({required String label, required String value, required IconData icon, bool highlight = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: highlight ? const Color(0xFF4A90E2).withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 12, color: highlight ? const Color(0xFF4A90E2) : Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: Colors.grey.shade600,
+                    fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: highlight ? FontWeight.bold : FontWeight.w500,
+                    color: highlight ? const Color(0xFF4A90E2) : Color(0xFF2C3E50),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuditItem({required String label, required String value, required IconData icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 10, color: Colors.grey.shade500),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 7,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: Color(0xFF2C3E50),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

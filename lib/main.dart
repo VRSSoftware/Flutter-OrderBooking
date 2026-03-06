@@ -12,6 +12,7 @@ import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
 import 'package:vrs_erp/privacypolicy/privacypolicy.dart';
 import 'package:vrs_erp/production/jobCardListScreen.dart';
+import 'package:vrs_erp/production/production_home_screen.dart';
 import 'package:vrs_erp/register/packingRegisterScreen.dart';
 import 'package:vrs_erp/register/register.dart';
 import 'package:vrs_erp/catalog/catalog_screen.dart';
@@ -93,7 +94,10 @@ class MyApp extends StatelessWidget {
         '/packingBooking': (context) => PackingBookingScreen(),
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
-        '/production': (context) => JobCardListScreen(),
+        '/production': (context) => ProductionHomeScreen(),
+        '/productionhomescreen': (context) => JobCardListScreen(),
+        
+
       
       },
 

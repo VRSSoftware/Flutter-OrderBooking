@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:vrs_erp/production/fabric_details_screen.dart';
 import 'package:vrs_erp/production/finishdetailsscreen.dart';
 
-
 class JobCardDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? jobCard;
 
@@ -181,73 +180,107 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
   }
 
   // ──────────────────────  Re‑usable TextField with Focus Highlight  ──────────────────────
-Widget _buildTextField(
-  String label,
-  TextEditingController ctrl,
-  FocusNode focusNode, {
-  TextInputType? keyboard,
-  VoidCallback? onTap,
-  bool isDate = false,
-}) {
-  final bool isInteractive = onTap != null;
+  Widget _buildTextField(
+    String label,
+    TextEditingController ctrl,
+    FocusNode focusNode, {
+    TextInputType? keyboard,
+    VoidCallback? onTap,
+    bool isDate = false,
+    bool isRequired = false,
+  }) {
+    final bool isInteractive = onTap != null;
 
-  return SizedBox(
-    height: 56,
-    child: GestureDetector(
-      onTap: isInteractive
-          ? () {
-              focusNode.requestFocus();
-              onTap?.call();
-            }
-          : () => focusNode.requestFocus(),
-      child: AbsorbPointer(
-        absorbing: isInteractive,
-        child: TextField(
-          controller: ctrl,
-          focusNode: focusNode,
-          keyboardType: keyboard,
-          readOnly: isInteractive,
-          enabled: true,
-          maxLines: isDate ? 1 : null,
-          decoration: InputDecoration(
-            labelText: label,
-            floatingLabelBehavior: FloatingLabelBehavior.auto,
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              color: Color.fromARGB(255, 92, 91, 91),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: Color.fromARGB(255, 221, 220, 220),
-                width: 1,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (label.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 4),
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  if (isRequired)
+                    Text(
+                      ' *',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade400,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
             ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF4A90E2), width: 2),
+          Container(
+            height: 44,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: focusNode.hasFocus
+                    ? const Color(0xFF4A90E2)
+                    : Colors.grey.shade300,
+                width: focusNode.hasFocus ? 2 : 1,
+              ),
             ),
-            suffixIcon: onTap != null
-                ? Icon(
-                    isDate ? Icons.event : Icons.expand_more,
-                    size: 24,
-                    color: isDate
-                        ? Color.fromARGB(255, 3, 72, 82) // 📅 event color
-                        : Colors.grey, // ⬇️ dropdown color
-                  )
-                : null,
+            child: GestureDetector(
+              onTap: isInteractive
+                  ? () {
+                      focusNode.requestFocus();
+                      onTap?.call();
+                    }
+                  : () => focusNode.requestFocus(),
+              child: AbsorbPointer(
+                absorbing: isInteractive,
+                child: TextField(
+                  controller: ctrl,
+                  focusNode: focusNode,
+                  keyboardType: keyboard,
+                  readOnly: isInteractive,
+                  enabled: true,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: InputBorder.none,
+                    hintText: label,
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade400,
+                    ),
+                    suffixIcon: onTap != null
+                        ? Icon(
+                            isDate ? Icons.calendar_today : Icons.arrow_drop_down,
+                            size: 20,
+                            color: isDate
+                                ? const Color(0xFF4A90E2)
+                                : Colors.grey.shade600,
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ),
           ),
-          style: const TextStyle(
-            fontSize: 18,
-            color: Colors.black,
-          ),
-        ),
+        ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ──────────────────────  Dropdown with Focus Highlight  ──────────────────────
   Widget _buildDropdown({
@@ -258,6 +291,7 @@ Widget _buildTextField(
     required ValueChanged<String?> onChanged,
     required FocusNode focusNode,
     bool allowAdd = true,
+    bool isRequired = false,
   }) {
     OverlayEntry? _overlay;
 
@@ -268,115 +302,196 @@ Widget _buildTextField(
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return _buildTextField(
-          label,
-          ctrl,
-          focusNode,
-          onTap: () {
-            focusNode.requestFocus();
-            _removeOverlay();
-            final box = context.findRenderObject() as RenderBox;
-            final offset = box.localToGlobal(Offset.zero);
-            final width = box.size.width;
-
-            final filtered = List<String>.from(items);
-            final searchCtrl = TextEditingController();
-
-            _overlay = OverlayEntry(
-              builder: (_) => Stack(
-                children: [
-                  Positioned.fill(
-                    child: GestureDetector(
-                        onTap: _removeOverlay,
-                        child: Container(color: Colors.transparent)),
-                  ),
-                  Positioned(
-                    left: offset.dx,
-                    top: offset.dy + box.size.height,
-                    width: width,
-                    child: Material(
-                      elevation: 4,
-                      color: Colors.white,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: TextField(
-                              controller: searchCtrl,
-                              autofocus: true,
-                              decoration: const InputDecoration(
-                                hintText: 'Search…',
-                                border: OutlineInputBorder(),
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 8),
-                              ),
-                              onChanged: (q) {
-                                filtered.clear();
-                                if (q.isEmpty) {
-                                  filtered.addAll(items);
-                                } else {
-                                  filtered.addAll(items
-                                      .where((e) => e.toLowerCase()
-                                          .contains(q.toLowerCase())));
-                                }
-                                _overlay?.markNeedsBuild();
-                              },
-                            ),
-                          ),
-                          ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(maxHeight: 300),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              padding: EdgeInsets.zero,
-                              itemCount: filtered.length + (allowAdd ? 1 : 0),
-                              itemBuilder: (c, i) {
-                                if (allowAdd && i == filtered.length) {
-                                  return ListTile(
-                                    leading:
-                                        const Icon(Icons.add, color: Colors.blue),
-                                    title: const Text('Add New…',
-                                        style: TextStyle(color: Colors.blue)),
-                                    onTap: () {
-                                      _removeOverlay();
-                                      _showAddDialog(label, items,
-                                          (newItem) {
-                                        setState(() {
-                                          items.add(newItem);
-                                          onChanged(newItem);
-                                          ctrl.text = newItem;
-                                        });
-                                      });
-                                    },
-                                  );
-                                }
-                                final item = filtered[i];
-                                return ListTile(
-                                  title: Text(item),
-                                  selected: selected == item,
-                                  selectedTileColor:
-                                      Colors.blue.withOpacity(0.1),
-                                  onTap: () {
-                                    _removeOverlay();
-                                    setState(() {
-                                      onChanged(item);
-                                      ctrl.text = item;
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
                       ),
                     ),
-                  ),
-                ],
+                    if (isRequired)
+                      Text(
+                        ' *',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red.shade400,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            );
-            Overlay.of(context).insert(_overlay!);
-          },
+              GestureDetector(
+                onTap: () {
+                  focusNode.requestFocus();
+                  _removeOverlay();
+                  final box = context.findRenderObject() as RenderBox;
+                  final offset = box.localToGlobal(Offset.zero);
+                  final width = box.size.width;
+
+                  final filtered = List<String>.from(items);
+                  final searchCtrl = TextEditingController();
+
+                  _overlay = OverlayEntry(
+                    builder: (_) => Stack(
+                      children: [
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: _removeOverlay,
+                            child: Container(color: Colors.transparent),
+                          ),
+                        ),
+                        Positioned(
+                          left: offset.dx,
+                          top: offset.dy + 56,
+                          width: width,
+                          child: Material(
+                            elevation: 8,
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: MediaQuery.of(context).size.height * 0.4,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: TextField(
+                                      controller: searchCtrl,
+                                      autofocus: true,
+                                      decoration: InputDecoration(
+                                        hintText: 'Search $label...',
+                                        prefixIcon: const Icon(Icons.search, size: 18),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      onChanged: (q) {
+                                        filtered.clear();
+                                        if (q.isEmpty) {
+                                          filtered.addAll(items);
+                                        } else {
+                                          filtered.addAll(items
+                                              .where((e) => e.toLowerCase()
+                                                  .contains(q.toLowerCase())));
+                                        }
+                                        _overlay?.markNeedsBuild();
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: ListView.builder(
+                                      shrinkWrap: true,
+                                      padding: EdgeInsets.zero,
+                                      itemCount: filtered.length + (allowAdd ? 1 : 0),
+                                      itemBuilder: (c, i) {
+                                        if (allowAdd && i == filtered.length) {
+                                          return ListTile(
+                                            leading: const Icon(Icons.add, 
+                                                color: Color(0xFF4A90E2), size: 20),
+                                            title: Text(
+                                              'Add New $label',
+                                              style: const TextStyle(
+                                                color: Color(0xFF4A90E2),
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            onTap: () {
+                                              _removeOverlay();
+                                              _showAddDialog(label, items,
+                                                  (newItem) {
+                                                setState(() {
+                                                  items.add(newItem);
+                                                  onChanged(newItem);
+                                                  ctrl.text = newItem;
+                                                });
+                                              });
+                                            },
+                                          );
+                                        }
+                                        final item = filtered[i];
+                                        return ListTile(
+                                          dense: true,
+                                          title: Text(
+                                            item,
+                                            style: const TextStyle(fontSize: 13),
+                                          ),
+                                          selected: selected == item,
+                                          selectedTileColor:
+                                              const Color(0xFF4A90E2).withOpacity(0.1),
+                                          onTap: () {
+                                            _removeOverlay();
+                                            setState(() {
+                                              onChanged(item);
+                                              ctrl.text = item;
+                                            });
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  Overlay.of(context).insert(_overlay!);
+                },
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: focusNode.hasFocus
+                          ? const Color(0xFF4A90E2)
+                          : Colors.grey.shade300,
+                      width: focusNode.hasFocus ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          ctrl.text.isEmpty ? 'Select $label' : ctrl.text,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: ctrl.text.isEmpty
+                                ? Colors.grey.shade400
+                                : Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.grey.shade600,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -389,21 +504,45 @@ Widget _buildTextField(
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Add New $field'),
+        titleTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2C3E50),
+        ),
         content: TextField(
           controller: addCtrl,
-          decoration: InputDecoration(hintText: 'Enter $field'),
+          decoration: InputDecoration(
+            hintText: 'Enter $field',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
           autofocus: true,
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context), 
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
           ElevatedButton(
-              onPressed: () {
-                final v = addCtrl.text.trim();
-                if (v.isNotEmpty && !list.contains(v)) onAdd(v);
-                Navigator.pop(context);
-              },
-              child: const Text('Add')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            onPressed: () {
+              final v = addCtrl.text.trim();
+              if (v.isNotEmpty && !list.contains(v)) onAdd(v);
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
@@ -422,6 +561,16 @@ Widget _buildTextField(
           initialDate: DateTime.now(),
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFF4A90E2),
+                ),
+              ),
+              child: child!,
+            );
+          },
         );
         if (picked != null) {
           ctrl.text =
@@ -431,7 +580,7 @@ Widget _buildTextField(
     );
   }
 
-  // ──────────────────────  Finish Details (unchanged)  ──────────────────────
+  // ──────────────────────  Finish Details (redesigned)  ──────────────────────
   void _addFinishDetail() async {
     final res = await Navigator.push(
         context, MaterialPageRoute(builder: (_) => const FinishDetailsScreen()));
@@ -517,268 +666,370 @@ Widget _buildTextField(
       }
     }
 
-    Widget _kv(String label, String? value) {
+    Widget _infoChip(String label, String? value) {
       final v = value?.toString().isNotEmpty == true ? value! : '-';
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 70,
-            child: Text(
-              '$label :',
-              style: const TextStyle(
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Text(
+              '$label:',
+              style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
-             color: Color.fromARGB(255, 92, 91, 91),
+                color: Colors.grey.shade600,
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              v,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color.fromARGB(255, 216, 142, 32),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                v,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2C3E50),
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
-
-    Widget _row(List<Widget> cells) {
-      final children = <Widget>[];
-      for (int i = 0; i < cells.length; i++) {
-        if (i > 0) {
-          children.addAll([
-            const SizedBox(width: 6),
-            const Text('|',
-                style: TextStyle(color: Colors.grey, fontSize: 11)),
-            const SizedBox(width: 6),
-          ]);
-        }
-        children.add(Expanded(child: cells[i]));
-      }
-      return Row(
-          crossAxisAlignment: CrossAxisAlignment.start, children: children);
-    }
-
-    final rows = [
-      [
-        _kv('Product', finishDetail['product']),
-        _kv('Design', finishDetail['designNo']),
-        _kv('Type', finishDetail['type']),
-      ],
-      [
-        _kv('Shade', finishDetail['shade']),
-        _kv('Tot Pcs', finishDetail['totalPcs']?.toString()),
-        _kv('Fab Ratio', finishDetail['avgRatio']),
-      ],
-      [
-        _kv('Cut Mtr', finishDetail['cutMtr']),
-        _kv('Short Qty', shortTotal.toString()),
-        _kv('Defect Qty', defectTotal.toString()),
-      ],
-      [
-        _kv('Description', finishDetail['description']),
-        _kv('SO No', finishDetail['orderNo']),
-        _kv('Job Charge', finishDetail['jobCharge']),
-      ],
-      [
-        _kv('Job Amt', finishDetail['jobAmt']),
-        _kv('PP No', finishDetail['ppNo']),
-        const SizedBox.shrink(),
-      ],
-    ];
 
     final fabricList =
         (finishDetail['fabricDetails'] as List<Map<String, dynamic>>?) ?? [];
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${index + 1}: ${finishDetail['orderNo'] ?? ''}',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit,
-                          color: Colors.blueAccent, size: 16),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _editFinishDetail(index),
+            // Header with order number and actions
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${index + 1}. ${finishDetail['orderNo'] ?? 'Order'}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A90E2),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Colors.redAccent, size: 16),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _deleteFinishDetail(index),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Divider(thickness: 1, height: 8),
-            ...rows.map(
-              (r) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: _row(r),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit,
+                            color: Color(0xFF4A90E2), size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _editFinishDetail(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete,
+                            color: Colors.redAccent, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _deleteFinishDetail(index),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
+            
+            // Main details grid
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  // Row 1
+                  Row(
+                    children: [
+                      Expanded(child: _infoChip('Product', finishDetail['product'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Design', finishDetail['designNo'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Type', finishDetail['type'])),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Row 2
+                  Row(
+                    children: [
+                      Expanded(child: _infoChip('Shade', finishDetail['shade'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Tot Pcs', finishDetail['totalPcs']?.toString())),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Fab Ratio', finishDetail['avgRatio'])),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Row 3
+                  Row(
+                    children: [
+                      Expanded(child: _infoChip('Cut Mtr', finishDetail['cutMtr'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Short Qty', shortTotal.toString())),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Defect Qty', defectTotal.toString())),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Row 4
+                  Row(
+                    children: [
+                      Expanded(child: _infoChip('Desc', finishDetail['description'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('SO No', finishDetail['orderNo'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('Job Charge', finishDetail['jobCharge'])),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Row 5
+                  Row(
+                    children: [
+                      Expanded(child: _infoChip('Job Amt', finishDetail['jobAmt'])),
+                      const SizedBox(width: 8),
+                      Expanded(child: _infoChip('PP No', finishDetail['ppNo'])),
+                      const Expanded(child: SizedBox.shrink()),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Total PCS highlight
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 5),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(6),
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF4A90E2).withOpacity(0.1),
+                    const Color(0xFF4A90E2).withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.3)),
               ),
               child: Center(
                 child: Text(
                   'TOTAL PCS: ${finishDetail['totalPcs']?.toString() ?? '0'}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
-                      fontSize: 12.5),
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A90E2),
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            
+            const SizedBox(height: 12),
+            
+            // Fabric Details Section
             Container(
-              width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 245, 246, 247),
-                borderRadius: BorderRadius.circular(6),
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
               ),
-              padding: const EdgeInsets.all(6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                ),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  childrenPadding: EdgeInsets.zero,
+                  title: Row(
                     children: [
+                      const Icon(Icons.inventory, size: 16, color: Color(0xFF4A90E2)),
+                      const SizedBox(width: 8),
                       const Text(
                         'FABRIC DETAILS',
                         style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blueGrey),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2C3E50),
+                        ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.add_circle,
-                            color: _finishDetailsList.isNotEmpty
-                                ? Colors.blue
-                                : Colors.grey,
-                            size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: _finishDetailsList.isNotEmpty
-                            ? () => _addFabric(index)
-                            : null,
+                      const Spacer(),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4A90E2).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        child: Text(
+                          '${fabricList.length}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A90E2),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  if (fabricList.isNotEmpty)
-                    ...fabricList.asMap().entries.map((e) {
-                      final fab = e.value;
-                      final fabIdx = e.key;
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 3),
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${fabIdx + 1}: ${fab['design'] ?? ''}',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12.5,
-                                        color: Colors.blueAccent),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            size: 13, color: Colors.blue),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () =>
-                                            _editFabric(index, fabIdx),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            size: 13, color: Colors.red),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () =>
-                                            _deleteFabric(index, fabIdx),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                  trailing: IconButton(
+                    icon: Icon(Icons.add_circle,
+                        color: _finishDetailsList.isNotEmpty
+                            ? const Color(0xFF4A90E2)
+                            : Colors.grey,
+                        size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: _finishDetailsList.isNotEmpty
+                        ? () => _addFabric(index)
+                        : null,
+                  ),
+                  children: [
+                    if (fabricList.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: fabricList.asMap().entries.map((e) {
+                            final fab = e.value;
+                            final fabIdx = e.key;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
                               ),
-                              const Divider(thickness: 1, height: 8),
-                              Column(
-                                children: [
-                                  _row([
-                                    _kv('Type', fab['type']),
-                                    _kv('Design', fab['design']),
-                                    _kv('Shade', fab['shade']),
-                                  ]),
-                                  const SizedBox(height: 3),
-                                  _row([
-                                    _kv('Req Qty', fab['reqQty']),
-                                    _kv('Cut Qty', fab['cutQty']),
-                                    _kv('Remarks', fab['remarks']),
-                                  ]),
-                                ],
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${fabIdx + 1}. ${fab['design'] ?? ''}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                              color: Color(0xFF2C3E50),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.edit,
+                                                  size: 16, color: Color(0xFF4A90E2)),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              visualDensity: VisualDensity.compact,
+                                              onPressed: () =>
+                                                  _editFabric(index, fabIdx),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete,
+                                                  size: 16, color: Colors.red),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              visualDensity: VisualDensity.compact,
+                                              onPressed: () =>
+                                                  _deleteFabric(index, fabIdx),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(thickness: 1, height: 8),
+                                    const SizedBox(height: 4),
+                                    // Fabric details in 2 rows
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _infoChip('Type', fab['type']),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _infoChip('Design', fab['design']),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _infoChip('Shade', fab['shade']),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _infoChip('Req Qty', fab['reqQty']),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _infoChip('Cut Qty', fab['cutQty']),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _infoChip('Remarks', fab['remarks']),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            );
+                          }).toList(),
+                        ),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(
+                          child: Text(
+                            'No fabric added yet',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ),
-                      );
-                    })
-                  else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 6),
-                      child: Center(
-                        child: Text(
-                          'No fabric added',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -792,147 +1043,307 @@ Widget _buildTextField(
     final isEdit = widget.jobCard != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text(
           isEdit
-              ? 'View Job Card ${widget.jobCard!['id'] ?? ''}'
+              ? 'Job Card #${widget.jobCard!['id'] ?? ''}'
               : 'New Job Card',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: const Color(0xFF4A90E2),
         foregroundColor: Colors.white,
         elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SlideTransition(
-          position: _slideAnim,
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                color: Colors.white,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => setState(() => _selectedTab = 0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          color: _selectedTab == 0
-                              ? const Color.fromARGB(255, 213, 229, 231)
-                              : Colors.white,
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Job Card',
-                            style: TextStyle(
-                              color: _selectedTab == 0 ? Colors.black : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+      body: SafeArea(
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SlideTransition(
+            position: _slideAnim,
+            child: Column(
+              children: [
+                // Tab Bar
+                Container(
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 0
+                                  ? const Color(0xFF4A90E2)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Job Card',
+                              style: TextStyle(
+                                color: _selectedTab == 0
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => setState(() => _selectedTab = 1),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          color: _selectedTab == 1
-                              ? const Color.fromARGB(255, 213, 229, 231)
-                              : Colors.grey.shade200,
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Other Process',
-                            style: TextStyle(
-                              color: _selectedTab == 1 ? Colors.black : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 1
+                                  ? const Color(0xFF4A90E2)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Other Process',
+                              style: TextStyle(
+                                color: _selectedTab == 1
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _selectedTab == 0 ? _jobCardForm() : _otherProcessForm(),
-              ),
-              _selectedTab == 0 ? _jobCardButtons() : _otherProcessButtons(),
-            ],
+                
+                // Content
+                Expanded(
+                  child: _selectedTab == 0 
+                      ? _jobCardForm() 
+                      : _otherProcessForm(),
+                ),
+                
+                // Buttons
+                Container(
+                  color: Colors.white,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.grey.shade700,
+                            elevation: 0,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A90E2),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: _selectedTab == 0 ? _saveJobCard : _saveOtherProcess,
+                          child: Text(_selectedTab == 0 ? 'Save' : 'Confirm'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  void _saveJobCard() {
+    Navigator.pop(context, {
+      'series': _seriesCtrl.text,
+      'lastCod': _lastCodCtrl.text,
+      'docNo': _docNoCtrl.text,
+      'docDt': _docDtCtrl.text,
+      'refNo': _refNoCtrl.text,
+      'jobber': _selectedJobber,
+      'jwNo': _jwNoCtrl.text,
+      'station': _selectedStation,
+      'process': _selectedProcess,
+      'jobChg': _jobChgCtrl.text,
+      'jobAmount': _jobAmtCtrl.text,
+      'otherProcAmt': _otherProcAmtCtrl.text,
+      'netAmount': _netAmtCtrl.text,
+      'receiptAgent': _selectedReceiptAgent,
+      'expectedRtnDt': _expectedDtCtrl.text,
+      'status': _selectedStatus,
+      'finishDetails': _finishDetailsList,
+    });
+  }
+
+  void _saveOtherProcess() {
+    Navigator.pop(context, {
+      'type': 'other_process',
+      'process': _selectedOtherProcess,
+      'jobRate': _jobRateCtrl.text,
+      'jobAmt': _jobAmtOtherCtrl.text,
+      'remark': _remarkCtrl.text,
+    });
+  }
+
   Widget _jobCardForm() {
     return SingleChildScrollView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Card(
-            elevation: 2,
-            margin: EdgeInsets.zero,
-            color: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          // Basic Information Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTextField('Series', _seriesCtrl, _seriesFocus),
-                  const SizedBox(height: 8),
-                  _buildTextField('Last Cod', _lastCodCtrl, _lastCodFocus),
-                  const SizedBox(height: 8),
-                  _buildTextField('Doc No', _docNoCtrl, _docNoFocus),
-                  const SizedBox(height: 8),
-                  _dateField('Doc Dt', _docDtCtrl, _docDtFocus),
-                  const SizedBox(height: 8),
-                  _buildTextField('Ref No', _refNoCtrl, _refNoFocus),
-                  const SizedBox(height: 8),
-                  _buildDropdown(
-                    label: 'Jobber',
-                    ctrl: _jobberCtrl,
-                    items: _jobbers,
-                    selected: _selectedJobber,
-                    onChanged: (v) => _selectedJobber = v,
-                    focusNode: _jobberFocus,
+                  const Text(
+                    'BASIC INFORMATION',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4A90E2),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildDropdown(
-                    label: 'Station',
-                    ctrl: _stationCtrl,
-                    items: _stations,
-                    selected: _selectedStation,
-                    onChanged: (v) => _selectedStation = v,
-                    focusNode: _stationFocus,
+                  const Divider(height: 16),
+                  
+                  // Row 1: Series, Last Cod, Doc No
+                  Row(
+                    children: [
+                      Expanded(child: _buildTextField('Series', _seriesCtrl, _seriesFocus, isRequired: true)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildTextField('Last Cod', _lastCodCtrl, _lastCodFocus)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildTextField('Doc No', _docNoCtrl, _docNoFocus, isRequired: true)),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildTextField('J.W.No', _jwNoCtrl, _jwNoFocus),
-                  const SizedBox(height: 8),
-                  _buildDropdown(
-                    label: 'Receipt AGSt',
-                    ctrl: _receiptAgentCtrl,
-                    items: _receiptAgents,
-                    selected: _selectedReceiptAgent,
-                    onChanged: (v) => _selectedReceiptAgent = v,
-                    focusNode: _receiptAgentFocus,
+                  
+                  // Row 2: Doc Dt, Ref No
+                  Row(
+                    children: [
+                      Expanded(child: _dateField('Doc Dt', _docDtCtrl, _docDtFocus)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildTextField('Ref No', _refNoCtrl, _refNoFocus)),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDropdown(
-                    label: 'Process',
-                    ctrl: _processCtrl,
-                    items: _processes,
-                    selected: _selectedProcess,
-                    onChanged: (v) => _selectedProcess = v,
-                    focusNode: _processFocus,
+                  
+                  // Row 3: Jobber, Station
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDropdown(
+                          label: 'Jobber',
+                          ctrl: _jobberCtrl,
+                          items: _jobbers,
+                          selected: _selectedJobber,
+                          onChanged: (v) => _selectedJobber = v,
+                          focusNode: _jobberFocus,
+                          isRequired: true,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildDropdown(
+                          label: 'Station',
+                          ctrl: _stationCtrl,
+                          items: _stations,
+                          selected: _selectedStation,
+                          onChanged: (v) => _selectedStation = v,
+                          focusNode: _stationFocus,
+                          isRequired: true,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _dateField('Expected Rtn Dt', _expectedDtCtrl, _expectedDtFocus),
-                  const SizedBox(height: 8),
+                  
+                  // Row 4: J.W.No, Receipt AGSt
+                  Row(
+                    children: [
+                      Expanded(child: _buildTextField('J.W.No', _jwNoCtrl, _jwNoFocus)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildDropdown(
+                          label: 'Receipt AGSt',
+                          ctrl: _receiptAgentCtrl,
+                          items: _receiptAgents,
+                          selected: _selectedReceiptAgent,
+                          onChanged: (v) => _selectedReceiptAgent = v,
+                          focusNode: _receiptAgentFocus,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Row 5: Process, Expected Rtn Dt
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDropdown(
+                          label: 'Process',
+                          ctrl: _processCtrl,
+                          items: _processes,
+                          selected: _selectedProcess,
+                          onChanged: (v) => _selectedProcess = v,
+                          focusNode: _processFocus,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: _dateField('Expected Rtn Dt', _expectedDtCtrl, _expectedDtFocus)),
+                    ],
+                  ),
+                  
+                  // Row 6: Status
                   _buildDropdown(
                     label: 'Status',
                     ctrl: _statusCtrl,
@@ -941,76 +1352,184 @@ Widget _buildTextField(
                     onChanged: (v) => _selectedStatus = v,
                     focusNode: _statusFocus,
                     allowAdd: false,
+                    isRequired: true,
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 2,
-            margin: EdgeInsets.zero,
-            color: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          
+          const SizedBox(height: 12),
+          
+          // Finish Details Header
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: InkWell(
               onTap: _addFinishDetail,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('FINISH DETAILS', style: TextStyle(fontSize: 17,fontWeight:FontWeight.bold)),
-                    Icon(Icons.add_circle, color: Color.fromARGB(255, 46, 107, 48)),
+                    Row(
+                      children: [
+                        const Icon(Icons.checklist, color: Color(0xFF4A90E2), size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'FINISH DETAILS',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2C3E50),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4A90E2).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_finishDetailsList.length}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF4A90E2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A90E2).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Color(0xFF4A90E2),
+                        size: 20,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          
+          const SizedBox(height: 12),
+          
+          // Finish Details Cards
           ..._finishDetailsList
               .asMap()
               .entries
-              .map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _buildFinishDetailCard(e.value, e.key),
-                  )),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 2,
-            margin: EdgeInsets.zero,
-            color: Colors.white,
+              .map((e) => _buildFinishDetailCard(e.value, e.key)),
+          
+          const SizedBox(height: 12),
+          
+          // Financial Information Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'FINANCIAL DETAILS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4A90E2),
+                    ),
+                  ),
+                  const Divider(height: 16),
+                  
+                  // Row 1: Job Chg /Pc, Job Amount
                   Row(
                     children: [
                       Expanded(
-                          child: _buildTextField('Job Chg /Pc', _jobChgCtrl, _jobChgFocus,
-                              keyboard: TextInputType.number)),
-                      const SizedBox(width: 8),
+                        child: _buildTextField(
+                          'Job Chg /Pc', 
+                          _jobChgCtrl, 
+                          _jobChgFocus,
+                          keyboard: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                          child: _buildTextField('Job Amount', _jobAmtCtrl, _jobAmtFocus,
-                              keyboard: TextInputType.number)),
+                        child: _buildTextField(
+                          'Job Amount', 
+                          _jobAmtCtrl, 
+                          _jobAmtFocus,
+                          keyboard: TextInputType.number,
+                        ),
+                      ),
                     ],
                   ),
+                  
                   const SizedBox(height: 8),
+                  
+                  // Row 2: Other Proc Amt, Net Amount (highlighted)
                   Row(
                     children: [
                       Expanded(
-                          child: _buildTextField(
-                              'Other Proc Amt', _otherProcAmtCtrl, _otherProcAmtFocus,
-                              keyboard: TextInputType.number)),
-                      const SizedBox(width: 8),
+                        child: _buildTextField(
+                          'Other Proc Amt', 
+                          _otherProcAmtCtrl, 
+                          _otherProcAmtFocus,
+                          keyboard: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                          child: _buildTextField('Net Amount', _netAmtCtrl, _netAmtFocus,
-                              keyboard: TextInputType.number)),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF4A90E2).withOpacity(0.3),
+                            ),
+                          ),
+                          child: _buildTextField(
+                            'Net Amount', 
+                            _netAmtCtrl, 
+                            _netAmtFocus,
+                            keyboard: TextInputType.number,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
           ),
+          
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -1018,16 +1537,35 @@ Widget _buildTextField(
 
   Widget _otherProcessForm() {
     return SingleChildScrollView(
-      padding: EdgeInsets.zero,
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        color: Colors.white,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      padding: const EdgeInsets.all(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'OTHER PROCESS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4A90E2),
+                ),
+              ),
+              const Divider(height: 16),
+              
               _buildDropdown(
                 label: 'Process',
                 ctrl: TextEditingController(text: _selectedOtherProcess ?? ''),
@@ -1036,110 +1574,39 @@ Widget _buildTextField(
                 onChanged: (v) => setState(() => _selectedOtherProcess = v),
                 focusNode: _otherProcessFocus,
                 allowAdd: true,
+                isRequired: true,
               ),
-              const SizedBox(height: 16),
-              _buildTextField('Job Rate', _jobRateCtrl, _jobRateFocus,
-                  keyboard: TextInputType.number),
-              const SizedBox(height: 16),
-              _buildTextField('Job Amt', _jobAmtOtherCtrl, _jobAmtOtherFocus,
-                  keyboard: TextInputType.number),
-              const SizedBox(height: 16),
-              _buildTextField('Remark', _remarkCtrl, _remarkFocus,
-                  keyboard: TextInputType.multiline),
+              
+              const SizedBox(height: 8),
+              
+              _buildTextField(
+                'Job Rate', 
+                _jobRateCtrl, 
+                _jobRateFocus,
+                keyboard: TextInputType.number,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              _buildTextField(
+                'Job Amt', 
+                _jobAmtOtherCtrl, 
+                _jobAmtOtherFocus,
+                keyboard: TextInputType.number,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              _buildTextField(
+                'Remark', 
+                _remarkCtrl, 
+                _remarkFocus,
+                keyboard: TextInputType.multiline,
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _jobCardButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ),
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () {
-              Navigator.pop(context, {
-                'series': _seriesCtrl.text,
-                'lastCod': _lastCodCtrl.text,
-                'docNo': _docNoCtrl.text,
-                'docDt': _docDtCtrl.text,
-                'refNo': _refNoCtrl.text,
-                'jobber': _selectedJobber,
-                'jwNo': _jwNoCtrl.text,
-                'station': _selectedStation,
-                'process': _selectedProcess,
-                'jobChg': _jobChgCtrl.text,
-                'jobAmount': _jobAmtCtrl.text,
-                'otherProcAmt': _otherProcAmtCtrl.text,
-                'netAmount': _netAmtCtrl.text,
-                'receiptAgent': _selectedReceiptAgent,
-                'expectedRtnDt': _expectedDtCtrl.text,
-                'status': _selectedStatus,
-                'finishDetails': _finishDetailsList,
-              });
-            },
-            child: const Text('Save'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _otherProcessButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ),
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () {
-              Navigator.pop(context, {
-                'type': 'other_process',
-                'process': _selectedOtherProcess,
-                'jobRate': _jobRateCtrl.text,
-                'jobAmt': _jobAmtOtherCtrl.text,
-                'remark': _remarkCtrl.text,
-              });
-            },
-            child: const Text('Confirm'),
-          ),
-        ),
-      ],
     );
   }
 }
