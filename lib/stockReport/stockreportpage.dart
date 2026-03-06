@@ -30,6 +30,7 @@ class _StockReportPageState extends State<StockReportPage> {
   String? selectedCategoryKey;
   String? selectedCategoryName;
   String? selectedItem;
+  List<Item> selectedItems = [];
 
   List<Category> categories = [];
   List<Item> items = [];
@@ -79,7 +80,7 @@ class _StockReportPageState extends State<StockReportPage> {
     hasSearched = true;   // 👈 add this
     });
 
-    if (selectedCategoryKey == null || selectedItem == null) {
+    if (selectedCategoryKey == null || selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select both category and item')),
       );
@@ -92,13 +93,14 @@ class _StockReportPageState extends State<StockReportPage> {
     });
 
     try {
-      final selectedItemObj = items.firstWhere(
-        (item) => item.itemName == selectedItem,
-      );
+String itemKeys = selectedItems
+    .map((e) => e.itemKey)
+    .where((e) => e != null && e.isNotEmpty)
+    .join(',');
 
       final stockReport = await ApiService.fetchStockReport(
         itemSubGrpKey: selectedCategoryKey!,
-        itemKey: selectedItemObj.itemKey ?? '',
+       itemKey: itemKeys,
         userId: 'admin',
         fcYrId: '24',
         cobr: '01',
@@ -335,6 +337,7 @@ class _StockReportPageState extends State<StockReportPage> {
       selectedCategoryKey = null;
       selectedCategoryName = null;
       selectedItem = null;
+      selectedItems = [];
       selectedStyles = [];
       selectedShades = [];
       selectedSizes = [];
@@ -851,14 +854,26 @@ class _StockReportPageState extends State<StockReportPage> {
                     fillColor: Colors.white,
                   ),
                 ),
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  fit: FlexFit.loose,
-                  containerBuilder:
-                      (context, popupWidget) => Container(
-                        color: Colors.white, // Set popup background color
-                        child: popupWidget,
-                      ),
+  popupProps: PopupProps.menu(
+    showSearchBox: true,
+    fit: FlexFit.loose,
+
+    // 👇 ADD THIS PART
+    searchFieldProps: TextFieldProps(
+      decoration: InputDecoration(
+        hintText: "Search Category",
+        prefixIcon: Icon(Icons.search), // 🔍 Search Icon
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    ),
+
+    containerBuilder: (context, popupWidget) => Container(
+      color: Colors.white,
+      child: popupWidget,
+    ),
+
                   loadingBuilder:
                       isLoadingCategories
                           ? (context, searchEntry) => Center(
@@ -873,108 +888,70 @@ class _StockReportPageState extends State<StockReportPage> {
 
               const SizedBox(height: 16),
               // Item Dropdown
-              DropdownSearch<String>(
-                items: items.map((item) => item.itemName).toList(),
-                selectedItem: selectedItem,
-                onChanged: (value) {
-                  setState(() {
-                    selectedItem = value;
-                    if (value != null) {
-                      Item? selectedItemObj;
-                      try {
-                        for (var item in items) {
-                          if (item.itemName == value) {
-                            selectedItemObj = item;
-                            break;
-                          }
-                        }
-                        if (selectedItemObj != null) {
-                          String itemSubGrpKey =
-                              selectedItemObj.itemSubGrpKey ?? 'default_key';
-                          Category? matchingCategory;
-                          for (var cat in categories) {
-                            if (cat.itemSubGrpKey == itemSubGrpKey) {
-                              matchingCategory = cat;
-                              break;
-                            }
-                          }
-                          if (matchingCategory != null) {
-                            selectedCategoryKey =
-                                matchingCategory.itemSubGrpKey;
-                            selectedCategoryName =
-                                matchingCategory.itemSubGrpName;
-                            _fetchItemsByCategory(selectedCategoryKey!);
-                          } else {
-                            selectedCategoryKey = null;
-                            selectedCategoryName = null;
-                            _fetchAllItems();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'No matching category found for the selected item',
-                                ),
-                              ),
-                            );
-                          }
-                        } else {
-                          selectedCategoryKey = null;
-                          selectedCategoryName = null;
-                          _fetchAllItems();
-                        }
-                      } catch (e) {
-                        selectedCategoryKey = null;
-                        selectedCategoryName = null;
-                        _fetchAllItems();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error selecting item: $e')),
-                        );
-                      }
-                    } else {
-                      if (selectedCategoryKey == null) {
-                        _fetchAllItems();
-                      }
-                    }
-                  });
-                },
-                dropdownDecoratorProps:  DropDownDecoratorProps(
-                  dropdownSearchDecoration: InputDecoration(
-                    labelText: "Select Item",
-                    border: OutlineInputBorder(
-                           borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true, // Add this
-                    fillColor: Colors.white, // Set background color
-                  ),
-                ),
-popupProps: PopupProps.menu(
-  showSearchBox: true,
-  fit: FlexFit.loose,
+DropdownSearch<Item>.multiSelection(
+  items: items,
+  itemAsString: (Item i) => i.itemName ?? '',
+  selectedItems: selectedItems,
 
-  searchFieldProps: TextFieldProps(
-    decoration: InputDecoration(
-      hintText: "Search Item",
-      prefixIcon: Icon(Icons.search), // 🔍 search icon
+  onChanged: (List<Item> value) {
+    setState(() {
+      selectedItems = value;
+
+      if (value.isNotEmpty) {
+        String itemSubGrpKey = value.first.itemSubGrpKey ?? '';
+
+Category? matchingCategory;
+
+try {
+  matchingCategory = categories.firstWhere(
+    (cat) => cat.itemSubGrpKey == itemSubGrpKey,
+  );
+} catch (e) {
+  matchingCategory = null;
+}
+
+if (matchingCategory != null) {
+  selectedCategoryKey = matchingCategory.itemSubGrpKey;
+  selectedCategoryName = matchingCategory.itemSubGrpName;
+}
+      }
+    });
+  },
+
+  dropdownDecoratorProps: DropDownDecoratorProps(
+    dropdownSearchDecoration: InputDecoration(
+      labelText: "Select Items",
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
       ),
+      filled: true,
+      fillColor: Colors.white,
     ),
   ),
 
-  containerBuilder: (context, popupWidget) => Container(
-    color: Colors.white,
-    child: popupWidget,
-  ),
+  popupProps: PopupPropsMultiSelection.menu(
+    showSearchBox: true,
 
-  loadingBuilder: isLoadingItems
-      ? (context, searchEntry) => Center(
+    searchFieldProps: TextFieldProps(
+      decoration: InputDecoration(
+        hintText: "Search Item",
+        prefixIcon: Icon(Icons.search),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    ),
+
+    loadingBuilder: isLoadingItems
+        ? (context, searchEntry) => Center(
             child: LoadingAnimationWidget.waveDots(
               color: Colors.blue,
               size: 40,
             ),
           )
-      : null,
-),),
-              const SizedBox(height: 24),
+        : null,
+  ),
+),          const SizedBox(height: 24),
          Row(
   children: [
     _buildActionButton(
