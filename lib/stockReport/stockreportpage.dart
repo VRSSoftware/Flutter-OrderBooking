@@ -37,6 +37,7 @@ class _StockReportPageState extends State<StockReportPage> {
   bool isLoadingCategories = true;
   bool isLoadingItems = true;
   bool isLoadingStockReport = false;
+  bool hasSearched = false;
   // Filter-related state variables
   List<Style> styles = [];
   List<Shade> shades = [];
@@ -60,6 +61,11 @@ class _StockReportPageState extends State<StockReportPage> {
   }
 
   Future<void> _fetchStockReport() async {
+
+    setState(() {
+    hasSearched = true;   // 👈 add this
+    });
+
     if (selectedCategoryKey == null || selectedItem == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select both category and item')),
@@ -730,12 +736,11 @@ class _StockReportPageState extends State<StockReportPage> {
         title: Text('Stock Report', style: TextStyle(color: AppColors.white)),
         backgroundColor: AppColors.primaryColor,
         elevation: 1,
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: Icon(Icons.menu, color: AppColors.white),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ),
       body: Container(
@@ -891,25 +896,34 @@ class _StockReportPageState extends State<StockReportPage> {
                     fillColor: Colors.white, // Set background color
                   ),
                 ),
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  fit: FlexFit.loose,
-                  containerBuilder:
-                      (context, popupWidget) => Container(
-                        color: Colors.white, // Set popup background color
-                        child: popupWidget,
-                      ),
-                  loadingBuilder:
-                      isLoadingItems
-                          ? (context, searchEntry) => Center(
-                            child: LoadingAnimationWidget.waveDots(
-                              color: Colors.blue,
-                              size: 40,
-                            ),
-                          )
-                          : null,
-                ),
-              ),
+popupProps: PopupProps.menu(
+  showSearchBox: true,
+  fit: FlexFit.loose,
+
+  searchFieldProps: TextFieldProps(
+    decoration: InputDecoration(
+      hintText: "Search Item",
+      prefixIcon: Icon(Icons.search), // 🔍 search icon
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+  ),
+
+  containerBuilder: (context, popupWidget) => Container(
+    color: Colors.white,
+    child: popupWidget,
+  ),
+
+  loadingBuilder: isLoadingItems
+      ? (context, searchEntry) => Center(
+            child: LoadingAnimationWidget.waveDots(
+              color: Colors.blue,
+              size: 40,
+            ),
+          )
+      : null,
+),),
               const SizedBox(height: 24),
          Row(
   children: [
@@ -952,9 +966,11 @@ class _StockReportPageState extends State<StockReportPage> {
                             size: 40,
                           ),
                         )
+                        : !hasSearched
+                        ? const SizedBox()
                         : stockReportItems.isEmpty
-                        ? const Center(child: Text('No stock data found'))
-                        : SingleChildScrollView(
+                            ? const Center(child: Text('No stock data found'))
+                            : SingleChildScrollView(
                           child: Column(
                             children: [
                               // Add category name as header if available
