@@ -6,6 +6,7 @@ import 'package:vrs_erp/models/keyName.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class RegisterFilterPage extends StatefulWidget {
+  
   final List<KeyName> ledgerList;
   final List<KeyName> salespersonList;
   final Function({
@@ -31,8 +32,8 @@ class RegisterFilterPage extends StatefulWidget {
   State<RegisterFilterPage> createState() => _RegisterFilterPageState();
 }
 
-
 class _RegisterFilterPageState extends State<RegisterFilterPage> {
+  bool _initialized = false;
   List<KeyName> ledgerList = [];
   List<KeyName> salespersonList = [];
 
@@ -64,23 +65,40 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
     'Cancelled',
   ];
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+@override
+void didChangeDependencies() {
+  super.didChangeDependencies();
 
-    if (args != null) {
-      ledgerList = List<KeyName>.from(args['ledgerList'] ?? widget.ledgerList);
-      salespersonList = List<KeyName>.from(
-        args['salespersonList'] ?? widget.salespersonList,
-      );
-    } else {
-      ledgerList = widget.ledgerList;
-      salespersonList = widget.salespersonList;
+  if (_initialized) return;
+
+  final args =
+      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+  if (args != null) {
+    ledgerList = List<KeyName>.from(args['ledgerList'] ?? widget.ledgerList);
+    salespersonList =
+        List<KeyName>.from(args['salespersonList'] ?? widget.salespersonList);
+
+    selectedLedger = args['selectedLedger'];
+    selectedSalesperson = args['selectedSalesperson'];
+    selectedOrderStatus = args['selectedOrderStatus'];
+
+    fromDate = args['fromDate'];
+    toDate = args['toDate'];
+
+    deliveryFromDate = args['deliveryFromDate'];
+    deliveryToDate = args['deliveryToDate'];
+
+    if (fromDate != null || toDate != null) {
+      selectedDateRange = 'Custom';
     }
+  } else {
+    ledgerList = widget.ledgerList;
+    salespersonList = widget.salespersonList;
   }
 
+  _initialized = true;
+}
   Future<void> _pickDate(
     BuildContext context,
     bool isFromDate,
@@ -189,12 +207,14 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
     required String title,
     required List<Widget> children,
     bool initiallyExpanded = true,
+      required bool active,
     ValueChanged<bool>? onExpansionChanged,
   }) {
     return CustomExpansionTile(
       title: title,
       initiallyExpanded: initiallyExpanded,
       onExpansionChanged: onExpansionChanged,
+       active: active,
       children: children,
     );
   }
@@ -211,7 +231,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-        floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
+        floatingLabelStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.primaryColor,
+        ),
         suffixIcon: IconButton(
           icon: Icon(Icons.calendar_today, color: AppColors.primaryColor),
           onPressed: onTap,
@@ -236,6 +258,48 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
       ),
       style: GoogleFonts.plusJakartaSans(),
     );
+  }
+
+  Widget filterWrapper({required Widget child, required bool active}) {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: active ? AppColors.primaryColor : Colors.transparent,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: child,
+        ),
+
+        if (active)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Icon(
+              Icons.check_circle,
+              color: AppColors.primaryColor,
+              size: 16,
+            ),
+          ),
+      ],
+    );
+  }
+
+  int _getFilterCount() {
+    int count = 0;
+
+    if (selectedLedger != null) count++;
+    if (selectedSalesperson != null) count++;
+    if (selectedOrderStatus != null && selectedOrderStatus != 'All') count++;
+    if (fromDate != null) count++;
+    if (toDate != null) count++;
+    if (deliveryFromDate != null) count++;
+    if (deliveryToDate != null) count++;
+
+    return count;
   }
 
   @override
@@ -268,10 +332,17 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                   children: [
                     _buildExpansionTile(
                       title: 'Date Range Filter',
+                       active: fromDate != null ||
+          toDate != null ||
+          deliveryFromDate != null ||
+          deliveryToDate != null,
                       initiallyExpanded: true,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: Column(
                             children: [
                               // Searchable Date Range Dropdown
@@ -281,7 +352,8 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 onChanged: (value) {
                                   setState(() {
                                     selectedDateRange = value;
-                                    if (value != 'Custom') _setDateRange(value!);
+                                    if (value != 'Custom')
+                                      _setDateRange(value!);
                                   });
                                 },
                                 popupProps: PopupProps.menu(
@@ -295,37 +367,63 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                   searchFieldProps: TextFieldProps(
                                     decoration: InputDecoration(
                                       hintText: 'Search date range...',
-                                      hintStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400),
-                                      prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                      hintStyle: GoogleFonts.plusJakartaSans(
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: Colors.grey.shade600,
+                                      ),
                                       filled: true,
                                       fillColor: Colors.grey.shade50,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
                                       ),
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
                                     ),
                                   ),
                                 ),
                                 dropdownDecoratorProps: DropDownDecoratorProps(
                                   dropdownSearchDecoration: InputDecoration(
                                     labelText: 'Select Date Range',
-                                    labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-                                    floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
-                                    prefixIcon: Icon(Icons.calendar_today, color: Colors.grey.shade600),
+                                    labelStyle: GoogleFonts.plusJakartaSans(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    floatingLabelStyle:
+                                        GoogleFonts.plusJakartaSans(
+                                          color: AppColors.primaryColor,
+                                        ),
+                                    prefixIcon: Icon(
+                                      Icons.calendar_today,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primaryColor,
+                                        width: 1.5,
+                                      ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                     filled: true,
                                     fillColor: Colors.white,
                                   ),
@@ -334,7 +432,10 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                   if (selectedItem == null) {
                                     return Text(
                                       'Select Date Range',
-                                      style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600, fontSize: 14),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
                                     );
                                   }
                                   return Container(
@@ -357,7 +458,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 children: [
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(text: _formatDate(fromDate)),
+                                      TextEditingController(
+                                        text: _formatDate(fromDate),
+                                      ),
                                       'From Date',
                                       fromDate,
                                       () => _pickDate(context, true, false),
@@ -366,7 +469,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(text: _formatDate(toDate)),
+                                      TextEditingController(
+                                        text: _formatDate(toDate),
+                                      ),
                                       'To Date',
                                       toDate,
                                       () => _pickDate(context, false, false),
@@ -379,7 +484,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 children: [
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(text: _formatDate(deliveryFromDate)),
+                                      TextEditingController(
+                                        text: _formatDate(deliveryFromDate),
+                                      ),
                                       'Delivery From Date',
                                       deliveryFromDate,
                                       () => _pickDate(context, true, true),
@@ -388,7 +495,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(text: _formatDate(deliveryToDate)),
+                                      TextEditingController(
+                                        text: _formatDate(deliveryToDate),
+                                      ),
                                       'Delivery To Date',
                                       deliveryToDate,
                                       () => _pickDate(context, false, true),
@@ -406,10 +515,15 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
 
                     _buildExpansionTile(
                       title: 'Order Status',
+                       active: selectedOrderStatus != null &&
+          selectedOrderStatus != 'All',
                       initiallyExpanded: true,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: DropdownSearch<String>(
                             items: orderStatusOptions,
                             selectedItem: selectedOrderStatus,
@@ -428,37 +542,62 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                               searchFieldProps: TextFieldProps(
                                 decoration: InputDecoration(
                                   hintText: 'Search order status...',
-                                  hintStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400),
-                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                  hintStyle: GoogleFonts.plusJakartaSans(
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   filled: true,
                                   fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
                             dropdownDecoratorProps: DropDownDecoratorProps(
                               dropdownSearchDecoration: InputDecoration(
                                 labelText: 'Order Status',
-                                labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-                                floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
-                                prefixIcon: Icon(Icons.info_outline, color: Colors.grey.shade600),
+                                labelStyle: GoogleFonts.plusJakartaSans(
+                                  color: Colors.grey.shade600,
+                                ),
+                                floatingLabelStyle: GoogleFonts.plusJakartaSans(
+                                  color: AppColors.primaryColor,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.info_outline,
+                                  color: Colors.grey.shade600,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                               ),
@@ -467,7 +606,10 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                               if (selectedItem == null) {
                                 return Text(
                                   'Select Order Status',
-                                  style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600, fontSize: 14),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
                                 );
                               }
                               return Container(
@@ -493,15 +635,21 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                       const SizedBox(height: 5),
                       _buildExpansionTile(
                         title: 'Party',
+                        active: selectedLedger != null,
                         initiallyExpanded: true,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             child: DropdownSearch<KeyName>(
                               items: ledgerList,
                               selectedItem: selectedLedger,
                               itemAsString: (KeyName? u) => u?.name ?? '',
-                              onChanged: (value) => setState(() => selectedLedger = value),
+                              onChanged:
+                                  (value) =>
+                                      setState(() => selectedLedger = value),
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
                                 searchDelay: Duration(milliseconds: 300),
@@ -513,37 +661,63 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 searchFieldProps: TextFieldProps(
                                   decoration: InputDecoration(
                                     hintText: 'Search party...',
-                                    hintStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400),
-                                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                    hintStyle: GoogleFonts.plusJakartaSans(
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     filled: true,
                                     fillColor: Colors.grey.shade50,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                   ),
                                 ),
                               ),
                               dropdownDecoratorProps: DropDownDecoratorProps(
                                 dropdownSearchDecoration: InputDecoration(
                                   labelText: 'Select Party',
-                                  labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-                                  floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
-                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                  labelStyle: GoogleFonts.plusJakartaSans(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  floatingLabelStyle:
+                                      GoogleFonts.plusJakartaSans(
+                                        color: AppColors.primaryColor,
+                                      ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primaryColor,
+                                      width: 1.5,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
@@ -552,7 +726,10 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 if (selectedItem == null) {
                                   return Text(
                                     'Select Party',
-                                    style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600, fontSize: 14),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
                                   );
                                 }
                                 return Container(
@@ -579,15 +756,22 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                       const SizedBox(height: 5),
                       _buildExpansionTile(
                         title: 'Salesperson',
+                         active: selectedSalesperson != null,
                         initiallyExpanded: true,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             child: DropdownSearch<KeyName>(
                               items: salespersonList,
                               selectedItem: selectedSalesperson,
                               itemAsString: (KeyName? u) => u?.name ?? '',
-                              onChanged: (value) => setState(() => selectedSalesperson = value),
+                              onChanged:
+                                  (value) => setState(
+                                    () => selectedSalesperson = value,
+                                  ),
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
                                 searchDelay: Duration(milliseconds: 300),
@@ -599,37 +783,63 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 searchFieldProps: TextFieldProps(
                                   decoration: InputDecoration(
                                     hintText: 'Search salesperson...',
-                                    hintStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade400),
-                                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                    hintStyle: GoogleFonts.plusJakartaSans(
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     filled: true,
                                     fillColor: Colors.grey.shade50,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                   ),
                                 ),
                               ),
                               dropdownDecoratorProps: DropDownDecoratorProps(
                                 dropdownSearchDecoration: InputDecoration(
                                   labelText: 'Select Salesperson',
-                                  labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-                                  floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
-                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                  labelStyle: GoogleFonts.plusJakartaSans(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  floatingLabelStyle:
+                                      GoogleFonts.plusJakartaSans(
+                                        color: AppColors.primaryColor,
+                                      ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primaryColor,
+                                      width: 1.5,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
@@ -638,7 +848,10 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                                 if (selectedItem == null) {
                                   return Text(
                                     'Select Salesperson',
-                                    style: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600, fontSize: 14),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
                                   );
                                 }
                                 return Container(
@@ -672,7 +885,9 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -735,7 +950,7 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
                             Navigator.pop(context);
                           },
                           child: Text(
-                            'Apply Filters',
+                            'Apply Filters (${_getFilterCount()})',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -791,12 +1006,14 @@ class CustomExpansionTile extends StatefulWidget {
   final String title;
   final List<Widget> children;
   final bool initiallyExpanded;
+  final bool active;
   final ValueChanged<bool>? onExpansionChanged;
 
   const CustomExpansionTile({
     required this.title,
     required this.children,
     this.initiallyExpanded = true,
+    this.active = false,
     this.onExpansionChanged,
   });
 
@@ -815,23 +1032,35 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+   return Stack(
+  clipBehavior: Clip.none,
+  children: [
+    Container(
+      margin: const EdgeInsets.only(bottom: 6, top: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border:
-            _isExpanded
-                ? Border.all(color: Colors.grey.shade200, width: 1)
-                : Border(
-                  left: BorderSide(color: AppColors.primaryColor, width: 4),
-                ),
+
+        // thinner border
+        border: Border.all(
+          color: widget.active
+              ? AppColors.primaryColor
+              : Colors.grey.shade200,
+          width: widget.active ? 0.8 : 0.5,
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
+
       child: Theme(
         data: Theme.of(context).copyWith(
           dividerColor: Colors.transparent,
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: Colors.transparent,
         ),
         child: ExpansionTile(
           title: Text(
@@ -847,24 +1076,31 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
             setState(() => _isExpanded = expanded);
             widget.onExpansionChanged?.call(expanded);
           },
-          tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          backgroundColor: Colors.white,
-          collapsedBackgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          collapsedShape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          childrenPadding: EdgeInsets.only(bottom: 4),
-          trailing: Icon(
-            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            size: 22,
-            color: AppColors.primaryColor,
-          ),
           children: widget.children,
         ),
       ),
-    );
+    ),
+
+    /// CHECK BADGE
+    if (widget.active)
+      Positioned(
+        right: -4,   // push outside border
+        top: -4,
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: const Icon(
+            Icons.check,
+            color: Colors.white,
+            size: 12,
+          ),
+        ),
+      ),
+  ],
+);
   }
 }

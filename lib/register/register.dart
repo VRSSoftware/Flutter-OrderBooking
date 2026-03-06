@@ -51,7 +51,9 @@ class _RegisterPageState extends State<RegisterPage> {
   String? selectedOrderStatus;
   DateTime? deliveryFromDate;
   DateTime? deliveryToDate;
+  int activeFilterCount = 0;
   
+
   @override
   void initState() {
     super.initState();
@@ -185,772 +187,665 @@ class _RegisterPageState extends State<RegisterPage> {
       return false;
     }
   }
-Widget buildOrderItem(RegisterOrder registerOrder) {
-  // Initialize checkbox state for this order if not already set
-  checkedOrders.putIfAbsent(registerOrder.orderNo, () => false);
 
-  // Use fixed blue shades for delivery status to ensure non-nullable colors
-  const Color deliveryIconColor = Colors.blue; // Base blue
-  const Color deliveryTextColor = Colors.blue; // Base blue
-  const Color deliveryBorderColor = Color.fromRGBO(
-    144,
-    202,
-    249,
-    1,
-  ); // Blue[200]
+  Widget buildOrderItem(RegisterOrder registerOrder) {
+    // Initialize checkbox state for this order if not already set
+    checkedOrders.putIfAbsent(registerOrder.orderNo, () => false);
 
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: Colors.white, // White background for contrast
-      border: const Border.fromBorderSide(
-        BorderSide(
-          color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
-          width: 1,
+    // Use fixed blue shades for delivery status to ensure non-nullable colors
+    const Color deliveryIconColor = Colors.blue; // Base blue
+    const Color deliveryTextColor = Colors.blue; // Base blue
+    const Color deliveryBorderColor = Color.fromRGBO(
+      144,
+      202,
+      249,
+      1,
+    ); // Blue[200]
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white, // White background for contrast
+        border: const Border.fromBorderSide(
+          BorderSide(
+            color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
+            width: 1,
+          ),
         ),
+        borderRadius: BorderRadius.circular(8),
       ),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // First Row: Item Name and Popup Menu
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 24,
-                  child: Tooltip(
-                    message: registerOrder.itemName,
-                    triggerMode: TooltipTriggerMode.tap, // show on tap
-                    showDuration: const Duration(seconds: 2),
-                    waitDuration: Duration.zero, // no delay
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.9),
-                      borderRadius: BorderRadius.zero, // removes curve
-                    ),
-                    textStyle: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      registerOrder.itemName,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: GoogleFonts.lora(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: const Color.fromRGBO(21, 101, 192, 1),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // First Row: Item Name and Popup Menu
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 24,
+                    child: Tooltip(
+                      message: registerOrder.itemName,
+                      triggerMode: TooltipTriggerMode.tap, // show on tap
+                      showDuration: const Duration(seconds: 2),
+                      waitDuration: Duration.zero, // no delay
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.9),
+                        borderRadius: BorderRadius.zero, // removes curve
+                      ),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        registerOrder.itemName,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: GoogleFonts.lora(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromRGBO(21, 101, 192, 1),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.blue),
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'checkbox':
-                      // Handle checkbox logic here
-                      setState(() {
-                        checkedOrders[registerOrder.orderNo] =
-                            !(checkedOrders[registerOrder.orderNo] ?? false);
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Order ${registerOrder.orderNo} ${checkedOrders[registerOrder.orderNo]! ? "checked (With Image)" : "unchecked"}',
-                          ),
-                        ),
-                      );
-                      break;
-
-                    case 'reportView':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => OrderReportViewPage(
-                                orderNo:
-                                    registerOrder
-                                        .orderId, // or orderNo based on your API requirement
-                                orderData:
-                                    registerOrder, // Pass the entire order object if needed
-                                showOnlyWithImage: checkedOrders[registerOrder.orderNo] ?? false, // Pass checkbox state
-                              ),
-                        ),
-                      );
-                      break;
-                    case 'whatsapp':
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final TextEditingController controller =
-                              TextEditingController(
-                                text: registerOrder.whatsAppMobileNo ?? '',
-                              );
-                          return AlertDialog(
-                            title: const Text('Enter WhatsApp Number'),
-                            content: TextField(
-                              controller: controller,
-                              keyboardType: TextInputType.number,
-                              maxLength: 10,
-                              decoration: const InputDecoration(
-                                hintText: 'Enter 10-digit number',
-                                counterText: '',
-                              ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.blue),
+                  onSelected: (value) async {
+                    switch (value) {
+                      case 'checkbox':
+                        // Handle checkbox logic here
+                        setState(() {
+                          checkedOrders[registerOrder.orderNo] =
+                              !(checkedOrders[registerOrder.orderNo] ?? false);
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Order ${registerOrder.orderNo} ${checkedOrders[registerOrder.orderNo]! ? "checked (With Image)" : "unchecked"}',
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      AppColors.primaryColor, // Blue[700]
-                                  foregroundColor: Colors.white,
+                          ),
+                        );
+                        break;
+
+                      case 'reportView':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => OrderReportViewPage(
+                                  orderNo:
+                                      registerOrder
+                                          .orderId, // or orderNo based on your API requirement
+                                  orderData:
+                                      registerOrder, // Pass the entire order object if needed
+                                  showOnlyWithImage:
+                                      checkedOrders[registerOrder.orderNo] ??
+                                      false, // Pass checkbox state
                                 ),
-                                onPressed: () async {
-                                  String number = controller.text.trim();
-                                  if (number.length != 10 ||
-                                      !RegExp(
-                                        r'^[0-9]{10}$',
-                                      ).hasMatch(number)) {
-                                    ScaffoldMessenger.of(
-                                      context,
-                                    ).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please enter a valid 10-digit number',
-                                        ),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  Navigator.pop(context);
-                                  String docId = registerOrder.orderId;
-
-                                  try {
-                                    final dio = Dio();
-                                    final response = await dio.post(
-                                      '${AppConstants.Pdf_url}',
-                                      data: {
-                                        "doc_id": docId,
-                                        "rptName": "SalesOrder",
-                                        "dbName": UserSession.dbName,
-                                        "dbUser": UserSession.dbUser,
-                                        "dbPassword": UserSession.dbPassword,
-                                        "dbServer":
-                                            UserSession.dbSourceForRpt,
-                                        "rptPath": UserSession.rptPath,
-                                      },
-                                      options: Options(
-                                        responseType: ResponseType.bytes,
-                                      ),
-                                    );
-
-                                    bool sent = await _sendWhatsAppFile2(
-                                      fileBytes: response.data,
-                                      mobileNo: number,
-                                      fileType: 'pdf',
-                                      caption: 'Order PDF',
-                                    );
-
-                                    ScaffoldMessenger.of(
-                                      context,
-                                    ).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          sent
-                                              ? 'Sent on WhatsApp'
-                                              : 'Failed to send',
-                                        ),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    print('Error: $e');
-                                    ScaffoldMessenger.of(
-                                      context,
-                                    ).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Failed to download or send',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: const Text('Send'),
+                          ),
+                        );
+                        break;
+                      case 'whatsapp':
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            final TextEditingController controller =
+                                TextEditingController(
+                                  text: registerOrder.whatsAppMobileNo ?? '',
+                                );
+                            return AlertDialog(
+                              title: const Text('Enter WhatsApp Number'),
+                              content: TextField(
+                                controller: controller,
+                                keyboardType: TextInputType.number,
+                                maxLength: 10,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter 10-digit number',
+                                  counterText: '',
+                                ),
                               ),
-                            ],
-                          );
-                        },
-                      );
-                      break;
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        AppColors.primaryColor, // Blue[700]
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    String number = controller.text.trim();
+                                    if (number.length != 10 ||
+                                        !RegExp(
+                                          r'^[0-9]{10}$',
+                                        ).hasMatch(number)) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please enter a valid 10-digit number',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                    case 'download':
-                      try {
-                        /* ======================= PERMISSIONS ======================= */
-                        if (!kIsWeb && Platform.isAndroid) {
-                          var status = await Permission.storage.status;
-                          if (!status.isGranted) {
-                            status = await Permission.storage.request();
+                                    Navigator.pop(context);
+                                    String docId = registerOrder.orderId;
+
+                                    try {
+                                      final dio = Dio();
+                                      final response = await dio.post(
+                                        '${AppConstants.Pdf_url}',
+                                        data: {
+                                          "doc_id": docId,
+                                          "rptName": "SalesOrder",
+                                          "dbName": UserSession.dbName,
+                                          "dbUser": UserSession.dbUser,
+                                          "dbPassword": UserSession.dbPassword,
+                                          "dbServer":
+                                              UserSession.dbSourceForRpt,
+                                          "rptPath": UserSession.rptPath,
+                                        },
+                                        options: Options(
+                                          responseType: ResponseType.bytes,
+                                        ),
+                                      );
+
+                                      bool sent = await _sendWhatsAppFile2(
+                                        fileBytes: response.data,
+                                        mobileNo: number,
+                                        fileType: 'pdf',
+                                        caption: 'Order PDF',
+                                      );
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            sent
+                                                ? 'Sent on WhatsApp'
+                                                : 'Failed to send',
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      print('Error: $e');
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Failed to download or send',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('Send'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        break;
+
+                      case 'download':
+                        try {
+                          /* ======================= PERMISSIONS ======================= */
+                          if (!kIsWeb && Platform.isAndroid) {
+                            var status = await Permission.storage.status;
                             if (!status.isGranted) {
+                              status = await Permission.storage.request();
+                              if (!status.isGranted) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Storage permission denied',
+                                      ),
+                                    ),
+                                  );
+                                }
+                                debugPrint('Storage permission denied');
+                                break;
+                              }
+                            }
+                          }
+
+                          /* ======================= SHOW LOADING ======================= */
+                          if (mounted) {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder:
+                                  (context) => AlertDialog(
+                                    content: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        CircularProgressIndicator(
+                                          color: Colors.blue,
+                                        ),
+                                        SizedBox(width: 16),
+                                        Text('Downloading...'),
+                                      ],
+                                    ),
+                                  ),
+                            );
+                          }
+
+                          /* ======================= FETCH PDF ======================= */
+                          final dio = Dio();
+                          final response = await dio.post(
+                            '${AppConstants.Pdf_url}',
+                            data: {
+                              "doc_id": registerOrder.orderId,
+                              "rptName": "SalesOrder",
+                              "dbName": UserSession.dbName,
+                              "dbUser": UserSession.dbUser,
+                              "dbPassword": UserSession.dbPassword,
+                              "dbServer": UserSession.dbSourceForRpt,
+                              "rptPath": UserSession.rptPath,
+                            },
+                            options: Options(responseType: ResponseType.bytes),
+                          );
+
+                          debugPrint(
+                            'API response status: ${response.statusCode}',
+                          );
+
+                          if (response.statusCode == 200) {
+                            final fileName =
+                                'Order_${registerOrder.orderId}.pdf';
+
+                            /* ======================= WEB ======================= */
+                            if (kIsWeb) {
                               if (mounted) {
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).pop();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Storage permission denied',
+                                      'PDF downloaded as $fileName',
                                     ),
                                   ),
                                 );
                               }
-                              debugPrint('Storage permission denied');
-                              break;
                             }
-                          }
-                        }
+                            /* ======================= MOBILE ======================= */
+                            else {
+                              Directory? directory;
+                              String filePath;
 
-                        /* ======================= SHOW LOADING ======================= */
-                        if (mounted) {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder:
-                                (context) => AlertDialog(
-                                  content: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      CircularProgressIndicator(
-                                        color: Colors.blue,
-                                      ),
-                                      SizedBox(width: 16),
-                                      Text('Downloading...'),
-                                    ],
-                                  ),
-                                ),
-                          );
-                        }
-
-                        /* ======================= FETCH PDF ======================= */
-                        final dio = Dio();
-                        final response = await dio.post(
-                          '${AppConstants.Pdf_url}',
-                          data: {
-                            "doc_id": registerOrder.orderId,
-                            "rptName": "SalesOrder",
-                            "dbName": UserSession.dbName,
-                            "dbUser": UserSession.dbUser,
-                            "dbPassword": UserSession.dbPassword,
-                            "dbServer": UserSession.dbSourceForRpt,
-                            "rptPath": UserSession.rptPath,
-                          },
-                          options: Options(responseType: ResponseType.bytes),
-                        );
-
-                        debugPrint(
-                          'API response status: ${response.statusCode}',
-                        );
-
-                        if (response.statusCode == 200) {
-                          final fileName =
-                              'Order_${registerOrder.orderId}.pdf';
-
-                          /* ======================= WEB ======================= */
-                          if (kIsWeb) {
-                            if (mounted) {
-                              Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'PDF downloaded as $fileName',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          /* ======================= MOBILE ======================= */
-                          else {
-                            Directory? directory;
-                            String filePath;
-
-                            if (Platform.isAndroid) {
-                              directory = Directory(
-                                '/storage/emulated/0/Download',
-                              );
-                              if (!await directory.exists()) {
-                                await directory.create(recursive: true);
+                              if (Platform.isAndroid) {
+                                directory = Directory(
+                                  '/storage/emulated/0/Download',
+                                );
+                                if (!await directory.exists()) {
+                                  await directory.create(recursive: true);
+                                }
+                                filePath = '${directory.path}/$fileName';
+                              } else if (Platform.isIOS) {
+                                directory =
+                                    await getApplicationDocumentsDirectory();
+                                filePath = '${directory.path}/$fileName';
+                              } else {
+                                throw Exception('Unsupported platform');
                               }
-                              filePath = '${directory.path}/$fileName';
-                            } else if (Platform.isIOS) {
-                              directory =
-                                  await getApplicationDocumentsDirectory();
-                              filePath = '${directory.path}/$fileName';
-                            } else {
-                              throw Exception('Unsupported platform');
+
+                              final file = File(filePath);
+                              await file.writeAsBytes(
+                                response.data,
+                                flush: true,
+                              );
+
+                              debugPrint(
+                                'PDF downloaded to: $filePath, exists: ${await file.exists()}',
+                              );
+
+                              if (mounted) {
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'PDF downloaded to $filePath',
+                                    ),
+                                    action: SnackBarAction(
+                                      label: 'Open',
+                                      textColor: Colors.blue,
+                                      onPressed: () async {
+                                        final result = await OpenFile.open(
+                                          filePath,
+                                        );
+                                        debugPrint(
+                                          'OpenFile result: ${result.type}, message: ${result.message}',
+                                        );
+                                        if (result.type != ResultType.done &&
+                                            mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Failed to open PDF: ${result.message}',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }
                             }
-
-                            final file = File(filePath);
-                            await file.writeAsBytes(
-                              response.data,
-                              flush: true,
-                            );
-
-                            debugPrint(
-                              'PDF downloaded to: $filePath, exists: ${await file.exists()}',
-                            );
-
+                          } else {
                             if (mounted) {
-                              Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pop();
+                              Navigator.of(context, rootNavigator: true).pop();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'PDF downloaded to $filePath',
-                                  ),
-                                  action: SnackBarAction(
-                                    label: 'Open',
-                                    textColor: Colors.blue,
-                                    onPressed: () async {
-                                      final result = await OpenFile.open(
-                                        filePath,
-                                      );
-                                      debugPrint(
-                                        'OpenFile result: ${result.type}, message: ${result.message}',
-                                      );
-                                      if (result.type != ResultType.done &&
-                                          mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Failed to open PDF: ${result.message}',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
+                                    'Failed to load PDF: ${response.statusCode}',
                                   ),
                                 ),
                               );
                             }
+                            debugPrint(
+                              'Failed to load PDF: ${response.statusCode}',
+                            );
                           }
-                        } else {
+                        } catch (e) {
+                          debugPrint('Download error: $e');
                           if (mounted) {
                             Navigator.of(context, rootNavigator: true).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Failed to load PDF: ${response.statusCode}',
-                                ),
-                              ),
+                              SnackBar(content: Text('Download failed: $e')),
                             );
                           }
-                          debugPrint(
-                            'Failed to load PDF: ${response.statusCode}',
-                          );
                         }
-                      } catch (e) {
-                        debugPrint('Download error: $e');
-                        if (mounted) {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Download failed: $e')),
-                          );
-                        }
-                      }
-                      break;
+                        break;
 
-                    case 'view':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => PdfViewerScreen(
-                                rptName: 'SalesOrder',
-                                orderNo: registerOrder.orderId,
-                                whatsappNo: registerOrder.whatsAppMobileNo,
-                                partyName:
-                                    registerOrder
-                                        .partyName, // Use partyLedKey from RegisterOrder
-                                orderDate: registerOrder.orderDate,
+                      case 'view':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => PdfViewerScreen(
+                                  rptName: 'SalesOrder',
+                                  orderNo: registerOrder.orderId,
+                                  whatsappNo: registerOrder.whatsAppMobileNo,
+                                  partyName:
+                                      registerOrder
+                                          .partyName, // Use partyLedKey from RegisterOrder
+                                  orderDate: registerOrder.orderDate,
+                                ),
+                          ),
+                        );
+                        break;
+                      case 'editBarcode':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => EditOrderBarcode2(
+                                  docId: registerOrder.orderId,
+                                ),
+                            // builder: (context) => EditOrderScreen(docId: registerOrder.orderId),
+                          ),
+                        );
+                        break;
+                      case 'edit2':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            // builder: (context) => EditOrderScreenBarcode(docId: registerOrder.orderId),
+                            builder:
+                                (context) => EditOrderScreen(
+                                  docId: registerOrder.orderId,
+                                ),
+                          ),
+                        );
+                        break;
+                    }
+                  },
+                  itemBuilder:
+                      (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'checkbox',
+                          child: Row(
+                            children: [
+                              Icon(
+                                checkedOrders[registerOrder.orderNo] ?? false
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                color: Colors.blue,
+                                size: 20,
                               ),
-                        ),
-                      );
-                      break;
-                    case 'editBarcode':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => EditOrderBarcode2(
-                                docId: registerOrder.orderId,
+                              const SizedBox(width: 8),
+                              Text(
+                                'With Image',
+                                style: TextStyle(fontSize: 14),
                               ),
-                          // builder: (context) => EditOrderScreen(docId: registerOrder.orderId),
+                            ],
+                          ),
                         ),
-                      );
-                      break;
-                    case 'edit2':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          // builder: (context) => EditOrderScreenBarcode(docId: registerOrder.orderId),
-                          builder:
-                              (context) => EditOrderScreen(
-                                docId: registerOrder.orderId,
+                        PopupMenuItem<String>(
+                          value: 'reportView',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.table_chart,
+                                color: Colors.blue,
+                                size: 20,
                               ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Report View',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                      break;
-                  }
-                },
-                itemBuilder:
-                    (BuildContext context) => [
-                      PopupMenuItem<String>(
-                        value: 'checkbox',
-                        child: Row(
-                          children: [
-                            Icon(
-                              checkedOrders[registerOrder.orderNo] ?? false
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text('With Image', style: TextStyle(fontSize: 14)),
-                          ],
+                        const PopupMenuItem<String>(
+                          value: 'whatsapp',
+                          child: Row(
+                            children: [
+                              FaIcon(
+                                FontAwesomeIcons.whatsapp,
+                                size: 20,
+                                color: Colors.blue, // Non-nullable
+                              ),
+                              SizedBox(width: 8),
+                              Text('WhatsApp', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'reportView',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.table_chart,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Report View',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                          ],
+                        const PopupMenuItem<String>(
+                          value: 'download',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.download,
+                                color: Colors.blue, // Non-nullable
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text('Download', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'whatsapp',
-                        child: Row(
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.whatsapp,
-                              size: 20,
-                              color: Colors.blue, // Non-nullable
-                            ),
-                            SizedBox(width: 8),
-                            Text('WhatsApp', style: TextStyle(fontSize: 14)),
-                          ],
+                        const PopupMenuItem<String>(
+                          value: 'view',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.visibility,
+                                color: Colors.blue, // Non-nullable
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text('View', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'download',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.download,
-                              color: Colors.blue, // Non-nullable
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text('Download', style: TextStyle(fontSize: 14)),
-                          ],
+                        const PopupMenuItem<String>(
+                          value: 'editBarcode',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit,
+                                color: Colors.blue, // Non-nullable
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Edit Barcode',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'view',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.visibility,
-                              color: Colors.blue, // Non-nullable
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text('View', style: TextStyle(fontSize: 14)),
-                          ],
+                        const PopupMenuItem<String>(
+                          value: 'edit2',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit,
+                                color: Colors.blue, // Non-nullable
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text('Edit ', style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'editBarcode',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit,
-                              color: Colors.blue, // Non-nullable
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Edit Barcode',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'edit2',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit,
-                              color: Colors.blue, // Non-nullable
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text('Edit ', style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    ],
-              ),
-        
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Second Row: Order Number, City, and Delivery Type
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Order Number Container
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color.fromRGBO(227, 242, 253, 1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: const Border.fromBorderSide(
-                      BorderSide(
-                        color: Color.fromRGBO(144, 202, 249, 1),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 60,
-                  ), // Minimum width
-                  child: _buildScaledRow(
-                    icon: Icons.receipt_long,
-                    text: registerOrder.orderNo,
-                    iconColor: Colors.blue,
-                    textColor: const Color.fromRGBO(21, 101, 192, 1),
-                  ),
+                      ],
                 ),
-              ),
-
-              // City Container
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color.fromRGBO(227, 242, 253, 1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: const Border.fromBorderSide(
-                      BorderSide(
-                        color: Color.fromRGBO(144, 202, 249, 1),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 60,
-                  ), // Minimum width
-                  child: _buildScaledText(
-                    text: registerOrder.city,
-                    textColor: const Color.fromRGBO(21, 101, 192, 1),
-                  ),
-                ),
-              ),
-
-              // Delivery Type Container
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: deliveryTextColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.fromBorderSide(
-                      BorderSide(color: deliveryBorderColor, width: 1),
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 80,
-                  ), // Wider minimum
-                  child: _buildScaledRow(
-                    icon: Icons.local_shipping,
-                    text: registerOrder.deliveryType,
-                    iconColor: deliveryIconColor,
-                    textColor: deliveryTextColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-          // Table for Additional Details
-          Table(
-            columnWidths: const {
-              0: FlexColumnWidth(2),
-              1: FlexColumnWidth(3),
-            },
-            border: TableBorder(
-              horizontalInside: const BorderSide(
-                color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
-                width: 1,
-              ),
-              verticalInside: const BorderSide(
-                color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
-                width: 1,
-              ),
+              ],
             ),
-            children: [
-              TableRow(
-                children: [
-                  Padding(
+            const SizedBox(height: 12),
+            // Second Row: Order Number, City, and Delivery Type
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Order Number Container
+                Flexible(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
+                      horizontal: 8.0,
+                      vertical: 4.0,
                     ),
-                    child: Text(
-                      'Date:',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(227, 242, 253, 1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: const Border.fromBorderSide(
+                        BorderSide(
+                          color: Color.fromRGBO(144, 202, 249, 1),
+                          width: 1,
+                        ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
+                    constraints: const BoxConstraints(
+                      minWidth: 60,
+                    ), // Minimum width
+                    child: _buildScaledRow(
+                      icon: Icons.receipt_long,
+                      text: registerOrder.orderNo,
+                      iconColor: Colors.blue,
+                      textColor: const Color.fromRGBO(21, 101, 192, 1),
                     ),
-                    child: Text(
-                      '${registerOrder.orderDate} ',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color.fromRGBO(
-                          21,
-                          101,
-                          192,
-                          1,
-                        ), // Blue[900]
+                  ),
+                ),
+
+                // City Container
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 4.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(227, 242, 253, 1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: const Border.fromBorderSide(
+                        BorderSide(
+                          color: Color.fromRGBO(144, 202, 249, 1),
+                          width: 1,
+                        ),
                       ),
                     ),
+                    constraints: const BoxConstraints(
+                      minWidth: 60,
+                    ), // Minimum width
+                    child: _buildScaledText(
+                      text: registerOrder.city,
+                      textColor: const Color.fromRGBO(21, 101, 192, 1),
+                    ),
                   ),
-                ],
+                ),
+
+                // Delivery Type Container
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 4.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: deliveryTextColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.fromBorderSide(
+                        BorderSide(color: deliveryBorderColor, width: 1),
+                      ),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 80,
+                    ), // Wider minimum
+                    child: _buildScaledRow(
+                      icon: Icons.local_shipping,
+                      text: registerOrder.deliveryType,
+                      iconColor: deliveryIconColor,
+                      textColor: deliveryTextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            // Table for Additional Details
+            Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(3),
+              },
+              border: TableBorder(
+                horizontalInside: const BorderSide(
+                  color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
+                  width: 1,
+                ),
+                verticalInside: const BorderSide(
+                  color: Color.fromRGBO(227, 242, 253, 1), // Blue[50]
+                  width: 1,
+                ),
               ),
-              TableRow(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
-                    ),
-                    child: Text(
-                      'Quantity:',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
-                    ),
-                    child: Text(
-                      '${registerOrder.quantity}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color.fromRGBO(
-                          21,
-                          101,
-                          192,
-                          1,
-                        ), // Blue[900]
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              TableRow(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
-                    ),
-                    child: Text(
-                      'Amount:',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
-                    ),
-                    child: Text(
-                      '₹${registerOrder.amount.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color.fromRGBO(
-                          21,
-                          101,
-                          192,
-                          1,
-                        ), // Blue[900]
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (registerOrder.salesPersonName.isNotEmpty)
+              children: [
                 TableRow(
                   children: [
                     Padding(
@@ -959,7 +854,7 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
                         horizontal: 8,
                       ),
                       child: Text(
-                        'Salesperson:',
+                        'Date:',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -973,7 +868,7 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
                         horizontal: 8,
                       ),
                       child: Text(
-                        registerOrder.salesPersonName,
+                        '${registerOrder.orderDate} ',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -988,13 +883,126 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
                     ),
                   ],
                 ),
-            ],
-          ),
-        ],
+                TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
+                      child: Text(
+                        'Quantity:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
+                      child: Text(
+                        '${registerOrder.quantity}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromRGBO(
+                            21,
+                            101,
+                            192,
+                            1,
+                          ), // Blue[900]
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
+                      child: Text(
+                        'Amount:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
+                      child: Text(
+                        '₹${registerOrder.amount.toStringAsFixed(2)}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromRGBO(
+                            21,
+                            101,
+                            192,
+                            1,
+                          ), // Blue[900]
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (registerOrder.salesPersonName.isNotEmpty)
+                  TableRow(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 8,
+                        ),
+                        child: Text(
+                          'Salesperson:',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 8,
+                        ),
+                        child: Text(
+                          registerOrder.salesPersonName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color.fromRGBO(
+                              21,
+                              101,
+                              192,
+                              1,
+                            ), // Blue[900]
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildScaledRow({
     required IconData icon,
     required String text,
@@ -1078,7 +1086,7 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
           'Order Register',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: AppColors.primaryColor, // Blue[700]
+        backgroundColor: AppColors.primaryColor,
         elevation: 1,
         leading: Builder(
           builder:
@@ -1087,6 +1095,98 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
         ),
+
+      actions: [
+  IconButton(
+    tooltip: "Filter Orders",
+    onPressed: () async {
+      await Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              RegisterFilterPage(
+                ledgerList: ledgerList,
+                salespersonList: salespersonList,
+                onApplyFilters: ({
+                  KeyName? selectedLedger,
+                  KeyName? selectedSalesperson,
+                  DateTime? fromDate,
+                  DateTime? toDate,
+                  DateTime? deliveryFromDate,
+                  DateTime? deliveryToDate,
+                  String? selectedOrderStatus,
+                  String? selectedDateRange,
+                }) {
+                  setState(() {
+                    this.selectedLedger = selectedLedger;
+                    this.selectedSalesperson = selectedSalesperson;
+                    this.fromDate = fromDate;
+                    this.toDate = toDate;
+                    this.deliveryFromDate = deliveryFromDate;
+                    this.deliveryToDate = deliveryToDate;
+                    this.selectedOrderStatus = selectedOrderStatus;
+
+                    activeFilterCount = 0;
+
+                    if (selectedLedger != null) activeFilterCount++;
+                    if (selectedSalesperson != null) activeFilterCount++;
+                    if (selectedOrderStatus != null &&
+                        selectedOrderStatus != 'All') activeFilterCount++;
+                    if (fromDate != null) activeFilterCount++;
+                    if (toDate != null) activeFilterCount++;
+                    if (deliveryFromDate != null) activeFilterCount++;
+                    if (deliveryToDate != null) activeFilterCount++;
+                  });
+
+                  fetchOrders();
+                },
+              ),
+          settings: RouteSettings(
+            arguments: {
+              'ledgerList': ledgerList,
+              'salespersonList': salespersonList,
+              'selectedLedger': selectedLedger,
+              'selectedSalesperson': selectedSalesperson,
+              'fromDate': fromDate,
+              'toDate': toDate,
+              'deliveryFromDate': deliveryFromDate,
+              'deliveryToDate': deliveryToDate,
+              'selectedOrderStatus': selectedOrderStatus,
+            },
+          ),
+        ),
+      );
+    },
+
+    icon: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.filter_list, color: Colors.white),
+
+        if (activeFilterCount > 0)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$activeFilterCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  ),
+],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20.0),
           child: Column(
@@ -1218,101 +1318,102 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
                   ),
                 ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 50),
-        child: FloatingActionButton(
-          backgroundColor: AppColors.primaryColor, // Blue[700]
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                    ) => RegisterFilterPage(
-                      ledgerList: ledgerList,
-                      salespersonList: salespersonList,
-                      onApplyFilters: ({
-                        KeyName? selectedLedger,
-                        KeyName? selectedSalesperson,
-                        DateTime? fromDate,
-                        DateTime? toDate,
-                        DateTime? deliveryFromDate,
-                        DateTime? deliveryToDate,
-                        String? selectedOrderStatus,
-                        String? selectedDateRange,
-                      }) {
-                        debugPrint(
-                          'Selected Ledger: ${selectedLedger?.name ?? 'None'}',
-                        );
-                        debugPrint(
-                          'Selected Salesperson: ${selectedSalesperson?.name ?? 'None'}',
-                        );
-                        debugPrint(
-                          'From Date: ${fromDate != null ? DateFormat('dd-MM-yyyy').format(fromDate) : 'Not selected'}',
-                        );
-                        debugPrint(
-                          'To Date: ${toDate != null ? DateFormat('dd-MM-yyyy').format(toDate) : 'Not selected'}',
-                        );
-                        debugPrint(
-                          'Delivery From Date: ${deliveryFromDate != null ? DateFormat('dd-MM-yyyy').format(deliveryFromDate) : 'Not selected'}',
-                        );
-                        debugPrint(
-                          'Delivery To Date: ${deliveryToDate != null ? DateFormat('dd-MM-yyyy').format(deliveryToDate) : 'Not selected'}',
-                        );
-                        debugPrint(
-                          'Order Status: ${selectedOrderStatus ?? 'Not selected'}',
-                        );
-                        debugPrint(
-                          'Date Range: ${selectedDateRange ?? 'Not selected'}',
-                        );
-                        setState(() {
-                          this.selectedLedger = selectedLedger;
-                          this.selectedSalesperson = selectedSalesperson;
-                          this.fromDate = fromDate;
-                          this.toDate = toDate;
-                          this.deliveryFromDate = deliveryFromDate;
-                          this.deliveryToDate = deliveryToDate;
-                          this.selectedOrderStatus = selectedOrderStatus;
-                        });
-                        fetchOrders();
-                      },
-                    ),
-                settings: RouteSettings(
-                  arguments: {
-                    'ledgerList': ledgerList,
-                    'salespersonList': salespersonList,
-                    'selectedLedger': selectedLedger,
-                    'selectedSalesperson': selectedSalesperson,
-                    'fromDate': fromDate,
-                    'toDate': toDate,
-                    'deliveryFromDate': deliveryFromDate,
-                    'deliveryToDate': deliveryToDate,
-                    'selectedOrderStatus': selectedOrderStatus,
-                  },
-                ),
-                transitionDuration: const Duration(milliseconds: 500),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  return ScaleTransition(
-                    scale: animation,
-                    alignment: Alignment.bottomRight,
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-              ),
-            );
-          },
-          tooltip: 'Filter Orders',
-          child: const Icon(Icons.filter_list, color: Colors.white),
-        ),
-      ),
+
+      // floatingActionButton: Padding(
+      //   padding: const EdgeInsets.only(bottom: 50),
+      //   child: FloatingActionButton(
+      //     backgroundColor: AppColors.primaryColor, // Blue[700]
+      //     onPressed: () async {
+      //       await Navigator.push(
+      //         context,
+      //         PageRouteBuilder(
+      //           pageBuilder:
+      //               (
+      //                 context,
+      //                 animation,
+      //                 secondaryAnimation,
+      //               ) => RegisterFilterPage(
+      //                 ledgerList: ledgerList,
+      //                 salespersonList: salespersonList,
+      //                 onApplyFilters: ({
+      //                   KeyName? selectedLedger,
+      //                   KeyName? selectedSalesperson,
+      //                   DateTime? fromDate,
+      //                   DateTime? toDate,
+      //                   DateTime? deliveryFromDate,
+      //                   DateTime? deliveryToDate,
+      //                   String? selectedOrderStatus,
+      //                   String? selectedDateRange,
+      //                 }) {
+      //                   debugPrint(
+      //                     'Selected Ledger: ${selectedLedger?.name ?? 'None'}',
+      //                   );
+      //                   debugPrint(
+      //                     'Selected Salesperson: ${selectedSalesperson?.name ?? 'None'}',
+      //                   );
+      //                   debugPrint(
+      //                     'From Date: ${fromDate != null ? DateFormat('dd-MM-yyyy').format(fromDate) : 'Not selected'}',
+      //                   );
+      //                   debugPrint(
+      //                     'To Date: ${toDate != null ? DateFormat('dd-MM-yyyy').format(toDate) : 'Not selected'}',
+      //                   );
+      //                   debugPrint(
+      //                     'Delivery From Date: ${deliveryFromDate != null ? DateFormat('dd-MM-yyyy').format(deliveryFromDate) : 'Not selected'}',
+      //                   );
+      //                   debugPrint(
+      //                     'Delivery To Date: ${deliveryToDate != null ? DateFormat('dd-MM-yyyy').format(deliveryToDate) : 'Not selected'}',
+      //                   );
+      //                   debugPrint(
+      //                     'Order Status: ${selectedOrderStatus ?? 'Not selected'}',
+      //                   );
+      //                   debugPrint(
+      //                     'Date Range: ${selectedDateRange ?? 'Not selected'}',
+      //                   );
+      //                   setState(() {
+      //                     this.selectedLedger = selectedLedger;
+      //                     this.selectedSalesperson = selectedSalesperson;
+      //                     this.fromDate = fromDate;
+      //                     this.toDate = toDate;
+      //                     this.deliveryFromDate = deliveryFromDate;
+      //                     this.deliveryToDate = deliveryToDate;
+      //                     this.selectedOrderStatus = selectedOrderStatus;
+      //                   });
+      //                   fetchOrders();
+      //                 },
+      //               ),
+      //           settings: RouteSettings(
+      //             arguments: {
+      //               'ledgerList': ledgerList,
+      //               'salespersonList': salespersonList,
+      //               'selectedLedger': selectedLedger,
+      //               'selectedSalesperson': selectedSalesperson,
+      //               'fromDate': fromDate,
+      //               'toDate': toDate,
+      //               'deliveryFromDate': deliveryFromDate,
+      //               'deliveryToDate': deliveryToDate,
+      //               'selectedOrderStatus': selectedOrderStatus,
+      //             },
+      //           ),
+      //           transitionDuration: const Duration(milliseconds: 500),
+      //           transitionsBuilder: (
+      //             context,
+      //             animation,
+      //             secondaryAnimation,
+      //             child,
+      //           ) {
+      //             return ScaleTransition(
+      //               scale: animation,
+      //               alignment: Alignment.bottomRight,
+      //               child: FadeTransition(opacity: animation, child: child),
+      //             );
+      //           },
+      //         ),
+      //       );
+      //     },
+      //     tooltip: 'Filter Orders',
+      //     child: const Icon(Icons.filter_list, color: Colors.white),
+      //   ),
+      // ),
     );
   }
 
