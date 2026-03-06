@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/booking2/booking2.dart';
 import 'package:vrs_erp/OrderBooking/booking2/booking3.dart';
 import 'package:vrs_erp/OrderBooking/booking2/multipleorderbooking.dart';
+import 'package:vrs_erp/catalog/dotIndicatorDesign.dart';
 import 'package:vrs_erp/catalog/filter.dart';
+import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
@@ -69,10 +71,9 @@ class _OrderPageState extends State<OrderPage> {
   String? name;
   String? type;
   String? transactionType;
-  
-   String? stockFilter;
-  String? imageFilter;
 
+  String? stockFilter;
+  String? imageFilter;
 
   @override
   void initState() {
@@ -118,6 +119,17 @@ class _OrderPageState extends State<OrderPage> {
         }
       }
     });
+  }
+
+  void _openImageZoom(List<String> imageUrls) {
+    if (imageUrls.isEmpty || imageUrls[0].isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageZoomScreen(imageUrls: imageUrls),
+      ),
+    );
   }
 
   Future<void> _fetchStylesByItemGrpKey(String itemGrpKey) async {
@@ -237,7 +249,7 @@ class _OrderPageState extends State<OrderPage> {
         fcYrId: UserSession.userFcYr ?? '',
         barcode: '',
       );
-      if (!mounted) return; 
+      if (!mounted) return;
       final cartModel = Provider.of<CartModel>(context, listen: false);
       cartModel.updateCount(data['cartItemCount'] ?? 0);
     } catch (e) {
@@ -286,8 +298,8 @@ class _OrderPageState extends State<OrderPage> {
         fromDate: fromDate.isEmpty ? null : fromDate,
         toDate: toDate.isEmpty ? null : toDate,
         brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
-              stockFilter: stockFilter == "" ? null : stockFilter,  // Add this
-      imageFilter: imageFilter == "" ? null : imageFilter,   // Add this
+        stockFilter: stockFilter == "" ? null : stockFilter, // Add this
+        imageFilter: imageFilter == "" ? null : imageFilter, // Add this
         pageNo: pageNo,
       );
 
@@ -426,60 +438,60 @@ class _OrderPageState extends State<OrderPage> {
             Navigator.pop(context);
           },
         ),
-      actions: [
-  isEdit
-      ? Container()
-      : IconButton(
-          icon: Stack(
-            children: [
-              const Icon(
-                CupertinoIcons.cart_badge_plus,
-                color: Colors.white,
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: Text(
-                    '${cartModel.count}',
-                    style: const TextStyle(
+        actions: [
+          isEdit
+              ? Container()
+              : IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(
+                      CupertinoIcons.cart_badge_plus,
                       color: Colors.white,
-                      fontSize: 8,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          '${cartModel.count}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                onPressed: () {
+                  String viewOrderRoute;
+
+                  if (AppConstants.bookingType == "1") {
+                    viewOrderRoute = '/viewOrder';
+                  } else if (AppConstants.bookingType == "2") {
+                    viewOrderRoute = '/viewOrder2';
+                  } else {
+                    viewOrderRoute = '/viewOrder'; // Default fallback
+                  }
+
+                  Navigator.pushNamed(
+                    context,
+                    viewOrderRoute,
+                    arguments: {'mrkDown': selectedParty?.splMkDown ?? 0.00},
+                  );
+                  _fetchCartCount();
+                },
               ),
-            ],
-          ),
-          onPressed: () {
-            String viewOrderRoute;
-            
-            if (AppConstants.bookingType == "1") {
-              viewOrderRoute = '/viewOrder';
-            } else if (AppConstants.bookingType == "2") {
-              viewOrderRoute = '/viewOrder2';
-            } else {
-              viewOrderRoute = '/viewOrder'; // Default fallback
-            }
-            
-            Navigator.pushNamed(
-              context,
-              viewOrderRoute,
-              arguments: {'mrkDown': selectedParty?.splMkDown ?? 0.00},
-            );
-            _fetchCartCount();
-          },
-        ),
 
           IconButton(
             icon: Icon(
@@ -656,81 +668,110 @@ class _OrderPageState extends State<OrderPage> {
           ),
         ],
       ),
-      body:SafeArea(
+      body: SafeArea(
         child: Column(
-        children: [
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isLargeScreen ? 16.0 : 8.0,
-                  vertical: 8.0,
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isLargeScreen ? 16.0 : 8.0,
+                    vertical: 8.0,
+                  ),
+                  child:
+                      isLoading
+                          ? Center(
+                            child: LoadingAnimationWidget.waveDots(
+                              color: AppColors.primaryColor,
+                              size: 30,
+                            ),
+                          )
+                          : hasError
+                          ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  errorMessage ?? "Failed to load items",
+                                  style: TextStyle(color: Colors.red),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      hasError = false;
+                                      pageNo = 1;
+                                      catalogItems.clear();
+                                    });
+                                    _fetchCatalogItems();
+                                  },
+                                  child: Text("Retry"),
+                                ),
+                              ],
+                            ),
+                          )
+                          : catalogItems.isEmpty
+                          ? Center(child: Text("No Item Available"))
+                          : LayoutBuilder(
+                            builder: (context, constraints) {
+                              if (viewOption == 0) {
+                                return _buildGridView(
+                                  constraints,
+                                  isLargeScreen,
+                                  isPortrait,
+                                );
+                              } else if (viewOption == 1) {
+                                return _buildListView(
+                                  constraints,
+                                  isLargeScreen,
+                                );
+                              }
+                              return _buildExpandedView(isLargeScreen);
+                            },
+                          ),
                 ),
-                child:
-                    isLoading
-                        ? Center(
-                          child: LoadingAnimationWidget.waveDots(
-                            color: AppColors.primaryColor,
-                            size: 30,
-                          ),
-                        )
-                        : hasError
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                errorMessage ?? "Failed to load items",
-                                style: TextStyle(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    hasError = false;
-                                    pageNo = 1;
-                                    catalogItems.clear();
-                                  });
-                                  _fetchCatalogItems();
-                                },
-                                child: Text("Retry"),
-                              ),
-                            ],
-                          ),
-                        )
-                        : catalogItems.isEmpty
-                        ? Center(child: Text("No Item Available"))
-                        : LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (viewOption == 0) {
-                              return _buildGridView(
-                                constraints,
-                                isLargeScreen,
-                                isPortrait,
-                              );
-                            } else if (viewOption == 1) {
-                              return _buildListView(constraints, isLargeScreen);
-                            }
-                            return _buildExpandedView(isLargeScreen);
-                          },
-                        ),
               ),
             ),
-          ),
-          _buildBottomButtons(isLargeScreen),
-        ],
-      ),
-    ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 50),
-        child: FloatingActionButton(
-          onPressed: _showFilterDialog,
-          backgroundColor: AppColors.primaryColor,
-          child: const Icon(Icons.filter_alt_outlined, color: Colors.white),
-          tooltip: 'Filter',
+            _buildBottomButtons(isLargeScreen),
+          ],
         ),
+      ),
+      floatingActionButton: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          FloatingActionButton(
+            onPressed: _showFilterDialog,
+            backgroundColor:
+                _getActiveFilterCount() > 0
+                    ? Colors.pink
+                    : AppColors.primaryColor,
+            child: Icon(Icons.filter_alt, color: Colors.white),
+            tooltip: 'Filter',
+          ),
+          if (_getActiveFilterCount() > 0)
+            Positioned(
+              right: 0,
+              top: -5,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.pink,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  '${_getActiveFilterCount()}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -812,6 +853,7 @@ class _OrderPageState extends State<OrderPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Replace the current image section (around line 326-348) with:
                         Flexible(
                           flex: 2,
                           child: ClipRRect(
@@ -823,33 +865,74 @@ class _OrderPageState extends State<OrderPage> {
                               builder: (context, constraints) {
                                 final maxImageHeight =
                                     constraints.maxWidth * 1.2;
+                                final imageUrls = _getImageUrls(item);
+                                final ValueNotifier<int> currentImageIndex =
+                                    ValueNotifier<int>(0);
+
                                 return ConstrainedBox(
                                   constraints: BoxConstraints(
                                     maxHeight: maxImageHeight,
                                   ),
-                                  child: SizedBox(
-                                    height: maxImageHeight,
-                                    width: double.infinity,
-                                    child: Center(
-                                      child: Image.network(
-                                        _getImageUrl(item),
-                                        fit: BoxFit.contain,
-                                        width: double.infinity,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return Container(
-                                            color: Colors.grey.shade300,
-                                            child: const Center(
-                                              child: Icon(Icons.error),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
+                                  child:
+                                      imageUrls.isNotEmpty &&
+                                              imageUrls[0].isNotEmpty
+                                          ? // Replace the current Stack containing the PageView with:
+                                          Stack(
+                                            children: [
+                                              GestureDetector(
+                                                onDoubleTap:
+                                                    () => _openImageZoom(
+                                                      imageUrls,
+                                                    ),
+                                                child: SizedBox(
+                                                  height: maxImageHeight,
+                                                  width: double.infinity,
+                                                  child: PageView.builder(
+                                                    itemCount: imageUrls.length,
+                                                    onPageChanged: (index) {
+                                                      currentImageIndex.value =
+                                                          index;
+                                                    },
+                                                    itemBuilder: (
+                                                      context,
+                                                      index,
+                                                    ) {
+                                                      return _buildSingleImage(
+                                                        imageUrls[index],
+                                                        maxImageHeight,
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                              if (imageUrls.length > 1)
+                                                Positioned(
+                                                  bottom: 8,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: ValueListenableBuilder<
+                                                    int
+                                                  >(
+                                                    valueListenable:
+                                                        currentImageIndex,
+                                                    builder: (
+                                                      context,
+                                                      index,
+                                                      child,
+                                                    ) {
+                                                      return DotIndicator(
+                                                        count: imageUrls.length,
+                                                        currentIndex: index,
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                            ],
+                                          )
+                                          : _buildSingleImage(
+                                            '',
+                                            maxImageHeight,
+                                          ),
                                 );
                               },
                             ),
@@ -1085,23 +1168,59 @@ class _OrderPageState extends State<OrderPage> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final maxImageHeight = constraints.maxWidth * 1.2;
+                          final imageUrls = _getImageUrls(item);
+                          final ValueNotifier<int> currentImageIndex =
+                              ValueNotifier<int>(0);
+
                           return ConstrainedBox(
                             constraints: BoxConstraints(
                               maxHeight: maxImageHeight,
                               minHeight: constraints.maxWidth,
                             ),
-                            child: Image.network(
-                              _getImageUrl(item),
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Center(child: Icon(Icons.error)),
-                                );
-                              },
-                            ),
+                            child:
+                                imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
+                                    ? // Replace the current Stack with:
+                                    Stack(
+                                      children: [
+                                        GestureDetector(
+                                          onDoubleTap:
+                                              () => _openImageZoom(imageUrls),
+                                          child: SizedBox(
+                                            height: maxImageHeight,
+                                            width: double.infinity,
+                                            child: PageView.builder(
+                                              itemCount: imageUrls.length,
+                                              onPageChanged: (index) {
+                                                currentImageIndex.value = index;
+                                              },
+                                              itemBuilder: (context, index) {
+                                                return _buildSingleImage(
+                                                  imageUrls[index],
+                                                  maxImageHeight,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        if (imageUrls.length > 1)
+                                          Positioned(
+                                            bottom: 8,
+                                            left: 0,
+                                            right: 0,
+                                            child: ValueListenableBuilder<int>(
+                                              valueListenable:
+                                                  currentImageIndex,
+                                              builder: (context, index, child) {
+                                                return DotIndicator(
+                                                  count: imageUrls.length,
+                                                  currentIndex: index,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                      ],
+                                    )
+                                    : _buildSingleImage('', maxImageHeight),
                           );
                         },
                       ),
@@ -1292,25 +1411,55 @@ class _OrderPageState extends State<OrderPage> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final maxImageHeight = constraints.maxWidth * 1.2;
+                    final imageUrls = _getImageUrls(item);
+                    final ValueNotifier<int> currentImageIndex =
+                        ValueNotifier<int>(0);
+
                     return ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: maxImageHeight),
-                      child: SizedBox(
-                        height: maxImageHeight,
-                        width: double.infinity,
-                        child: Center(
-                          child: Image.network(
-                            _getImageUrl(item),
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade300,
-                                child: const Center(child: Icon(Icons.error)),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
+                      child:
+                          imageUrls.isNotEmpty && imageUrls[0].isNotEmpty
+                              ? // Replace the current Stack with:
+                              Stack(
+                                children: [
+                                  GestureDetector(
+                                    onDoubleTap:
+                                        () => _openImageZoom(imageUrls),
+                                    child: SizedBox(
+                                      height: maxImageHeight,
+                                      width: double.infinity,
+                                      child: PageView.builder(
+                                        itemCount: imageUrls.length,
+                                        onPageChanged: (index) {
+                                          currentImageIndex.value = index;
+                                        },
+                                        itemBuilder: (context, index) {
+                                          return _buildSingleImage(
+                                            imageUrls[index],
+                                            maxImageHeight,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  if (imageUrls.length > 1)
+                                    Positioned(
+                                      bottom: 8,
+                                      left: 0,
+                                      right: 0,
+                                      child: ValueListenableBuilder<int>(
+                                        valueListenable: currentImageIndex,
+                                        builder: (context, index, child) {
+                                          return DotIndicator(
+                                            count: imageUrls.length,
+                                            currentIndex: index,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                ],
+                              )
+                              : _buildSingleImage('', maxImageHeight),
                     );
                   },
                 ),
@@ -1540,11 +1689,13 @@ class _OrderPageState extends State<OrderPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onPressed: () {
+                final currentArgs = ModalRoute.of(context)?.settings.arguments;
                 Widget screen;
 
                 if (AppConstants.bookingType == "1") {
                   screen = MultiCatalogBookingPage(
                     catalogs: selectedItems,
+                    routeArguments: currentArgs as Map<String, dynamic>?,
                     onSuccess: () {
                       setState(() {
                         selectedItems.clear();
@@ -1559,6 +1710,7 @@ class _OrderPageState extends State<OrderPage> {
                 } else if (AppConstants.bookingType == "2") {
                   screen = CreateOrderScreen(
                     catalogs: selectedItems,
+                    routeArguments: currentArgs as Map<String, dynamic>?,
                     onSuccess: () {
                       setState(() {
                         selectedItems.clear();
@@ -1573,6 +1725,7 @@ class _OrderPageState extends State<OrderPage> {
                 } else {
                   screen = CreateOrderScreen3(
                     catalogs: selectedItems,
+                    // routeArguments: currentArgs as Map<String, dynamic>?,
                     onSuccess: () {
                       setState(() {
                         selectedItems.clear();
@@ -1714,104 +1867,143 @@ class _OrderPageState extends State<OrderPage> {
     ];
   }
 
-  String _getImageUrl(Catalog catalog) {
-    if (UserSession.onlineImage == '0') {
-      final imagePath = catalog.fullImagePath ?? '';
-      final imageName = imagePath.split('/').last.split('?').first;
-      if (imageName.isEmpty) {
-        return '';
+  List<String> _getImageUrls(Catalog catalog) {
+    final shadeImages = catalog.shadeImages ?? '';
+    final fullImagePath = catalog.fullImagePath ?? '';
+
+    List<String> imageUrls = [];
+
+    // Add full image path first
+    if (fullImagePath.isNotEmpty) {
+      if (UserSession.onlineImage == '1') {
+        imageUrls.add(fullImagePath);
+      } else {
+        final fileName =
+            fullImagePath.split('/').last.split('\\').last.split('?').first;
+        if (fileName.isNotEmpty) {
+          imageUrls.add('${AppConstants.BASE_URL}/images/$fileName');
+        }
       }
-      return '${AppConstants.BASE_URL}/images/$imageName';
-    } else if (UserSession.onlineImage == '1') {
-      return catalog.fullImagePath ?? '';
     }
-    return '';
+
+    // Add shade images if imageDependsOn == 'S'
+    if (UserSession.imageDependsOn == 'S' && shadeImages.isNotEmpty) {
+      final imageEntries =
+          shadeImages.split(',').map((entry) => entry.trim()).toList();
+
+      for (var entry in imageEntries) {
+        final parts = entry.split(':');
+        if (parts.length < 2) continue;
+
+        final path = parts.sublist(1).join(':').trim();
+        if (path.isEmpty) continue;
+
+        final fileName = path.split('/').last.split('\\').last;
+        if (fileName.isEmpty) continue;
+
+        if (UserSession.onlineImage == '1') {
+          imageUrls.add(
+            path.startsWith('http')
+                ? path
+                : '${AppConstants.BASE_URL}/images/$fileName',
+          );
+        } else {
+          imageUrls.add('${AppConstants.BASE_URL}/images/$fileName');
+        }
+      }
+    }
+
+    // If no images, return placeholder
+    if (imageUrls.isEmpty) {
+      return [''];
+    }
+
+    return imageUrls;
   }
 
-void _showFilterDialog() async {
-  final result = await Navigator.push(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
-      settings: RouteSettings(
-        arguments: {
-          'itemKey': itemKey,
-          'itemSubGrpKey': itemSubGrpKey,
-          'coBr': coBr,
-          'fcYrId': fcYrId,
-          'styles': styles,
-          'shades': shades,
-          'sizes': sizes,
-          'selectedShades': selectedShades,
-          'selectedSizes': selectedSize,
-          'selectedStyles': selectedStyles,
-          'fromMRP': fromMRP,
-          'toMRP': toMRP,
-          'WSPfrom': WSPfrom,
-          'WSPto': WSPto,
-          'sortBy': sortBy,
-          'fromDate': fromDate,
-          'toDate': toDate,
-          'brands': brands.isEmpty ? [] : brands,
-          'stockFilter': stockFilter,  // Add this
-          'imageFilter': imageFilter,   // Add this
+  int _getActiveFilterCount() {
+    int count = 0;
+    if (selectedStyles.isNotEmpty) count++;
+    if (selectedShades.isNotEmpty) count++;
+    if (selectedSize.isNotEmpty) count++;
+    if (selectedBrands.isNotEmpty) count++;
+    if (fromMRP.isNotEmpty || toMRP.isNotEmpty) count++;
+    if (WSPfrom.isNotEmpty || WSPto.isNotEmpty) count++;
+    if (fromDate.isNotEmpty || toDate.isNotEmpty) count++;
+    if (sortBy != null && sortBy!.isNotEmpty) count++;
+    if (stockFilter != null && stockFilter!.isNotEmpty && stockFilter != '')
+      count++;
+    if (imageFilter != null && imageFilter!.isNotEmpty && imageFilter != 'All')
+      count++;
+    return count;
+  }
+
+  void _showFilterDialog() async {
+    final result = await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => FilterPage(),
+        settings: RouteSettings(
+          arguments: {
+            'itemKey': itemKey,
+            'itemSubGrpKey': itemSubGrpKey,
+            'coBr': coBr,
+            'fcYrId': fcYrId,
+            'styles': styles,
+            'shades': shades,
+            'sizes': sizes,
+            'selectedShades': selectedShades,
+            'selectedSizes': selectedSize,
+            'selectedStyles': selectedStyles,
+            'selectedBrands': selectedBrands,
+            'fromMRP': fromMRP,
+            'toMRP': toMRP,
+            'WSPfrom': WSPfrom,
+            'WSPto': WSPto,
+            'sortBy': sortBy,
+            'fromDate': fromDate,
+            'toDate': toDate,
+            'brands': brands,
+            'stockFilter': stockFilter,
+            'imageFilter': imageFilter,
+          },
+        ),
+        transitionDuration: Duration(milliseconds: 500),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return ScaleTransition(
+            scale: animation,
+            alignment: Alignment.bottomRight,
+            child: FadeTransition(opacity: animation, child: child),
+          );
         },
       ),
-      transitionDuration: Duration(milliseconds: 500),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return ScaleTransition(
-          scale: animation,
-          alignment: Alignment.bottomRight,
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
-    ),
-  );
+    );
 
-  if (result != null) {
-    Map<String, dynamic> selectedFilters = result;
-    setState(() {
-      selectedStyles = selectedFilters['styles'];
-      selectedSize = selectedFilters['sizes'];
-      selectedShades = selectedFilters['shades'];
-      fromMRP = selectedFilters['fromMRP'];
-      toMRP = selectedFilters['toMRP'];
-      WSPfrom = selectedFilters['WSPfrom'];
-      WSPto = selectedFilters['WSPto'];
-      sortBy = selectedFilters['sortBy'];
-      fromDate = selectedFilters['fromDate'];
-      toDate = selectedFilters['toDate'];
-      stockFilter = selectedFilters['stockFilter'];  // Add this
-      imageFilter = selectedFilters['imageFilter'];   // Add this
-      
-      // Reset pagination
-      pageNo = 1;
-      catalogItems = [];
-      hasMore = true;
-    });
-    
-    print("fromDate  ${selectedFilters['fromDate']}");
-    print("todate  ${selectedFilters['toDate']}");
-    print("stockFilter  ${selectedFilters['stockFilter']}");  // Add this
-    print("imageFilter  ${selectedFilters['imageFilter']}");   // Add this
-    
-    if (!(selectedStyles.isEmpty &&
-        selectedSize.isEmpty &&
-        selectedShades.isEmpty &&
-        fromMRP == "" &&
-        toMRP == "" &&
-        WSPfrom == "" &&
-        WSPto == "" &&
-        selectedBrands.isEmpty &&
-        sortBy == "" &&
-        fromDate == "" &&
-        toDate == "" &&
-        stockFilter == "" &&  // Add this
-        imageFilter == "")) {  // Add this
+    if (result != null) {
+      setState(() {
+        selectedStyles = result['styles'] ?? [];
+        selectedSize = result['sizes'] ?? [];
+        selectedShades = result['shades'] ?? [];
+        selectedBrands = result['brands'] ?? [];
+        fromMRP = result['fromMRP'] ?? "";
+        toMRP = result['toMRP'] ?? "";
+        WSPfrom = result['WSPfrom'] ?? "";
+        WSPto = result['WSPto'] ?? "";
+        sortBy = result['sortBy'];
+        fromDate = result['fromDate'] ?? "";
+        toDate = result['toDate'] ?? "";
+        stockFilter = result['stockFilter'];
+        imageFilter = result['imageFilter'];
+
+        // Reset pagination
+        pageNo = 1;
+        catalogItems.clear();
+        hasMore = true;
+      });
+
       _fetchCatalogItems();
     }
   }
-}
   // void _showBookingDialog(BuildContext context, Catalog item, String typee) {
   //   debugPrint(typee);
   //   showDialog(
@@ -1841,94 +2033,122 @@ void _showFilterDialog() async {
   //   );
   // }
 
+  void _showBookingDialog(BuildContext context, Catalog item, String typee) {
+    debugPrint(typee);
+    final currentArgs = ModalRoute.of(context)?.settings.arguments;
+    // Close any existing dialogs first
+    Navigator.of(context).pop();
 
-void _showBookingDialog(BuildContext context, Catalog item, String typee) {
-  debugPrint(typee);
-  
-  // Close any existing dialogs first
-  Navigator.of(context).pop();
-  
-  // Determine which screen to show based on bookingType
-  Widget screen;
-  
-  if (AppConstants.bookingType == "1") {
-    // For bookingType "1", show MultiCatalogBookingPage with single item
-    screen = MultiCatalogBookingPage(
-      catalogs: [item],
-  onSuccess: () {
-  if (!mounted) return;
+    // Determine which screen to show based on bookingType
+    Widget screen;
 
-  setState(() {
-    selectedItems.remove(item);
-  });
+    if (AppConstants.bookingType == "1") {
+      // For bookingType "1", show MultiCatalogBookingPage with single item
+      screen = MultiCatalogBookingPage(
+        catalogs: [item],
+        routeArguments: currentArgs as Map<String, dynamic>?,
+        onSuccess: () {
+          if (!mounted) return;
 
-  if (!isEdit) {
-    Provider.of<CartModel>(context, listen: false)
-        .addItem(item.styleCode);
+          setState(() {
+            selectedItems.remove(item);
+          });
 
-    _fetchCartCount();
+          if (!isEdit) {
+            Provider.of<CartModel>(
+              context,
+              listen: false,
+            ).addItem(item.styleCode);
 
-    Provider.of<CartModel>(context, listen: false)
-        .refreshAddedItems();
+            _fetchCartCount();
+
+            Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+          }
+        },
+      );
+    } else if (AppConstants.bookingType == "2") {
+      // For bookingType "2", show CreateOrderScreen with single item
+      screen = CreateOrderScreen(
+        catalogs: [item],
+        routeArguments: currentArgs as Map<String, dynamic>?,
+        onSuccess: () {
+          if (!mounted) return;
+
+          setState(() {
+            selectedItems.remove(item);
+          });
+
+          if (!isEdit) {
+            Provider.of<CartModel>(
+              context,
+              listen: false,
+            ).addItem(item.styleCode);
+
+            _fetchCartCount();
+
+            Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+          }
+        },
+      );
+    } else {
+      // For bookingType "3" or default, show CreateOrderScreen3 with single item
+      screen = CreateOrderScreen3(
+        catalogs: [item],
+        onSuccess: () {
+          if (!mounted) return;
+
+          setState(() {
+            selectedItems.remove(item);
+          });
+
+          if (!isEdit) {
+            Provider.of<CartModel>(
+              context,
+              listen: false,
+            ).addItem(item.styleCode);
+
+            _fetchCartCount();
+
+            Provider.of<CartModel>(context, listen: false).refreshAddedItems();
+          }
+        },
+      );
+    }
+
+    // Navigate to the appropriate screen
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
-}
-    );
-  } else if (AppConstants.bookingType == "2") {
-    // For bookingType "2", show CreateOrderScreen with single item
-    screen = CreateOrderScreen(
-      catalogs: [item],
-    onSuccess: () {
-  if (!mounted) return;
 
-  setState(() {
-    selectedItems.remove(item);
-  });
-
-  if (!isEdit) {
-    Provider.of<CartModel>(context, listen: false)
-        .addItem(item.styleCode);
-
-    _fetchCartCount();
-
-    Provider.of<CartModel>(context, listen: false)
-        .refreshAddedItems();
-  }
-}
-    );
-  } else {
-    // For bookingType "3" or default, show CreateOrderScreen3 with single item
-    screen = CreateOrderScreen3(
-      catalogs: [item],
-    onSuccess: () {
-  if (!mounted) return;
-
-  setState(() {
-    selectedItems.remove(item);
-  });
-
-  if (!isEdit) {
-    Provider.of<CartModel>(context, listen: false)
-        .addItem(item.styleCode);
-
-    _fetchCartCount();
-
-    Provider.of<CartModel>(context, listen: false)
-        .refreshAddedItems();
-  }
-}
-    );
-  }
-  
-  // Navigate to the appropriate screen
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => screen),
-  );
-}
   Widget _buildToggleRow(String title, bool value, Function(bool) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [Text(title), Switch(value: value, onChanged: onChanged)],
+    );
+  }
+
+  Widget _buildSingleImage(String imageUrl, double maxHeight) {
+    return SizedBox(
+      height: maxHeight,
+      width: double.infinity,
+      child: Center(
+        child:
+            imageUrl.isNotEmpty
+                ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: const Center(child: Icon(Icons.error)),
+                    );
+                  },
+                )
+                : Container(
+                  color: Colors.grey.shade300,
+                  child: const Center(child: Icon(Icons.image_not_supported)),
+                ),
+      ),
     );
   }
 }

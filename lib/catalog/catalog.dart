@@ -68,6 +68,8 @@ class _CatalogPageState extends State<CatalogPage> {
   bool showFullSizeDetails = false;
   String sortBy = "";
   String fromDate = "";
+  String? stockFilter;
+  String? imageFilter;
   String toDate = "";
   List<Brand> brands = [];
   List<Brand> selectedBrands = [];
@@ -243,7 +245,6 @@ class _CatalogPageState extends State<CatalogPage> {
         itemKey: itemKey,
         cobr: coBr!,
         sortBy: sortBy,
-        // styleKey: selectedStyles.length == 1 ? selectedStyles[0].styleKey : null,
         styleKey:
             selectedStyles.isEmpty
                 ? null
@@ -261,18 +262,16 @@ class _CatalogPageState extends State<CatalogPage> {
         fromDate: fromDate == "" ? null : fromDate,
         toDate: toDate == "" ? null : toDate,
         brandKey: selectedBrands.isEmpty ? null : selectedBrands[0].brandKey,
+        stockFilter: stockFilter == "" ? null : stockFilter, // ADD THIS
+        imageFilter: imageFilter == "" ? null : imageFilter, // ADD THIS
         pageNo: pageNo,
       );
 
-      // print('Full API Response: ${jsonEncode(result)}'); // Log raw JSON
       final List<Catalog> items = result["catalogs"] as List<Catalog>;
-      // print(
-      //   'Catalog Items: ${items.map((e) => {'styleCode': e.styleCode, 'ShadeImages': e.shadeImages, 'fullImagePath': e.fullImagePath ?? ''}).toList()}',
-      // );
 
       setState(() {
         catalogItems.addAll(items);
-        total = result["total"] ?? items.length; // Adjust based on API response
+        total = result["total"] ?? items.length;
         isLoading = false;
         isLoadingMore = false;
         hasMore = items.length >= pageSize;
@@ -285,7 +284,6 @@ class _CatalogPageState extends State<CatalogPage> {
       });
     }
   }
-
   // Future<void> _fetchStylesByItemGrpKey(String itemKey) async {
   //   try {
   //     final fetchedStyles = await ApiService.fetchStylesByItem(itemKey);
@@ -390,6 +388,23 @@ class _CatalogPageState extends State<CatalogPage> {
         .split(' ')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
+  }
+
+  int _getActiveFilterCount() {
+    int count = 0;
+    if (selectedStyles.isNotEmpty) count++;
+    if (selectedShades.isNotEmpty) count++;
+    if (selectedSize.isNotEmpty) count++;
+    if (selectedBrands.isNotEmpty) count++;
+    if (fromMRP.isNotEmpty || toMRP.isNotEmpty) count++;
+    if (WSPfrom.isNotEmpty || WSPto.isNotEmpty) count++;
+    if (fromDate.isNotEmpty || toDate.isNotEmpty) count++;
+    if (sortBy != null && sortBy!.isNotEmpty) count++;
+    if (stockFilter != null && stockFilter!.isNotEmpty && stockFilter != '')
+      count++;
+    if (imageFilter != null && imageFilter!.isNotEmpty && imageFilter != 'All')
+      count++;
+    return count;
   }
 
   @override
@@ -695,12 +710,42 @@ class _CatalogPageState extends State<CatalogPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showFilterDialog,
-        backgroundColor: AppColors.primaryColor,
-        child: Icon(Icons.filter_alt_outlined, color: Colors.white),
-        tooltip: 'Filter',
+      floatingActionButton: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          FloatingActionButton(
+            onPressed: _showFilterDialog,
+            backgroundColor:
+                _getActiveFilterCount() > 0
+                    ? Colors.pink
+                    : AppColors.primaryColor,
+            child: Icon(Icons.filter_alt_outlined, color: Colors.white),
+            tooltip: 'Filter',
+          ),
+          if (_getActiveFilterCount() > 0)
+            Positioned(
+              right: 0,
+              top: -5,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.pink,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  '${_getActiveFilterCount()}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
+    
       bottomNavigationBar: BottomNavigationWidget(currentScreen: '/catalog'),
       // bottomNavigationBar: BottomNavigationWidget(
       //   currentIndex: 1,
@@ -1793,58 +1838,61 @@ class _CatalogPageState extends State<CatalogPage> {
   //   return '';
   // }
 
-List<String> _getImageUrl(Catalog catalog) {
-  final shadeImages = catalog.shadeImages ?? '';
-  final fullImagePath = catalog.fullImagePath ?? '';
-  
-  print('ShadeImages for catalog ${catalog.styleCode}: $shadeImages');
-  print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
-  print('Base URL: ${AppConstants.BASE_URL}');
-  print('imageDependsOn: ${UserSession.imageDependsOn}');
+  List<String> _getImageUrl(Catalog catalog) {
+    final shadeImages = catalog.shadeImages ?? '';
+    final fullImagePath = catalog.fullImagePath ?? '';
 
-  List<String> imageUrls = [];
+    print('ShadeImages for catalog ${catalog.styleCode}: $shadeImages');
+    print('fullImagePath for catalog ${catalog.styleCode}: $fullImagePath');
+    print('Base URL: ${AppConstants.BASE_URL}');
+    print('imageDependsOn: ${UserSession.imageDependsOn}');
 
-  // Always add full image path first if it exists
-  if (fullImagePath.isNotEmpty) {
-    if (UserSession.onlineImage == '1') {
-      // fullImagePath is already a full URL
-      imageUrls.add(fullImagePath);
-    } else {
-      // Extract image name and construct URL
-      final fileName = fullImagePath.split('/').last.split('\\').last.split('?').first;
-      if (fileName.isNotEmpty) {
+    List<String> imageUrls = [];
+
+    // Always add full image path first if it exists
+    if (fullImagePath.isNotEmpty) {
+      if (UserSession.onlineImage == '1') {
+        // fullImagePath is already a full URL
+        imageUrls.add(fullImagePath);
+      } else {
+        // Extract image name and construct URL
+        final fileName =
+            fullImagePath.split('/').last.split('\\').last.split('?').first;
+        if (fileName.isNotEmpty) {
+          final url = '${AppConstants.BASE_URL}/images/$fileName';
+          imageUrls.add(url);
+        }
+      }
+    }
+
+    // Add shade images if imageDependsOn == 'S' and shadeImages exist
+    if (UserSession.imageDependsOn == 'S' && shadeImages.isNotEmpty) {
+      final imageEntries =
+          shadeImages.split(',').map((entry) => entry.trim()).toList();
+
+      for (var entry in imageEntries) {
+        final parts = entry.split(':');
+        if (parts.length < 2) continue;
+
+        final path = parts.sublist(1).join(':').trim();
+        if (path.isEmpty) continue;
+
+        final fileName = path.split('/').last.split('\\').last;
+        if (fileName.isEmpty) continue;
+
         final url = '${AppConstants.BASE_URL}/images/$fileName';
         imageUrls.add(url);
       }
     }
-  }
 
-  // Add shade images if imageDependsOn == 'S' and shadeImages exist
-  if (UserSession.imageDependsOn == 'S' && shadeImages.isNotEmpty) {
-    final imageEntries = shadeImages.split(',').map((entry) => entry.trim()).toList();
-    
-    for (var entry in imageEntries) {
-      final parts = entry.split(':');
-      if (parts.length < 2) continue;
-      
-      final path = parts.sublist(1).join(':').trim();
-      if (path.isEmpty) continue;
-      
-      final fileName = path.split('/').last.split('\\').last;
-      if (fileName.isEmpty) continue;
-      
-      final url = '${AppConstants.BASE_URL}/images/$fileName';
-      imageUrls.add(url);
+    // If no images were added, return a placeholder
+    if (imageUrls.isEmpty) {
+      return [''];
     }
+
+    return imageUrls;
   }
 
-  // If no images were added, return a placeholder
-  if (imageUrls.isEmpty) {
-    return [''];
-  }
-
-  return imageUrls;
-}
   void _showFilterDialog() async {
     final result = await Navigator.push(
       context,
@@ -1862,6 +1910,7 @@ List<String> _getImageUrl(Catalog catalog) {
             'selectedShades': selectedShades,
             'selectedSizes': selectedSize,
             'selectedStyles': selectedStyles,
+            'selectedBrands': selectedBrands, // ADD THIS
             'fromMRP': fromMRP,
             'toMRP': toMRP,
             'WSPfrom': WSPfrom,
@@ -1870,7 +1919,8 @@ List<String> _getImageUrl(Catalog catalog) {
             'fromDate': fromDate,
             'toDate': toDate,
             'brands': brands.isEmpty ? [] : brands,
-            // 'selectedBrands': selectedBrands,
+            'stockFilter': stockFilter, // ADD THIS
+            'imageFilter': imageFilter, // ADD THIS
           },
         ),
         transitionDuration: Duration(milliseconds: 500),
@@ -1885,1109 +1935,1116 @@ List<String> _getImageUrl(Catalog catalog) {
     );
 
     if (result != null) {
-      Map<String, dynamic> selectedFilters = result;
       setState(() {
-        selectedStyles = selectedFilters['styles'];
-        selectedSize = selectedFilters['sizes'];
-        selectedShades = selectedFilters['shades'];
-        fromMRP = selectedFilters['fromMRP'];
-        toMRP = selectedFilters['toMRP'];
-        WSPfrom = selectedFilters['WSPfrom'];
-        WSPto = selectedFilters['WSPto'];
-        sortBy = selectedFilters['sortBy'];
-        fromDate = selectedFilters['fromDate'];
-        toDate = selectedFilters['toDate'];
-        //selectedBrands = selectedFilters['selectedBrands'];
+        selectedStyles = result['styles'] ?? [];
+        selectedSize = result['sizes'] ?? [];
+        selectedShades = result['shades'] ?? [];
+        selectedBrands = result['brands'] ?? []; // ADD THIS
+        fromMRP = result['fromMRP'] ?? "";
+        toMRP = result['toMRP'] ?? "";
+        WSPfrom = result['WSPfrom'] ?? "";
+        WSPto = result['WSPto'] ?? "";
+        sortBy = result['sortBy'];
+        fromDate = result['fromDate'] ?? "";
+        toDate = result['toDate'] ?? "";
+        stockFilter = result['stockFilter']; // ADD THIS
+        imageFilter = result['imageFilter']; // ADD THIS
+
         // Reset pagination
         pageNo = 1;
         catalogItems = [];
         hasMore = true;
       });
-      print("fromDate  ${selectedFilters['fromDate']}");
-      print("todate  ${selectedFilters['toDate']}");
-      print("aaaaaaaa  ${selectedFilters['styles']}");
-      print("aaaaaaaa  ${selectedFilters['WSPfrom']}");
-      print("aaaaaaaa  ${selectedFilters['WSPto']}");
-      print("aaaaaaaa  ${selectedFilters['styles']}");
-      if (!(selectedStyles.isEmpty &&
-          selectedSize.isEmpty &&
-          selectedShades.isEmpty &&
-          fromMRP == "" &&
-          toMRP == "" &&
-          WSPfrom == "" &&
-          WSPto == "" &&
-          selectedBrands.isEmpty &&
-          sortBy == "" &&
-          fromDate == "" &&
-          toDate == "")) {
-        _fetchCatalogItems();
-      }
+
+      _fetchCatalogItems();
     }
   }
 
-Future<void> _shareSelectedItemsPDF({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
-
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Sharing PDF .....'),
-          ],
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    final tempDir = await getTemporaryDirectory();
-    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-    List<Map<String, dynamic>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      // Get all image URLs for this item
-      final allImageUrls = _getImageUrl(item);
-      
-      // Get shade list
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
-      
-      print('Processing item: ${item.styleCode}');
-      print('All Image URLs: $allImageUrls');
-      print('Shade List: $shadeList');
-      print('shadeWiseImage option: $shadeWiseImage');
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        // ===== SHADE WISE IMAGE MODE =====
-        // Send ONLY shade images, exclude main image
-        
-        if (allImageUrls.length == 1) {
-          // TYPE 1: Only one image available (main image)
-          // Since no shade images exist, don't send anything for this item
-          print('No shade images available for ${item.styleCode}');
-          continue;
-          
-        } else if (allImageUrls.length > 1) {
-          // TYPE 2: Multiple images available (main + shade images)
-          // Skip the first image (index 0) which is the main image
-          // Only add shade images starting from index 1
-          
-          if (shadeList.isNotEmpty) {
-            // Add shade images with their corresponding shades
-            int shadeImagesCount = allImageUrls.length - 1; // Number of shade images
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1; // Start from second image (index 1)
-              if (imageIndex < allImageUrls.length) {
-                // Determine which shade this image belongs to
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  // We have a matching shade for this image
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  // More images than shades, use empty or first shade for remaining images
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-                
-                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade, // Specific shade for this image
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
-          } else {
-            // No shades available, add remaining images with empty shade
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '', // Empty shade
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
-              }
-            }
-          }
-        }
-      } else {
-        // ===== NORMAL MODE (not shade wise) =====
-        // Send ONLY the first/main image for each item
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '', // Include shade if enabled
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          catalogItems.add(catalogItem);
-        }
-      }
-    }
-
-    // If no catalog items after filtering, show message
-    if (catalogItems.isEmpty) {
+  Future<void> _shareSelectedItemsPDF({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No images to share based on selection')),
+        const SnackBar(content: Text('Please select items to share')),
       );
       return;
     }
 
-    // Prepare request body
-    final requestBody = {
-      "company": UserSession.coBrName,
-      "createdBy": "admin",
-      "mobile": "",
-      "catalogItems": catalogItems,
-    };
-
-    print('Sending to PDF API: ${jsonEncode(requestBody)}');
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final file = File(
-        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await file.writeAsBytes(response.bodyBytes);
-
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Please find the Catalog as an attachment.');
-      
+    try {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            shadeWiseImage 
-                ? 'PDF with ${catalogItems.length} shade images generated successfully'
-                : 'PDF generated successfully',
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Sharing PDF .....'),
+            ],
           ),
+          duration: Duration(seconds: 1),
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate PDF: ${response.statusCode}'),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
-    print('Error in _shareSelectedItemsPDF: $e');
-  }
-}
 
-Map<String, dynamic> _buildCatalogItem(
-  Catalog item,
-  String imageUrl,
-  String shadeValue,
-  bool includeDesign,
-  bool includeShade,
-  bool includeRate,
-  bool includeWsp,
-  bool includeSize,
-  bool includeSizeMrp,
-  bool includeSizeWsp,
-  bool includeProduct,
-  bool includeRemark,
-) {
-  Map<String, dynamic> catalogItem = {'fullImagePath': imageUrl};
-  
-  if (includeDesign) catalogItem['design'] = item.styleCode;
-  if (includeShade) catalogItem['shade'] = shadeValue;
-  if (includeRate) catalogItem['rate'] = item.mrp;
-  if (includeWsp) catalogItem['wsp'] = item.wsp;
-  
-  if (includeSize) {
-    if (includeSizeMrp && includeSizeWsp) {
-      catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
-    } else if (!includeSizeMrp && !includeSizeWsp) {
-      catalogItem['onlySizes'] = item.onlySizes ?? '';
-    } else {
-      catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
-    }
-  }
-  
-  if (includeProduct) catalogItem['product'] = item.itemName;
-  if (includeRemark) catalogItem['remark'] = item.remark;
-  
-  return catalogItem;
-}
-Future<void> _sendViaUnifiedWhatsAppAPI({
-  required String mobileNo,
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  try {
-    List<Map<String, dynamic>> catalogItems = [];
+      final tempDir = await getTemporaryDirectory();
+      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+      List<Map<String, dynamic>> catalogItems = [];
 
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
+      for (var item in selectedItems) {
+        // Get all image URLs for this item
+        final allImageUrls = _getImageUrl(item);
 
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
+        // Get shade list
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        print('Processing item: ${item.styleCode}');
+        print('All Image URLs: $allImageUrls');
+        print('Shade List: $shadeList');
+        print('shadeWiseImage option: $shadeWiseImage');
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          // ===== SHADE WISE IMAGE MODE =====
+          // Send ONLY shade images, exclude main image
+
+          if (allImageUrls.length == 1) {
+            // TYPE 1: Only one image available (main image)
+            // Since no shade images exist, don't send anything for this item
+            print('No shade images available for ${item.styleCode}');
+            continue;
+          } else if (allImageUrls.length > 1) {
+            // TYPE 2: Multiple images available (main + shade images)
+            // Skip the first image (index 0) which is the main image
+            // Only add shade images starting from index 1
+
+            if (shadeList.isNotEmpty) {
+              // Add shade images with their corresponding shades
+              int shadeImagesCount =
+                  allImageUrls.length - 1; // Number of shade images
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1; // Start from second image (index 1)
+                if (imageIndex < allImageUrls.length) {
+                  // Determine which shade this image belongs to
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    // We have a matching shade for this image
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    // More images than shades, use empty or first shade for remaining images
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade, // Specific shade for this image
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
                 }
-                
-                Map<String, dynamic> shadeCatalogItem = _buildCatalogItemForWhatsApp(
-                  item,
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                  
-                );
-                
-                if (shareType == "pdf") {
-                  shadeCatalogItem['fullImagePath'] = allImageUrls[imageIndex];
-                  if (includeShade) shadeCatalogItem['shade'] = imageSpecificShade;
-                } else {
-                  shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
-                  if (includeShade) shadeCatalogItem['shade'] = imageSpecificShade;
-                }
-                
-                catalogItems.add(shadeCatalogItem);
               }
-            }
-          } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem = _buildCatalogItemForWhatsApp(
-                  item,
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                
-                if (shareType == "pdf") {
-                  extraCatalogItem['fullImagePath'] = allImageUrls[i];
-                  if (includeShade) extraCatalogItem['shade'] = '';
-                } else {
-                  extraCatalogItem['imageUrl'] = allImageUrls[i];
-                  if (includeShade) extraCatalogItem['shade'] = '';
+            } else {
+              // No shades available, add remaining images with empty shade
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '', // Empty shade
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
                 }
-                
-                catalogItems.add(extraCatalogItem);
               }
             }
           }
+        } else {
+          // ===== NORMAL MODE (not shade wise) =====
+          // Send ONLY the first/main image for each item
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '', // Include shade if enabled
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
         }
+      }
+
+      // If no catalog items after filtering, show message
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No images to share based on selection'),
+          ),
+        );
+        return;
+      }
+
+      // Prepare request body
+      final requestBody = {
+        "company": UserSession.coBrName,
+        "createdBy": "admin",
+        "mobile": "",
+        "catalogItems": catalogItems,
+      };
+
+      print('Sending to PDF API: ${jsonEncode(requestBody)}');
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final file = File(
+          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+        await file.writeAsBytes(response.bodyBytes);
+
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'Please find the Catalog as an attachment.');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              shadeWiseImage
+                  ? 'PDF with ${catalogItems.length} shade images generated successfully'
+                  : 'PDF generated successfully',
+            ),
+          ),
+        );
       } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
-            item,
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          
-          if (shareType == "pdf") {
-            catalogItem['fullImagePath'] = allImageUrls.first;
-            if (includeShade) catalogItem['shade'] = item.shadeName;
-          } else {
-            catalogItem['imageUrl'] = allImageUrls.first;
-            if (includeShade) catalogItem['shade'] = item.shadeName;
-          }
-          
-          catalogItems.add(catalogItem);
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: ${response.statusCode}'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+      );
+      print('Error in _shareSelectedItemsPDF: $e');
+    }
+  }
+
+  Map<String, dynamic> _buildCatalogItem(
+    Catalog item,
+    String imageUrl,
+    String shadeValue,
+    bool includeDesign,
+    bool includeShade,
+    bool includeRate,
+    bool includeWsp,
+    bool includeSize,
+    bool includeSizeMrp,
+    bool includeSizeWsp,
+    bool includeProduct,
+    bool includeRemark,
+  ) {
+    Map<String, dynamic> catalogItem = {'fullImagePath': imageUrl};
+
+    if (includeDesign) catalogItem['design'] = item.styleCode;
+    if (includeShade) catalogItem['shade'] = shadeValue;
+    if (includeRate) catalogItem['rate'] = item.mrp;
+    if (includeWsp) catalogItem['wsp'] = item.wsp;
+
+    if (includeSize) {
+      if (includeSizeMrp && includeSizeWsp) {
+        catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
+      } else if (!includeSizeMrp && !includeSizeWsp) {
+        catalogItem['onlySizes'] = item.onlySizes ?? '';
+      } else {
+        catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
       }
     }
 
-    if (catalogItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No items to share based on selection')),
+    if (includeProduct) catalogItem['product'] = item.itemName;
+    if (includeRemark) catalogItem['remark'] = item.remark;
+
+    return catalogItem;
+  }
+
+  Future<void> _sendViaUnifiedWhatsAppAPI({
+    required String mobileNo,
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    try {
+      List<Map<String, dynamic>> catalogItems = [];
+
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem =
+                      _buildCatalogItemForWhatsApp(
+                        item,
+                        includeDesign,
+                        includeShade,
+                        includeRate,
+                        includeWsp,
+                        includeSize,
+                        includeSizeMrp,
+                        includeSizeWsp,
+                        includeProduct,
+                        includeRemark,
+                      );
+
+                  if (shareType == "pdf") {
+                    shadeCatalogItem['fullImagePath'] =
+                        allImageUrls[imageIndex];
+                    if (includeShade)
+                      shadeCatalogItem['shade'] = imageSpecificShade;
+                  } else {
+                    shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
+                    if (includeShade)
+                      shadeCatalogItem['shade'] = imageSpecificShade;
+                  }
+
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem =
+                      _buildCatalogItemForWhatsApp(
+                        item,
+                        includeDesign,
+                        includeShade,
+                        includeRate,
+                        includeWsp,
+                        includeSize,
+                        includeSizeMrp,
+                        includeSizeWsp,
+                        includeProduct,
+                        includeRemark,
+                      );
+
+                  if (shareType == "pdf") {
+                    extraCatalogItem['fullImagePath'] = allImageUrls[i];
+                    if (includeShade) extraCatalogItem['shade'] = '';
+                  } else {
+                    extraCatalogItem['imageUrl'] = allImageUrls[i];
+                    if (includeShade) extraCatalogItem['shade'] = '';
+                  }
+
+                  catalogItems.add(extraCatalogItem);
+                }
+              }
+            }
+          }
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
+              item,
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+
+            if (shareType == "pdf") {
+              catalogItem['fullImagePath'] = allImageUrls.first;
+              if (includeShade) catalogItem['shade'] = item.shadeName;
+            } else {
+              catalogItem['imageUrl'] = allImageUrls.first;
+              if (includeShade) catalogItem['shade'] = item.shadeName;
+            }
+
+            catalogItems.add(catalogItem);
+          }
+        }
+      }
+
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No items to share based on selection')),
+        );
+        return;
+      }
+
+      final requestBody = {
+        "catalogItems": catalogItems,
+        "includeDesign": includeDesign,
+        "includeShade": includeShade,
+        "includeRate": includeRate,
+        "includeWsp": includeWsp,
+        "includeSize": includeSize,
+        "includeProduct": includeProduct,
+        "includeRemark": includeRemark,
+        "mobile": "91$mobileNo",
+      };
+
+      String apiUrl;
+      if (shareType == "pdf") {
+        apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
+      } else {
+        apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
+      }
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
       );
-      return;
-    }
 
-final requestBody = {
-  "catalogItems": catalogItems,
-  "includeDesign": includeDesign,
-  "includeShade": includeShade,
-  "includeRate": includeRate,
-  "includeWsp": includeWsp,
-  "includeSize": includeSize,
-  "includeProduct": includeProduct,
-  "includeRemark": includeRemark,
-  "mobile": "91$mobileNo",
-};
-
-    String apiUrl;
-    if (shareType == "pdf") {
-      apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
-    } else {
-      apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
-    }
-    
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'WhatsApp ${shareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'WhatsApp ${shareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
+            ),
           ),
-        ),
+        );
+        setState(() {
+          selectedItems = [];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to send via WhatsApp: ${response.statusCode}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  Map<String, dynamic> _buildCatalogItemForWhatsApp(
+    Catalog item,
+    bool includeDesign,
+    bool includeShade,
+    bool includeRate,
+    bool includeWsp,
+    bool includeSize,
+    bool includeSizeMrp,
+    bool includeSizeWsp,
+    bool includeProduct,
+    bool includeRemark,
+  ) {
+    Map<String, dynamic> catalogItem = {};
+
+    if (includeDesign) catalogItem['design'] = item.styleCode;
+    if (includeRate) catalogItem['rate'] = item.mrp;
+    if (includeWsp) catalogItem['wsp'] = item.wsp;
+
+    if (includeSize) {
+      if (includeSizeMrp && includeSizeWsp) {
+        catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
+      } else if (!includeSizeMrp && !includeSizeWsp) {
+        catalogItem['onlySizes'] = item.onlySizes ?? '';
+      } else {
+        catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
+      }
+    }
+
+    if (includeProduct) catalogItem['product'] = item.itemName;
+    if (includeRemark) catalogItem['remark'] = item.remark ?? '';
+
+    return catalogItem;
+  }
+
+  Future<void> _sendPDFViaOldWhatsAppAPI({
+    required String mobileNo,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+      List<Map<String, dynamic>> catalogItems = [];
+
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade,
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '',
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
+                }
+              }
+            }
+          }
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '',
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
+        }
+      }
+
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No items to share based on selection')),
+        );
+        return;
+      }
+
+      final requestBody = {
+        "company": UserSession.coBrName ?? "VRS Software",
+        "createdBy": "admin",
+        "mobile": "",
+        "catalogItems": catalogItems,
+      };
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final file = File(
+          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+        await file.writeAsBytes(response.bodyBytes);
+
+        final imageBytes = await file.readAsBytes();
+
+        String caption = 'Catalog PDF';
+
+        bool result = await sendWhatsAppFile(
+          fileBytes: imageBytes,
+          mobileNo: mobileNo,
+          fileType: 'pdf',
+          caption: caption,
+        );
+
+        if (result) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('PDF sent successfully to $mobileNo')),
+          );
+          setState(() {
+            selectedItems = [];
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send PDF via WhatsApp')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: ${response.statusCode}'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  Future<void> _sendImagesViaOldWhatsAppAPI({
+    required String mobileNo,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    try {
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  await _sendSingleImageToWhatsApp(
+                    item: item,
+                    imageUrl: allImageUrls[imageIndex],
+                    shadeValue: imageSpecificShade,
+                    mobileNo: mobileNo,
+                    includeDesign: includeDesign,
+                    includeShade: includeShade,
+                    includeRate: includeRate,
+                    includeWsp: includeWsp,
+                    includeSize: includeSize,
+                    includeSizeMrp: includeSizeMrp,
+                    includeSizeWsp: includeSizeWsp,
+                    includeProduct: includeProduct,
+                    includeRemark: includeRemark,
+                  );
+                }
+              }
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  await _sendSingleImageToWhatsApp(
+                    item: item,
+                    imageUrl: allImageUrls[i],
+                    shadeValue: '',
+                    mobileNo: mobileNo,
+                    includeDesign: includeDesign,
+                    includeShade: includeShade,
+                    includeRate: includeRate,
+                    includeWsp: includeWsp,
+                    includeSize: includeSize,
+                    includeSizeMrp: includeSizeMrp,
+                    includeSizeWsp: includeSizeWsp,
+                    includeProduct: includeProduct,
+                    includeRemark: includeRemark,
+                  );
+                }
+              }
+            }
+          }
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            await _sendSingleImageToWhatsApp(
+              item: item,
+              imageUrl: allImageUrls.first,
+              shadeValue: includeShade ? item.shadeName : '',
+              mobileNo: mobileNo,
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: includeWsp,
+              includeSize: includeSize,
+              includeSizeMrp: includeSizeMrp,
+              includeSizeWsp: includeSizeWsp,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+            );
+          }
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Images sent successfully...')),
       );
       setState(() {
         selectedItems = [];
       });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send via WhatsApp: ${response.statusCode}'),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: ${e.toString()}')),
-    );
-  }
-}
-
-Map<String, dynamic> _buildCatalogItemForWhatsApp(
-  Catalog item,
-  bool includeDesign,
-  bool includeShade,
-  bool includeRate,
-  bool includeWsp,
-  bool includeSize,
-  bool includeSizeMrp,
-  bool includeSizeWsp,
-  bool includeProduct,
-  bool includeRemark,
-) {
-  Map<String, dynamic> catalogItem = {};
-  
-  if (includeDesign) catalogItem['design'] = item.styleCode;
-  if (includeRate) catalogItem['rate'] = item.mrp;
-  if (includeWsp) catalogItem['wsp'] = item.wsp;
-  
-  if (includeSize) {
-    if (includeSizeMrp && includeSizeWsp) {
-      catalogItem['sizeDetailsWithoutWSp'] = item.sizeDetailsWithoutWSp ?? '';
-    } else if (!includeSizeMrp && !includeSizeWsp) {
-      catalogItem['onlySizes'] = item.onlySizes ?? '';
-    } else {
-      catalogItem['sizeWithMrp'] = item.sizeWithMrp ?? '';
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     }
   }
-  
-  if (includeProduct) catalogItem['product'] = item.itemName;
-  if (includeRemark) catalogItem['remark'] = item.remark ?? '';
-  
-  return catalogItem;
-}
 
-Future<void> _sendPDFViaOldWhatsAppAPI({
-  required String mobileNo,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  try {
-    final tempDir = await getTemporaryDirectory();
-    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-    List<Map<String, dynamic>> catalogItems = [];
+  Future<void> _sendSingleImageToWhatsApp({
+    required Catalog item,
+    required String imageUrl,
+    required String shadeValue,
+    required String mobileNo,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+  }) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
 
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
+      if (response.statusCode == 200) {
+        final imageBytes = response.bodyBytes;
 
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-                
-                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade,
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
+        String caption = '';
+        if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
+        if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
+        if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
+        if (includeSize) {
+          String sizeValue = '';
+          if (includeSizeMrp && includeSizeWsp) {
+            sizeValue = item.sizeDetailsWithoutWSp ?? '';
+          } else if (!includeSizeMrp && !includeSizeWsp) {
+            sizeValue = item.onlySizes ?? '';
           } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '',
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
+            sizeValue = item.sizeWithMrp ?? '';
+          }
+          caption += '*Sizes*\t\t\t: $sizeValue\n';
+        }
+        if (includeProduct) caption += '*Product*\t: ${item.itemName}\n';
+        if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
+
+        await sendWhatsAppFile(
+          fileBytes: imageBytes,
+          mobileNo: mobileNo,
+          fileType: 'image',
+          caption: caption,
+        );
+      }
+    } catch (e) {
+      print("Failed to send image for ${item.itemName}: $e");
+    }
+  }
+
+  Future<void> _sendPDFViaNodeAPI({
+    required String mobileNo,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+      List<Map<String, dynamic>> catalogItems = [];
+
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade,
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '',
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
+                }
               }
             }
           }
-        }
-      } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '',
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          catalogItems.add(catalogItem);
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '',
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
         }
       }
-    }
 
-    if (catalogItems.isEmpty) {
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No items to share based on selection')),
+        );
+        return;
+      }
+
+      final requestBody = {
+        "company": UserSession.coBrName ?? "VRS Software",
+        "createdBy": "admin",
+        "mobile": "",
+        "catalogItems": catalogItems,
+      };
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final file = File(
+          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+        await file.writeAsBytes(response.bodyBytes);
+
+        final pdfBytes = await file.readAsBytes();
+
+        String fileBase64 = base64Encode(pdfBytes);
+
+        final nodeResponse = await http.post(
+          Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+          body: {
+            'data': fileBase64,
+            'filename': 'catalog.pdf',
+            'key': AppConstants.whatsappKey,
+            'number': '91$mobileNo',
+            'caption': 'Catalog PDF',
+          },
+        );
+
+        if (nodeResponse.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF sent successfully to $mobileNo via Node API'),
+            ),
+          );
+          setState(() {
+            selectedItems = [];
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send PDF via Node API')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: ${response.statusCode}'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  Future<void> _shareSelectedWhatsApp({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeSize = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool includeLabel = false,
+    bool shadeWiseImage = false,
+  }) async {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No items to share based on selection')),
+        const SnackBar(content: Text('Please select items to share')),
       );
       return;
     }
 
-    final requestBody = {
-      "company": UserSession.coBrName ?? "VRS Software",
-      "createdBy": "admin",
-      "mobile": "",
-      "catalogItems": catalogItems,
-    };
+    try {
+      final result = await _showMobileNumberDialog();
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+      if (result == null) return;
 
-    if (response.statusCode == 200) {
-      final file = File(
-        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await file.writeAsBytes(response.bodyBytes);
-      
-      final imageBytes = await file.readAsBytes();
-      
-      String caption = 'Catalog PDF';
-      
-      bool result = await sendWhatsAppFile(
-        fileBytes: imageBytes,
-        mobileNo: mobileNo,
-        fileType: 'pdf',
-        caption: caption,
-      );
+      String mobileNo = result['mobileNo'] ?? '';
+      String selectedShareType = result['shareType'] ?? 'image';
 
-      if (result) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF sent successfully to $mobileNo')),
+      String whatsappType = AppConstants.whatsappType ?? "2";
+
+      if (whatsappType.toUpperCase() == "2") {
+        await _sendViaUnifiedWhatsAppAPI(
+          mobileNo: mobileNo,
+          shareType: selectedShareType,
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: true,
+          includeSize: includeSize,
+          includeSizeMrp: true,
+          includeSizeWsp: false,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: shadeWiseImage,
         );
-        setState(() {
-          selectedItems = [];
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send PDF via WhatsApp')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate PDF: ${response.statusCode}'),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: ${e.toString()}')),
-    );
-  }
-}
-
-Future<void> _sendImagesViaOldWhatsAppAPI({
-  required String mobileNo,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  try {
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-                
-                await _sendSingleImageToWhatsApp(
-                  item: item,
-                  imageUrl: allImageUrls[imageIndex],
-                  shadeValue: imageSpecificShade,
-                  mobileNo: mobileNo,
-                  includeDesign: includeDesign,
-                  includeShade: includeShade,
-                  includeRate: includeRate,
-                  includeWsp: includeWsp,
-                  includeSize: includeSize,
-                  includeSizeMrp: includeSizeMrp,
-                  includeSizeWsp: includeSizeWsp,
-                  includeProduct: includeProduct,
-                  includeRemark: includeRemark,
-                );
-              }
-            }
-          } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                await _sendSingleImageToWhatsApp(
-                  item: item,
-                  imageUrl: allImageUrls[i],
-                  shadeValue: '',
-                  mobileNo: mobileNo,
-                  includeDesign: includeDesign,
-                  includeShade: includeShade,
-                  includeRate: includeRate,
-                  includeWsp: includeWsp,
-                  includeSize: includeSize,
-                  includeSizeMrp: includeSizeMrp,
-                  includeSizeWsp: includeSizeWsp,
-                  includeProduct: includeProduct,
-                  includeRemark: includeRemark,
-                );
-              }
-            }
-          }
-        }
-      } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          await _sendSingleImageToWhatsApp(
-            item: item,
-            imageUrl: allImageUrls.first,
-            shadeValue: includeShade ? item.shadeName : '',
+      } else if (whatsappType.toUpperCase() == "1") {
+        // For type U, use node API for PDF
+        if (selectedShareType == "pdf") {
+          await _sendPDFViaNodeAPI(
             mobileNo: mobileNo,
             includeDesign: includeDesign,
             includeShade: includeShade,
             includeRate: includeRate,
-            includeWsp: includeWsp,
+            includeWsp: true,
             includeSize: includeSize,
-            includeSizeMrp: includeSizeMrp,
-            includeSizeWsp: includeSizeWsp,
+            includeSizeMrp: true,
+            includeSizeWsp: false,
             includeProduct: includeProduct,
             includeRemark: includeRemark,
+            shadeWiseImage: shadeWiseImage,
           );
-        }
-      }
-    }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Images sent successfully...')),
-    );
-    setState(() {
-      selectedItems = [];
-    });
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: ${e.toString()}')),
-    );
-  }
-}
-
-Future<void> _sendSingleImageToWhatsApp({
-  required Catalog item,
-  required String imageUrl,
-  required String shadeValue,
-  required String mobileNo,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-}) async {
-  try {
-    final response = await http.get(Uri.parse(imageUrl));
-
-    if (response.statusCode == 200) {
-      final imageBytes = response.bodyBytes;
-
-      String caption = '';
-      if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
-      if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
-      if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
-      if (includeSize) {
-        String sizeValue = '';
-        if (includeSizeMrp && includeSizeWsp) {
-          sizeValue = item.sizeDetailsWithoutWSp ?? '';
-        } else if (!includeSizeMrp && !includeSizeWsp) {
-          sizeValue = item.onlySizes ?? '';
         } else {
-          sizeValue = item.sizeWithMrp ?? '';
-        }
-        caption += '*Sizes*\t\t\t: $sizeValue\n';
-      }
-      if (includeProduct) caption += '*Product*\t: ${item.itemName}\n';
-      if (includeRemark) caption += '*Remark*\t\t: ${item.remark}\n';
-      
-      await sendWhatsAppFile(
-        fileBytes: imageBytes,
-        mobileNo: mobileNo,
-        fileType: 'image',
-        caption: caption,
-      );
-    }
-  } catch (e) {
-    print("Failed to send image for ${item.itemName}: $e");
-  }
-}
-
-Future<void> _sendPDFViaNodeAPI({
-  required String mobileNo,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  try {
-    final tempDir = await getTemporaryDirectory();
-    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-    List<Map<String, dynamic>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-                
-                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade,
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
-          } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '',
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
-              }
-            }
-          }
-        }
-      } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '',
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
+          await _sendImagesViaOldWhatsAppAPI(
+            mobileNo: mobileNo,
+            includeDesign: includeDesign,
+            includeShade: includeShade,
+            includeRate: includeRate,
+            includeWsp: true,
+            includeSize: includeSize,
+            includeSizeMrp: true,
+            includeSizeWsp: false,
+            includeProduct: includeProduct,
+            includeRemark: includeRemark,
+            shadeWiseImage: shadeWiseImage,
           );
-          catalogItems.add(catalogItem);
+        }
+      } else {
+        if (selectedShareType == "pdf") {
+          await _sendPDFViaOldWhatsAppAPI(
+            mobileNo: mobileNo,
+            includeDesign: includeDesign,
+            includeShade: includeShade,
+            includeRate: includeRate,
+            includeWsp: true,
+            includeSize: includeSize,
+            includeSizeMrp: true,
+            includeSizeWsp: false,
+            includeProduct: includeProduct,
+            includeRemark: includeRemark,
+            shadeWiseImage: shadeWiseImage,
+          );
+        } else {
+          await _sendImagesViaOldWhatsAppAPI(
+            mobileNo: mobileNo,
+            includeDesign: includeDesign,
+            includeShade: includeShade,
+            includeRate: includeRate,
+            includeWsp: true,
+            includeSize: includeSize,
+            includeSizeMrp: true,
+            includeSizeWsp: false,
+            includeProduct: includeProduct,
+            includeRemark: includeRemark,
+            shadeWiseImage: shadeWiseImage,
+          );
         }
       }
-    }
-
-    if (catalogItems.isEmpty) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No items to share based on selection')),
-      );
-      return;
-    }
-
-    final requestBody = {
-      "company": UserSession.coBrName ?? "VRS Software",
-      "createdBy": "admin",
-      "mobile": "",
-      "catalogItems": catalogItems,
-    };
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final file = File(
-        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await file.writeAsBytes(response.bodyBytes);
-      
-      final pdfBytes = await file.readAsBytes();
-      
-      String fileBase64 = base64Encode(pdfBytes);
-      
-      final nodeResponse = await http.post(
-        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
-        body: {
-          'data': fileBase64,
-          'filename': 'catalog.pdf',
-          'key': AppConstants.whatsappKey,
-          'number': '91$mobileNo',
-          'caption': 'Catalog PDF',
-        },
-      );
-
-      if (nodeResponse.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF sent successfully to $mobileNo via Node API')),
-        );
-        setState(() {
-          selectedItems = [];
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send PDF via Node API')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate PDF: ${response.statusCode}'),
-        ),
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: ${e.toString()}')),
-    );
-  }
-}
-
-Future<void> _shareSelectedWhatsApp({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeSize = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool includeLabel = false,
-  bool shadeWiseImage = false
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
   }
 
-  try {
-    final result = await _showMobileNumberDialog();
-
-    if (result == null) return;
-
-    String mobileNo = result['mobileNo'] ?? '';
-    String selectedShareType = result['shareType'] ?? 'image';
-    
-    String whatsappType = AppConstants.whatsappType ?? "2";
-    
-    if (whatsappType.toUpperCase() == "2") {
-      await _sendViaUnifiedWhatsAppAPI(
-        mobileNo: mobileNo,
-        shareType: selectedShareType,
-        includeDesign: includeDesign,
-        includeShade: includeShade,
-        includeRate: includeRate,
-        includeWsp: true,
-        includeSize: includeSize,
-        includeSizeMrp: true,
-        includeSizeWsp: false,
-        includeProduct: includeProduct,
-        includeRemark: includeRemark,
-        shadeWiseImage: shadeWiseImage,
-      );
-    } else if (whatsappType.toUpperCase() == "1") {
-      // For type U, use node API for PDF
-      if (selectedShareType == "pdf") {
-        await _sendPDFViaNodeAPI(
-          mobileNo: mobileNo,
-          includeDesign: includeDesign,
-          includeShade: includeShade,
-          includeRate: includeRate,
-          includeWsp: true,
-          includeSize: includeSize,
-          includeSizeMrp: true,
-          includeSizeWsp: false,
-          includeProduct: includeProduct,
-          includeRemark: includeRemark,
-          shadeWiseImage: shadeWiseImage,
-        );
-      } else {
-        await _sendImagesViaOldWhatsAppAPI(
-          mobileNo: mobileNo,
-          includeDesign: includeDesign,
-          includeShade: includeShade,
-          includeRate: includeRate,
-          includeWsp: true,
-          includeSize: includeSize,
-          includeSizeMrp: true,
-          includeSizeWsp: false,
-          includeProduct: includeProduct,
-          includeRemark: includeRemark,
-          shadeWiseImage: shadeWiseImage,
-        );
-      }
-    } else {
-      if (selectedShareType == "pdf") {
-        await _sendPDFViaOldWhatsAppAPI(
-          mobileNo: mobileNo,
-          includeDesign: includeDesign,
-          includeShade: includeShade,
-          includeRate: includeRate,
-          includeWsp: true,
-          includeSize: includeSize,
-          includeSizeMrp: true,
-          includeSizeWsp: false,
-          includeProduct: includeProduct,
-          includeRemark: includeRemark,
-          shadeWiseImage: shadeWiseImage,
-        );
-      } else {
-        await _sendImagesViaOldWhatsAppAPI(
-          mobileNo: mobileNo,
-          includeDesign: includeDesign,
-          includeShade: includeShade,
-          includeRate: includeRate,
-          includeWsp: true,
-          includeSize: includeSize,
-          includeSizeMrp: true,
-          includeSizeWsp: false,
-          includeProduct: includeProduct,
-          includeRemark: includeRemark,
-          shadeWiseImage: shadeWiseImage,
-        );
-      }
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
-  }
-}
   Future<Map<String, String>?> _showMobileNumberDialog() async {
     TextEditingController mobileController = TextEditingController();
     String selectedType = 'image'; // default selection
@@ -3098,271 +3155,268 @@ Future<void> _shareSelectedWhatsApp({
     }
   }
 
-Future<void> _shareSelectedItems({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
-
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Preparing items for sharing...'),
-          ],
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    final List<Map<String, String>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      // Get all image URLs for this item
-      final allImageUrls = _getImageUrl(item);
-      
-      // Get shade list
-      final shadeList = item.shadeName.isNotEmpty 
-          ? item.shadeName.split(',').map((s) => s.trim()).toList()
-          : [];
-      
-      print('Processing item: ${item.styleCode} for image sharing');
-      print('All Image URLs: $allImageUrls');
-      print('Shade List: $shadeList');
-      print('shadeWiseImage option: $shadeWiseImage');
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        // ===== SHADE WISE IMAGE MODE =====
-        // Send ONLY shade images, exclude main image
-        
-        if (allImageUrls.length == 1) {
-          // TYPE 1: Only one image available (main image)
-          // Since no shade images exist, don't send anything for this item
-          print('No shade images available for ${item.styleCode}');
-          continue;
-          
-        } else if (allImageUrls.length > 1) {
-          // TYPE 2: Multiple images available (main + shade images)
-          // Skip the first image (index 0) which is the main image
-          // Only add shade images starting from index 1
-          
-          if (shadeList.isNotEmpty) {
-            // Add shade images with their corresponding shades
-            int shadeImagesCount = allImageUrls.length - 1; // Number of shade images
-            
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1; // Start from second image (index 1)
-              if (imageIndex < allImageUrls.length) {
-                // Determine which shade this image belongs to
-                String imageSpecificShade = '';
-                
-                if (i < shadeList.length) {
-                  // We have a matching shade for this image
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  // More images than shades, use empty or first shade for remaining images
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-                
-                Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade, // Specific shade for this image
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
-          } else {
-            // No shades available, add remaining images with empty shade
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, String> extraCatalogItem = _buildImageCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '', // Empty shade
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
-              }
-            }
-          }
-        }
-      } else {
-        // ===== NORMAL MODE (not shade wise) =====
-        // Send ONLY the first/main image for each item
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, String> catalogItem = _buildImageCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '', // Include shade if enabled
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          catalogItems.add(catalogItem);
-        }
-      }
-    }
-
-    // If no catalog items after filtering, show message
-    if (catalogItems.isEmpty) {
+  Future<void> _shareSelectedItems({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No images to share based on selection')),
+        const SnackBar(content: Text('Please select items to share')),
       );
       return;
     }
 
-    print('Sending to Image API: ${jsonEncode({
-      'catalogItems': catalogItems,
-      'includeDesign': includeDesign,
-      'includeShade': includeShade,
-      'includeRate': includeRate,
-      'includeWsp': includeWsp,
-      'includeSize': includeSize,
-      'includeProduct': includeProduct,
-      'includeRemark': includeRemark,
-    })}');
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Preparing items for sharing...'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
+        ),
+      );
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'catalogItems': catalogItems,
-        'includeDesign': includeDesign,
-        'includeShade': includeShade,
-        'includeRate': includeRate,
-        'includeWsp': includeWsp,
-        'includeSize': includeSize,
-        'includeProduct': includeProduct,
-        'includeRemark': includeRemark,
-      }),
-    );
+      final List<Map<String, String>> catalogItems = [];
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body) as List;
-      final tempDir = await getTemporaryDirectory();
-      List<String> filePaths = [];
+      for (var item in selectedItems) {
+        // Get all image URLs for this item
+        final allImageUrls = _getImageUrl(item);
 
-      for (var imageData in responseData) {
-        try {
-          final imageBytes = base64Decode(imageData['image']);
-          final file = File(
-            '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
-          await file.writeAsBytes(imageBytes);
-          filePaths.add(file.path);
-        } catch (e) {
-          print('Error saving image: $e');
+        // Get shade list
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        print('Processing item: ${item.styleCode} for image sharing');
+        print('All Image URLs: $allImageUrls');
+        print('Shade List: $shadeList');
+        print('shadeWiseImage option: $shadeWiseImage');
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          // ===== SHADE WISE IMAGE MODE =====
+          // Send ONLY shade images, exclude main image
+
+          if (allImageUrls.length == 1) {
+            // TYPE 1: Only one image available (main image)
+            // Since no shade images exist, don't send anything for this item
+            print('No shade images available for ${item.styleCode}');
+            continue;
+          } else if (allImageUrls.length > 1) {
+            // TYPE 2: Multiple images available (main + shade images)
+            // Skip the first image (index 0) which is the main image
+            // Only add shade images starting from index 1
+
+            if (shadeList.isNotEmpty) {
+              // Add shade images with their corresponding shades
+              int shadeImagesCount =
+                  allImageUrls.length - 1; // Number of shade images
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1; // Start from second image (index 1)
+                if (imageIndex < allImageUrls.length) {
+                  // Determine which shade this image belongs to
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    // We have a matching shade for this image
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    // More images than shades, use empty or first shade for remaining images
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade, // Specific shade for this image
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              // No shades available, add remaining images with empty shade
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, String> extraCatalogItem = _buildImageCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '', // Empty shade
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
+                }
+              }
+            }
+          }
+        } else {
+          // ===== NORMAL MODE (not shade wise) =====
+          // Send ONLY the first/main image for each item
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, String> catalogItem = _buildImageCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '', // Include shade if enabled
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
         }
       }
 
-      if (filePaths.isNotEmpty) {
-        await Share.shareFiles(filePaths);
+      // If no catalog items after filtering, show message
+      if (catalogItems.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              shadeWiseImage 
-                  ? '${filePaths.length} shade images shared successfully'
-                  : 'Images shared successfully',
-            ),
+          const SnackBar(
+            content: Text('No images to share based on selection'),
           ),
         );
+        return;
+      }
+
+      print(
+        'Sending to Image API: ${jsonEncode({'catalogItems': catalogItems, 'includeDesign': includeDesign, 'includeShade': includeShade, 'includeRate': includeRate, 'includeWsp': includeWsp, 'includeSize': includeSize, 'includeProduct': includeProduct, 'includeRemark': includeRemark})}',
+      );
+
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'catalogItems': catalogItems,
+          'includeDesign': includeDesign,
+          'includeShade': includeShade,
+          'includeRate': includeRate,
+          'includeWsp': includeWsp,
+          'includeSize': includeSize,
+          'includeProduct': includeProduct,
+          'includeRemark': includeRemark,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as List;
+        final tempDir = await getTemporaryDirectory();
+        List<String> filePaths = [];
+
+        for (var imageData in responseData) {
+          try {
+            final imageBytes = base64Decode(imageData['image']);
+            final file = File(
+              '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+            await file.writeAsBytes(imageBytes);
+            filePaths.add(file.path);
+          } catch (e) {
+            print('Error saving image: $e');
+          }
+        }
+
+        if (filePaths.isNotEmpty) {
+          await Share.shareFiles(filePaths);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                shadeWiseImage
+                    ? '${filePaths.length} shade images shared successfully'
+                    : 'Images shared successfully',
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No valid images to share')),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No valid images to share')),
+          SnackBar(
+            content: Text('Failed to generate images: ${response.statusCode}'),
+          ),
         );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate images: ${response.statusCode}'),
-        ),
+        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-    );
-    print('Error in _shareSelectedItems: $e');
-  }
-}
-Map<String, String> _buildImageCatalogItem(
-  Catalog item,
-  String imageUrl,
-  String shadeValue,
-  bool includeDesign,
-  bool includeShade,
-  bool includeRate,
-  bool includeWsp,
-  bool includeSize,
-  bool includeSizeMrp,
-  bool includeSizeWsp,
-  bool includeProduct,
-  bool includeRemark,
-) {
-  String sizeValue = '';
-  if (includeSize) {
-    if (includeSizeMrp && includeSizeWsp) {
-      sizeValue = item.sizeDetailsWithoutWSp ?? '';
-    } else if (!includeSizeMrp && !includeSizeWsp) {
-      sizeValue = item.onlySizes ?? '';
-    } else {
-      sizeValue = item.sizeWithMrp ?? '';
+      print('Error in _shareSelectedItems: $e');
     }
   }
 
-  return {
-    'imageUrl': imageUrl,
-    'design': includeDesign ? item.styleCode : '',
-    'shade': includeShade ? shadeValue : '',
-    'rate': includeRate ? item.mrp.toString() : '',
-    'wsp': includeWsp ? item.wsp.toString() : '',
-    'size': sizeValue,
-    'product': includeProduct ? item.itemName : '',
-    'remark': includeRemark ? item.remark ?? '' : '',
-  };
-}
+  Map<String, String> _buildImageCatalogItem(
+    Catalog item,
+    String imageUrl,
+    String shadeValue,
+    bool includeDesign,
+    bool includeShade,
+    bool includeRate,
+    bool includeWsp,
+    bool includeSize,
+    bool includeSizeMrp,
+    bool includeSizeWsp,
+    bool includeProduct,
+    bool includeRemark,
+  ) {
+    String sizeValue = '';
+    if (includeSize) {
+      if (includeSizeMrp && includeSizeWsp) {
+        sizeValue = item.sizeDetailsWithoutWSp ?? '';
+      } else if (!includeSizeMrp && !includeSizeWsp) {
+        sizeValue = item.onlySizes ?? '';
+      } else {
+        sizeValue = item.sizeWithMrp ?? '';
+      }
+    }
 
+    return {
+      'imageUrl': imageUrl,
+      'design': includeDesign ? item.styleCode : '',
+      'shade': includeShade ? shadeValue : '',
+      'rate': includeRate ? item.mrp.toString() : '',
+      'wsp': includeWsp ? item.wsp.toString() : '',
+      'size': sizeValue,
+      'product': includeProduct ? item.itemName : '',
+      'remark': includeRemark ? item.remark ?? '' : '',
+    };
+  }
 
   void _toggleItemSelection(Catalog item) {
     setState(() {
@@ -3455,143 +3509,143 @@ Map<String, String> _buildImageCatalogItem(
       }
     }
 
-   showModalBottomSheet(
-    context: context,
-    builder: (BuildContext context) {
-      return ShareOptionsPage(
-        includeDesign: includeDesign,
-        includeShade: includeShade,
-        includeRate: includeRate,
-        includeWsp: includeWsp,
-        includeSize: includeSize,
-        includeSizeMrp: includeSizeMrp,
-        includeSizeWsp: includeSizeWsp,
-        includeProduct: includeProduct,
-        includeRemark: includeRemark,
-        shadeWiseImage: false, // Default value
-        onWhatsAppShare: ({
-          bool includeDesign = true,
-          bool includeShade = true,
-          bool includeRate = true,
-          bool includeSize = true,
-          bool includeProduct = true,
-          bool includeRemark = true,
-          bool shadeWiseImage = false,
-        }) {
-          Navigator.pop(context);
-          _shareSelectedWhatsApp(
-            shareType: 'WhatsApp',
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeSize: includeSize,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
-          );
-        },
-        onLinkShare: () {
-          _shareAsLink();
-        },
-        onImageShare: ({
-          bool includeDesign = true,
-          bool includeShade = true,
-          bool includeRate = true,
-          bool includeWsp = false,
-          bool includeSize = true,
-          bool includeSizeMrp = true,
-          bool includeSizeWsp = false,
-          bool includeProduct = true,
-          bool includeRemark = true,
-          bool shadeWiseImage = false,
-        }) {
-          Navigator.pop(context);
-          _shareSelectedItems(
-            shareType: 'image',
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeWsp: includeWsp,
-            includeSize: includeSize,
-            includeSizeMrp: includeSizeMrp,
-            includeSizeWsp: includeSizeWsp,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
-          );
-        },
-        onPDFShare: ({
-          bool includeDesign = true,
-          bool includeShade = true,
-          bool includeRate = true,
-          bool includeWsp = false,
-          bool includeSize = true,
-          bool includeSizeMrp = true,
-          bool includeSizeWsp = false,
-          bool includeProduct = true,
-          bool includeRemark = true,
-          bool shadeWiseImage = false,
-        }) {
-          Navigator.pop(context);
-          _shareSelectedItemsPDF(
-            shareType: 'pdf',
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeWsp: includeWsp,
-            includeSize: includeSize,
-            includeSizeMrp: includeSizeMrp,
-            includeSizeWsp: includeSizeWsp,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
-          );
-        },
-        onToggleOptions: (
-          design,
-          shade,
-          rate,
-          wsp,
-          size,
-          rate1,
-          wsp1,
-          product,
-          remark,
-          shadeWiseImage,
-        ) {
-          setState(() {
-            includeDesign = design;
-            includeShade = shade;
-            includeRate = rate;
-            includeWsp = wsp;
-            includeSize = size;
-            includeSizeMrp = rate1;
-            includeSizeWsp = wsp1;
-            includeProduct = product;
-            includeRemark = remark;
-          });
-          _saveToggleStates();
-        },
-      );
-    },
-  );
-}
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return ShareOptionsPage(
+          includeDesign: includeDesign,
+          includeShade: includeShade,
+          includeRate: includeRate,
+          includeWsp: includeWsp,
+          includeSize: includeSize,
+          includeSizeMrp: includeSizeMrp,
+          includeSizeWsp: includeSizeWsp,
+          includeProduct: includeProduct,
+          includeRemark: includeRemark,
+          shadeWiseImage: false, // Default value
+          onWhatsAppShare: ({
+            bool includeDesign = true,
+            bool includeShade = true,
+            bool includeRate = true,
+            bool includeSize = true,
+            bool includeProduct = true,
+            bool includeRemark = true,
+            bool shadeWiseImage = false,
+          }) {
+            Navigator.pop(context);
+            _shareSelectedWhatsApp(
+              shareType: 'WhatsApp',
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeSize: includeSize,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+          },
+          onLinkShare: () {
+            _shareAsLink();
+          },
+          onImageShare: ({
+            bool includeDesign = true,
+            bool includeShade = true,
+            bool includeRate = true,
+            bool includeWsp = false,
+            bool includeSize = true,
+            bool includeSizeMrp = true,
+            bool includeSizeWsp = false,
+            bool includeProduct = true,
+            bool includeRemark = true,
+            bool shadeWiseImage = false,
+          }) {
+            Navigator.pop(context);
+            _shareSelectedItems(
+              shareType: 'image',
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: includeWsp,
+              includeSize: includeSize,
+              includeSizeMrp: includeSizeMrp,
+              includeSizeWsp: includeSizeWsp,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+          },
+          onPDFShare: ({
+            bool includeDesign = true,
+            bool includeShade = true,
+            bool includeRate = true,
+            bool includeWsp = false,
+            bool includeSize = true,
+            bool includeSizeMrp = true,
+            bool includeSizeWsp = false,
+            bool includeProduct = true,
+            bool includeRemark = true,
+            bool shadeWiseImage = false,
+          }) {
+            Navigator.pop(context);
+            _shareSelectedItemsPDF(
+              shareType: 'pdf',
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: includeWsp,
+              includeSize: includeSize,
+              includeSizeMrp: includeSizeMrp,
+              includeSizeWsp: includeSizeWsp,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+          },
+          onToggleOptions: (
+            design,
+            shade,
+            rate,
+            wsp,
+            size,
+            rate1,
+            wsp1,
+            product,
+            remark,
+            shadeWiseImage,
+          ) {
+            setState(() {
+              includeDesign = design;
+              includeShade = shade;
+              includeRate = rate;
+              includeWsp = wsp;
+              includeSize = size;
+              includeSizeMrp = rate1;
+              includeSizeWsp = wsp1;
+              includeProduct = product;
+              includeRemark = remark;
+            });
+            _saveToggleStates();
+          },
+        );
+      },
+    );
+  }
 
-List<String> _getFilteredImageUrls(Catalog item, bool shadeWiseImage) {
-  final allImageUrls = _getImageUrl(item);
-  
-  if (allImageUrls.isEmpty || allImageUrls.first == '') {
-    return [];
+  List<String> _getFilteredImageUrls(Catalog item, bool shadeWiseImage) {
+    final allImageUrls = _getImageUrl(item);
+
+    if (allImageUrls.isEmpty || allImageUrls.first == '') {
+      return [];
+    }
+
+    if (shadeWiseImage) {
+      // Return all images (including shade images)
+      return allImageUrls;
+    } else {
+      // Return only the first image (full image path)
+      return [allImageUrls.first];
+    }
   }
-  
-  if (shadeWiseImage) {
-    // Return all images (including shade images)
-    return allImageUrls;
-  } else {
-    // Return only the first image (full image path)
-    return [allImageUrls.first];
-  }
-}
 
   Future<void> _handleDownloadOption(
     String option, {
@@ -3735,7 +3789,7 @@ List<String> _getFilteredImageUrls(Catalog item, bool shadeWiseImage) {
               }
             }
 
-             catalogItems.add({
+            catalogItems.add({
               'imageUrl': imageUrl,
               'design': includeDesign ? item.styleCode : '',
               'shade': includeShade ? item.shadeName : '',

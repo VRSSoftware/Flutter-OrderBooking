@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
@@ -14,10 +15,12 @@ import 'package:vrs_erp/models/catalog.dart';
 class CreateOrderScreen extends StatefulWidget {
   final List<Catalog> catalogs;
   final VoidCallback onSuccess;
+  final Map<String, dynamic>? routeArguments;
   const CreateOrderScreen({
     Key? key,
     required this.catalogs,
     required this.onSuccess,
+      this.routeArguments,
   }) : super(key: key);
 
   @override
@@ -353,7 +356,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        Navigator.pop(context);
+                             Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderPage(),
+                            settings: RouteSettings(
+                              arguments: widget.routeArguments,
+                            ),
+                          ),
+                        );
                       }, // Pop only the dialog
                       child: const Text("OK"),
                     ),

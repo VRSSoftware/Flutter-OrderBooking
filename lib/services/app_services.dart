@@ -892,7 +892,7 @@ static Future<Map<String, dynamic>> fetchCatalogItem({
 static Future<Map<String, dynamic>> fetchOrderReportData(String orderNo) async {
   try {
     final response = await http.get(
-      Uri.parse('${AppConstants.OrderReportView}/orderRegister/getSalesOrderData/$orderNo'),
+      Uri.parse('${AppConstants.BASE_URL}/orderRegister/getSalesOrderData/$orderNo'),
       headers: {
         'Content-Type': 'application/json',
         // Add any authentication headers if needed

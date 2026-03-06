@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
@@ -41,11 +42,12 @@ class CatalogItem {
 class MultiCatalogBookingPage extends StatefulWidget {
   final List<Catalog> catalogs;
   final VoidCallback onSuccess; // Add this line
-
+  final Map<String, dynamic>? routeArguments;
   const MultiCatalogBookingPage({
     super.key,
     required this.catalogs,
     required this.onSuccess,
+    this.routeArguments,
   });
 
   @override
@@ -757,15 +759,18 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     );
   }
 
-Map<int, TableColumnWidth> _buildColumnWidths() {
-  const baseWidth = 100.0;
-  const firstColumnWidth = 140.0; // Increased from 100 to 150 for shade name column
-  return {
-    0: const FixedColumnWidth(firstColumnWidth), // First column (Shade) - wider
-    for (int i = 0; i < maxSizes; i++)
-      (i + 1): const FixedColumnWidth(baseWidth * 0.8), // Size columns
-  };
-}
+  Map<int, TableColumnWidth> _buildColumnWidths() {
+    const baseWidth = 100.0;
+    const firstColumnWidth =
+        140.0; // Increased from 100 to 150 for shade name column
+    return {
+      0: const FixedColumnWidth(
+        firstColumnWidth,
+      ), // First column (Shade) - wider
+      for (int i = 0; i < maxSizes; i++)
+        (i + 1): const FixedColumnWidth(baseWidth * 0.8), // Size columns
+    };
+  }
 
   Widget _buildBottomBar() {
     return Container(
@@ -865,319 +870,323 @@ Map<int, TableColumnWidth> _buildColumnWidths() {
     );
   }
 
-TableRow _buildHeaderRow(String styleCode, List<String> sizes) {
-  return TableRow(
-    decoration: const BoxDecoration(
-      color: Color.fromARGB(255, 236, 212, 204),
-    ),
-    children: [
-      const TableCell(
-        verticalAlignment: TableCellVerticalAlignment.middle,
-        child: _TableHeaderCell(),
+  TableRow _buildHeaderRow(String styleCode, List<String> sizes) {
+    return TableRow(
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 236, 212, 204),
       ),
-      ...List.generate(maxSizes, (index) {
-        if (index < sizes.length) {
-          return TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Center(
-              child: Text(
-                sizes[index],
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        } else {
-          return const TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Center(child: Text('')),
-          );
-        }
-      }),
-    ],
-  );
-}
-TableRow _buildQuantityRow(
-  Catalog catalog,
-  String color,
-  int i,
-  List<String> sizes,
-) {
-  // Get shade image URL
-  final imageUrl = _getShadeImageUrl(catalog, color);
-  
-  return TableRow(
-    children: [
-      TableCell(
-        verticalAlignment: TableCellVerticalAlignment.middle,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              // Copy icon
-              GestureDetector(
-                child: const Icon(Icons.copy_all, size: 18),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        title: const Text('Select an Action'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                final firstQty =
-                                    controllersMap[catalog.styleCode]?[color]
-                                        ?.values
-                                        .first
-                                        .text;
-                                for (var size
-                                    in sizesMap[catalog.styleCode] ?? []) {
-                                  controllersMap[catalog
-                                          .styleCode]?[color]?[size]
-                                      ?.text = firstQty ?? '0';
-                                }
-                                setState(() {});
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                margin: const EdgeInsets.only(bottom: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'Copy Qty in shade only',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                List<String> copiedRow = [];
-                                for (var size
-                                    in sizesMap[catalog.styleCode] ?? []) {
-                                  final qty =
-                                      controllersMap[catalog
-                                              .styleCode]?[color]?[size]
-                                          ?.text ??
-                                      '0';
-                                  copiedRow.add(qty);
-                                }
-                                copiedRowsMap[catalog.styleCode] = copiedRow;
-                                setState(() {});
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                margin: const EdgeInsets.only(bottom: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'Copy Row',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                final copiedRow =
-                                    copiedRowsMap[catalog.styleCode] ?? [];
-                                for (
-                                  int j = 0;
-                                  j <
-                                      (sizesMap[catalog.styleCode]?.length ??
-                                          0);
-                                  j++
-                                ) {
-                                  controllersMap[catalog
-                                          .styleCode]?[color]?[sizesMap[catalog
-                                          .styleCode]![j]]
-                                      ?.text = copiedRow[j];
-                                }
-                                setState(() {});
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'Paste Row',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              
-              // Minimal space after copy icon
-              const SizedBox(width: 2), // Reduced from 6 to 2
-              
-              Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Text first
-                    Expanded(
-                      child: Text(
-                        color,
-                        style: TextStyle(
-                          color: _getColorCode(color),
-                          fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                    
-                    // Image icon right after text with no margin
-                    if (UserSession.imageDependsOn == 'S' && imageUrl != null)
-                      Container(
-                        margin: EdgeInsets.zero, // No margin
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.image,
-                            size: 14,
-                            color: Colors.blue.shade700,
-                          ),
-                          padding: EdgeInsets.zero, // No padding
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          tooltip: 'View shade image',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ImageZoomScreen(
-                                  imageUrls: [imageUrl],
-                                  initialIndex: 0,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                  ],
+      children: [
+        const TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: _TableHeaderCell(),
+        ),
+        ...List.generate(maxSizes, (index) {
+          if (index < sizes.length) {
+            return TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Center(
+                child: Text(
+                  sizes[index],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ],
+            );
+          } else {
+            return const TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Center(child: Text('')),
+            );
+          }
+        }),
+      ],
+    );
+  }
+
+  TableRow _buildQuantityRow(
+    Catalog catalog,
+    String color,
+    int i,
+    List<String> sizes,
+  ) {
+    // Get shade image URL
+    final imageUrl = _getShadeImageUrl(catalog, color);
+
+    return TableRow(
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                // Copy icon
+                GestureDetector(
+                  child: const Icon(Icons.copy_all, size: 18),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          title: const Text('Select an Action'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  final firstQty =
+                                      controllersMap[catalog.styleCode]?[color]
+                                          ?.values
+                                          .first
+                                          .text;
+                                  for (var size
+                                      in sizesMap[catalog.styleCode] ?? []) {
+                                    controllersMap[catalog
+                                            .styleCode]?[color]?[size]
+                                        ?.text = firstQty ?? '0';
+                                  }
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'Copy Qty in shade only',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  List<String> copiedRow = [];
+                                  for (var size
+                                      in sizesMap[catalog.styleCode] ?? []) {
+                                    final qty =
+                                        controllersMap[catalog
+                                                .styleCode]?[color]?[size]
+                                            ?.text ??
+                                        '0';
+                                    copiedRow.add(qty);
+                                  }
+                                  copiedRowsMap[catalog.styleCode] = copiedRow;
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'Copy Row',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  final copiedRow =
+                                      copiedRowsMap[catalog.styleCode] ?? [];
+                                  for (
+                                    int j = 0;
+                                    j <
+                                        (sizesMap[catalog.styleCode]?.length ??
+                                            0);
+                                    j++
+                                  ) {
+                                    controllersMap[catalog
+                                            .styleCode]?[color]?[sizesMap[catalog
+                                            .styleCode]![j]]
+                                        ?.text = copiedRow[j];
+                                  }
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'Paste Row',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+
+                // Minimal space after copy icon
+                const SizedBox(width: 2), // Reduced from 6 to 2
+
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Text first
+                      Expanded(
+                        child: Text(
+                          color,
+                          style: TextStyle(
+                            color: _getColorCode(color),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+
+                      // Image icon right after text with no margin
+                      if (UserSession.imageDependsOn == 'S' && imageUrl != null)
+                        Container(
+                          margin: EdgeInsets.zero, // No margin
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.image,
+                              size: 14,
+                              color: Colors.blue.shade700,
+                            ),
+                            padding: EdgeInsets.zero, // No padding
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            tooltip: 'View shade image',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => ImageZoomScreen(
+                                        imageUrls: [imageUrl],
+                                        initialIndex: 0,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      ...List.generate(maxSizes, (index) {
-        if (index < sizes.length) {
-          final size = sizes[index];
-          final controller = controllersMap[catalog.styleCode]?[color]?[size];
-          final originalQty =
-              catalogItemsMap[catalog.styleCode]
-                  ?.firstWhere(
-                    (item) =>
-                        item.shadeName == color && item.sizeName == size,
-                    orElse:
-                        () => CatalogItem(
-                          styleCode: catalog.styleCode,
-                          shadeName: color,
-                          sizeName: size,
-                          clQty: 0,
-                          mrp: sizeMrpMap[catalog.styleCode]?[size] ?? 0,
-                          wsp: sizeWspMap[catalog.styleCode]?[size] ?? 0,
-                        ),
-                  )
-                  .clQty ??
-              0;
+        ...List.generate(maxSizes, (index) {
+          if (index < sizes.length) {
+            final size = sizes[index];
+            final controller = controllersMap[catalog.styleCode]?[color]?[size];
+            final originalQty =
+                catalogItemsMap[catalog.styleCode]
+                    ?.firstWhere(
+                      (item) =>
+                          item.shadeName == color && item.sizeName == size,
+                      orElse:
+                          () => CatalogItem(
+                            styleCode: catalog.styleCode,
+                            shadeName: color,
+                            sizeName: size,
+                            clQty: 0,
+                            mrp: sizeMrpMap[catalog.styleCode]?[size] ?? 0,
+                            wsp: sizeWspMap[catalog.styleCode]?[size] ?? 0,
+                          ),
+                    )
+                    .clQty ??
+                0;
 
-          return TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  hintText: originalQty > 0 ? originalQty.toString() : '0',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  border: InputBorder.none,
+            return TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    hintText: originalQty > 0 ? originalQty.toString() : '0',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
-            ),
-          );
-        } else {
-          return const TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Center(child: Text('')),
-          );
-        }
-      }),
-    ],
-  );
-}
-String? _getShadeImageUrl(Catalog catalog, String shadeName) {
-  if (catalog.shadeImages.isEmpty) return null;
-  
-  // Parse the shadeImages string - handle both ', ' and ',' separators
-  String shadeImagesStr = catalog.shadeImages;
-  
-  // First try splitting by ', ' (comma + space)
-  List<String> shadeEntries = shadeImagesStr.split(', ');
-  
-  // If that doesn't work (only one item), try splitting by ','
-  if (shadeEntries.length == 1 && shadeImagesStr.contains(',')) {
-    shadeEntries = shadeImagesStr.split(',');
+            );
+          } else {
+            return const TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Center(child: Text('')),
+            );
+          }
+        }),
+      ],
+    );
   }
-  
-  for (var entry in shadeEntries) {
-    // Trim the entry to remove any extra spaces
-    entry = entry.trim();
-    if (entry.isEmpty) continue;
-    
-    // Find the first ':' to split
-    final colonIndex = entry.indexOf(':');
-    if (colonIndex > 0) {
-      final shade = entry.substring(0, colonIndex).trim().toLowerCase();
-      final imageUrl = entry.substring(colonIndex + 1).trim();
-      
-      // Case-insensitive comparison and trim both strings
-      if (shade.toLowerCase().trim() == shadeName.toLowerCase().trim()) {
-        return imageUrl;
+
+  String? _getShadeImageUrl(Catalog catalog, String shadeName) {
+    if (catalog.shadeImages.isEmpty) return null;
+
+    // Parse the shadeImages string - handle both ', ' and ',' separators
+    String shadeImagesStr = catalog.shadeImages;
+
+    // First try splitting by ', ' (comma + space)
+    List<String> shadeEntries = shadeImagesStr.split(', ');
+
+    // If that doesn't work (only one item), try splitting by ','
+    if (shadeEntries.length == 1 && shadeImagesStr.contains(',')) {
+      shadeEntries = shadeImagesStr.split(',');
+    }
+
+    for (var entry in shadeEntries) {
+      // Trim the entry to remove any extra spaces
+      entry = entry.trim();
+      if (entry.isEmpty) continue;
+
+      // Find the first ':' to split
+      final colonIndex = entry.indexOf(':');
+      if (colonIndex > 0) {
+        final shade = entry.substring(0, colonIndex).trim().toLowerCase();
+        final imageUrl = entry.substring(colonIndex + 1).trim();
+
+        // Case-insensitive comparison and trim both strings
+        if (shade.toLowerCase().trim() == shadeName.toLowerCase().trim()) {
+          return imageUrl;
+        }
       }
     }
+
+    return null;
   }
-  
-  return null;
-}
+
   Future<void> _submitAllOrders() async {
     List<Future<http.Response>> apiCalls = [];
     List<String> apiCallStyles = [];
@@ -1321,7 +1330,15 @@ String? _getShadeImageUrl(Catalog catalog, String shadeName) {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        Navigator.pop(context);
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderPage(),
+                            settings: RouteSettings(
+                              arguments: widget.routeArguments,
+                            ),
+                          ),
+                        );
                       },
                       // Pop only the dialog
                       child: const Text("OK"),

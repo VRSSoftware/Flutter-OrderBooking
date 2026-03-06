@@ -93,7 +93,9 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
     );
 
     setState(() {
-      partyList = List<PartyWithSpclMarkDwn>.from(fetchedResponse['result'] ?? []);
+      partyList = List<PartyWithSpclMarkDwn>.from(
+        fetchedResponse['result'] ?? [],
+      );
     });
   }
 
@@ -145,9 +147,12 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
     if (_selectedCategoryKeys.isEmpty) {
       _items = _allItems;
     } else {
-      _items = _allItems
-          .where((item) => _selectedCategoryKeys.contains(item.itemSubGrpKey))
-          .toList();
+      _items =
+          _allItems
+              .where(
+                (item) => _selectedCategoryKeys.contains(item.itemSubGrpKey),
+              )
+              .toList();
     }
   }
 
@@ -176,143 +181,144 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
         leading:
             showBarcodeWidget
                 ? IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                    onPressed: () {
-                      setState(() {
-                        showBarcodeWidget = false;
-                      });
-                    },
-                  )
+                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      showBarcodeWidget = false;
+                    });
+                  },
+                )
                 : Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
+                  builder:
+                      (context) => IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.white),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                ),
         automaticallyImplyLeading: false,
         actions: [
           // Cart Icon for both modes (Order Booking and Barcode)
-      IconButton(
-  icon: Stack(
-    children: [
-      const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
-      if (cartModel.count >= 0)
-        Positioned(
-          right: 0,
-          top: 0,
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            constraints: const BoxConstraints(
-              minWidth: 14,
-              minHeight: 14,
-            ),
-            child: Text(
-              '${cartModel.count}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-    ],
-  ),
-onPressed: () {
-  String route;
-
-  if (showBarcodeWidget) {
-    // Barcode routes
-    if (AppConstants.bookingType == "1") {
-      route = '/viewOrderBarcode';
-    } else if (AppConstants.bookingType == "2") {
-      route = '/viewOrderBarcode2';
-    } else {
-      route = '/viewOrderBarcode'; // fallback
-    }
-  } else {
-    // Normal routes
-    if (AppConstants.bookingType == "1") {
-      route = '/viewOrder';
-    } else if (AppConstants.bookingType == "2") {
-      route = '/viewOrder2';
-    } else {
-      route = '/viewOrder'; // fallback
-    }
-  }
-
-  Navigator.pushNamed(
-    context,
-    route,
-    arguments: {Constants.barcode: showBarcodeWidget},
-  ).then((_) => _fetchCartCount());
-},
-),
-
-          // Orders icon
           IconButton(
-            icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-            tooltip: 'My Orders',
+            icon: Stack(
+              children: [
+                const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
+                if (cartModel.count >= 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        '${cartModel.count}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: () {
-              Navigator.push(
+              String route;
+
+              if (showBarcodeWidget) {
+                // Barcode routes
+                if (AppConstants.bookingType == "1") {
+                  route = '/viewOrderBarcode';
+                } else if (AppConstants.bookingType == "2") {
+                  route = '/viewOrderBarcode2';
+                } else {
+                  route = '/viewOrderBarcode'; // fallback
+                }
+              } else {
+                // Normal routes
+                if (AppConstants.bookingType == "1") {
+                  route = '/viewOrder';
+                } else if (AppConstants.bookingType == "2") {
+                  route = '/viewOrder2';
+                } else {
+                  route = '/viewOrder'; // fallback
+                }
+              }
+
+              Navigator.pushNamed(
                 context,
-                MaterialPageRoute(builder: (context) => RegisterPage()),
-              );
+                route,
+                arguments: {Constants.barcode: showBarcodeWidget},
+              ).then((_) => _fetchCartCount());
             },
           ),
+
+          // Orders icon
+          // IconButton(
+          //   icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+          //   tooltip: 'My Orders',
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => RegisterPage()),
+          //     );
+          //   },
+          // ),
         ],
       ),
 
       // ✅ FLOATING ACTION BUTTON - ONLY APPEARS WHEN ITEMS SELECTED
-      floatingActionButton: (_selectedCategoryKeys.isNotEmpty ||
-              _selectedItemKeys.isNotEmpty)
-          ? ScaleTransition(
-              scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
-              child: FloatingActionButton(
-                backgroundColor: AppColors.primaryColor,
-                child: Icon(Icons.arrow_forward, color: Colors.white),
-                onPressed: () {
-                  String? categoryKeys;
-                  String? itemKeys;
+      floatingActionButton:
+          (_selectedCategoryKeys.isNotEmpty || _selectedItemKeys.isNotEmpty)
+              ? ScaleTransition(
+                scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
+                child: FloatingActionButton(
+                  backgroundColor: AppColors.primaryColor,
+                  child: Icon(Icons.arrow_forward, color: Colors.white),
+                  onPressed: () {
+                    String? categoryKeys;
+                    String? itemKeys;
 
-                  if (_selectedCategoryKeys.isNotEmpty) {
-                    categoryKeys = _selectedCategoryKeys.join(',');
-                  }
+                    if (_selectedCategoryKeys.isNotEmpty) {
+                      categoryKeys = _selectedCategoryKeys.join(',');
+                    }
 
-                  if (_selectedItemKeys.isNotEmpty) {
-                    itemKeys = _selectedItemKeys.join(',');
-                  }
+                    if (_selectedItemKeys.isNotEmpty) {
+                      itemKeys = _selectedItemKeys.join(',');
+                    }
 
-                  Navigator.pushNamed(
-                    context,
-                    '/orderpage',
-                    arguments: {
-                      'itemKey': itemKeys,
-                      'itemSubGrpKey': categoryKeys,
-                      'itemName': null,
-                      'coBr': coBr,
-                      'fcYrId': fcYrId,
-                      'selectedParty': selectedParty,
-                      'type': Constants.SALE_BILL,
-                      'isMultiSelect': true,
-                    },
-                  ).then((_) {
-                    // Clear selection after returning
-                    setState(() {
-                      _selectedCategoryKeys.clear();
-                      _selectedItemKeys.clear();
-                      _isMultiSelectMode = false;
-                      _filterItems();
+                    Navigator.pushNamed(
+                      context,
+                      '/orderpage',
+                      arguments: {
+                        'itemKey': itemKeys,
+                        'itemSubGrpKey': categoryKeys,
+                        'itemName': null,
+                        'coBr': coBr,
+                        'fcYrId': fcYrId,
+                        'selectedParty': selectedParty,
+                        'type': Constants.SALE_BILL,
+                        'isMultiSelect': true,
+                      },
+                    ).then((_) {
+                      // Clear selection after returning
+                      setState(() {
+                        _selectedCategoryKeys.clear();
+                        _selectedItemKeys.clear();
+                        _isMultiSelectMode = false;
+                        _filterItems();
+                      });
                     });
-                  });
-                },
-              ),
-            )
-          : null,
+                  },
+                ),
+              )
+              : null,
 
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0), // Reduced padding
@@ -461,113 +467,123 @@ onPressed: () {
                         const SizedBox(height: 10),
                         _isLoadingCategories
                             ? Center(
-                                child: LoadingAnimationWidget.waveDots(
-                                  color: AppColors.primaryColor,
-                                  size: 30,
-                                ),
-                              )
+                              child: LoadingAnimationWidget.waveDots(
+                                color: AppColors.primaryColor,
+                                size: 30,
+                              ),
+                            )
                             : Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                ),
-                                child: Wrap(
-                                  spacing: 8, // Reduced gap between buttons
-                                  runSpacing: 10,
-                                  alignment: WrapAlignment.start,
-                                  children: _categories.map((category) {
-                                    bool isSelected = _selectedCategoryKeys
-                                        .contains(category.itemSubGrpKey);
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                              ),
+                              child: Wrap(
+                                spacing: 8, // Reduced gap between buttons
+                                runSpacing: 10,
+                                alignment: WrapAlignment.start,
+                                children:
+                                    _categories.map((category) {
+                                      bool isSelected = _selectedCategoryKeys
+                                          .contains(category.itemSubGrpKey);
 
-                                    return SizedBox(
-                                      width: buttonWidth, // Increased width
-                                      child: OutlinedButton(
-                                        // ✅ TAP BEHAVIOR - Changes based on mode
-                                        onPressed: () {
-                                          if (_isMultiSelectMode) {
-                                            // In multi-select mode: toggle selection
+                                      return SizedBox(
+                                        width: buttonWidth, // Increased width
+                                        child: OutlinedButton(
+                                          // ✅ TAP BEHAVIOR - Changes based on mode
+                                          onPressed: () {
+                                            if (_isMultiSelectMode) {
+                                              // In multi-select mode: toggle selection
+                                              setState(() {
+                                                if (isSelected) {
+                                                  _selectedCategoryKeys.remove(
+                                                    category.itemSubGrpKey,
+                                                  );
+                                                } else {
+                                                  _selectedCategoryKeys.add(
+                                                    category.itemSubGrpKey,
+                                                  );
+                                                }
+                                                _filterItems();
+                                                _exitMultiSelectMode();
+                                              });
+                                            } else {
+                                              // Normal mode: navigate
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/orderpage',
+                                                arguments: {
+                                                  'itemKey': null,
+                                                  'itemSubGrpKey':
+                                                      category.itemSubGrpKey,
+                                                  'itemName':
+                                                      category.itemSubGrpName
+                                                          .trim(),
+                                                  'coBr': coBr,
+                                                  'fcYrId': fcYrId,
+                                                  'selectedParty':
+                                                      selectedParty,
+                                                  'type': Constants.SALE_BILL,
+                                                },
+                                              ).then((_) => _fetchCartCount());
+                                            }
+                                          },
+                                          // ✅ LONG PRESS FOR MULTI-SELECT
+                                          onLongPress: () {
                                             setState(() {
+                                              _isMultiSelectMode = true;
                                               if (isSelected) {
                                                 _selectedCategoryKeys.remove(
-                                                    category.itemSubGrpKey);
+                                                  category.itemSubGrpKey,
+                                                );
                                               } else {
-                                                _selectedCategoryKeys
-                                                    .add(category.itemSubGrpKey);
+                                                _selectedCategoryKeys.add(
+                                                  category.itemSubGrpKey,
+                                                );
                                               }
                                               _filterItems();
-                                              _exitMultiSelectMode();
                                             });
-                                          } else {
-                                            // Normal mode: navigate
-                                            Navigator.pushNamed(
-                                              context,
-                                              '/orderpage',
-                                              arguments: {
-                                                'itemKey': null,
-                                                'itemSubGrpKey':
-                                                    category.itemSubGrpKey,
-                                                'itemName':
-                                                    category.itemSubGrpName
-                                                        .trim(),
-                                                'coBr': coBr,
-                                                'fcYrId': fcYrId,
-                                                'selectedParty': selectedParty,
-                                                'type': Constants.SALE_BILL,
-                                              },
-                                            ).then((_) => _fetchCartCount());
-                                          }
-                                        },
-                                        // ✅ LONG PRESS FOR MULTI-SELECT
-                                        onLongPress: () {
-                                          setState(() {
-                                            _isMultiSelectMode = true;
-                                            if (isSelected) {
-                                              _selectedCategoryKeys.remove(
-                                                  category.itemSubGrpKey);
-                                            } else {
-                                              _selectedCategoryKeys
-                                                  .add(category.itemSubGrpKey);
-                                            }
-                                            _filterItems();
-                                          });
-                                        },
-                                        style: ButtonStyle(
-                                          backgroundColor:
-                                              WidgetStateProperty.all(
-                                                isSelected
-                                                    ? AppColors.primaryColor
-                                                    : Colors.white,
+                                          },
+                                          style: ButtonStyle(
+                                            backgroundColor:
+                                                WidgetStateProperty.all(
+                                                  isSelected
+                                                      ? AppColors.primaryColor
+                                                      : Colors.white,
+                                                ),
+                                            side: WidgetStateProperty.all(
+                                              BorderSide(
+                                                color: AppColors.primaryColor,
+                                                width: isSelected ? 2 : 1,
                                               ),
-                                          side: WidgetStateProperty.all(
-                                            BorderSide(
-                                              color: AppColors.primaryColor,
-                                              width: isSelected ? 2 : 1,
+                                            ),
+                                            shape: WidgetStateProperty.all(
+                                              RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
                                             ),
                                           ),
-                                          shape: WidgetStateProperty.all(
-                                            RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
+                                          child: Text(
+                                            category.itemSubGrpName,
+                                            textAlign:
+                                                TextAlign.center, // Center text
+                                            style: TextStyle(
+                                              color:
+                                                  isSelected
+                                                      ? Colors.white
+                                                      : AppColors.primaryColor,
+                                              fontSize:
+                                                  14, // Consistent font size
+                                              fontWeight:
+                                                  isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
                                             ),
                                           ),
                                         ),
-                                        child: Text(
-                                          category.itemSubGrpName,
-                                          textAlign: TextAlign.center, // Center text
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.white
-                                                : AppColors.primaryColor,
-                                            fontSize: 14, // Consistent font size
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
+                                      );
+                                    }).toList(),
                               ),
+                            ),
                         const SizedBox(height: 20),
                         if (_selectedCategoryKey != null)
                           _buildCategoryItems(buttonWidth),
@@ -581,7 +597,9 @@ onPressed: () {
           },
         ),
       ),
-      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/orderbooking'),
+      bottomNavigationBar: BottomNavigationWidget(
+        currentScreen: '/orderbooking',
+      ),
     );
   }
 
@@ -601,91 +619,100 @@ onPressed: () {
         const SizedBox(height: 10),
         _isLoadingItems
             ? Center(
-                child: LoadingAnimationWidget.waveDots(
-                  color: AppColors.primaryColor,
-                  size: 30,
-                ),
-              )
+              child: LoadingAnimationWidget.waveDots(
+                color: AppColors.primaryColor,
+                size: 30,
+              ),
+            )
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Wrap(
-                  spacing: 8, // Reduced gap between buttons
-                  runSpacing: 10,
-                  alignment: WrapAlignment.start,
-                  children: _items.map((item) {
-                    bool isSelected = _selectedItemKeys.contains(item.itemKey);
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Wrap(
+                spacing: 8, // Reduced gap between buttons
+                runSpacing: 10,
+                alignment: WrapAlignment.start,
+                children:
+                    _items.map((item) {
+                      bool isSelected = _selectedItemKeys.contains(
+                        item.itemKey,
+                      );
 
-                    return SizedBox(
-                      width: buttonWidth, // Increased width
-                      height: buttonHeight,
-                      child: OutlinedButton(
-                        // ✅ TAP BEHAVIOR - Changes based on mode
-                        onPressed: () {
-                          if (_isMultiSelectMode) {
-                            // In multi-select mode: toggle selection
+                      return SizedBox(
+                        width: buttonWidth, // Increased width
+                        height: buttonHeight,
+                        child: OutlinedButton(
+                          // ✅ TAP BEHAVIOR - Changes based on mode
+                          onPressed: () {
+                            if (_isMultiSelectMode) {
+                              // In multi-select mode: toggle selection
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedItemKeys.remove(item.itemKey);
+                                } else {
+                                  _selectedItemKeys.add(item.itemKey);
+                                }
+                                _exitMultiSelectMode();
+                              });
+                            } else {
+                              // Normal mode: navigate
+                              Navigator.pushNamed(
+                                context,
+                                '/orderpage',
+                                arguments: {
+                                  'itemKey': item.itemKey,
+                                  'itemName': item.itemName.trim(),
+                                  'itemSubGrpKey': item.itemSubGrpKey,
+                                  'coBr': coBr,
+                                  'fcYrId': fcYrId,
+                                  'selectedParty': selectedParty,
+                                  'type': Constants.SALE_BILL,
+                                },
+                              ).then((_) => _fetchCartCount());
+                            }
+                          },
+                          // ✅ LONG PRESS FOR MULTI-SELECT
+                          onLongPress: () {
                             setState(() {
+                              _isMultiSelectMode = true;
                               if (isSelected) {
                                 _selectedItemKeys.remove(item.itemKey);
                               } else {
                                 _selectedItemKeys.add(item.itemKey);
                               }
-                              _exitMultiSelectMode();
                             });
-                          } else {
-                            // Normal mode: navigate
-                            Navigator.pushNamed(
-                              context,
-                              '/orderpage',
-                              arguments: {
-                                'itemKey': item.itemKey,
-                                'itemName': item.itemName.trim(),
-                                'itemSubGrpKey': item.itemSubGrpKey,
-                                'coBr': coBr,
-                                'fcYrId': fcYrId,
-                                'selectedParty': selectedParty,
-                                'type': Constants.SALE_BILL,
-                              },
-                            ).then((_) => _fetchCartCount());
-                          }
-                        },
-                        // ✅ LONG PRESS FOR MULTI-SELECT
-                        onLongPress: () {
-                          setState(() {
-                            _isMultiSelectMode = true;
-                            if (isSelected) {
-                              _selectedItemKeys.remove(item.itemKey);
-                            } else {
-                              _selectedItemKeys.add(item.itemKey);
-                            }
-                          });
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade300,
-                              width: isSelected ? 2 : 1),
-                          backgroundColor: isSelected
-                              ? AppColors.primaryColor
-                              : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color:
+                                  isSelected
+                                      ? AppColors.primaryColor
+                                      : Colors.grey.shade300,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            backgroundColor:
+                                isSelected
+                                    ? AppColors.primaryColor
+                                    : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            item.itemName,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
                           ),
                         ),
-                        child: Text(
-                          item.itemName,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontSize: 14,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                      );
+                    }).toList(),
               ),
+            ),
       ],
     );
   }

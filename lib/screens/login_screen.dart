@@ -280,7 +280,7 @@ class _LoginPageState extends State<LoginScreen> {
               UserSession.imageDependsOn = await fetchAppSetting('577');
               AppConstants.whatsappKey = await fetchAppSetting('541');
               AppConstants.bookingType = await fetchAppSetting('731');
-             // AppConstants.whatsappType = await fetchAppSetting('644');
+              AppConstants.whatsappType = await fetchAppSetting('732');
             //  AppConstants.bookingType = await fetchAppSetting('633');
               await fetchDatabaseCredentials();
               // print("Whatsapp Key: ${AppConstants.whatsappKey}");

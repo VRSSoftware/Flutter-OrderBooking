@@ -55,6 +55,30 @@ class _StockFilterPageState extends State<StockFilterPage> {
   bool isImageExpanded = true;
   String stockStatus = 'All'; // Default stock status
 
+  // Helper methods to check if a section has active filters
+  bool get hasStyleFilter => selectedStyles.isNotEmpty;
+  bool get hasShadeFilter => selectedShades.isNotEmpty;
+  bool get hasSizeFilter => selectedSizes.isNotEmpty;
+  bool get hasBrandFilter => selectedBrands.isNotEmpty;
+  bool get hasImageItemsFilter => selectedImageItems.isNotEmpty;
+  bool get hasImageOptionsFilter => withImage;
+  bool get hasStockStatusFilter => stockStatus != 'All';
+  bool get hasMRPFilter => fromMRPController.text.isNotEmpty || toMRPController.text.isNotEmpty;
+
+  // Get total active filter count
+  int get activeFilterCount {
+    int count = 0;
+    if (hasStyleFilter) count++;
+    if (hasShadeFilter) count++;
+    if (hasSizeFilter) count++;
+    if (hasBrandFilter) count++;
+    if (hasImageItemsFilter) count++;
+    if (hasImageOptionsFilter) count++;
+    if (hasStockStatusFilter) count++;
+    if (hasMRPFilter) count++;
+    return count;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -118,6 +142,21 @@ class _StockFilterPageState extends State<StockFilterPage> {
     String Function(T) labelFn,
     Function(List<T>) onChanged,
   ) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Text(
+            'No items available',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
     List<Widget> rows = [];
     for (int i = 0; i < items.length; i += 3) {
       List<T> rowItems = items.sublist(
@@ -203,6 +242,21 @@ class _StockFilterPageState extends State<StockFilterPage> {
     List<ImageItem> selectedItems,
     Function(List<ImageItem>) onChanged,
   ) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Text(
+            'No images available',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
     List<Widget> rows = [];
     for (int i = 0; i < items.length; i += 2) { // 2 items per row for better layout
       List<ImageItem> rowItems = items.sublist(
@@ -369,11 +423,13 @@ class _StockFilterPageState extends State<StockFilterPage> {
     required List<Widget> children,
     bool initiallyExpanded = true,
     ValueChanged<bool>? onExpansionChanged,
+    required bool hasActiveFilter,
   }) {
     return CustomExpansionTile(
       title: title,
       initiallyExpanded: initiallyExpanded,
       onExpansionChanged: onExpansionChanged,
+      hasActiveFilter: hasActiveFilter,
       children: children,
     );
   }
@@ -410,6 +466,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     // Styles Section
                     _buildExpansionTile(
                       title: 'Select Styles',
+                      hasActiveFilter: hasStyleFilter,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
@@ -420,8 +477,10 @@ class _StockFilterPageState extends State<StockFilterPage> {
                             items: styles,
                             selectedItems: selectedStyles,
                             onChanged: (selectedItems) {
-                              selectedStyles.clear();
-                              selectedStyles.addAll(selectedItems ?? []);
+                              setState(() {
+                                selectedStyles.clear();
+                                selectedStyles.addAll(selectedItems ?? []);
+                              });
                             },
                             popupProps: PopupPropsMultiSelection.menu(
                               showSearchBox: true,
@@ -468,17 +527,43 @@ class _StockFilterPageState extends State<StockFilterPage> {
                               }
                               return Container(
                                 padding: EdgeInsets.symmetric(vertical: 4),
-                                child: Text(
-                                  selectedItems
-                                      .map((e) => e.styleCode)
-                                      .join(', '),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        selectedItems
+                                            .map((e) => e.styleCode)
+                                            .join(', '),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (selectedItems.isNotEmpty)
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 5,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryColor,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          '${selectedItems.length}',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               );
                             },
@@ -530,6 +615,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     _buildExpansionTile(
                       title: 'Select Shades',
                       initiallyExpanded: isShadeExpanded,
+                      hasActiveFilter: hasShadeFilter,
                       onExpansionChanged:
                           (expanded) => setState(() => isShadeExpanded = expanded),
                       children: [
@@ -595,6 +681,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     _buildExpansionTile(
                       title: 'Select Sizes',
                       initiallyExpanded: isSizeExpanded,
+                      hasActiveFilter: hasSizeFilter,
                       onExpansionChanged:
                           (expanded) => setState(() => isSizeExpanded = expanded),
                       children: [
@@ -660,6 +747,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     _buildExpansionTile(
                       title: 'Select Brands',
                       initiallyExpanded: isBrandExpanded,
+                      hasActiveFilter: hasBrandFilter,
                       onExpansionChanged:
                           (expanded) => setState(() => isBrandExpanded = expanded),
                       children: [
@@ -728,6 +816,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                           _buildExpansionTile(
                             title: 'Select Images',
                             initiallyExpanded: isImageExpanded,
+                            hasActiveFilter: hasImageItemsFilter,
                             onExpansionChanged:
                                 (expanded) => setState(() => isImageExpanded = expanded),
                             children: [
@@ -776,6 +865,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     // With Image Checkbox
                     _buildExpansionTile(
                       title: 'Image Options',
+                      hasActiveFilter: hasImageOptionsFilter,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -821,6 +911,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     // Stock Status Section
                     _buildExpansionTile(
                       title: 'Stock Status',
+                      hasActiveFilter: hasStockStatusFilter,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -834,6 +925,7 @@ class _StockFilterPageState extends State<StockFilterPage> {
                     // MRP Range Section
                     _buildExpansionTile(
                       title: 'MRP Range',
+                      hasActiveFilter: hasMRPFilter,
                       children: [
                         _buildRangeInputs(
                           fromMRPController,
@@ -894,12 +986,38 @@ class _StockFilterPageState extends State<StockFilterPage> {
                             };
                             Navigator.pop(context, selectedFilters);
                           },
-                          child: Text(
-                            'Apply Filters',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Apply Filters',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (activeFilterCount > 0) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$activeFilterCount',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: AppColors.primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -1024,11 +1142,15 @@ class _StockFilterPageState extends State<StockFilterPage> {
         minimumSize: Size(0, 0),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         foregroundColor: AppColors.primaryColor,
+        backgroundColor: Colors.grey.shade50,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
       child: Text(
         selectedCount == totalCount ? 'Deselect All' : 'Select All',
         style: GoogleFonts.plusJakartaSans(
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
           color: selectedCount == totalCount ? Colors.red : Colors.green,
         ),
@@ -1104,15 +1226,41 @@ class _StockFilterPageState extends State<StockFilterPage> {
         }
         return Container(
           padding: EdgeInsets.symmetric(vertical: 4),
-          child: Text(
-            selectedItems!.map(itemAsString).join(', '),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  selectedItems!.map(itemAsString).join(', '),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (selectedItems.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(left: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${selectedItems.length}',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -1138,12 +1286,17 @@ class _StockFilterPageState extends State<StockFilterPage> {
   }
 
   Widget _buildNumberInput(TextEditingController controller, String label) {
+    bool hasValue = controller.text.isNotEmpty;
+    
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
+      onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
+        labelStyle: GoogleFonts.plusJakartaSans(
+          color: hasValue ? AppColors.primaryColor : Colors.grey.shade600,
+        ),
         floatingLabelStyle: GoogleFonts.plusJakartaSans(color: AppColors.primaryColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -1160,6 +1313,9 @@ class _StockFilterPageState extends State<StockFilterPage> {
         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         filled: true,
         fillColor: Colors.white,
+        suffixIcon: hasValue
+            ? Icon(Icons.check_circle, color: AppColors.primaryColor, size: 14)
+            : null,
       ),
       style: GoogleFonts.plusJakartaSans(),
     );
@@ -1171,12 +1327,14 @@ class CustomExpansionTile extends StatefulWidget {
   final List<Widget> children;
   final bool initiallyExpanded;
   final ValueChanged<bool>? onExpansionChanged;
+  final bool hasActiveFilter;
 
   const CustomExpansionTile({
     required this.title,
     required this.children,
     this.initiallyExpanded = true,
     this.onExpansionChanged,
+    required this.hasActiveFilter,
   });
 
   @override
@@ -1194,56 +1352,92 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border:
-            _isExpanded
-                ? Border.all(color: Colors.grey.shade200, width: 1)
-                : Border(
-                  left: BorderSide(color: AppColors.primaryColor, width: 4),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 6, top: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.hasActiveFilter ? Colors.blue : Colors.transparent,
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              splashFactory: NoSplash.splashFactory,
+              highlightColor: Colors.transparent,
+            ),
+            child: ExpansionTile(
+              title: Text(
+                widget.title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
                 ),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          title: Text(
-            widget.title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryColor,
+              ),
+              initiallyExpanded: widget.initiallyExpanded,
+              onExpansionChanged: (expanded) {
+                setState(() => _isExpanded = expanded);
+                widget.onExpansionChanged?.call(expanded);
+              },
+              tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              backgroundColor: Colors.white,
+              collapsedBackgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              collapsedShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              childrenPadding: EdgeInsets.only(bottom: 4),
+              trailing: Icon(
+                _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                size: 22,
+                color: AppColors.primaryColor,
+              ),
+              children: widget.children,
             ),
           ),
-          initiallyExpanded: widget.initiallyExpanded,
-          onExpansionChanged: (expanded) {
-            setState(() => _isExpanded = expanded);
-            widget.onExpansionChanged?.call(expanded);
-          },
-          tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          backgroundColor: Colors.white,
-          collapsedBackgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          collapsedShape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          childrenPadding: EdgeInsets.only(bottom: 4),
-          trailing: Icon(
-            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            size: 22,
-            color: AppColors.primaryColor,
-          ),
-          children: widget.children,
         ),
-      ),
+        // Check icon appears when hasActiveFilter is true
+        if (widget.hasActiveFilter)
+          Positioned(
+            top: -2,
+            right: -2,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 12,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

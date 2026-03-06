@@ -60,6 +60,19 @@ class _StockReportPageState extends State<StockReportPage> {
     _fetchBrands();
   }
 
+  int _getActiveFilterCount() {
+  int count = 0;
+  if (selectedStyles.isNotEmpty) count++;
+  if (selectedShades.isNotEmpty) count++;
+  if (selectedSizes.isNotEmpty) count++;
+  if (selectedBrands.isNotEmpty) count++;
+  if (fromMRP.isNotEmpty) count++;
+  if (toMRP.isNotEmpty) count++;
+  if (withImage) count++;
+  return count;
+}
+
+
   Future<void> _fetchStockReport() async {
 
     setState(() {
@@ -732,17 +745,54 @@ class _StockReportPageState extends State<StockReportPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Text('Stock Report', style: TextStyle(color: AppColors.white)),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+ appBar: AppBar(
+  title: Text('Stock Report', style: TextStyle(color: AppColors.white)),
+  backgroundColor: AppColors.primaryColor,
+  elevation: 1,
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back, color: Colors.white),
+    onPressed: () {
+      Navigator.pop(context);
+    },
+  ),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            onPressed: _showFilterDialog,
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            tooltip: "Filter",
+          ),
+
+          if (_getActiveFilterCount() > 0)
+            Positioned(
+              right: 2,
+              top: 2,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.pink,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: Text(
+                  '${_getActiveFilterCount()}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
+    ),
+  ],
+),
       body: Container(
         color: Colors.white, // Set background color to white
         child: Padding(
@@ -1070,15 +1120,54 @@ popupProps: PopupProps.menu(
         ),
       ),
 
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 120.0), // Adjust value as needed
-        child: FloatingActionButton(
-          onPressed: _showFilterDialog,
-          backgroundColor: Colors.blue,
-          child: const Icon(Icons.filter_list, color: Colors.white),
-          tooltip: 'Filter Options',
-        ),
-      ),
+ 
+
+// floatingActionButton: Padding(
+//   padding: const EdgeInsets.only(bottom: 120.0),
+//   child: Stack(
+//     clipBehavior: Clip.none,
+//     children: [
+//       FloatingActionButton(
+//         onPressed: _showFilterDialog,
+//         backgroundColor: _getActiveFilterCount() > 0 
+//             ? Colors.pink 
+//             : Colors.blue,
+//         child: const Icon(Icons.filter_list, color: Colors.white),
+//         tooltip: 'Filter Options',
+//       ),
+//       if (_getActiveFilterCount() > 0)
+//         Positioned(
+//           right: 0,
+//           top: -5,
+//           child: Container(
+//             padding: const EdgeInsets.all(6),
+//             decoration: BoxDecoration(
+//               color: Colors.pink,
+//               shape: BoxShape.circle,
+//               border: Border.all(color: Colors.white, width: 2),
+//               boxShadow: [
+//                 BoxShadow(
+//                   color: Colors.black.withOpacity(0.2),
+//                   blurRadius: 4,
+//                   offset: Offset(0, 2),
+//                 ),
+//               ],
+//             ),
+//             child: Text(
+//               '${_getActiveFilterCount()}',
+//               style: const TextStyle(
+//                 color: Colors.white,
+//                 fontSize: 10,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//           ),
+//         ),
+//     ],
+//   ),
+// ),
+   
+   
       bottomNavigationBar: BottomNavigationWidget(currentScreen:  '/stockReport',),
       // bottomNavigationBar: BottomNavigationWidget(
       //   currentIndex: 4, // 👈 Highlight Order icon
