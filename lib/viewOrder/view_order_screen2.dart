@@ -254,7 +254,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   }
 
   List<String> _getSortedUniqueValues(List<dynamic> items, String field) =>
-      items.map((e) => e[field]?.toString() ?? '').toSet().toList()..sort();
+      items.map((e) => e[field]?.toString() ?? '').toSet().toList();
 
   String formatDate(String date, bool time) {
     try {
@@ -1092,7 +1092,7 @@ void removeStyle(String styleKey) {
   }
 
   List<String> _getSortedUniqueValues(List<dynamic> items, String field) =>
-      items.map((e) => e[field]?.toString() ?? '').toSet().toList()..sort();
+      items.map((e) => e[field]?.toString() ?? '').toSet().toList();
 }
 
 class _StyleCardsView2 extends StatelessWidget {

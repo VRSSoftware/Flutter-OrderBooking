@@ -13,7 +13,8 @@ class TransactionTab3 extends StatefulWidget {
 }
 
 class _TransactionTab3State extends State<TransactionTab3> {
-  final Map<String, Map<String, Map<String, TextEditingController>>> controllersMap = {};
+  final Map<String, Map<String, Map<String, TextEditingController>>>
+  controllersMap = {};
   final Map<String, List<String>> copiedRowsMap = {};
   final Map<String, List<String>> sizesMap = {};
   final Map<String, Map<String, double>> sizeMrpMap = {};
@@ -52,7 +53,11 @@ class _TransactionTab3State extends State<TransactionTab3> {
     }
   }
 
-  Map<String, dynamic> _getMatrixValue(CatalogOrderData order, String shade, String size) {
+  Map<String, dynamic> _getMatrixValue(
+    CatalogOrderData order,
+    String shade,
+    String size,
+  ) {
     final shadeIndex = order.orderMatrix.shades.indexOf(shade);
     final sizeIndex = order.orderMatrix.sizes.indexOf(size);
 
@@ -78,11 +83,15 @@ class _TransactionTab3State extends State<TransactionTab3> {
     final newQty = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
     if (newQty < 0) return;
     setState(() {
-      final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey);
+      final order = EditOrderData.data.firstWhere(
+        (o) => o.catalog.styleKey == styleKey,
+      );
       final shadeIndex = order.orderMatrix.shades.indexOf(shade);
       final sizeIndex = order.orderMatrix.sizes.indexOf(size);
       if (shadeIndex >= 0 && sizeIndex >= 0) {
-        final parts = order.orderMatrix.matrix[shadeIndex][sizeIndex].split(',');
+        final parts = order.orderMatrix.matrix[shadeIndex][sizeIndex].split(
+          ',',
+        );
         if (parts.length >= 4) {
           parts[2] = newQty.toString();
           order.orderMatrix.matrix[shadeIndex][sizeIndex] = parts.join(',');
@@ -94,7 +103,9 @@ class _TransactionTab3State extends State<TransactionTab3> {
 
   int getTotalQty(String styleKey) {
     int total = 0;
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == styleKey,
+    );
     if (order == null) return 0;
     for (var shade in order.orderMatrix.shades) {
       for (var size in order.orderMatrix.sizes) {
@@ -107,7 +118,9 @@ class _TransactionTab3State extends State<TransactionTab3> {
 
   int getTotalStock(String styleKey) {
     int total = 0;
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == styleKey,
+    );
     if (order == null) return 0;
     for (var shade in order.orderMatrix.shades) {
       for (var size in order.orderMatrix.sizes) {
@@ -120,7 +133,9 @@ class _TransactionTab3State extends State<TransactionTab3> {
 
   double getTotalAmount(String styleKey) {
     double total = 0;
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == styleKey,
+    );
     if (order == null) return 0;
     for (var shade in order.orderMatrix.shades) {
       for (var size in order.orderMatrix.sizes) {
@@ -134,13 +149,16 @@ class _TransactionTab3State extends State<TransactionTab3> {
   }
 
   void _copyQtyInAllShade(String styleKey) {
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == styleKey,
+    );
     if (order == null) return;
     final firstShade = order.orderMatrix.shades.first;
     final sizes = order.orderMatrix.sizes;
     setState(() {
       for (var size in sizes) {
-        final firstQty = controllersMap[styleKey]?[firstShade]?[size]?.text ?? '0';
+        final firstQty =
+            controllersMap[styleKey]?[firstShade]?[size]?.text ?? '0';
         for (var shade in order.orderMatrix.shades) {
           controllersMap[styleKey]?[shade]?[size]?.text = firstQty;
           _setQuantity(styleKey, shade, size, firstQty);
@@ -150,14 +168,17 @@ class _TransactionTab3State extends State<TransactionTab3> {
   }
 
   void _copySizeQtyInAllShade(String styleKey) {
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == styleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == styleKey,
+    );
     if (order == null) return;
     final shades = order.orderMatrix.shades;
     final sizes = order.orderMatrix.sizes;
     setState(() {
       for (var shade in shades) {
         for (var size in sizes) {
-          final qty = controllersMap[styleKey]?[shades.first]?[size]?.text ?? '0';
+          final qty =
+              controllersMap[styleKey]?[shades.first]?[size]?.text ?? '0';
           controllersMap[styleKey]?[shade]?[size]?.text = qty;
           _setQuantity(styleKey, shade, size, qty);
         }
@@ -166,7 +187,9 @@ class _TransactionTab3State extends State<TransactionTab3> {
   }
 
   void _copySizeQtyToOtherStyles(String sourceStyleKey) {
-    final order = EditOrderData.data.firstWhere((o) => o.catalog.styleKey == sourceStyleKey, );
+    final order = EditOrderData.data.firstWhere(
+      (o) => o.catalog.styleKey == sourceStyleKey,
+    );
     if (order == null) return;
     final sizes = order.orderMatrix.sizes;
     setState(() {
@@ -176,8 +199,15 @@ class _TransactionTab3State extends State<TransactionTab3> {
         for (var shade in targetShades) {
           for (var size in sizes) {
             if (targetOrder.orderMatrix.sizes.contains(size)) {
-              final qty = controllersMap[sourceStyleKey]?[order.orderMatrix.shades.first]?[size]?.text ?? '0';
-              controllersMap[targetOrder.catalog.styleKey]?[shade]?[size]?.text = qty;
+              final qty =
+                  controllersMap[sourceStyleKey]?[order
+                          .orderMatrix
+                          .shades
+                          .first]?[size]
+                      ?.text ??
+                  '0';
+              controllersMap[targetOrder.catalog.styleKey]?[shade]?[size]
+                  ?.text = qty;
               _setQuantity(targetOrder.catalog.styleKey, shade, size, qty);
             }
           }
@@ -188,7 +218,9 @@ class _TransactionTab3State extends State<TransactionTab3> {
 
   void _deleteCatalog(CatalogOrderData catalog) {
     setState(() {
-      EditOrderData.data.removeWhere((order) => order.catalog.styleKey == catalog.catalog.styleKey);
+      EditOrderData.data.removeWhere(
+        (order) => order.catalog.styleKey == catalog.catalog.styleKey,
+      );
       controllersMap.remove(catalog.catalog.styleKey);
       copiedRowsMap.remove(catalog.catalog.styleKey);
       sizesMap.remove(catalog.catalog.styleKey);
@@ -197,8 +229,6 @@ class _TransactionTab3State extends State<TransactionTab3> {
       colorsMap.remove(catalog.catalog.styleKey);
     });
   }
-
-
 
   Color _getColorCode(String color) {
     // Placeholder: Map color names to Color objects
@@ -211,7 +241,10 @@ class _TransactionTab3State extends State<TransactionTab3> {
         : '${AppConstants.BASE_URL}/images${catalog.catalog.fullImagePath}';
   }
 
-  Widget _buildItemBookingSection(BuildContext context, CatalogOrderData catalog) {
+  Widget _buildItemBookingSection(
+    BuildContext context,
+    CatalogOrderData catalog,
+  ) {
     final styleKey = catalog.catalog.styleKey;
     if (catalog.orderMatrix.shades.isEmpty) {
       return const Center(child: Text("Empty"));
@@ -271,70 +304,128 @@ class _TransactionTab3State extends State<TransactionTab3> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-title: const Text('Select an Action'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copyQtyInAllShade(styleKey);
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        margin: const EdgeInsets.only(bottom: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Qty in All Shade',
-                                          style: TextStyle(color: Colors.white),
+                                titlePadding: EdgeInsets.zero,
+                                contentPadding: EdgeInsets.zero,
+                                title: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Expanded(
+                                        child: Text(
+                                          'Select an Action',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copySizeQtyInAllShade(styleKey);
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        margin: const EdgeInsets.only(bottom: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Size Qty in All Shade',
-                                          style: TextStyle(color: Colors.white),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                content: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copyQtyInAllShade(styleKey);
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Qty in All Shade',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copySizeQtyToOtherStyles(styleKey);
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Size Qty to other Styles',
-                                          style: TextStyle(color: Colors.white),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copySizeQtyInAllShade(styleKey);
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Size Qty in All Shade',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copySizeQtyToOtherStyles(styleKey);
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Size Qty to other Styles',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
@@ -342,7 +433,11 @@ title: const Text('Select an Action'),
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 24),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 24,
+                        ),
                         onPressed: () => _deleteCatalog(catalog),
                       ),
                     ],
@@ -373,7 +468,10 @@ title: const Text('Select an Action'),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Text(
                       'Amt: ${getTotalAmount(styleKey).toStringAsFixed(0)}',
                       style: GoogleFonts.roboto(
@@ -398,11 +496,11 @@ title: const Text('Select an Action'),
     final sizes = catalog.orderMatrix.sizes;
     final screenWidth = MediaQuery.of(context).size.width;
     final baseTableWidth = 100 + (80 * sizes.length);
-    final requiredTableWidth = screenWidth > baseTableWidth ? screenWidth : baseTableWidth.toDouble();
+    final requiredTableWidth =
+        screenWidth > baseTableWidth ? screenWidth : baseTableWidth.toDouble();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16,
-      vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade500),
         borderRadius: BorderRadius.circular(8),
@@ -419,11 +517,30 @@ title: const Text('Select an Action'),
               ),
               columnWidths: _buildColumnWidths(),
               children: [
-                _buildPriceRow("MRP", sizeMrpMap[catalog.catalog.styleKey] ?? {}, FontWeight.w600, sizes),
-                _buildPriceRow("WSP", sizeWspMap[catalog.catalog.styleKey] ?? {}, FontWeight.w400, sizes),
+                _buildPriceRow(
+                  "MRP",
+                  sizeMrpMap[catalog.catalog.styleKey] ?? {},
+                  FontWeight.w600,
+                  sizes,
+                ),
+                _buildPriceRow(
+                  "WSP",
+                  sizeWspMap[catalog.catalog.styleKey] ?? {},
+                  FontWeight.w400,
+                  sizes,
+                ),
                 _buildHeaderRow(catalog.catalog.styleKey, sizes),
-                for (var i = 0; i < (colorsMap[catalog.catalog.styleKey]?.length ?? 0); i++)
-                  _buildQuantityRow(catalog, colorsMap[catalog.catalog.styleKey]![i], i, sizes),
+                for (
+                  var i = 0;
+                  i < (colorsMap[catalog.catalog.styleKey]?.length ?? 0);
+                  i++
+                )
+                  _buildQuantityRow(
+                    catalog,
+                    colorsMap[catalog.catalog.styleKey]![i],
+                    i,
+                    sizes,
+                  ),
               ],
             ),
           ),
@@ -436,11 +553,17 @@ title: const Text('Select an Action'),
     const baseWidth = 100.0;
     return {
       0: const FixedColumnWidth(baseWidth),
-      for (int i = 0; i < maxSizes; i++) (i + 1): const FixedColumnWidth(baseWidth * 0.8),
+      for (int i = 0; i < maxSizes; i++)
+        (i + 1): const FixedColumnWidth(baseWidth * 0.8),
     };
   }
 
-  TableRow _buildPriceRow(String label, Map<String, double> sizePriceMap, FontWeight weight, List<String> sizes) {
+  TableRow _buildPriceRow(
+    String label,
+    Map<String, double> sizePriceMap,
+    FontWeight weight,
+    List<String> sizes,
+  ) {
     return TableRow(
       children: [
         TableCell(
@@ -507,7 +630,12 @@ title: const Text('Select an Action'),
     );
   }
 
-  TableRow _buildQuantityRow(CatalogOrderData catalog, String color, int i, List<String> sizes) {
+  TableRow _buildQuantityRow(
+    CatalogOrderData catalog,
+    String color,
+    int i,
+    List<String> sizes,
+  ) {
     final styleKey = catalog.catalog.styleKey;
     return TableRow(
       children: [
@@ -527,86 +655,153 @@ title: const Text('Select an Action'),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          title: const Text('Select an Action'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  final firstQty = controllersMap[styleKey]?[color]?.values.first.text ?? '0';
-                                  for (var size in sizesMap[styleKey] ?? []) {
-                                    controllersMap[styleKey]?[color]?[size]?.text = firstQty;
-                                    _setQuantity(styleKey, color, size, firstQty);
-                                  }
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Copy Qty in shade only',
-                                    style: TextStyle(color: Colors.white),
+                          titlePadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.zero,
+                          title: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Select an Action',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  List<String> copiedRow = [];
-                                  for (var size in sizesMap[styleKey] ?? []) {
-                                    final qty = controllersMap[styleKey]?[color]?[size]?.text ?? '0';
-                                    copiedRow.add(qty);
-                                  }
-                                  copiedRowsMap[styleKey] = copiedRow;
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Copy Row',
-                                    style: TextStyle(color: Colors.white),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          content: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    final firstQty =
+                                        controllersMap[styleKey]?[color]
+                                            ?.values
+                                            .first
+                                            .text ??
+                                        '0';
+                                    for (var size in sizesMap[styleKey] ?? []) {
+                                      controllersMap[styleKey]?[color]?[size]
+                                          ?.text = firstQty;
+                                      _setQuantity(
+                                        styleKey,
+                                        color,
+                                        size,
+                                        firstQty,
+                                      );
+                                    }
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Copy Qty in shade only',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  final copiedRow = copiedRowsMap[styleKey] ?? [];
-                                  for (int j = 0; j < (sizesMap[styleKey]?.length ?? 0); j++) {
-                                    controllersMap[styleKey]?[color]?[sizesMap[styleKey]![j]]?.text = copiedRow[j];
-                                    _setQuantity(styleKey, color, sizesMap[styleKey]![j], copiedRow[j]);
-                                  }
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Paste Row',
-                                    style: TextStyle(color: Colors.white),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    List<String> copiedRow = [];
+                                    for (var size in sizesMap[styleKey] ?? []) {
+                                      final qty =
+                                          controllersMap[styleKey]?[color]?[size]
+                                              ?.text ??
+                                          '0';
+                                      copiedRow.add(qty);
+                                    }
+                                    copiedRowsMap[styleKey] = copiedRow;
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Copy Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    final copiedRow =
+                                        copiedRowsMap[styleKey] ?? [];
+                                    for (
+                                      int j = 0;
+                                      j < (sizesMap[styleKey]?.length ?? 0);
+                                      j++
+                                    ) {
+                                      controllersMap[styleKey]?[color]?[sizesMap[styleKey]![j]]
+                                          ?.text = copiedRow[j];
+                                      _setQuantity(
+                                        styleKey,
+                                        color,
+                                        sizesMap[styleKey]![j],
+                                        copiedRow[j],
+                                      );
+                                    }
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Paste Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -631,7 +826,8 @@ title: const Text('Select an Action'),
           if (index < sizes.length) {
             final size = sizes[index];
             final controller = controllersMap[styleKey]?[color]?[size];
-            final originalQty = int.tryParse(_getMatrixValue(catalog, color, size)['qty']) ?? 0;
+            final originalQty =
+                int.tryParse(_getMatrixValue(catalog, color, size)['qty']) ?? 0;
 
             return TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
@@ -651,7 +847,8 @@ title: const Text('Select an Action'),
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(4),
                   ],
-                  onChanged: (value) => _setQuantity(styleKey, color, size, value),
+                  onChanged:
+                      (value) => _setQuantity(styleKey, color, size, value),
                 ),
               ),
             );
@@ -665,8 +862,6 @@ title: const Text('Select an Action'),
       ],
     );
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -739,10 +934,11 @@ class _TableHeaderCell extends StatelessWidget {
 class _DiagonalLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = Colors.grey.shade400
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset.zero, Offset(size.width, size.height), paint);
   }
 

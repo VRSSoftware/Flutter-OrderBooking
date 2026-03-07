@@ -32,7 +32,7 @@ class OrderPage extends StatefulWidget {
 }
 
 class _OrderPageState extends State<OrderPage> {
-  int viewOption = 0;
+  int viewOption = 1;
   List<Style> selectedStyles = [];
   List<Shade> selectedShades = [];
   List<Sizes> selectedSize = [];

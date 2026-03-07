@@ -119,10 +119,8 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
 
       for (var styleCode in styleGroups.keys) {
         final items = styleGroups[styleCode]!;
-        final uniqueShades =
-            items.map((e) => e.shadeName).toSet().toList()..sort();
-        final uniqueSizes =
-            items.map((e) => e.sizeName).toSet().toList()..sort();
+        final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
+        final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
 
         // Build size MRP and WSP maps
         Map<String, double> tempSizeMrpMap = {};
@@ -155,7 +153,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
           upcoming_Stk: items.first.upcoming_Stk,
           fullImagePath: '/NoImage.jpg',
           remark:
-              items.first.upcoming_Stk == '1'
+              items.first.upcoming_Stk == '0'
                   ? 'Upcoming Stock'
                   : '', // Set remark based on stk type
           imageId: '',
@@ -233,10 +231,10 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
           quantities[styleCode]![shade] = {};
           for (var size in uniqueSizes) {
             quantities[styleCode]![shade]![size] =
-                UserSession.coBrName == 'G CUBE NX' ? 0 : 1;
+                UserSession.coBrName == 'G CUBE NX' ? 0 : 0;
             final controllerKey = '$styleCode-$shade-$size';
             final controller = TextEditingController(
-              text: UserSession.coBrName == 'G CUBE NX' ? '0' : '1',
+              text: UserSession.coBrName == 'G CUBE NX' ? '0' : '0',
             );
             controller.addListener(() => setState(() {}));
             _controllers[controllerKey] = controller;
@@ -829,7 +827,12 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                 child: Container(
                   width: 80,
                   height: 115,
-                  margin: const EdgeInsets.only(left: 8, top: 8, right: 8,bottom:8),
+                  margin: const EdgeInsets.only(
+                    left: 8,
+                    top: 8,
+                    right: 8,
+                    bottom: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(8),
@@ -910,41 +913,79 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    title: const Text('Select an Action'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            Navigator.of(dialogContext).pop();
-                                            _copySizeQtyToOtherStyles(
-                                              catalog.styleKey,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 10,
+                                    titlePadding: EdgeInsets.zero,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(12),
                                             ),
-                                            margin: const EdgeInsets.only(
-                                              bottom: 8,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: const Text(
-                                              'Copy Size Qty to other Styles',
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Expanded(
+                                            child: Text(
+                                              'Select an Action',
                                               style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          IconButton(
+                                            icon: const Icon(Icons.close),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    content: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.of(dialogContext).pop();
+                                              _copySizeQtyToOtherStyles(
+                                                catalog.styleKey,
+                                              );
+                                            },
+                                            child: Container(
+                                              width: double.infinity,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 10,
+                                                  ),
+                                              margin: const EdgeInsets.only(
+                                                bottom: 8,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const Text(
+                                                'Copy Size Qty to other Styles',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
@@ -952,27 +993,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        // Delete icon with circular background
-                        Container(
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            onPressed: () => _deleteStyle(catalog.styleKey),
-                          ),
-                        ),
+                      
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -1071,8 +1092,8 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                                           : Colors.green.shade800,
                                 ),
                               ),
-                            
-                            const SizedBox(width: 4),
+
+                              const SizedBox(width: 4),
                               const Text(
                                 'Remark:',
                                 style: TextStyle(
@@ -1099,8 +1120,6 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                             ],
                           ),
                         ),
-
-                    
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -1162,7 +1181,6 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
             ],
           ),
         ),
-     
       ],
     );
   }
@@ -1355,47 +1373,84 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          title: const Text(
-                            'Select Action',
-                            style: TextStyle(fontSize: 15),
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildDialogOption(
-                                'Copy Qty in shade only',
-                                Colors.blue,
-                                () {
-                                  Navigator.of(context).pop();
-                                  _copyQtyInShadeOnly(styleKey, shade, sizes);
-                                },
+                          titlePadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.zero,
+                          title: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
                               ),
-                              _buildDialogOption('Copy Row', Colors.blue, () {
-                                Navigator.of(context).pop();
-                                _copyRow(styleKey, shade, sizes);
-                              }),
-                              _buildDialogOption('Paste Row', Colors.green, () {
-                                Navigator.of(context).pop();
-                                _pasteRow(styleKey, shade, sizes);
-                              }),
-                              _buildDialogOption(
-                                'Copy Qty in All Shade',
-                                Colors.purple,
-                                () {
-                                  Navigator.of(context).pop();
-                                  _copyQtyInAllShade(styleKey, shade, sizes);
-                                },
-                              ),
-                              if (catalogOrderList.length > 1)
-                                _buildDialogOption(
-                                  'Copy Size Qty to other Styles',
-                                  Colors.orange,
-                                  () {
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Select an Action',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
                                     Navigator.of(context).pop();
-                                    _copySizeQtyToOtherStyles(styleKey);
                                   },
                                 ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          content: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildDialogOption(
+                                  'Copy Qty in shade only',
+                                  Colors.blue,
+                                  () {
+                                    Navigator.of(context).pop();
+                                    _copyQtyInShadeOnly(styleKey, shade, sizes);
+                                  },
+                                ),
+                                _buildDialogOption('Copy Row', Colors.blue, () {
+                                  Navigator.of(context).pop();
+                                  _copyRow(styleKey, shade, sizes);
+                                }),
+                                _buildDialogOption(
+                                  'Paste Row',
+                                  Colors.green,
+                                  () {
+                                    Navigator.of(context).pop();
+                                    _pasteRow(styleKey, shade, sizes);
+                                  },
+                                ),
+                                _buildDialogOption(
+                                  'Copy Qty in All Shade',
+                                  Colors.purple,
+                                  () {
+                                    Navigator.of(context).pop();
+                                    _copyQtyInAllShade(styleKey, shade, sizes);
+                                  },
+                                ),
+                                if (catalogOrderList.length > 1)
+                                  _buildDialogOption(
+                                    'Copy Size Qty to other Styles',
+                                    Colors.orange,
+                                    () {
+                                      Navigator.of(context).pop();
+                                      _copySizeQtyToOtherStyles(styleKey);
+                                    },
+                                  ),
+                              ],
+                            ),
                           ),
                         );
                       },

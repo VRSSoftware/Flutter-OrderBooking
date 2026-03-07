@@ -1110,7 +1110,7 @@ class _StyleManager {
   }
 
   List<String> _getSortedUniqueValues(List<dynamic> items, String field) =>
-      items.map((e) => e[field]?.toString() ?? '').toSet().toList()..sort();
+      items.map((e) => e[field]?.toString() ?? '').toSet().toList();
 }
 
 class _StyleCardsView extends StatelessWidget {

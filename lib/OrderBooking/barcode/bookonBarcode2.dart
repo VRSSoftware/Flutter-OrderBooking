@@ -114,9 +114,9 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       for (var styleCode in styleGroups.keys) {
         final items = styleGroups[styleCode]!;
         final uniqueShades =
-            items.map((e) => e.shadeName).toSet().toList()..sort();
+            items.map((e) => e.shadeName).toSet().toList();
         final uniqueSizes =
-            items.map((e) => e.sizeName).toSet().toList()..sort();
+            items.map((e) => e.sizeName).toSet().toList();
 
         final catalog = Catalog(
           itemSubGrpKey: '',
@@ -210,10 +210,10 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
         for (var shade in uniqueShades) {
           quantities[styleCode]![shade] = {};
           for (var size in uniqueSizes) {
-            quantities[styleCode]![shade]![size] = UserSession.coBrName=='G CUBE NX' ? 0 : 1; // Default to 1
+            quantities[styleCode]![shade]![size] = UserSession.coBrName=='G CUBE NX' ? 0 : 0; // Default to 1
             final controllerKey = '$styleCode-$shade-$size';
             final controller = TextEditingController(
-              text: '1',
+              text: '0',
             ); // Default to '1'
             controller.addListener(() => setState(() {}));
             _controllers[controllerKey] = controller;

@@ -223,7 +223,7 @@ class _StyleCardState extends State<StyleCard> {
 
   Widget _buildPriceTable(BuildContext context) {
     final sizeDetails = _getSizeDetails(widget.items);
-    final sortedSizes = sizeDetails.keys.toList()..sort();
+    final sortedSizes = sizeDetails.keys.toList();
     final sortedShades = _getSortedShades(widget.items);
 
     return SingleChildScrollView(
@@ -267,7 +267,7 @@ class _StyleCardState extends State<StyleCard> {
 
   List<String> _getSortedShades(List<dynamic> items) =>
       items.map((e) => e['shadeName']?.toString() ?? '').toSet().toList()
-        ..sort();
+        ;
 
   Map<int, TableColumnWidth> _buildColumnWidths(List<String> sizes) => {
     0: const FixedColumnWidth(100),

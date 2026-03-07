@@ -116,8 +116,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
         final List data = jsonDecode(response.body);
         if (data.isNotEmpty) {
           final items = data.map((e) => CatalogItem.fromJson(e)).toList();
-          final uniqueSizes =
-              items.map((e) => e.sizeName).toSet().toList()..sort();
+          final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
           final uniqueColors = items.map((e) => e.shadeName).toSet().toList();
 
           Map<String, double> tempSizeMrpMap = {};
@@ -526,90 +525,136 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                title: const Text('Select an Action'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copyQtyInAllShade(catalog.styleCode);
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                        ),
-                                        margin: const EdgeInsets.only(
-                                          bottom: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                titlePadding: EdgeInsets.zero,
+                                contentPadding: EdgeInsets.zero,
+
+                                title: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Expanded(
+                                        child: Text(
+                                          'Select an Action',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Qty in All Shade',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copySizeQtyInAllShade(
-                                          catalog.styleCode,
-                                        );
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                        ),
-                                        margin: const EdgeInsets.only(
-                                          bottom: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () {
+                                          Navigator.of(dialogContext).pop();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                content: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copyQtyInAllShade(catalog.styleCode);
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Qty in All Shade',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Size Qty in All Shade',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.of(dialogContext).pop();
-                                        _copySizeQtyToOtherStyles(
-                                          catalog.styleCode,
-                                        );
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copySizeQtyInAllShade(
+                                            catalog.styleCode,
+                                          );
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Size Qty in All Shade',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Copy Size Qty to other Styles',
-                                          style: TextStyle(color: Colors.white),
+                                      ),
+
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.of(dialogContext).pop();
+                                          _copySizeQtyToOtherStyles(
+                                            catalog.styleCode,
+                                          );
+                                        },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Copy Size Qty to other Styles',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },
@@ -631,7 +676,41 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                             8,
                           ), // Padding around icon
                         ),
-                        onPressed: () => _deleteCatalog(catalog),
+                        //onPressed: () => _deleteCatalog(catalog),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) {
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                title: const Text('Confirm Delete'),
+                                content: const Text(
+                                  'Are you sure you want to delete this style?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop();
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop();
+                                      _deleteCatalog(catalog);
+                                    },
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -712,8 +791,8 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade500),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black),
+        borderRadius: BorderRadius.circular(0),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -723,7 +802,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
             scrollDirection: Axis.vertical,
             child: Table(
               border: TableBorder.symmetric(
-                inside: BorderSide(color: Colors.grey.shade400, width: 1),
+                inside: BorderSide(color: Colors.grey.shade800, width: 1),
               ),
               columnWidths: _buildColumnWidths(),
               children: [
@@ -773,61 +852,68 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white,
-      child: Row(
-        children: [
-          // Cancel button
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.close, color: AppColors.primaryColor),
-              label: const Text(
-                'Cancel',
-                style: TextStyle(fontSize: 16, color: AppColors.primaryColor),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(
-                    color: AppColors.primaryColor,
-                    width: 2,
+    final hasQty = widget.catalogs.any((c) => getTotalQty(c.styleCode) > 0);
+
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OrderPage(),
+                  settings: RouteSettings(arguments: widget.routeArguments),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              color: Colors.red.shade800,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.close, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                ],
               ),
-              onPressed: () => Navigator.pop(context),
             ),
           ),
-          const SizedBox(width: 16), // Space between buttons
-          // Submit All button
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'Submit All',
-                style: TextStyle(fontSize: 16, color: Colors.white),
+        ),
+
+        Expanded(
+          child: GestureDetector(
+            onTap: hasQty ? _submitAllOrders : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              color: hasQty ? Colors.blue : Colors.blueGrey,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text(
+                    'Confirm',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    widget.catalogs.any((c) => getTotalQty(c.styleCode) > 0)
-                        ? AppColors.primaryColor
-                        : Colors.grey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed:
-                  widget.catalogs.any((c) => getTotalQty(c.styleCode) > 0)
-                      ? _submitAllOrders
-                      : null,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -931,112 +1017,151 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          title: const Text('Select an Action'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  final firstQty =
-                                      controllersMap[catalog.styleCode]?[color]
-                                          ?.values
-                                          .first
-                                          .text;
-                                  for (var size
-                                      in sizesMap[catalog.styleCode] ?? []) {
-                                    controllersMap[catalog
-                                            .styleCode]?[color]?[size]
-                                        ?.text = firstQty ?? '0';
-                                  }
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Copy Qty in shade only',
-                                    style: TextStyle(color: Colors.white),
+                          titlePadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.zero,
+                          title: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Select an Action',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  List<String> copiedRow = [];
-                                  for (var size
-                                      in sizesMap[catalog.styleCode] ?? []) {
-                                    final qty =
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          content: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    final firstQty =
                                         controllersMap[catalog
-                                                .styleCode]?[color]?[size]
-                                            ?.text ??
-                                        '0';
-                                    copiedRow.add(qty);
-                                  }
-                                  copiedRowsMap[catalog.styleCode] = copiedRow;
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Copy Row',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  final copiedRow =
-                                      copiedRowsMap[catalog.styleCode] ?? [];
-                                  for (
-                                    int j = 0;
-                                    j <
-                                        (sizesMap[catalog.styleCode]?.length ??
-                                            0);
-                                    j++
-                                  ) {
-                                    controllersMap[catalog
-                                            .styleCode]?[color]?[sizesMap[catalog
-                                            .styleCode]![j]]
-                                        ?.text = copiedRow[j];
-                                  }
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    'Paste Row',
-                                    style: TextStyle(color: Colors.white),
+                                                .styleCode]?[color]
+                                            ?.values
+                                            .first
+                                            .text;
+                                    for (var size
+                                        in sizesMap[catalog.styleCode] ?? []) {
+                                      controllersMap[catalog
+                                              .styleCode]?[color]?[size]
+                                          ?.text = firstQty ?? '0';
+                                    }
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Copy Qty in shade only',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    List<String> copiedRow = [];
+                                    for (var size
+                                        in sizesMap[catalog.styleCode] ?? []) {
+                                      final qty =
+                                          controllersMap[catalog
+                                                  .styleCode]?[color]?[size]
+                                              ?.text ??
+                                          '0';
+                                      copiedRow.add(qty);
+                                    }
+                                    copiedRowsMap[catalog.styleCode] =
+                                        copiedRow;
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Copy Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    final copiedRow =
+                                        copiedRowsMap[catalog.styleCode] ?? [];
+                                    for (
+                                      int j = 0;
+                                      j <
+                                          (sizesMap[catalog.styleCode]
+                                                  ?.length ??
+                                              0);
+                                      j++
+                                    ) {
+                                      controllersMap[catalog
+                                              .styleCode]?[color]?[sizesMap[catalog
+                                              .styleCode]![j]]
+                                          ?.text = copiedRow[j];
+                                    }
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Paste Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

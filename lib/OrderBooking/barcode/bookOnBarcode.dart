@@ -63,9 +63,9 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
   String barcode = '';
   String itemKey = '';
   String styleKey = '';
-  String userId = UserSession.userName??'';
-  String coBrId = UserSession.coBrId??'';
-  String fcYrId = UserSession.userFcYr??'';
+  String userId = UserSession.userName ?? '';
+  String coBrId = UserSession.coBrId ?? '';
+  String fcYrId = UserSession.userFcYr ?? '';
   bool stockWise = true;
   bool isLoading = true;
   List<String> _copiedRow = [];
@@ -93,9 +93,9 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
         '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
 
     final Map<String, dynamic> requestBody = {
-      "coBrId": UserSession.coBrId??'',
-      "userId": UserSession.userName??'',
-      "fcYrId": UserSession.userFcYr??'',
+      "coBrId": UserSession.coBrId ?? '',
+      "userId": UserSession.userName ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
       "barcode": barcode,
     };
 
@@ -110,8 +110,7 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
       if (data.isNotEmpty) {
         final items = data.map((e) => CatalogItem.fromJson(e)).toList();
 
-        final uniqueSizes =
-            items.map((e) => e.sizeName).toSet().toList()..sort();
+        final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
         final uniqueColors = items.map((e) => e.shadeName).toSet().toList();
 
         // Initialize size-specific price maps
@@ -529,88 +528,125 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text('Select an Action'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  // Add "Copy Qty in shade only" logic
-                                  final firstQty =
-                                      controllers[color]?.values.first.text;
-                                  for (var size in sizes) {
-                                    controllers[color]?[size]?.text =
-                                        firstQty ?? '0';
-                                  }
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  margin: EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
+                          titlePadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.zero,
+                          title: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
                                   child: Text(
-                                    'Copy Qty in shade only',
-                                    style: TextStyle(color: Colors.white),
+                                    'Select an Action',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  // Add "Copy Row" logic
-                                  List<String> copiedRow = [];
-                                  for (var size in sizes) {
-                                    final qty =
-                                        controllers[color]?[size]?.text ?? '0';
-                                    copiedRow.add(qty);
-                                  }
-                                  // Store the copied row for pasting
-                                  _copiedRow = copiedRow;
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  margin: EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Copy Row',
-                                    style: TextStyle(color: Colors.white),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          content: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    // Add "Copy Qty in shade only" logic
+                                    final firstQty =
+                                        controllers[color]?.values.first.text;
+                                    for (var size in sizes) {
+                                      controllers[color]?[size]?.text =
+                                          firstQty ?? '0';
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    margin: EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Copy Qty in shade only',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  // Add "Paste Row" logic
-                                  for (int j = 0; j < sizes.length; j++) {
-                                    controllers[color]?[sizes[j]]?.text =
-                                        _copiedRow[j];
-                                  }
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Paste Row',
-                                    style: TextStyle(color: Colors.white),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    // Add "Copy Row" logic
+                                    List<String> copiedRow = [];
+                                    for (var size in sizes) {
+                                      final qty =
+                                          controllers[color]?[size]?.text ??
+                                          '0';
+                                      copiedRow.add(qty);
+                                    }
+                                    // Store the copied row for pasting
+                                    _copiedRow = copiedRow;
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    margin: EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Copy Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    // Add "Paste Row" logic
+                                    for (int j = 0; j < sizes.length; j++) {
+                                      controllers[color]?[sizes[j]]?.text =
+                                          _copiedRow[j];
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Paste Row',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -698,7 +734,7 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
               "barcode": barcode.trim(),
             },
             "typ": 0,
-            "barcode" : "true"
+            "barcode": "true",
           };
 
           apiCalls.add(
@@ -727,7 +763,7 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
                   actions: [
                     TextButton(
                       onPressed: () {
-                       // Navigator.pop(context);
+                        // Navigator.pop(context);
                         Navigator.pop(context);
                         widget.onSuccess();
                       },
