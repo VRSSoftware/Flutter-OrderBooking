@@ -74,9 +74,7 @@ class _CatalogScreenState extends State<CatalogScreen>
       });
       final categories = await ApiService.fetchCategories();
       setState(() {
-        _categories = [
-          ...categories,
-        ];
+        _categories = [...categories];
         _isLoadingCategories = false;
       });
     } catch (e) {
@@ -85,8 +83,9 @@ class _CatalogScreenState extends State<CatalogScreen>
         _categoryError = 'Failed to load categories: $e';
       });
       print('Error fetching categories: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load categories: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load categories: $e')));
     }
   }
 
@@ -108,8 +107,9 @@ class _CatalogScreenState extends State<CatalogScreen>
         _itemsError = 'Failed to load items: $e';
       });
       print('Error fetching items: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load items: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load items: $e')));
     }
   }
 
@@ -117,9 +117,12 @@ class _CatalogScreenState extends State<CatalogScreen>
     if (_selectedCategoryKeys.isEmpty) {
       _items = _allItems;
     } else {
-      _items = _allItems
-          .where((item) => _selectedCategoryKeys.contains(item.itemSubGrpKey))
-          .toList();
+      _items =
+          _allItems
+              .where(
+                (item) => _selectedCategoryKeys.contains(item.itemSubGrpKey),
+              )
+              .toList();
     }
   }
 
@@ -141,56 +144,57 @@ class _CatalogScreenState extends State<CatalogScreen>
         backgroundColor: AppColors.primaryColor,
         elevation: 1,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.menu, color: AppColors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: Icon(Icons.menu, color: AppColors.white),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
       ),
-      
+
       // FLOATING ACTION BUTTON - ONLY APPEARS WHEN ITEMS SELECTED
-      floatingActionButton: (_selectedCategoryKeys.isNotEmpty ||
-              _selectedItemKeys.isNotEmpty)
-          ? ScaleTransition(
-              scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
-              child: FloatingActionButton(
-                backgroundColor: AppColors.primaryColor,
-                child: Icon(Icons.arrow_forward, color: Colors.white),
-                onPressed: () {
-                  String? categoryKeys;
-                  String? itemKeys;
+      floatingActionButton:
+          (_selectedCategoryKeys.isNotEmpty || _selectedItemKeys.isNotEmpty)
+              ? ScaleTransition(
+                scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
+                child: FloatingActionButton(
+                  backgroundColor: AppColors.primaryColor,
+                  child: Icon(Icons.arrow_forward, color: Colors.white),
+                  onPressed: () {
+                    String? categoryKeys;
+                    String? itemKeys;
 
-                  if (_selectedCategoryKeys.isNotEmpty) {
-                    categoryKeys = _selectedCategoryKeys.join(',');
-                  }
+                    if (_selectedCategoryKeys.isNotEmpty) {
+                      categoryKeys = _selectedCategoryKeys.join(',');
+                    }
 
-                  if (_selectedItemKeys.isNotEmpty) {
-                    itemKeys = _selectedItemKeys.join(',');
-                  }
+                    if (_selectedItemKeys.isNotEmpty) {
+                      itemKeys = _selectedItemKeys.join(',');
+                    }
 
-                  Navigator.pushNamed(
-                    context,
-                    '/catalogpage',
-                    arguments: {
-                      'itemKey': itemKeys,
-                      'itemSubGrpKey': categoryKeys,
-                      'itemName': null,
-                      'coBr': coBr,
-                      'fcYrId': fcYrId,
-                    },
-                  ).then((_) {
-                    // Clear selection after returning
-                    setState(() {
-                      _selectedCategoryKeys.clear();
-                      _selectedItemKeys.clear();
-                      _isMultiSelectMode = false;
-                      _filterItems();
+                    Navigator.pushNamed(
+                      context,
+                      '/catalogpage',
+                      arguments: {
+                        'itemKey': itemKeys,
+                        'itemSubGrpKey': categoryKeys,
+                        'itemName': null,
+                        'coBr': coBr,
+                        'fcYrId': fcYrId,
+                      },
+                    ).then((_) {
+                      // Clear selection after returning
+                      setState(() {
+                        _selectedCategoryKeys.clear();
+                        _selectedItemKeys.clear();
+                        _isMultiSelectMode = false;
+                        _filterItems();
+                      });
                     });
-                  });
-                },
-              ),
-            )
-          : null,
+                  },
+                ),
+              )
+              : null,
 
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -204,7 +208,7 @@ class _CatalogScreenState extends State<CatalogScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: 5),
-                      
+
                       Text(
                         "Categories",
                         style: TextStyle(
@@ -213,125 +217,128 @@ class _CatalogScreenState extends State<CatalogScreen>
                         ),
                       ),
                       SizedBox(height: 10),
-                      
+
                       // Categories Section
                       _isLoadingCategories
                           ? Center(
-                              child: LoadingAnimationWidget.waveDots(
-                                color: AppColors.primaryColor,
-                                size: 30,
-                              ),
-                            )
+                            child: LoadingAnimationWidget.waveDots(
+                              color: AppColors.primaryColor,
+                              size: 30,
+                            ),
+                          )
                           : _categoryError != null
-                              ? Center(
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        _categoryError!,
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                      SizedBox(height: 10),
-                                      ElevatedButton(
-                                        onPressed: _fetchCategories,
-                                        child: Text('Retry'),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : Wrap(
-                                  spacing: 16,
-                                  runSpacing: 10,
-                                  alignment: WrapAlignment.start,
-                                  children: _categories.map((category) {
-                                    bool isSelected = _selectedCategoryKeys
-                                        .contains(category.itemSubGrpKey);
-                                        
-                                    return SizedBox(
-                                      width: (MediaQuery.of(context).size.width -
-                                              48) /
-                                          2,
-                                      child: OutlinedButton(
-                                        // TAP BEHAVIOR - Changes based on mode
-                                        onPressed: () {
-                                          if (_isMultiSelectMode) {
-                                            // In multi-select mode: toggle selection
-                                            setState(() {
-                                              if (isSelected) {
-                                                _selectedCategoryKeys.remove(
-                                                    category.itemSubGrpKey);
-                                              } else {
-                                                _selectedCategoryKeys
-                                                    .add(category.itemSubGrpKey);
-                                              }
-                                              _filterItems();
-                                              _exitMultiSelectMode();
+                          ? Center(
+                            child: Column(
+                              children: [
+                                Text(
+                                  _categoryError!,
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                SizedBox(height: 10),
+                                ElevatedButton(
+                                  onPressed: _fetchCategories,
+                                  child: Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          )
+                          : Wrap(
+                            spacing: 16,
+                            runSpacing: 10,
+                            alignment: WrapAlignment.start,
+                            children:
+                                _categories.map((category) {
+                                  bool isSelected = _selectedCategoryKeys
+                                      .contains(category.itemSubGrpKey);
+
+                                  return SizedBox(
+                                    width:
+                                        (MediaQuery.of(context).size.width -
+                                            48) /
+                                        2,
+                                    child: OutlinedButton(
+                                      // TAP BEHAVIOR - Changes based on mode
+                                      onPressed: () {
+                                        setState(() {
+                                          _isMultiSelectMode = true;
+
+                                          if (isSelected) {
+                                            _selectedCategoryKeys.remove(
+                                              category.itemSubGrpKey,
+                                            );
+
+                                            // remove items of this category
+                                            _selectedItemKeys.removeWhere((
+                                              itemKey,
+                                            ) {
+                                              final selectedItem = _allItems
+                                                  .firstWhere(
+                                                    (i) => i.itemKey == itemKey,
+                                                  );
+                                              return selectedItem
+                                                      .itemSubGrpKey ==
+                                                  category.itemSubGrpKey;
                                             });
                                           } else {
-                                            // Normal mode: navigate
-                                            Navigator.pushNamed(
-                                              context,
-                                              '/catalogpage',
-                                              arguments: {
-                                                'itemKey': null,
-                                                'itemSubGrpKey':
-                                                    category.itemSubGrpKey,
-                                                'itemName':
-                                                    category.itemSubGrpName.trim(),
-                                                'coBr': coBr,
-                                                'fcYrId': fcYrId,
-                                              },
+                                            _selectedCategoryKeys.add(
+                                              category.itemSubGrpKey,
                                             );
                                           }
-                                        },
-                                        // LONG PRESS - Always enables multi-select and toggles selection
-                                        onLongPress: () {
-                                          setState(() {
-                                            _isMultiSelectMode = true;
-                                            if (isSelected) {
-                                              _selectedCategoryKeys.remove(
-                                                  category.itemSubGrpKey);
-                                            } else {
-                                              _selectedCategoryKeys
-                                                  .add(category.itemSubGrpKey);
-                                            }
-                                            _filterItems();
-                                          });
-                                        },
-                                        style: ButtonStyle(
-                                          backgroundColor:
-                                              MaterialStateProperty.all(
-                                            isSelected
-                                                ? AppColors.primaryColor
-                                                : Colors.white,
-                                          ),
-                                          side: MaterialStateProperty.all(
-                                            BorderSide(
-                                              color: AppColors.primaryColor,
-                                              width: isSelected ? 2 : 1,
+
+                                          _filterItems();
+                                          _exitMultiSelectMode();
+                                        });
+                                      }, // LONG PRESS - Always enables multi-select and toggles selection
+                                      // onLongPress: () {
+                                      //   setState(() {
+                                      //     _isMultiSelectMode = true;
+                                      //     if (isSelected) {
+                                      //       _selectedCategoryKeys.remove(
+                                      //           category.itemSubGrpKey);
+                                      //     } else {
+                                      //       _selectedCategoryKeys
+                                      //           .add(category.itemSubGrpKey);
+                                      //     }
+                                      //     _filterItems();
+                                      //   });
+                                      // },
+                                      style: ButtonStyle(
+                                        backgroundColor:
+                                            MaterialStateProperty.all(
+                                              isSelected
+                                                  ? AppColors.primaryColor
+                                                  : Colors.white,
                                             ),
-                                          ),
-                                          shape: MaterialStateProperty.all(
-                                            RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
+                                        side: MaterialStateProperty.all(
+                                          BorderSide(
+                                            color: AppColors.primaryColor,
+                                            width: isSelected ? 2 : 1,
                                           ),
                                         ),
-                                        child: Text(
-                                          category.itemSubGrpName,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.white
-                                                : AppColors.primaryColor,
+                                        shape: MaterialStateProperty.all(
+                                          RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
+                                      child: Text(
+                                        category.itemSubGrpName,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color:
+                                              isSelected
+                                                  ? Colors.white
+                                                  : AppColors.primaryColor,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
                       SizedBox(height: 20),
-                      
+
                       // Items Section
                       _buildCategoryItems(),
                       Spacer(),
@@ -361,112 +368,117 @@ class _CatalogScreenState extends State<CatalogScreen>
         SizedBox(height: 10),
         _isLoadingItems
             ? Center(
-                child: LoadingAnimationWidget.waveDots(
-                  color: AppColors.primaryColor,
-                  size: 30,
-                ),
-              )
+              child: LoadingAnimationWidget.waveDots(
+                color: AppColors.primaryColor,
+                size: 30,
+              ),
+            )
             : _itemsError != null
-                ? Center(
-                    child: Column(
-                      children: [
-                        Text(_itemsError!,
-                            style: TextStyle(color: Colors.red)),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: _fetchAllItems,
-                          child: Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _items.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No items found',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : Wrap(
-                        spacing: 16,
-                        runSpacing: 10,
-                        alignment: WrapAlignment.start,
-                        children: _items.map((item) {
-                          bool isSelected =
-                              _selectedItemKeys.contains(item.itemKey);
-                              
-                          return SizedBox(
-                            width: buttonWidth,
-                            height: buttonHeight,
-                            child: OutlinedButton(
-                              // TAP BEHAVIOR - Changes based on mode
-                              onPressed: () {
-                                if (_isMultiSelectMode) {
-                                  // In multi-select mode: toggle selection
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedItemKeys.remove(item.itemKey);
-                                    } else {
-                                      _selectedItemKeys.add(item.itemKey);
-                                    }
-                                    _exitMultiSelectMode();
-                                  });
-                                } else {
-                                  // Normal mode: navigate
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/catalogpage',
-                                    arguments: {
-                                      'itemKey': item.itemKey,
-                                      'itemSubGrpKey': item.itemSubGrpKey,
-                                      'itemName': item.itemName.trim(),
-                                      'coBr': coBr,
-                                      'fcYrId': fcYrId,
-                                    },
-                                  );
-                                }
-                              },
-                              // LONG PRESS - Always enables multi-select and toggles selection
-                              onLongPress: () {
-                                setState(() {
-                                  _isMultiSelectMode = true;
-                                  if (isSelected) {
-                                    _selectedItemKeys.remove(item.itemKey);
-                                  } else {
-                                    _selectedItemKeys.add(item.itemKey);
-                                  }
-                                });
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                    color: isSelected
-                                        ? AppColors.primaryColor
-                                        : Colors.grey.shade300,
-                                    width: isSelected ? 2 : 1),
-                                backgroundColor: isSelected
+            ? Center(
+              child: Column(
+                children: [
+                  Text(_itemsError!, style: TextStyle(color: Colors.red)),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _fetchAllItems,
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+            : _items.isEmpty
+            ? Center(
+              child: Text(
+                'No items found',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+            : Wrap(
+              spacing: 16,
+              runSpacing: 10,
+              alignment: WrapAlignment.start,
+              children:
+                  _items.map((item) {
+                    bool isSelected = _selectedItemKeys.contains(item.itemKey);
+
+                    return SizedBox(
+                      width: buttonWidth,
+                      height: buttonHeight,
+                      child: OutlinedButton(
+                        // TAP BEHAVIOR - Changes based on mode
+                        onPressed: () {
+                          setState(() {
+                            _isMultiSelectMode = true;
+
+                            if (isSelected) {
+                              _selectedItemKeys.remove(item.itemKey);
+
+                              // check if category still has selected items
+                              bool hasOtherItems = _selectedItemKeys.any((key) {
+                                final selectedItem = _allItems.firstWhere(
+                                  (i) => i.itemKey == key,
+                                );
+                                return selectedItem.itemSubGrpKey ==
+                                    item.itemSubGrpKey;
+                              });
+
+                              if (!hasOtherItems) {
+                                _selectedCategoryKeys.remove(
+                                  item.itemSubGrpKey,
+                                );
+                              }
+                            } else {
+                              _selectedItemKeys.add(item.itemKey);
+
+                              if (item.itemSubGrpKey != null) {
+                                _selectedCategoryKeys.add(item.itemSubGrpKey!);
+                              }
+                            }
+
+                            _exitMultiSelectMode();
+                          });
+                        }, // LONG PRESS - Always enables multi-select and toggles selection
+                        // onLongPress: () {
+                        //   setState(() {
+                        //     _isMultiSelectMode = true;
+                        //     if (isSelected) {
+                        //       _selectedItemKeys.remove(item.itemKey);
+                        //     } else {
+                        //       _selectedItemKeys.add(item.itemKey);
+                        //     }
+                        //   });
+                        // },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color:
+                                isSelected
                                     ? AppColors.primaryColor
-                                    : Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  item.itemName,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black87,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
+                                    : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          backgroundColor:
+                              isSelected
+                                  ? AppColors.primaryColor
+                                  : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Text(
+                            item.itemName,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontSize: 14,
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ),
                       ),
+                    );
+                  }).toList(),
+            ),
       ],
     );
   }

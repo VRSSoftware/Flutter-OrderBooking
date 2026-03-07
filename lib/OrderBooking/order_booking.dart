@@ -202,7 +202,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
             icon: Stack(
               children: [
                 const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
-                if (cartModel.count >= 0)
+                if (cartModel.count > 0)
                   Positioned(
                     right: 0,
                     top: 0,
@@ -490,46 +490,9 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                                         child: OutlinedButton(
                                           // ✅ TAP BEHAVIOR - Changes based on mode
                                           onPressed: () {
-                                            if (_isMultiSelectMode) {
-                                              // In multi-select mode: toggle selection
-                                              setState(() {
-                                                if (isSelected) {
-                                                  _selectedCategoryKeys.remove(
-                                                    category.itemSubGrpKey,
-                                                  );
-                                                } else {
-                                                  _selectedCategoryKeys.add(
-                                                    category.itemSubGrpKey,
-                                                  );
-                                                }
-                                                _filterItems();
-                                                _exitMultiSelectMode();
-                                              });
-                                            } else {
-                                              // Normal mode: navigate
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/orderpage',
-                                                arguments: {
-                                                  'itemKey': null,
-                                                  'itemSubGrpKey':
-                                                      category.itemSubGrpKey,
-                                                  'itemName':
-                                                      category.itemSubGrpName
-                                                          .trim(),
-                                                  'coBr': coBr,
-                                                  'fcYrId': fcYrId,
-                                                  'selectedParty':
-                                                      selectedParty,
-                                                  'type': Constants.SALE_BILL,
-                                                },
-                                              ).then((_) => _fetchCartCount());
-                                            }
-                                          },
-                                          // ✅ LONG PRESS FOR MULTI-SELECT
-                                          onLongPress: () {
                                             setState(() {
                                               _isMultiSelectMode = true;
+
                                               if (isSelected) {
                                                 _selectedCategoryKeys.remove(
                                                   category.itemSubGrpKey,
@@ -539,9 +502,26 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                                                   category.itemSubGrpKey,
                                                 );
                                               }
+
                                               _filterItems();
+                                              _exitMultiSelectMode();
                                             });
-                                          },
+                                          }, // ✅ LONG PRESS FOR MULTI-SELECT
+                                          // onLongPress: () {
+                                          //   setState(() {
+                                          //     _isMultiSelectMode = true;
+                                          //     if (isSelected) {
+                                          //       _selectedCategoryKeys.remove(
+                                          //         category.itemSubGrpKey,
+                                          //       );
+                                          //     } else {
+                                          //       _selectedCategoryKeys.add(
+                                          //         category.itemSubGrpKey,
+                                          //       );
+                                          //     }
+                                          //     _filterItems();
+                                          //   });
+                                          // },
                                           style: ButtonStyle(
                                             backgroundColor:
                                                 WidgetStateProperty.all(
@@ -642,44 +622,61 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                         child: OutlinedButton(
                           // ✅ TAP BEHAVIOR - Changes based on mode
                           onPressed: () {
-                            if (_isMultiSelectMode) {
-                              // In multi-select mode: toggle selection
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedItemKeys.remove(item.itemKey);
-                                } else {
-                                  _selectedItemKeys.add(item.itemKey);
-                                }
-                                _exitMultiSelectMode();
-                              });
-                            } else {
-                              // Normal mode: navigate
-                              Navigator.pushNamed(
-                                context,
-                                '/orderpage',
-                                arguments: {
-                                  'itemKey': item.itemKey,
-                                  'itemName': item.itemName.trim(),
-                                  'itemSubGrpKey': item.itemSubGrpKey,
-                                  'coBr': coBr,
-                                  'fcYrId': fcYrId,
-                                  'selectedParty': selectedParty,
-                                  'type': Constants.SALE_BILL,
-                                },
-                              ).then((_) => _fetchCartCount());
-                            }
-                          },
-                          // ✅ LONG PRESS FOR MULTI-SELECT
-                          onLongPress: () {
                             setState(() {
                               _isMultiSelectMode = true;
-                              if (isSelected) {
-                                _selectedItemKeys.remove(item.itemKey);
-                              } else {
-                                _selectedItemKeys.add(item.itemKey);
-                              }
+
+                              setState(() {
+                                _isMultiSelectMode = true;
+
+                                if (isSelected) {
+                                  _selectedItemKeys.remove(item.itemKey);
+
+                                  // check if any other selected item belongs to this category
+                                  bool hasOtherItemsInCategory =
+                                      _selectedItemKeys.any((itemKey) {
+                                        final selectedItem = _allItems
+                                            .firstWhere(
+                                              (i) => i.itemKey == itemKey,
+                                            );
+                                        return selectedItem.itemSubGrpKey ==
+                                            item.itemSubGrpKey;
+                                      });
+
+                                  if (!hasOtherItemsInCategory &&
+                                      item.itemSubGrpKey != null) {
+                                    _selectedCategoryKeys.remove(
+                                      item.itemSubGrpKey,
+                                    );
+                                  }
+                                } else {
+                                  _selectedItemKeys.add(item.itemKey);
+
+                                  if (item.itemSubGrpKey != null) {
+                                    _selectedCategoryKeys.add(
+                                      item.itemSubGrpKey!,
+                                    );
+                                  }
+                                }
+
+                                _exitMultiSelectMode();
+                              });
+
+                              _exitMultiSelectMode();
                             });
-                          },
+                          }, // ✅ LONG PRESS FOR MULTI-SELECT
+                          // onLongPress: () {
+                          //   setState(() {
+                          //     _isMultiSelectMode = true;
+                          //     if (isSelected) {
+                          //       _selectedItemKeys.remove(item.itemKey);
+                          //     } else {
+                          //       _selectedItemKeys.add(item.itemKey);
+                          //        if (item.itemSubGrpKey != null) {
+                          //         _selectedCategoryKeys.add(item.itemSubGrpKey!);
+                          //       }
+                          //     }
+                          //   });
+                          // },
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
                               color:
