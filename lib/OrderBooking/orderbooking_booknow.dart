@@ -427,8 +427,12 @@ class _OrderPageState extends State<OrderPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          toTitleCase(itemNamee ?? 'Booking Items'),
-          style: TextStyle(color: Colors.white),
+          toTitleCase(
+            (itemNamee == null || itemNamee.trim().isEmpty)
+                ? 'Booking Items'
+                : itemNamee,
+          ),
+          style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.primaryColor,
         elevation: 1,
@@ -1080,7 +1084,7 @@ class _OrderPageState extends State<OrderPage> {
                                         shape: MaterialStateProperty.all(
                                           RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                              0,
+                                              8,
                                             ),
                                           ),
                                         ),

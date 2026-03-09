@@ -869,17 +869,17 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
             },
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              color: Colors.red.shade800,
+                color: const Color.fromARGB(255, 220, 239, 248),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.close, color: Colors.white),
+                  Icon(Icons.close, color: Colors.blue),
                   SizedBox(width: 6),
                   Text(
                     'Cancel',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white,
+                      color: Colors.blue,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

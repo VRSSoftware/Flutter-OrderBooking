@@ -304,7 +304,7 @@ class _EditOrderBarcode2State extends State<EditOrderBarcode2>
           },
         ),
         title: const Text(
-          'Update Order',
+          'Update Orderww',
           style: TextStyle(color: Colors.white),
         ),
         bottom: PreferredSize(
@@ -372,7 +372,8 @@ class _EditOrderBarcode2State extends State<EditOrderBarcode2>
         ),
       ),
 
-      body: TabBarView(
+      body:SafeArea(
+        child: TabBarView(
         controller: _tabController,
         children: [
           TransactionBarcode2(),
@@ -380,40 +381,43 @@ class _EditOrderBarcode2State extends State<EditOrderBarcode2>
           const CustomerDetailBarcode2(),
         ],
       ),
+    ),
       floatingActionButton: FloatingActionButton(
         onPressed: _handleAddAction,
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add, color: Colors.white),
         tooltip: 'Add New Item',
       ),
-      bottomNavigationBar: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            ElevatedButton.icon(
-              onPressed:
-                  _tabController.index > 0
-                      ? () => setState(() => _tabController.index--)
-                      : null,
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Previous'),
-            ),
-            _tabController.index == _tabController.length - 1
-                ? ElevatedButton.icon(
-                  onPressed: _saveEditedOrder,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                )
-                : ElevatedButton.icon(
-                  onPressed: () => setState(() => _tabController.index++),
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next'),
-                ),
-          ],
+   bottomNavigationBar: SafeArea(
+  top: false,
+  child: Container(
+    color: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _tabController.index > 0
+              ? () => setState(() => _tabController.index--)
+              : null,
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Previous'),
         ),
-      ),
+        _tabController.index == _tabController.length - 1
+            ? ElevatedButton.icon(
+                onPressed: _saveEditedOrder,
+                icon: const Icon(Icons.save),
+                label: const Text('Save'),
+              )
+            : ElevatedButton.icon(
+                onPressed: () => setState(() => _tabController.index++),
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Next'),
+              ),
+      ],
+    ),
+  ),
+),
     );
   }
 

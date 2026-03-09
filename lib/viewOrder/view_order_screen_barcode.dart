@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
@@ -41,6 +42,8 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
   bool isLoading = true;
   bool barcodeMode = false;
   ActiveTab _activeTab = ActiveTab.transaction;
+  bool isCustomerTabEnabled = false;
+  bool isTransactionSaved = false;
   Map<String, Map<String, Map<String, int>>> quantities = {};
   Map<String, Set<String>> selectedColors = {};
   bool _isSaving = false;
@@ -485,7 +488,10 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     _orderControllers.totalItem.text =
         _styleManager.groupedItems.length.toString();
     _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(2);
-    setState(() {});
+   setState(() {
+  isCustomerTabEnabled = false;
+  isTransactionSaved = false;
+});
   }
 
   @override
@@ -629,12 +635,13 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _activeTab = ActiveTab.transaction;
-                  _showForm = false;
-                });
-              },
+             onTap: () {
+  setState(() {
+    _activeTab = ActiveTab.transaction;
+    _showForm = false;
+    isCustomerTabEnabled = false;
+  });
+},
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -668,12 +675,14 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _activeTab = ActiveTab.customerDetails;
-                  _showForm = true;
-                });
-              },
+onTap: isCustomerTabEnabled
+    ? () {
+        setState(() {
+          _activeTab = ActiveTab.customerDetails;
+          _showForm = true;
+        });
+      }
+    : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -709,72 +718,170 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       ),
     );
   }
+Widget _buildBottomButtons() {
+  final Color primaryBlue = const Color(0xFF2196F3);
 
-  Widget _buildBottomButtons() {
-    final Color primaryBlue = const Color(0xFF2196F3);
-
+  // CUSTOMER DETAILS TAB
+  if (_activeTab == ActiveTab.customerDetails) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-                child: const Text(
-                  "CANCEL",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+      color: AppColors.primaryColor,
+      child: SizedBox(
+        height: 45,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color.fromARGB(255, 220, 239, 248),
+                child: TextButton(
+                  onPressed: () async {
+                    if (UserSession.userType == 'S' &&
+                        (_orderControllers.selectedPartyKey == null ||
+                            _orderControllers.selectedPartyKey!.isEmpty)) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Party Selection Required'),
+                          content: const Text(
+                              'Please select a party before adding more information.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => AddMoreInfoDialog(
+                        salesPersonList: _dropdownData.salesPersonList,
+                        partyLedKey: _orderControllers.selectedPartyKey,
+                        pytTermDiscKey: _orderControllers.pytTermDiscKey,
+                        salesPersonKey: _orderControllers.salesPersonKey,
+                        creditPeriod: _orderControllers.creditPeriod,
+                        salesLedKey: _orderControllers.salesLedKey,
+                        ledgerName: _orderControllers.ledgerName,
+                        additionalInfo: _additionalInfo,
+                        consignees: consignees,
+                        paymentTerms: paymentTerms,
+                        bookingTypes: _bookingTypes,
+                        onValueChanged: (newInfo) {
+                          setState(() {
+                            _additionalInfo = newInfo;
+                          });
+                        },
+                        isSalesmanDropdownEnabled:
+                            UserSession.userType != 'S',
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        _additionalInfo = result;
+                      });
+                    }
+                  },
+                  child: const Text(
+                    "Add More Info",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
-              TextButton.icon(
-                onPressed: () {
-                  if (_activeTab == ActiveTab.transaction) {
-                    setState(() {
-                      _activeTab = ActiveTab.customerDetails;
-                      _showForm = true;
-                    });
-                  } else {
-                    setState(() {
-                      _activeTab = ActiveTab.transaction;
-                      _showForm = false;
-                    });
-                  }
-                },
-                icon: Icon(
-                  _activeTab == ActiveTab.transaction
-                      ? Icons.chevron_right
-                      : Icons.chevron_left,
-                  size: 18,
-                  color: primaryBlue,
-                ),
-                label: Text(
-                  _activeTab == ActiveTab.transaction ? "NEXT" : "BACK",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
+            ),
+            Expanded(
+              child: TextButton(
+                onPressed: _isSaving ? null : _handleSave,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        "Save",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.white,
+                        ),
+                      ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // TRANSACTION TAB
+  return Container(
+    color: AppColors.primaryColor,
+    child: SizedBox(
+      height: 45,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              color: const Color.fromARGB(255, 220, 239, 248),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            OrderBookingScreen(startWithBarcode: true)),
+                  );
+                },
+                child: const Text(
+                  "Add More",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextButton.icon(
+              onPressed: () {
+                if (_activeTab == ActiveTab.transaction) {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  setState(() {
+                    isCustomerTabEnabled = true;
+                    _activeTab = ActiveTab.customerDetails;
+                    _showForm = true;
+                  });
+                }
+              },
+              icon: Icon(Icons.chevron_right, size: 18, color: primaryBlue),
+              label: const Text(
+                "Save",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   void _handlePartySelection(String? val, String? key) async {
     if (key == null) return;
     setState(() {
@@ -2383,120 +2490,122 @@ class _OrderFormState extends State<_OrderForm> {
           widget.controllers.totalAmt,
           readOnly: true,
         ),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (UserSession.userType == 'S' &&
-                      (widget.controllers.selectedPartyKey == null ||
-                          widget.controllers.selectedPartyKey!.isEmpty)) {
-                    showDialog(
-                      context: context,
-                      builder:
-                          (context) => AlertDialog(
-                            title: Text('Party Selection Required'),
-                            content: Text(
-                              'Please select a party before adding more information.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('OK'),
-                              ),
-                            ],
-                          ),
-                    );
-                    return;
-                  }
-                  final salesPersonList = widget.dropdownData.salesPersonList;
-                  final partyLedKey = widget.controllers.selectedPartyKey;
-                  final result = await showDialog(
-                    context: context,
-                    builder:
-                        (context) => AddMoreInfoDialog(
-                          salesPersonList: salesPersonList,
-                          partyLedKey: partyLedKey,
-                          pytTermDiscKey: widget.controllers.pytTermDiscKey,
-                          salesPersonKey: widget.controllers.salesPersonKey,
-                          creditPeriod: widget.controllers.creditPeriod,
-                          salesLedKey: widget.controllers.salesLedKey,
-                          ledgerName: widget.controllers.ledgerName,
-                          additionalInfo: widget.additionalInfo,
-                          consignees: widget.consignees,
-                          paymentTerms: widget.paymentTerms,
-                          bookingTypes: widget.bookingTypes,
-                          onValueChanged: (newInfo) {
-                            widget.onAdditionalInfoUpdated(newInfo);
-                          },
-                          isSalesmanDropdownEnabled:
-                              UserSession.userType != 'S',
-                        ),
-                  );
-                  if (result != null) {
-                    widget.onAdditionalInfoUpdated(result);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue.withOpacity(0.1),
-                  foregroundColor: primaryBlue,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Add More Info',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: widget.isSaving ? null : widget.saveOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child:
-                    widget.isSaving
-                        ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Saving...',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        )
-                        : const Text(
-                          'Save',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-              ),
-            ),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: () async {
+        //           if (UserSession.userType == 'S' &&
+        //               (widget.controllers.selectedPartyKey == null ||
+        //                   widget.controllers.selectedPartyKey!.isEmpty)) {
+        //             showDialog(
+        //               context: context,
+        //               builder:
+        //                   (context) => AlertDialog(
+        //                     title: Text('Party Selection Required'),
+        //                     content: Text(
+        //                       'Please select a party before adding more information.',
+        //                     ),
+        //                     actions: [
+        //                       TextButton(
+        //                         onPressed: () => Navigator.pop(context),
+        //                         child: Text('OK'),
+        //                       ),
+        //                     ],
+        //                   ),
+        //             );
+        //             return;
+        //           }
+        //           final salesPersonList = widget.dropdownData.salesPersonList;
+        //           final partyLedKey = widget.controllers.selectedPartyKey;
+        //           final result = await showDialog(
+        //             context: context,
+        //             builder:
+        //                 (context) => AddMoreInfoDialog(
+        //                   salesPersonList: salesPersonList,
+        //                   partyLedKey: partyLedKey,
+        //                   pytTermDiscKey: widget.controllers.pytTermDiscKey,
+        //                   salesPersonKey: widget.controllers.salesPersonKey,
+        //                   creditPeriod: widget.controllers.creditPeriod,
+        //                   salesLedKey: widget.controllers.salesLedKey,
+        //                   ledgerName: widget.controllers.ledgerName,
+        //                   additionalInfo: widget.additionalInfo,
+        //                   consignees: widget.consignees,
+        //                   paymentTerms: widget.paymentTerms,
+        //                   bookingTypes: widget.bookingTypes,
+        //                   onValueChanged: (newInfo) {
+        //                     widget.onAdditionalInfoUpdated(newInfo);
+        //                   },
+        //                   isSalesmanDropdownEnabled:
+        //                       UserSession.userType != 'S',
+        //                 ),
+        //           );
+        //           if (result != null) {
+        //             widget.onAdditionalInfoUpdated(result);
+        //           }
+        //         },
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue.withOpacity(0.1),
+        //           foregroundColor: primaryBlue,
+        //           elevation: 0,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child: const Text(
+        //           'Add More Info',
+        //           style: TextStyle(fontWeight: FontWeight.bold),
+        //         ),
+        //       ),
+        //     ),
+        //     const SizedBox(width: 10),
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: widget.isSaving ? null : widget.saveOrder,
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue,
+        //           foregroundColor: Colors.white,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child:
+        //             widget.isSaving
+        //                 ? Row(
+        //                   mainAxisAlignment: MainAxisAlignment.center,
+        //                   mainAxisSize: MainAxisSize.min,
+        //                   children: [
+        //                     const Text(
+        //                       'Saving...',
+        //                       style: TextStyle(
+        //                         fontSize: 16,
+        //                         fontWeight: FontWeight.w500,
+        //                         color: Colors.white,
+        //                       ),
+        //                     ),
+        //                     const SizedBox(width: 12),
+        //                     const SizedBox(
+        //                       width: 20,
+        //                       height: 20,
+        //                       child: CircularProgressIndicator(
+        //                         strokeWidth: 2.5,
+        //                         color: Colors.white,
+        //                       ),
+        //                     ),
+        //                   ],
+        //                 )
+        //                 : const Text(
+        //                   'Save',
+        //                   style: TextStyle(fontWeight: FontWeight.bold),
+        //                 ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
+     
+     
       ],
     );
   }

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
@@ -42,6 +43,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   bool barcodeMode = false;
   ActiveTab _activeTab = ActiveTab.transaction;
   double? mrkDown;
+  bool isCustomerTabEnabled = false;
 
   @override
   void initState() {
@@ -163,9 +165,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-          AppConstants.seprateBarcodeWiseBooking =="1" ?  
-         '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
-         : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
+          AppConstants.seprateBarcodeWiseBooking == "1"
+              ? '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
+              : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
@@ -402,7 +404,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     _orderControllers.totalItem.text =
         _styleManager.groupedItems.length.toString();
     _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(2);
-    setState(() {});
+    setState(() {
+      isCustomerTabEnabled = false;
+    });
   }
 
   @override
@@ -489,6 +493,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                 setState(() {
                   _activeTab = ActiveTab.transaction;
                   _showForm = false;
+                  isCustomerTabEnabled = false;
                 });
               },
               child: Container(
@@ -524,12 +529,15 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _activeTab = ActiveTab.customerDetails;
-                  _showForm = true;
-                });
-              },
+              onTap:
+                  isCustomerTabEnabled
+                      ? () {
+                        setState(() {
+                          _activeTab = ActiveTab.customerDetails;
+                          _showForm = true;
+                        });
+                      }
+                      : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -566,71 +574,140 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  Widget _buildBottomButtons() {
-    final Color primaryBlue = const Color(0xFF2196F3);
+Widget _buildBottomButtons() {
+  final Color primaryBlue = const Color(0xFF2196F3);
 
+  // CUSTOMER DETAILS TAB
+  if (_activeTab == ActiveTab.customerDetails) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
+      color: AppColors.primaryColor,
+      child: SizedBox(
+        height: 45,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color.fromARGB(255, 220, 239, 248),
+                child: TextButton(
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => AddMoreInfoDialog(
+                        salesPersonList: _dropdownData.salesPersonList,
+                        partyLedKey: _orderControllers.selectedPartyKey,
+                        pytTermDiscKey: _orderControllers.pytTermDiscKey,
+                        salesPersonKey: _orderControllers.salesPersonKey,
+                        creditPeriod: _orderControllers.creditPeriod,
+                        salesLedKey: _orderControllers.salesLedKey,
+                        ledgerName: _orderControllers.ledgerName,
+                        additionalInfo: _additionalInfo,
+                        consignees: consignees,
+                        paymentTerms: paymentTerms,
+                        bookingTypes: _bookingTypes,
+                        onValueChanged: (newInfo) {
+                          setState(() {
+                            _additionalInfo = newInfo;
+                          });
+                        },
+                        isSalesmanDropdownEnabled:
+                            UserSession.userType != 'S',
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        _additionalInfo = result;
+                      });
+                    }
+                  },
+                  child: const Text(
+                    "Add More Info",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: TextButton(
+                onPressed: _saveOrderLocally,
                 child: const Text(
-                  "CANCEL",
+                  "Save",
                   style: TextStyle(
-                    color: Colors.red,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 14,
+                    color: AppColors.white,
                   ),
                 ),
               ),
-              TextButton.icon(
-                onPressed: () {
-                  if (_activeTab == ActiveTab.transaction) {
-                    setState(() {
-                      _activeTab = ActiveTab.customerDetails;
-                      _showForm = true;
-                    });
-                  } else {
-                    setState(() {
-                      _activeTab = ActiveTab.transaction;
-                      _showForm = false;
-                    });
-                  }
-                },
-                icon: Icon(
-                  _activeTab == ActiveTab.transaction
-                      ? Icons.chevron_right
-                      : Icons.chevron_left,
-                  size: 18,
-                  color: primaryBlue,
-                ),
-                label: Text(
-                  _activeTab == ActiveTab.transaction ? "NEXT" : "BACK",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // TRANSACTION TAB
+  return Container(
+    color: AppColors.primaryColor,
+    child: SizedBox(
+      height: 45,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              color: const Color.fromARGB(255, 220, 239, 248),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrderBookingScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Add More",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextButton(
+              onPressed: () {
+                if (_activeTab == ActiveTab.transaction) {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  setState(() {
+                    isCustomerTabEnabled = true;
+                    _activeTab = ActiveTab.customerDetails;
+                    _showForm = true;
+                  });
+                }
+              },
+              child: const Text(
+                "Save",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   Color _getColorCode(String color) {
     switch (color.toLowerCase()) {
       case 'red':
@@ -842,9 +919,11 @@ class _StyleManager {
 
   Future<void> fetchOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -863,9 +942,11 @@ class _StyleManager {
 
   Future<void> refreshOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1160,95 +1241,98 @@ class _OrderFormState extends State<_OrderForm> {
           widget.controllers.totalAmt,
           readOnly: true,
         ),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (UserSession.userType == 'S' &&
-                      (widget.controllers.selectedPartyKey == null ||
-                          widget.controllers.selectedPartyKey!.isEmpty)) {
-                    showDialog(
-                      context: context,
-                      builder:
-                          (context) => AlertDialog(
-                            title: Text('Party Selection Required'),
-                            content: Text(
-                              'Please select a party before adding more information.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('OK'),
-                              ),
-                            ],
-                          ),
-                    );
-                    return;
-                  }
-                  final salesPersonList = widget.dropdownData.salesPersonList;
-                  final partyLedKey = widget.controllers.selectedPartyKey;
-                  final result = await showDialog(
-                    context: context,
-                    builder:
-                        (context) => AddMoreInfoDialog(
-                          salesPersonList: salesPersonList,
-                          partyLedKey: partyLedKey,
-                          pytTermDiscKey: widget.controllers.pytTermDiscKey,
-                          salesPersonKey: widget.controllers.salesPersonKey,
-                          creditPeriod: widget.controllers.creditPeriod,
-                          salesLedKey: widget.controllers.salesLedKey,
-                          ledgerName: widget.controllers.ledgerName,
-                          additionalInfo: widget.additionalInfo,
-                          consignees: widget.consignees,
-                          paymentTerms: widget.paymentTerms,
-                          bookingTypes: widget.bookingTypes,
-                          onValueChanged: (newInfo) {
-                            widget.onAdditionalInfoUpdated(newInfo);
-                          },
-                          isSalesmanDropdownEnabled:
-                              UserSession.userType != 'S',
-                        ),
-                  );
-                  if (result != null) {
-                    widget.onAdditionalInfoUpdated(result);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue.withOpacity(0.1),
-                  foregroundColor: primaryBlue,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Add More Info',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: widget.saveOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Save',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: () async {
+        //           if (UserSession.userType == 'S' &&
+        //               (widget.controllers.selectedPartyKey == null ||
+        //                   widget.controllers.selectedPartyKey!.isEmpty)) {
+        //             showDialog(
+        //               context: context,
+        //               builder:
+        //                   (context) => AlertDialog(
+        //                     title: Text('Party Selection Required'),
+        //                     content: Text(
+        //                       'Please select a party before adding more information.',
+        //                     ),
+        //                     actions: [
+        //                       TextButton(
+        //                         onPressed: () => Navigator.pop(context),
+        //                         child: Text('OK'),
+        //                       ),
+        //                     ],
+        //                   ),
+        //             );
+        //             return;
+        //           }
+        //           final salesPersonList = widget.dropdownData.salesPersonList;
+        //           final partyLedKey = widget.controllers.selectedPartyKey;
+        //           final result = await showDialog(
+        //             context: context,
+        //             builder:
+        //                 (context) => AddMoreInfoDialog(
+        //                   salesPersonList: salesPersonList,
+        //                   partyLedKey: partyLedKey,
+        //                   pytTermDiscKey: widget.controllers.pytTermDiscKey,
+        //                   salesPersonKey: widget.controllers.salesPersonKey,
+        //                   creditPeriod: widget.controllers.creditPeriod,
+        //                   salesLedKey: widget.controllers.salesLedKey,
+        //                   ledgerName: widget.controllers.ledgerName,
+        //                   additionalInfo: widget.additionalInfo,
+        //                   consignees: widget.consignees,
+        //                   paymentTerms: widget.paymentTerms,
+        //                   bookingTypes: widget.bookingTypes,
+        //                   onValueChanged: (newInfo) {
+        //                     widget.onAdditionalInfoUpdated(newInfo);
+        //                   },
+        //                   isSalesmanDropdownEnabled:
+        //                       UserSession.userType != 'S',
+        //                 ),
+        //           );
+        //           if (result != null) {
+        //             widget.onAdditionalInfoUpdated(result);
+        //           }
+        //         },
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue.withOpacity(0.1),
+        //           foregroundColor: primaryBlue,
+        //           elevation: 0,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child: const Text(
+        //           'Add More Info',
+        //           style: TextStyle(fontWeight: FontWeight.bold),
+        //         ),
+        //       ),
+        //     ),
+        //     const SizedBox(width: 10),
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: widget.saveOrder,
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue,
+        //           foregroundColor: Colors.white,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child: const Text(
+        //           'Save',
+        //           style: TextStyle(fontWeight: FontWeight.bold),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
+    
+    
+    
       ],
     );
   }
@@ -1263,6 +1347,7 @@ class _OrderFormState extends State<_OrderForm> {
             widget.controllers.selectedParty,
             widget.onPartySelected,
             isEnabled: UserSession.userType != 'C',
+            isRequired: true,
           ),
         ),
         const SizedBox(width: 8),
@@ -1294,10 +1379,17 @@ class _OrderFormState extends State<_OrderForm> {
     String? selectedValue,
     Function(String?, String?) onChanged, {
     bool isEnabled = true,
+    bool isRequired = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownSearch<String>(
+        validator: (value) {
+          if (isRequired && (value == null || value.isEmpty)) {
+            return "$label is required";
+          }
+          return null;
+        },
         popupProps: PopupProps.menu(
           showSearchBox: true,
           searchFieldProps: TextFieldProps(

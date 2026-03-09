@@ -51,9 +51,10 @@ class _CustomerDetailBarcode2State extends State<CustomerDetailBarcode2> {
     EditOrderData.remark = remarkController.text;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
+ @override
+Widget build(BuildContext context) {
+  return SafeArea(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,6 +62,7 @@ class _CustomerDetailBarcode2State extends State<CustomerDetailBarcode2> {
           buildReadOnlyField('Date', EditOrderData.detailsForEdit),
           buildReadOnlyField('Party Name', EditOrderData.partyName),
           const SizedBox(height: 10),
+
           buildDropdownField(
             label: 'Broker',
             value: selectedBrokerKey,
@@ -72,7 +74,9 @@ class _CustomerDetailBarcode2State extends State<CustomerDetailBarcode2> {
               });
             },
           ),
+
           buildTextField('Commission %', commController, TextInputType.number),
+
           buildDropdownField(
             label: 'Transporter',
             value: selectedTransporterKey,
@@ -84,19 +88,26 @@ class _CustomerDetailBarcode2State extends State<CustomerDetailBarcode2> {
               });
             },
           ),
+
           buildTextField('Delivery Days', deliveryDaysController, TextInputType.number),
+
           GestureDetector(
             onTap: pickDeliveryDate,
             child: AbsorbPointer(
-              child: buildTextField('Delivery Date', deliveryDateController, TextInputType.text),
+              child: buildTextField(
+                'Delivery Date',
+                deliveryDateController,
+                TextInputType.text,
+              ),
             ),
           ),
+
           buildTextField('Remark', remarkController, TextInputType.text),
         ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget buildReadOnlyField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

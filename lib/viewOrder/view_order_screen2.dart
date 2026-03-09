@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
+import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
@@ -47,8 +49,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   bool isLoading = true;
   bool barcodeMode = false;
   ActiveTab _activeTab = ActiveTab.transaction;
+  bool isCustomerTabEnabled = false;
   bool _isSaving = false;
-  
+
   // For table design
   Map<String, Map<String, Map<String, int>>> quantities = {};
   Map<String, Set<String>> selectedColors = {};
@@ -173,9 +176,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
     try {
       final response = await http.post(
         Uri.parse(
-          AppConstants.seprateBarcodeWiseBooking =="1" ?  
-         '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
-         : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
+          AppConstants.seprateBarcodeWiseBooking == "1"
+              ? '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
+              : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
@@ -300,9 +303,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
 
   Future<void> _saveOrderLocally() async {
     if (_isSaving) return;
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
       if (!_formKey.currentState!.validate()) {
         setState(() => _isSaving = false);
@@ -357,7 +360,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
         "date": getTodayWithZeroTime(),
         "bookingtype": _additionalInfo['bookingtype'] ?? '',
         "salesman":
-            _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+            _additionalInfo['salesman'] ??
+            _orderControllers.salesPersonKey ??
+            '',
       };
       final orderDataJson = jsonEncode(orderData);
       print("Saved Order Data:");
@@ -492,7 +497,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
     _orderControllers.totalItem.text =
         _styleManager.groupedItems.length.toString();
     _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(2);
-    setState(() {});
+    setState(() {
+      isCustomerTabEnabled = false;
+    });
   }
 
   @override
@@ -520,7 +527,10 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 8.0,
+              horizontal: 16.0,
+            ),
             color: primaryBlue,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -528,10 +538,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                 Flexible(
                   child: Text(
                     'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -631,6 +638,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                 setState(() {
                   _activeTab = ActiveTab.transaction;
                   _showForm = false;
+                  isCustomerTabEnabled = false;
                 });
               },
               child: Container(
@@ -666,12 +674,15 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _activeTab = ActiveTab.customerDetails;
-                  _showForm = true;
-                });
-              },
+              onTap:
+                  isCustomerTabEnabled
+                      ? () {
+                        setState(() {
+                          _activeTab = ActiveTab.customerDetails;
+                          _showForm = true;
+                        });
+                      }
+                      : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -708,71 +719,169 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
     );
   }
 
-  Widget _buildBottomButtons() {
-    final Color primaryBlue = const Color(0xFF2196F3);
+Widget _buildBottomButtons() {
+  final Color primaryBlue = const Color(0xFF2196F3);
 
+  // CUSTOMER DETAILS TAB
+  if (_activeTab == ActiveTab.customerDetails) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-                child: const Text(
-                  "CANCEL",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+      color: AppColors.primaryColor,
+      child: SizedBox(
+        height: 45,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color.fromARGB(255, 220, 239, 248),
+                child: TextButton(
+                  onPressed: () async {
+                    if (UserSession.userType == 'S' &&
+                        (_orderControllers.selectedPartyKey == null ||
+                            _orderControllers.selectedPartyKey!.isEmpty)) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Party Selection Required'),
+                          content: const Text(
+                              'Please select a party before adding more information.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => AddMoreInfoDialog2(
+                        salesPersonList: _dropdownData.salesPersonList,
+                        partyLedKey: _orderControllers.selectedPartyKey,
+                        pytTermDiscKey: _orderControllers.pytTermDiscKey,
+                        salesPersonKey: _orderControllers.salesPersonKey,
+                        creditPeriod: _orderControllers.creditPeriod,
+                        salesLedKey: _orderControllers.salesLedKey,
+                        ledgerName: _orderControllers.ledgerName,
+                        additionalInfo: _additionalInfo,
+                        consignees: consignees,
+                        paymentTerms: paymentTerms,
+                        bookingTypes: _bookingTypes,
+                        onValueChanged: (newInfo) {
+                          setState(() {
+                            _additionalInfo = newInfo;
+                          });
+                        },
+                        isSalesmanDropdownEnabled:
+                            UserSession.userType != 'S',
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        _additionalInfo = result;
+                      });
+                    }
+                  },
+                  child: const Text(
+                    "Add More Info",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
-              TextButton.icon(
-                onPressed: () {
-                  if (_activeTab == ActiveTab.transaction) {
-                    setState(() {
-                      _activeTab = ActiveTab.customerDetails;
-                      _showForm = true;
-                    });
-                  } else {
-                    setState(() {
-                      _activeTab = ActiveTab.transaction;
-                      _showForm = false;
-                    });
-                  }
-                },
-                icon: Icon(
-                  _activeTab == ActiveTab.transaction
-                      ? Icons.chevron_right
-                      : Icons.chevron_left,
-                  size: 18,
-                  color: primaryBlue,
-                ),
-                label: Text(
-                  _activeTab == ActiveTab.transaction ? "NEXT" : "BACK",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
+            ),
+            Expanded(
+              child: TextButton(
+                onPressed: _isSaving ? null : _saveOrderLocally,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        "Save",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.white,
+                        ),
+                      ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // TRANSACTION TAB
+  return Container(
+    color: AppColors.primaryColor,
+    child: SizedBox(
+      height: 45,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              color: const Color.fromARGB(255, 220, 239, 248),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => OrderBookingScreen()),
+                  );
+                },
+                child: const Text(
+                  "Add More",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextButton.icon(
+              onPressed: () {
+                if (_activeTab == ActiveTab.transaction) {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  setState(() {
+                    isCustomerTabEnabled = true;
+                    _activeTab = ActiveTab.customerDetails;
+                    _showForm = true;
+                  });
+                }
+              },
+              icon: Icon(Icons.chevron_right, size: 18, color: primaryBlue),
+              label: const Text(
+                "Save",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   Color _getColorCode(String color) {
     switch (color.toLowerCase()) {
       case 'red':
@@ -984,9 +1093,11 @@ class _StyleManager2 {
 
   Future<void> fetchOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1005,9 +1116,11 @@ class _StyleManager2 {
 
   Future<void> refreshOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1024,11 +1137,10 @@ class _StyleManager2 {
     }
   }
 
-void removeStyle(String styleKey) {
+  void removeStyle(String styleKey) {
     removedStyles.add(styleKey);
     controllers.remove(styleKey);
   }
-
 
   void _initializeControllers() {
     controllers.clear();
@@ -1252,10 +1364,9 @@ class _StyleCard2State extends State<StyleCard2> {
   @override
   void initState() {
     super.initState();
-    _lastSavedQuantities = widget.quantities.map((shade, sizes) => MapEntry(
-          shade,
-          Map<String, int>.from(sizes),
-        ));
+    _lastSavedQuantities = widget.quantities.map(
+      (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
+    );
   }
 
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
@@ -1281,16 +1392,18 @@ class _StyleCard2State extends State<StyleCard2> {
                     aspectRatio: 3 / 4,
                     child: GestureDetector(
                       onTap: () {
-                        final imageUrl = catalog.fullImagePath.contains("http")
-                            ? catalog.fullImagePath
-                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                        final imageUrl =
+                            catalog.fullImagePath.contains("http")
+                                ? catalog.fullImagePath
+                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ImageZoomScreen(
-                              imageUrls: [imageUrl],
-                              initialIndex: 0,
-                            ),
+                            builder:
+                                (context) => ImageZoomScreen(
+                                  imageUrls: [imageUrl],
+                                  initialIndex: 0,
+                                ),
                           ),
                         );
                       },
@@ -1299,8 +1412,9 @@ class _StyleCard2State extends State<StyleCard2> {
                             ? catalog.fullImagePath
                             : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.error, size: 60),
+                        errorBuilder:
+                            (context, error, stackTrace) =>
+                                const Icon(Icons.error, size: 60),
                       ),
                     ),
                   ),
@@ -1374,7 +1488,7 @@ class _StyleCard2State extends State<StyleCard2> {
           ),
         ),
         const SizedBox(height: 15),
-      
+
         ...widget.selectedColors.map(
           (color) => Column(
             children: [
@@ -1385,7 +1499,8 @@ class _StyleCard2State extends State<StyleCard2> {
                 children: [
                   Expanded(
                     child: TextButton.icon(
-                      onPressed: _isLoading ? null : () => _submitDelete(context),
+                      onPressed:
+                          _isLoading ? null : () => _submitDelete(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
@@ -1410,9 +1525,10 @@ class _StyleCard2State extends State<StyleCard2> {
                   const SizedBox(width: 12.0),
                   Expanded(
                     child: TextButton(
-                      onPressed: _isLoading || !_hasQuantityChanged
-                          ? null
-                          : () => _submitUpdate(context),
+                      onPressed:
+                          _isLoading || !_hasQuantityChanged
+                              ? null
+                              : () => _submitUpdate(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
@@ -1422,59 +1538,64 @@ class _StyleCard2State extends State<StyleCard2> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         side: BorderSide(
-                          color: _hasQuantityChanged
-                              ? Colors.blue
-                              : Colors.grey.shade400,
+                          color:
+                              _hasQuantityChanged
+                                  ? Colors.blue
+                                  : Colors.grey.shade400,
                         ),
-                        backgroundColor: _hasQuantityChanged
-                            ? Colors.blue.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
+                        backgroundColor:
+                            _hasQuantityChanged
+                                ? Colors.blue.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
                       ),
-                      child: _isLoading
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Updating...',
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w600,
+                      child:
+                          _isLoading
+                              ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Updating...',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.blue,
+                                  const SizedBox(width: 12),
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.blue,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.save,
-                                  color: _hasQuantityChanged
-                                      ? Colors.blue
-                                      : Colors.grey.shade400,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Update',
-                                  style: TextStyle(
-                                    color: _hasQuantityChanged
-                                        ? Colors.blue
-                                        : Colors.grey.shade400,
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.w600,
+                                ],
+                              )
+                              : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.save,
+                                    color:
+                                        _hasQuantityChanged
+                                            ? Colors.blue
+                                            : Colors.grey.shade400,
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Update',
+                                    style: TextStyle(
+                                      color:
+                                          _hasQuantityChanged
+                                              ? Colors.blue
+                                              : Colors.grey.shade400,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                     ),
                   ),
                 ],
@@ -1547,7 +1668,9 @@ class _StyleCard2State extends State<StyleCard2> {
         final sizeIndex = matrix.sizes.indexOf(size.trim());
         if (sizeIndex == -1) continue;
         final rate =
-            double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
+            double.tryParse(
+              matrix.matrix[shadeIndex][sizeIndex].split(',')[0],
+            ) ??
             0;
         final quantity = widget.quantities[shade]![size]!;
         total += rate * quantity;
@@ -1557,207 +1680,210 @@ class _StyleCard2State extends State<StyleCard2> {
   }
 
   int _calculateShadeQuantity(String shade) {
-  int total = 0;
-  for (var size in widget.quantities[shade]?.keys ?? []) {
-    total += widget.quantities[shade]![size]!;
+    int total = 0;
+    for (var size in widget.quantities[shade]?.keys ?? []) {
+      total += widget.quantities[shade]![size]!;
+    }
+    return total;
   }
-  return total;
-}
 
-double _calculateShadePrice(CatalogOrderData catalogOrder, String shade) {
-  double total = 0;
-  final matrix = catalogOrder.orderMatrix;
-  final shadeIndex = matrix.shades.indexOf(shade.trim());
-  if (shadeIndex == -1) return total;
-  
-  for (var size in widget.quantities[shade]?.keys ?? []) {
-    final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
-    if (sizeIndex == -1) continue;
-    final rate = double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ?? 0;
-    final quantity = widget.quantities[shade]![size]!;
-    total += rate * quantity;
+  double _calculateShadePrice(CatalogOrderData catalogOrder, String shade) {
+    double total = 0;
+    final matrix = catalogOrder.orderMatrix;
+    final shadeIndex = matrix.shades.indexOf(shade.trim());
+    if (shadeIndex == -1) return total;
+
+    for (var size in widget.quantities[shade]?.keys ?? []) {
+      final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
+      if (sizeIndex == -1) continue;
+      final rate =
+          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
+          0;
+      final quantity = widget.quantities[shade]![size]!;
+      total += rate * quantity;
+    }
+    return total;
   }
-  return total;
-}
 
-Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-  final sizes = catalogOrder.orderMatrix.sizes;
-  final Color shadeColor = widget.getColor(shade);
-  final styleKey = catalogOrder.catalog.styleKey;
-  
-  // Calculate total quantity and price for this shade
-  int shadeTotalQty = _calculateShadeQuantity(shade);
-  double shadeTotalPrice = _calculateShadePrice(catalogOrder, shade);
+  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+    final sizes = catalogOrder.orderMatrix.sizes;
+    final Color shadeColor = widget.getColor(shade);
+    final styleKey = catalogOrder.catalog.styleKey;
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          children: [
-            // First header row: Shade, Quantity, Price
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 1.0,
-                      horizontal: 8.0,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
+    // Calculate total quantity and price for this shade
+    int shadeTotalQty = _calculateShadeQuantity(shade);
+    double shadeTotalPrice = _calculateShadePrice(catalogOrder, shade);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            children: [
+              // First header row: Shade, Quantity, Price
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 1.0,
+                        horizontal: 8.0,
                       ),
-                    ),
-                    child: Text(
-                      "Shade",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lora(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                         color: Colors.black, 
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-             Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Text(
-                      "Quantity",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lora(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.black, 
+                      child: Text(
+                        "Shade",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lora(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      "Amount",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lora(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                       color: Colors.black, 
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        "Quantity",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lora(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        "Amount",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lora(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              Divider(height: 1, color: Colors.grey.shade300),
+
+              // Second row: Shade name with its total quantity and price
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        shade,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: shadeColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        shadeTotalQty.toString(),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.roboto(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        '${shadeTotalPrice.toStringAsFixed(2)}',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.roboto(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              Divider(height: 1, color: Colors.grey.shade300),
+
+              // Third header row: Size, Qty, Rate, WSP, Stock
+              Row(
+                children: [
+                  _buildHeader("Size", 1),
+                  _buildHeader("Qty", 2),
+                  _buildHeader("Rate", 1),
+                  _buildHeader("WSP", 1),
+                  _buildHeader("Stock", 1),
+                ],
+              ),
+
+              Divider(height: 1, color: Colors.grey.shade300),
+
+              // Size rows
+              for (var size in sizes) ...[
+                _buildSizeRow(catalogOrder, shade, size),
+                if (size != sizes.last)
+                  Divider(height: 1, color: Colors.grey.shade300),
               ],
-            ),
-            
-            Divider(height: 1, color: Colors.grey.shade300),
-            
-            // Second row: Shade name with its total quantity and price
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4.0,
-                      horizontal: 8.0,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Text(
-                      shade,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: shadeColor,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4.0,
-                      horizontal: 8.0,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Text(
-                      shadeTotalQty.toString(),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(fontSize: 14),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4.0,
-                      horizontal: 8.0,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Text(
-                      '${shadeTotalPrice.toStringAsFixed(2)}',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(fontSize: 14),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            Divider(height: 1, color: Colors.grey.shade300),
-            
-            // Third header row: Size, Qty, Rate, WSP, Stock
-            Row(
-              children: [
-                _buildHeader("Size", 1),
-                _buildHeader("Qty", 2),
-                _buildHeader("Rate", 1),
-                _buildHeader("WSP", 1),
-                _buildHeader("Stock", 1),
-              ],
-            ),
-            
-            Divider(height: 1, color: Colors.grey.shade300),
-            
-            // Size rows
-            for (var size in sizes) ...[
-              _buildSizeRow(catalogOrder, shade, size),
-              if (size != sizes.last) 
-                Divider(height: 1, color: Colors.grey.shade300),
             ],
-          ],
+          ),
         ),
-      ),
-      const SizedBox(height: 15),
-    ],
-  );
-}
+        const SizedBox(height: 15),
+      ],
+    );
+  }
+
   Widget _buildHeader(String text, int flex) {
     return Expanded(
       flex: flex,
@@ -1833,7 +1959,8 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
                   LengthLimitingTextInputFormatter(4),
                 ],
                 onChanged: (value) {
-                  final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                  final newQuantity =
+                      int.tryParse(value.isEmpty ? '0' : value) ?? 0;
                   if (widget.quantities[shade] != null) {
                     setState(() {
                       widget.quantities[shade]![size] = newQuantity;
@@ -1900,109 +2027,115 @@ Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
     );
   }
 
-Future<void> _submitDelete(BuildContext context) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text("Confirm Deletion"),
-        content: const Text("Are you sure you want to delete this style?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      );
-    },
-  );
-
-  if (confirmed != true) return;
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  String sCode = widget.styleCode;
-  String bCode = "";
-  if (sCode.contains('---')) {
-    final parts = widget.styleCode.split('---');
-    sCode = parts[0];
-    bCode = parts.length > 1 ? parts[1] : "";
-  }
-
-  final payload = {
-    "userId": UserSession.userName ?? '',
-    "coBrId": UserSession.coBrId ?? '',
-    "fcYrId": UserSession.userFcYr ?? '',
-    "data": {
-      "designcode": sCode,
-      "mrp": '0',
-      "WSP": '0',
-      "size": '',
-      "TotQty": '0',
-      "Note": '',
-      "color": "",
-      "Qty": "",
-      "cobrid": UserSession.coBrId ?? '',
-      "user": "admin",
-      "barcode": bCode,
-    },
-    "typ": 2,
-  };
-
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
+  Future<void> _submitDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Deletion"),
+          content: const Text("Are you sure you want to delete this style?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
 
+    if (confirmed != true) return;
+
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
 
-    if (response.statusCode == 200) {
-      // Remove from CartModel
-      if (!mounted) return;
-      
-      // Get the cart model and remove this item
-      final cartModel = Provider.of<CartModel>(context, listen: false);
-      cartModel.removeItem(widget.styleCode);
-      
-      // Also remove from style manager
-      widget.styleManager.removeStyle(widget.styleCode);
-      widget.onUpdate();
-      
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("Success"),
-            content: const Text("Style deleted successfully"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      _showErrorDialog(context, "Failed to delete style: ${response.statusCode}");
+    String sCode = widget.styleCode;
+    String bCode = "";
+    if (sCode.contains('---')) {
+      final parts = widget.styleCode.split('---');
+      sCode = parts[0];
+      bCode = parts.length > 1 ? parts[1] : "";
     }
-  } catch (e) {
-    setState(() {
-      _isLoading = false;
-    });
-    _showErrorDialog(context, "Error deleting style: $e");
+
+    final payload = {
+      "userId": UserSession.userName ?? '',
+      "coBrId": UserSession.coBrId ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "data": {
+        "designcode": sCode,
+        "mrp": '0',
+        "WSP": '0',
+        "size": '',
+        "TotQty": '0',
+        "Note": '',
+        "color": "",
+        "Qty": "",
+        "cobrid": UserSession.coBrId ?? '',
+        "user": "admin",
+        "barcode": bCode,
+      },
+      "typ": 2,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        // Remove from CartModel
+        if (!mounted) return;
+
+        // Get the cart model and remove this item
+        final cartModel = Provider.of<CartModel>(context, listen: false);
+        cartModel.removeItem(widget.styleCode);
+
+        // Also remove from style manager
+        widget.styleManager.removeStyle(widget.styleCode);
+        widget.onUpdate();
+
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Success"),
+              content: const Text("Style deleted successfully"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        _showErrorDialog(
+          context,
+          "Failed to delete style: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog(context, "Error deleting style: $e");
+    }
   }
-}
+
   Future<void> _submitUpdate(BuildContext context) async {
     int totalQty = _calculateCatalogQuantity();
     if (totalQty <= 0) {
@@ -2043,7 +2176,9 @@ Future<void> _submitDelete(BuildContext context) async {
 
     try {
       final initialResponse = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(initialPayload),
       );
@@ -2089,11 +2224,15 @@ Future<void> _submitDelete(BuildContext context) async {
               "typ": 0,
             };
 
-            requests.add(http.post(
-              Uri.parse('${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(payload),
-            ));
+            requests.add(
+              http.post(
+                Uri.parse(
+                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+                ),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode(payload),
+              ),
+            );
           }
         }
 
@@ -2117,10 +2256,9 @@ Future<void> _submitDelete(BuildContext context) async {
         if (allSuccessful) {
           setState(() {
             _hasQuantityChanged = false;
-            _lastSavedQuantities = widget.quantities.map((shade, sizes) => MapEntry(
-                  shade,
-                  Map<String, int>.from(sizes),
-                ));
+            _lastSavedQuantities = widget.quantities.map(
+              (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
+            );
           });
           widget.onUpdate();
           await showDialog(
@@ -2148,7 +2286,10 @@ Future<void> _submitDelete(BuildContext context) async {
         setState(() {
           _isLoading = false;
         });
-        _showErrorDialog(context, "No quantities found for style: ${widget.styleCode}");
+        _showErrorDialog(
+          context,
+          "No quantities found for style: ${widget.styleCode}",
+        );
       }
     } catch (e) {
       setState(() {
@@ -2164,7 +2305,7 @@ Future<void> _submitDelete(BuildContext context) async {
     return Stack(
       children: [
         buildOrderItem(widget.catalogOrder, context),
-        
+
         if (_isLoading)
           ModalBarrier(
             dismissible: false,
@@ -2377,119 +2518,122 @@ class _OrderForm2State extends State<_OrderForm2> {
           widget.controllers.totalAmt,
           readOnly: true,
         ),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (UserSession.userType == 'S' &&
-                      (widget.controllers.selectedPartyKey == null ||
-                          widget.controllers.selectedPartyKey!.isEmpty)) {
-                    showDialog(
-                      context: context,
-                      builder:
-                          (context) => AlertDialog(
-                            title: Text('Party Selection Required'),
-                            content: Text(
-                              'Please select a party before adding more information.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('OK'),
-                              ),
-                            ],
-                          ),
-                    );
-                    return;
-                  }
-                  final salesPersonList = widget.dropdownData.salesPersonList;
-                  final partyLedKey = widget.controllers.selectedPartyKey;
-                  final result = await showDialog(
-                    context: context,
-                    builder:
-                        (context) => AddMoreInfoDialog2(
-                          salesPersonList: salesPersonList,
-                          partyLedKey: partyLedKey,
-                          pytTermDiscKey: widget.controllers.pytTermDiscKey,
-                          salesPersonKey: widget.controllers.salesPersonKey,
-                          creditPeriod: widget.controllers.creditPeriod,
-                          salesLedKey: widget.controllers.salesLedKey,
-                          ledgerName: widget.controllers.ledgerName,
-                          additionalInfo: widget.additionalInfo,
-                          consignees: widget.consignees,
-                          paymentTerms: widget.paymentTerms,
-                          bookingTypes: widget.bookingTypes,
-                          onValueChanged: (newInfo) {
-                            widget.onAdditionalInfoUpdated(newInfo);
-                          },
-                          isSalesmanDropdownEnabled:
-                              UserSession.userType != 'S',
-                        ),
-                  );
-                  if (result != null) {
-                    widget.onAdditionalInfoUpdated(result);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue.withOpacity(0.1),
-                  foregroundColor: primaryBlue,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Add More Info',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: widget.isSaving ? null : widget.saveOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: widget.isSaving
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Saving...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      )
-                    : const Text(
-                        'Save',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: () async {
+        //           if (UserSession.userType == 'S' &&
+        //               (widget.controllers.selectedPartyKey == null ||
+        //                   widget.controllers.selectedPartyKey!.isEmpty)) {
+        //             showDialog(
+        //               context: context,
+        //               builder:
+        //                   (context) => AlertDialog(
+        //                     title: Text('Party Selection Required'),
+        //                     content: Text(
+        //                       'Please select a party before adding more information.',
+        //                     ),
+        //                     actions: [
+        //                       TextButton(
+        //                         onPressed: () => Navigator.pop(context),
+        //                         child: Text('OK'),
+        //                       ),
+        //                     ],
+        //                   ),
+        //             );
+        //             return;
+        //           }
+        //           final salesPersonList = widget.dropdownData.salesPersonList;
+        //           final partyLedKey = widget.controllers.selectedPartyKey;
+        //           final result = await showDialog(
+        //             context: context,
+        //             builder:
+        //                 (context) => AddMoreInfoDialog2(
+        //                   salesPersonList: salesPersonList,
+        //                   partyLedKey: partyLedKey,
+        //                   pytTermDiscKey: widget.controllers.pytTermDiscKey,
+        //                   salesPersonKey: widget.controllers.salesPersonKey,
+        //                   creditPeriod: widget.controllers.creditPeriod,
+        //                   salesLedKey: widget.controllers.salesLedKey,
+        //                   ledgerName: widget.controllers.ledgerName,
+        //                   additionalInfo: widget.additionalInfo,
+        //                   consignees: widget.consignees,
+        //                   paymentTerms: widget.paymentTerms,
+        //                   bookingTypes: widget.bookingTypes,
+        //                   onValueChanged: (newInfo) {
+        //                     widget.onAdditionalInfoUpdated(newInfo);
+        //                   },
+        //                   isSalesmanDropdownEnabled:
+        //                       UserSession.userType != 'S',
+        //                 ),
+        //           );
+        //           if (result != null) {
+        //             widget.onAdditionalInfoUpdated(result);
+        //           }
+        //         },
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue.withOpacity(0.1),
+        //           foregroundColor: primaryBlue,
+        //           elevation: 0,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child: const Text(
+        //           'Add More Info',
+        //           style: TextStyle(fontWeight: FontWeight.bold),
+        //         ),
+        //       ),
+        //     ),
+        //     const SizedBox(width: 10),
+        //     Expanded(
+        //       child: ElevatedButton(
+        //         onPressed: widget.isSaving ? null : widget.saveOrder,
+        //         style: ElevatedButton.styleFrom(
+        //           backgroundColor: primaryBlue,
+        //           foregroundColor: Colors.white,
+        //           padding: const EdgeInsets.symmetric(vertical: 16),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //         ),
+        //         child:
+        //             widget.isSaving
+        //                 ? Row(
+        //                   mainAxisAlignment: MainAxisAlignment.center,
+        //                   mainAxisSize: MainAxisSize.min,
+        //                   children: [
+        //                     const Text(
+        //                       'Saving...',
+        //                       style: TextStyle(
+        //                         fontSize: 16,
+        //                         fontWeight: FontWeight.w500,
+        //                         color: Colors.white,
+        //                       ),
+        //                     ),
+        //                     const SizedBox(width: 12),
+        //                     const SizedBox(
+        //                       width: 20,
+        //                       height: 20,
+        //                       child: CircularProgressIndicator(
+        //                         strokeWidth: 2.5,
+        //                         color: Colors.white,
+        //                       ),
+        //                     ),
+        //                   ],
+        //                 )
+        //                 : const Text(
+        //                   'Save',
+        //                   style: TextStyle(fontWeight: FontWeight.bold),
+        //                 ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
+      
+      
       ],
     );
   }
@@ -2504,6 +2648,7 @@ class _OrderForm2State extends State<_OrderForm2> {
             widget.controllers.selectedParty,
             widget.onPartySelected,
             isEnabled: UserSession.userType != 'C',
+            isRequired: true,
           ),
         ),
         const SizedBox(width: 8),
@@ -2535,10 +2680,17 @@ class _OrderForm2State extends State<_OrderForm2> {
     String? selectedValue,
     Function(String?, String?) onChanged, {
     bool isEnabled = true,
+    bool isRequired = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownSearch<String>(
+        validator: (value) {
+          if (isRequired && (value == null || value.isEmpty)) {
+            return "$label is required";
+          }
+          return null;
+        },
         popupProps: PopupProps.menu(
           showSearchBox: true,
           searchFieldProps: TextFieldProps(

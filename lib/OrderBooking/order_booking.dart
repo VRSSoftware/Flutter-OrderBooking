@@ -23,6 +23,10 @@ import 'package:vrs_erp/widget/bottom_navbar.dart';
 import 'package:vrs_erp/widget/filterdailogwidget.dart';
 
 class OrderBookingScreen extends StatefulWidget {
+    final bool startWithBarcode;
+
+  const OrderBookingScreen({Key? key, this.startWithBarcode = false}) : super(key: key);
+
   @override
   _OrderBookingScreenState createState() => _OrderBookingScreenState();
 }
@@ -66,6 +70,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
   @override
   void initState() {
     super.initState();
+     showBarcodeWidget = widget.startWithBarcode;
     _fetchCategories();
     fetchAllItems();
 

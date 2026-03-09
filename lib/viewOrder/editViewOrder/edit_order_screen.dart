@@ -39,7 +39,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _pageController = PageController(initialPage: 0);
     // fetchOrderItems(doc_Id: widget.docId);
     if (widget.docId != '-1') {
@@ -47,12 +47,11 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
       EditOrderData.doc_id = widget.docId;
       fetchOrderItems(doc_Id: widget.docId);
       fetchOrderHeaderDetails(widget.docId);
-    }else{
+    } else {
       setState(() {
         isOrderItemsLoaded = true;
       });
     }
-
   }
 
   @override
@@ -60,7 +59,8 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     _pageController.dispose();
     super.dispose();
   }
-   Future<void> _saveEditedOrder() async {
+
+  Future<void> _saveEditedOrder() async {
     final payload = {
       "doc_id": EditOrderData.doc_id,
       "login_id": UserSession.userName ?? 'admin',
@@ -74,7 +74,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
         "transporter": EditOrderData.transporterKey,
         "remark": EditOrderData.remark,
         "delivaryday": EditOrderData.deliveryDays,
-        "customer":EditOrderData.partyKey,
+        "customer": EditOrderData.partyKey,
       },
       "items":
           EditOrderData.data.expand((item) {
@@ -466,49 +466,54 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
 
   // ✅ Bottom Navigation Buttons
   Widget _buildBottomButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                if (_activeTab == ActiveTab.customerDetails) {
-                  _pageController.previousPage(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              },
-              child: Text('Back'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_activeTab == ActiveTab.customerDetails) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                child: const Text('Back'),
+              ),
             ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: _activeTab ==  ActiveTab.transaction ?  ElevatedButton(
-              onPressed: () {
-                if (_activeTab == ActiveTab.transaction) {
-                  _pageController.nextPage(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              },
-              child: Text('Next'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            ) :
-             ElevatedButton(
-              onPressed: () {
-                if (_activeTab == ActiveTab.customerDetails) {
-                  _saveEditedOrder();
-                }
-              },
-              child: Text('Save'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            const SizedBox(width: 16),
+            Expanded(
+              child:
+                  _activeTab == ActiveTab.transaction
+                      ? ElevatedButton(
+                        onPressed: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: const Text('Next'),
+                      )
+                      : ElevatedButton(
+                        onPressed: () {
+                          _saveEditedOrder();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: const Text('Save'),
+                      ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -516,7 +521,10 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   // ✅ AppBar with Bottom Info
   AppBar _buildAppBar() {
     return AppBar(
-      title: const Text('Update Order', style: TextStyle(color: Colors.white)),
+      title: const Text(
+        'Update Orderaarrr',
+        style: TextStyle(color: Colors.white),
+      ),
       backgroundColor: AppColors.primaryColor,
       elevation: 1,
       leading: IconButton(
@@ -581,7 +589,6 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 8.0),
     );
   }
-  
 
   // ✅ Main Build
   @override
@@ -611,16 +618,19 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
           _buildBottomButtons(),
         ],
       ),
-            floatingActionButton: FloatingActionButton(
-        onPressed: _handleAddAction,
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add, color: Colors.white),
-        tooltip: 'Add New Item',
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 40),
+        child: FloatingActionButton(
+          onPressed: _handleAddAction,
+          backgroundColor: Colors.blue,
+          child: const Icon(Icons.add, color: Colors.white),
+          tooltip: 'Add New Item',
+        ),
       ),
     );
   }
 
- void _handleAddAction() {
+  void _handleAddAction() {
     Navigator.push(
       context,
       MaterialPageRoute(
