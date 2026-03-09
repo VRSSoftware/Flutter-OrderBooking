@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:vrs_erp/register/OrderReportViewPage .dart'; // Note: there's a space in the filename
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -258,120 +259,236 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return today;
   }
 
-  Future<void> _saveOrderLocally() async {
-    if (!_formKey.currentState!.validate()) return;
+  // Future<void> _saveOrderLocally() async {
+  //   if (!_formKey.currentState!.validate()) return;
 
-    String? consigneeLedKey = '';
-    String? stationStnKey = '';
-    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-      final selectedConsignee = consignees.firstWhere(
-        (consignee) => consignee.ledName == selectedConsigneeName,
-        orElse:
-            () => Consignee(
-              ledKey: '',
-              ledName: '',
-              stnKey: '',
-              stnName: '',
-              paymentTermsKey: '',
-              paymentTermsName: '',
-              pytTermDiscdays: '0',
+  //   String? consigneeLedKey = '';
+  //   String? stationStnKey = '';
+  //   final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+  //   if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+  //     final selectedConsignee = consignees.firstWhere(
+  //       (consignee) => consignee.ledName == selectedConsigneeName,
+  //       orElse:
+  //           () => Consignee(
+  //             ledKey: '',
+  //             ledName: '',
+  //             stnKey: '',
+  //             stnName: '',
+  //             paymentTermsKey: '',
+  //             paymentTermsName: '',
+  //             pytTermDiscdays: '0',
+  //           ),
+  //     );
+  //     consigneeLedKey = selectedConsignee.ledKey;
+  //     stationStnKey = selectedConsignee.stnKey;
+  //   }
+
+  //   final orderData = {
+  //     "saleorderno": _orderControllers.orderNo.text,
+  //     "orderdate": formatDate(_orderControllers.date.text, true),
+  //     "customer": _orderControllers.selectedPartyKey ?? '',
+  //     "broker": _orderControllers.selectedBrokerKey ?? '',
+  //     "comission": _orderControllers.comm.text,
+  //     "transporter": _orderControllers.selectedTransporterKey ?? '',
+  //     "delivaryday": _orderControllers.deliveryDays.text,
+  //     "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+  //     "totitem": _orderControllers.totalItem.text,
+  //     "totqty": _orderControllers.totalQty.text,
+  //     "remark": _orderControllers.remark.text,
+  //     "consignee": consigneeLedKey,
+  //     "station": stationStnKey,
+  //     "paymentterms":
+  //         _additionalInfo['paymentterms'] ??
+  //         _orderControllers.pytTermDiscKey ??
+  //         '',
+  //     "paymentdays":
+  //         _additionalInfo['paymentdays'] ??
+  //         _orderControllers.creditPeriod?.toString() ??
+  //         '0',
+  //     "duedate": calculateDueDate(),
+  //     "refno": _additionalInfo['refno'] ?? '',
+  //     "date": getTodayWithZeroTime(),
+  //     "bookingtype": _additionalInfo['bookingtype'] ?? '',
+  //     "salesman":
+  //         _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+  //   };
+  //   final orderDataJson = jsonEncode(orderData);
+  //   print("Saved Order Data:");
+  //   print(orderDataJson);
+
+  //   try {
+  //     final response = await insertFinalSalesOrder(orderDataJson);
+  //     if (response != null && response != "fail") {
+  //       Provider.of<CartModel>(context, listen: false).clearAddedItems();
+  //       final formattedOrderNo = "SO$response";
+
+  //       showDialog(
+  //         context: context,
+  //         builder:
+  //             (context) => AlertDialog(
+  //               title: Text('Order Saved'),
+  //               content: Text('Order $formattedOrderNo saved successfully'),
+  //               actions: [
+  //                 TextButton(
+  //                   onPressed: () {
+  //                     Navigator.pop(context);
+  //                     Navigator.push(
+  //                       context,
+  //                       MaterialPageRoute(
+  //                         builder:
+  //                             (context) => PdfViewerScreen(
+  //                               rptName: 'SalesOrder',
+  //                               orderNo: formattedOrderNo,
+  //                               whatsappNo: _orderControllers.whatsAppMobileNo,
+  //                               partyName:
+  //                                   _orderControllers.selectedPartyName ?? '',
+  //                               orderDate: _orderControllers.date.text,
+  //                             ),
+  //                       ),
+  //                     );
+  //                   },
+  //                   child: Text('View PDF'),
+  //                 ),
+  //                 TextButton(
+  //                   onPressed: () {
+  //                     Navigator.pushReplacement(
+  //                       context,
+  //                       MaterialPageRoute(builder: (context) => HomeScreen()),
+  //                     );
+  //                   },
+  //                   child: Text('Done'),
+  //                 ),
+  //               ],
+  //             ),
+  //       );
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Failed to save order. Please try again.')),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     print('Error during order saving: $e');
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+  //   }
+  // }
+
+
+
+
+Future<void> _saveOrderLocally() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  String? consigneeLedKey = '';
+  String? stationStnKey = '';
+  final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+  if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+    final selectedConsignee = consignees.firstWhere(
+      (consignee) => consignee.ledName == selectedConsigneeName,
+      orElse:
+          () => Consignee(
+            ledKey: '',
+            ledName: '',
+            stnKey: '',
+            stnName: '',
+            paymentTermsKey: '',
+            paymentTermsName: '',
+            pytTermDiscdays: '0',
+          ),
+    );
+    consigneeLedKey = selectedConsignee.ledKey;
+    stationStnKey = selectedConsignee.stnKey;
+  }
+
+  final orderData = {
+    "saleorderno": _orderControllers.orderNo.text,
+    "orderdate": formatDate(_orderControllers.date.text, true),
+    "customer": _orderControllers.selectedPartyKey ?? '',
+    "broker": _orderControllers.selectedBrokerKey ?? '',
+    "comission": _orderControllers.comm.text,
+    "transporter": _orderControllers.selectedTransporterKey ?? '',
+    "delivaryday": _orderControllers.deliveryDays.text,
+    "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+    "totitem": _orderControllers.totalItem.text,
+    "totqty": _orderControllers.totalQty.text,
+    "remark": _orderControllers.remark.text,
+    "consignee": consigneeLedKey,
+    "station": stationStnKey,
+    "paymentterms":
+        _additionalInfo['paymentterms'] ??
+        _orderControllers.pytTermDiscKey ??
+        '',
+    "paymentdays":
+        _additionalInfo['paymentdays'] ??
+        _orderControllers.creditPeriod?.toString() ??
+        '0',
+    "duedate": calculateDueDate(),
+    "refno": _additionalInfo['refno'] ?? '',
+    "date": getTodayWithZeroTime(),
+    "bookingtype": _additionalInfo['bookingtype'] ?? '',
+    "salesman":
+        _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+  };
+  final orderDataJson = jsonEncode(orderData);
+  print("Saved Order Data:");
+  print(orderDataJson);
+
+  try {
+    final response = await insertFinalSalesOrder(orderDataJson);
+    if (response != null && response != "fail") {
+      Provider.of<CartModel>(context, listen: false).clearAddedItems();
+      final formattedOrderNo = "SO$response";
+
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text('Order Saved'),
+              content: Text('Order $formattedOrderNo saved successfully'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // REPLACE THIS: Navigator.push to PdfViewerScreen
+                    // WITH THIS: Navigator.push to OrderReportViewPage
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderReportViewPage(
+                          orderNo: response, // Use the response which is the order number
+                          orderData: null, // You can pass additional data if needed
+                          showOnlyWithImage: false, // Default to false
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text('View Report'), // Changed from 'View PDF' to 'View Report'
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                    );
+                  },
+                  child: Text('Done'),
+                ),
+              ],
             ),
       );
-      consigneeLedKey = selectedConsignee.ledKey;
-      stationStnKey = selectedConsignee.stnKey;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save order. Please try again.')),
+      );
     }
-
-    final orderData = {
-      "saleorderno": _orderControllers.orderNo.text,
-      "orderdate": formatDate(_orderControllers.date.text, true),
-      "customer": _orderControllers.selectedPartyKey ?? '',
-      "broker": _orderControllers.selectedBrokerKey ?? '',
-      "comission": _orderControllers.comm.text,
-      "transporter": _orderControllers.selectedTransporterKey ?? '',
-      "delivaryday": _orderControllers.deliveryDays.text,
-      "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-      "totitem": _orderControllers.totalItem.text,
-      "totqty": _orderControllers.totalQty.text,
-      "remark": _orderControllers.remark.text,
-      "consignee": consigneeLedKey,
-      "station": stationStnKey,
-      "paymentterms":
-          _additionalInfo['paymentterms'] ??
-          _orderControllers.pytTermDiscKey ??
-          '',
-      "paymentdays":
-          _additionalInfo['paymentdays'] ??
-          _orderControllers.creditPeriod?.toString() ??
-          '0',
-      "duedate": calculateDueDate(),
-      "refno": _additionalInfo['refno'] ?? '',
-      "date": getTodayWithZeroTime(),
-      "bookingtype": _additionalInfo['bookingtype'] ?? '',
-      "salesman":
-          _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-    };
-    final orderDataJson = jsonEncode(orderData);
-    print("Saved Order Data:");
-    print(orderDataJson);
-
-    try {
-      final response = await insertFinalSalesOrder(orderDataJson);
-      if (response != null && response != "fail") {
-        Provider.of<CartModel>(context, listen: false).clearAddedItems();
-        final formattedOrderNo = "SO$response";
-
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text('Order Saved'),
-                content: Text('Order $formattedOrderNo saved successfully'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => PdfViewerScreen(
-                                rptName: 'SalesOrder',
-                                orderNo: formattedOrderNo,
-                                whatsappNo: _orderControllers.whatsAppMobileNo,
-                                partyName:
-                                    _orderControllers.selectedPartyName ?? '',
-                                orderDate: _orderControllers.date.text,
-                              ),
-                        ),
-                      );
-                    },
-                    child: Text('View PDF'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomeScreen()),
-                      );
-                    },
-                    child: Text('Done'),
-                  ),
-                ],
-              ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save order. Please try again.')),
-        );
-      }
-    } catch (e) {
-      print('Error during order saving: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
-    }
+  } catch (e) {
+    print('Error during order saving: $e');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
   }
+}
 
   void _updateTotals() {
     int totalQty = 0;
@@ -1390,21 +1507,31 @@ class _OrderFormState extends State<_OrderForm> {
           }
           return null;
         },
-        popupProps: PopupProps.menu(
-          showSearchBox: true,
-          searchFieldProps: TextFieldProps(
-            decoration: InputDecoration(
-              hintText: _getSearchHint(label),
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          ),
+  popupProps: PopupProps.menu(
+    showSearchBox: true,
+    searchFieldProps: TextFieldProps(
+      decoration: InputDecoration(
+        hintText: _getSearchHint(label),
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
         ),
-        items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
-        selectedItem: selectedValue,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      ),
+    ),
+  ),
+
+  items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
+
+  /// ✅ SEARCH ONLY BEFORE -->
+  filterFn: (item, filter) {
+    if (filter.isEmpty) return true;
+
+    final namePart = item.split('-->').first.trim().toLowerCase();
+    return namePart.contains(filter.toLowerCase());
+  },
+
+  selectedItem: selectedValue,
         dropdownDecoratorProps: DropDownDecoratorProps(
           dropdownSearchDecoration: InputDecoration(
             labelText: label,

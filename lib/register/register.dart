@@ -100,6 +100,22 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+
+  void _changeDate(TextEditingController controller, int days) {
+  DateTime currentDate = DateFormat('yyyy-MM-dd').parse(controller.text);
+  DateTime newDate = currentDate.add(Duration(days: days));
+
+  controller.text = DateFormat('yyyy-MM-dd').format(newDate);
+
+  if (controller == fromDateController) {
+    fromDate = newDate;
+  } else {
+    toDate = newDate;
+  }
+
+  fetchOrders();
+}
+
   Future<void> fetchOrders() async {
     setState(() {
       isLoading = true;
@@ -1037,44 +1053,91 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildDateInput(
-    TextEditingController controller,
-    String label,
-    DateTime? date,
-  ) {
-    return TextField(
-      controller: controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.blue),
-        floatingLabelStyle: const TextStyle(
-          color: Color.fromRGBO(21, 101, 192, 1),
-        ), // Blue[900]
-        hintStyle: const TextStyle(color: Colors.blue),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.calendar_today, color: Colors.blue),
-          onPressed: () => _selectDate(context, controller, date),
+Widget _buildDateInput(
+  TextEditingController controller,
+  String label,
+  DateTime? date,
+) {
+  return Stack(
+    children: [
+      Container(
+        height: 50,
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color.fromRGBO(144, 202, 249, 1)),
+          borderRadius: BorderRadius.circular(4),
         ),
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-          borderSide: BorderSide(
-            color: Color.fromRGBO(144, 202, 249, 1),
-          ), // Blue[200]
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-          borderSide: BorderSide(
-            color: Color.fromRGBO(21, 101, 192, 1),
-          ), // Blue[900]
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  Icons.chevron_left,
+                  color: Colors.blue,
+                  size: 22,
+                ),
+                onPressed: () => _changeDate(controller, -1),
+              ),
+            ),
+
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _selectDate(context, controller, date),
+                child: Center(
+                  child: Text(
+                    controller.text,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(
+              width: 28,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: Colors.blue,
+                  size: 22,
+                ),
+                onPressed: () => _changeDate(controller, 1),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+
+      /// Floating Label
+      Positioned(
+        left: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          color: Colors.white,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.blue,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
