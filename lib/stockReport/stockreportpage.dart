@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -45,7 +46,7 @@ class _StockReportPageState extends State<StockReportPage> {
   bool isLoadingItems = true;
   bool isLoadingStockReport = false;
   bool hasSearched = false;
-  
+
   // Filter-related state variables
   List<Style> styles = [];
   List<Shade> shades = [];
@@ -71,7 +72,9 @@ class _StockReportPageState extends State<StockReportPage> {
   Future<void> _downloadStockReport() async {
     if (selectedCategoryKey == null || selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both category and item first')),
+        const SnackBar(
+          content: Text('Please select both category and item first'),
+        ),
       );
       return;
     }
@@ -111,10 +114,22 @@ class _StockReportPageState extends State<StockReportPage> {
         userId: 'admin',
         fcYrId: '24',
         cobr: '01',
-        brandKey: selectedBrands.isNotEmpty ? selectedBrands.map((b) => b.brandKey).join(',') : null,
-        styleKey: selectedStyles.isNotEmpty ? selectedStyles.map((s) => s.styleKey).join(',') : null,
-        shadeKey: selectedShades.isNotEmpty ? selectedShades.map((s) => s.shadeKey).join(',') : null,
-        sizeKey: selectedSizes.isNotEmpty ? selectedSizes.map((s) => s.itemSizeKey).join(',') : null,
+        brandKey:
+            selectedBrands.isNotEmpty
+                ? selectedBrands.map((b) => b.brandKey).join(',')
+                : null,
+        styleKey:
+            selectedStyles.isNotEmpty
+                ? selectedStyles.map((s) => s.styleKey).join(',')
+                : null,
+        shadeKey:
+            selectedShades.isNotEmpty
+                ? selectedShades.map((s) => s.shadeKey).join(',')
+                : null,
+        sizeKey:
+            selectedSizes.isNotEmpty
+                ? selectedSizes.map((s) => s.itemSizeKey).join(',')
+                : null,
         fromMRP: fromMRP.isNotEmpty ? double.tryParse(fromMRP) : null,
         toMRP: toMRP.isNotEmpty ? double.tryParse(toMRP) : null,
       );
@@ -124,11 +139,10 @@ class _StockReportPageState extends State<StockReportPage> {
       }
 
       await _generateAndOpenPDF(fetchedStockReport);
-
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error fetching stock data: $e'),
@@ -137,6 +151,16 @@ class _StockReportPageState extends State<StockReportPage> {
         );
       }
     }
+  }
+
+  Future<pw.MemoryImage?> _loadPdfImage(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return pw.MemoryImage(response.bodyBytes);
+      }
+    } catch (e) {}
+    return null;
   }
 
   String _getImageUrl(StockReportItem item) {
@@ -155,572 +179,296 @@ class _StockReportPageState extends State<StockReportPage> {
   }
 
   Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
-    if (stockData.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No data to download'))
-      );
-      return;
+    final pdf = pw.Document();
+
+    /// Collect all sizes
+    List<String> allSizes = [];
+
+    for (var item in stockData) {
+      if (item.details != null) {
+        for (var pair in item.details!.split(',')) {
+          final parts = pair.split(':');
+          if (parts.length == 2) {
+            String size = parts[0].trim();
+            if (!allSizes.contains(size)) {
+              allSizes.add(size);
+            }
+          }
+        }
+      }
     }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LoadingAnimationWidget.waveDots(color: Colors.blue, size: 50),
-                const SizedBox(height: 20),
-                Text(
-                  'Generating PDF...',
-                  style: GoogleFonts.poppins(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    allSizes.sort();
 
-    try {
-      List<String> selectedItemNames = selectedItems
-          .map((item) => item.itemName ?? '')
-          .where((name) => name.isNotEmpty)
-          .toList();
+    /// Group by item
+    Map<String, List<StockReportItem>> groupedItems = {};
 
-      final pdf = pw.Document();
-      
-      // Group items by item name first, then by style code
-      Map<String, Map<String, List<StockReportItem>>> groupedByItemAndStyle = {};
-      
-      for (var item in stockData) {
-        final itemName = item.itemName ?? 'Unknown Item';
-        final styleCode = item.styleCode ?? 'Unknown';
-        
-        if (!groupedByItemAndStyle.containsKey(itemName)) {
-          groupedByItemAndStyle[itemName] = {};
-        }
-        
-        if (!groupedByItemAndStyle[itemName]!.containsKey(styleCode)) {
-          groupedByItemAndStyle[itemName]![styleCode] = [];
-        }
-        
-        groupedByItemAndStyle[itemName]![styleCode]!.add(item);
+    for (var item in stockData) {
+      final itemName = item.itemName ?? "Unknown";
+      groupedItems.putIfAbsent(itemName, () => []);
+      groupedItems[itemName]!.add(item);
+    }
+
+    int categoryTotal = 0;
+
+    List<pw.Widget> content = [];
+
+    for (var entry in groupedItems.entries) {
+      String itemName = entry.key;
+      List<StockReportItem> items = entry.value;
+
+      Map<String, Map<String, int>> shadeData = {};
+      Map<String, int> sizeTotals = {};
+
+      for (var size in allSizes) {
+        sizeTotals[size] = 0;
       }
 
-      // Get all unique sizes across all items
-      List<String> allSizes = [];
-      for (var item in stockData) {
-        if (item.details != null && item.details!.isNotEmpty) {
-          List<String> pairs = item.details!.split(',');
-          for (var pair in pairs) {
-            List<String> parts = pair.split(':');
+      for (var item in items) {
+        String shade = item.shadeName ?? "Unknown";
+
+        shadeData.putIfAbsent(shade, () => {});
+
+        if (item.details != null) {
+          for (var pair in item.details!.split(',')) {
+            var parts = pair.split(':');
+
             if (parts.length == 2) {
               String size = parts[0].trim();
-              if (!allSizes.contains(size)) {
-                allSizes.add(size);
-              }
+              int qty = int.tryParse(parts[1]) ?? 0;
+
+              shadeData[shade]![size] = qty;
+
+              sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
             }
           }
         }
       }
 
-      allSizes.sort((a, b) {
-        int? aNum = int.tryParse(a);
-        int? bNum = int.tryParse(b);
-        if (aNum != null && bNum != null) {
-          return aNum.compareTo(bNum);
-        }
-        Map<String, int> sizeOrder = {
-          'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, '2XL': 6, '3XL': 7, 
-          '4XL': 8, '5XL': 9, '6XL': 10, '7XL': 11, '8XL': 12
-        };
-        int aOrder = sizeOrder[a] ?? 999;
-        int bOrder = sizeOrder[b] ?? 999;
-        if (aOrder != 999 || bOrder != 999) {
-          return aOrder.compareTo(bOrder);
-        }
-        return a.compareTo(b);
-      });
+      /// Build table rows
+      List<pw.TableRow> rows = [];
 
-      List<pw.Widget> allPages = [];
-      Map<String, int> itemTotals = {};
-      
-      // Build pages for each item
-      groupedByItemAndStyle.forEach((itemName, styleGroups) {
-        int itemTotal = 0;
-        List<pw.Widget> itemSections = [];
-        
-        // Add item header
-        itemSections.add(
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 16, bottom: 8),
-            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.deepOrange,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-            ),
-            child: pw.Row(
-              children: [
-                pw.Text(
-                  itemName.toUpperCase(),
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.white,
-                  ),
-                ),
-                pw.Spacer(),
-                pw.Text(
-                  '${selectedCategoryName?.toUpperCase() ?? 'LADIES WEAR'}',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    color: PdfColors.white,
-                  ),
-                ),
-              ],
-            ),
-          )
-        );
-        
-        // Add style sections for this item
-        styleGroups.forEach((styleCode, items) {
-          Map<String, Map<String, int>> shadeData = {};
-          Map<String, int> sizeTotals = {};
-          
-          for (var item in items) {
-            String shadeName = item.shadeName ?? 'Unknown';
-            Map<String, int> sizeMap = {};
-            
-            if (item.details != null && item.details!.isNotEmpty) {
-              List<String> pairs = item.details!.split(',');
-              for (var pair in pairs) {
-                List<String> parts = pair.split(':');
-                if (parts.length == 2) {
-                  String size = parts[0].trim();
-                  int qty = int.tryParse(parts[1].trim()) ?? 0;
-                  sizeMap[size] = qty;
-                  sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
-                }
-              }
-            }
-            
-            shadeData[shadeName] = sizeMap;
-          }
-
-          int styleTotal = items.fold(0, (sum, item) => sum + (item.total ?? 0));
-          itemTotal += styleTotal;
-
-          itemSections.add(
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Container(
-                  margin: const pw.EdgeInsets.only(top: 8),
-                  padding: const pw.EdgeInsets.all(8),
-                  color: PdfColors.blue50,
-                  child: pw.Row(
-                    children: [
-                      pw.Expanded(
-                        child: pw.Text(
-                          styleCode,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.blue100,
-                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
-                        ),
-                        child: pw.Text(
-                          'Total: $styleTotal',
-                          style: pw.TextStyle(
-                            fontSize: 10,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                pw.Table(
-                  border: pw.TableBorder.all(color: PdfColors.grey300),
-                  children: [
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-                      children: [
-                        pw.Container(
-                          width: 80,
-                          padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text('Shade', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                        ),
-                        pw.Container(
-                          width: 50,
-                          padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text('Total', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                        ),
-                        ...allSizes.map((size) => pw.Container(
-                          width: 40,
-                          padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(size, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                        )).toList(),
-                      ],
-                    ),
-                    
-                    ...shadeData.entries.map((entry) {
-                      String shade = entry.key;
-                      Map<String, int> sizeMap = entry.value;
-                      int shadeTotal = items.firstWhere(
-                        (item) => item.shadeName == shade,
-                        orElse: () => StockReportItem(),
-                      ).total ?? 0;
-                      
-                      return pw.TableRow(
-                        children: [
-                          pw.Container(
-                            width: 80,
-                            padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(shade, style: const pw.TextStyle(fontSize: 9), textAlign: pw.TextAlign.center),
-                          ),
-                          pw.Container(
-                            width: 50,
-                            padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(shadeTotal.toString(), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                          ),
-                          ...allSizes.map((size) {
-                            int qty = sizeMap[size] ?? 0;
-                            return pw.Container(
-                              width: 40,
-                              padding: const pw.EdgeInsets.all(6),
-                              child: pw.Text(
-                                qty.toString(),
-                                style: pw.TextStyle(
-                                  fontSize: 9,
-                                  color: qty > 0 ? PdfColors.green700 : PdfColors.grey400,
-                                ),
-                                textAlign: pw.TextAlign.center,
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      );
-                    }).toList(),
-                    
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.blue50),
-                      children: [
-                        pw.Container(
-                          width: 80,
-                          padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text('Style Total', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                        ),
-                        pw.Container(
-                          width: 50,
-                          padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(styleTotal.toString(), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
-                        ),
-                        ...allSizes.map((size) {
-                          return pw.Container(
-                            width: 40,
-                            padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(
-                              sizeTotals[size]?.toString() ?? '0',
-                              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                              textAlign: pw.TextAlign.center,
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 8),
-              ],
-            )
-          );
-        });
-        
-        // Add item total row
-        itemSections.add(
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 8, bottom: 16),
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.amber100,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-              border: pw.Border.all(color: PdfColors.amber600, width: 1),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  '$itemName TOTAL:',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.amber900,
-                  ),
-                ),
-                pw.Text(
-                  itemTotal.toString(),
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.amber900,
-                  ),
-                ),
-              ],
-            ),
-          )
-        );
-        
-        itemTotals[itemName] = itemTotal;
-        allPages.addAll(itemSections);
-      });
-
-      int grandTotal = stockData.fold(0, (sum, item) => sum + (item.total ?? 0));
-
-      // Add grand total with item-wise breakdown
-      allPages.add(
-        pw.Column(
+      /// HEADER
+      rows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
           children: [
-            pw.Container(
-              margin: const pw.EdgeInsets.only(top: 16),
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.blue700,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-              ),
-              child: pw.Column(
-                children: [
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'GRAND TOTAL',
-                        style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.white,
-                        ),
-                      ),
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.white,
-                          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
-                        ),
-                        child: pw.Text(
-                          grandTotal.toString(),
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Divider(color: PdfColors.white),
-                  pw.SizedBox(height: 8),
-                  ...itemTotals.entries.map((entry) {
-                    return pw.Padding(
-                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                      child: pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          pw.Text(
-                            '${entry.key}:',
-                            style: pw.TextStyle(
-                              fontSize: 10,
-                              color: PdfColors.white,
-                            ),
-                          ),
-                          pw.Text(
-                            entry.value.toString(),
-                            style: pw.TextStyle(
-                              fontSize: 10,
-                              fontWeight: pw.FontWeight.bold,
-                              color: PdfColors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.amber50,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Total --> ${selectedCategoryName?.toUpperCase() ?? 'LADIES WEAR'}:',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.amber900,
-                    ),
-                  ),
-                  pw.Text(
-                    grandTotal.toString(),
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.amber900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        )
-      );
+            _cell("Shade", 70),
 
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4.landscape,
-          margin: const pw.EdgeInsets.all(32),
-          header: (pw.Context context) {
-            if (context.pageNumber == 1) {
-              return pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'VRS Software Pvt Ltd',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.Text(
-                        'Date: ${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    'Item Wise Stock Report',
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue700,
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Row(
-                    children: [
-                      pw.Expanded(
-                        child: pw.Text(
-                          'Category: ${selectedCategoryName ?? 'All Categories'}',
-                          style: const pw.TextStyle(fontSize: 10),
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Text(
-                          'Items: ${selectedItemNames.join(', ')}',
-                          style: const pw.TextStyle(fontSize: 10),
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Divider(),
-                  pw.SizedBox(height: 8),
-                ],
-              );
-            }
-            return pw.SizedBox(height: 10);
-          },
-          footer: (pw.Context context) {
-            return pw.Column(
-              children: [
-                pw.Divider(),
-                pw.SizedBox(height: 4),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'Generated on: ${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')} ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-                      style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-                    ),
-                    pw.Text(
-                      'Page ${context.pageNumber} of ${context.pagesCount}',
-                      style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-          build: (pw.Context context) {
-            return allPages;
-          },
+            if (withImage) _cell("Img", 35),
+
+            ...allSizes.map((s) => _cell(s, 40)),
+
+            _cell("Total", 50),
+          ],
         ),
       );
 
-      final bytes = await pdf.save();
-      final directory = await getApplicationDocumentsDirectory();
-      final now = DateTime.now();
-      final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-      String cleanName = (selectedCategoryName ?? 'Stock').replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_');
-      final fileName = 'ItemWiseStock_${cleanName}_$dateStr.pdf';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsBytes(bytes);
+      int itemTotal = 0;
 
-      if (context.mounted) {
-        Navigator.pop(context);
+      /// DATA ROWS
+      for (var shadeEntry in shadeData.entries) {
+        String shade = shadeEntry.key;
+        Map<String, int> sizeMap = shadeEntry.value;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF downloaded successfully, opening...'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
 
-        final result = await OpenFile.open(file.path);
-        
-        if (result.type != ResultType.done) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open file: ${result.message}'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+        itemTotal += shadeTotal;
+
+        pw.MemoryImage? image;
+
+        if (withImage) {
+          final url = _getImageUrl(items.first);
+          image = await _loadPdfImage(url);
         }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error generating PDF: $e'),
-            backgroundColor: Colors.red,
+
+        rows.add(
+          pw.TableRow(
+            children: [
+              _cell(shade, 70),
+
+              if (withImage)
+                pw.Container(
+                  width: 25,
+                  height: 25,
+                  alignment: pw.Alignment.center,
+                  child:
+                      image != null
+                          ? pw.Image(
+                            image,
+                            width: 16,
+                            height: 16,
+                            fit: pw.BoxFit.contain,
+                          )
+                          : pw.SizedBox(),
+                ),
+
+              ...allSizes.map((size) {
+                int qty = sizeMap[size] ?? 0;
+
+                return _cell(qty.toString(), 40);
+              }),
+
+              _cell(shadeTotal.toString(), 50),
+            ],
           ),
         );
       }
+
+      /// TOTAL ROW
+      rows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _cell("Total", 70),
+
+            if (withImage) _cell("", 35),
+
+            ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
+
+            _cell(itemTotal.toString(), 50),
+          ],
+        ),
+      );
+
+      categoryTotal += itemTotal;
+
+      content.add(
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 12),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              /// ITEM TITLE
+              pw.Text(
+                "$itemName - ${selectedCategoryName ?? ''}",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+
+              pw.SizedBox(height: 6),
+
+              /// TABLE
+              pw.Table(
+                border: pw.TableBorder.all(),
+                defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+                children: rows,
+              ),
+
+              pw.SizedBox(height: 4),
+
+              /// ITEM TOTAL (RIGHT SIDE)
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    "$itemName : $itemTotal",
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
     }
+
+    /// CATEGORY TOTAL
+    content.add(
+      pw.Container(
+        decoration: pw.BoxDecoration(border: pw.Border.all()),
+        padding: const pw.EdgeInsets.all(6),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Text(
+              "${selectedCategoryName ?? ''} : $categoryTotal",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    /// GRAND TOTAL
+    content.add(
+      pw.Container(
+        decoration: pw.BoxDecoration(border: pw.Border.all()),
+        padding: const pw.EdgeInsets.all(6),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Text(
+              "Grand Total : $categoryTotal",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
+        header: (pw.Context context) {
+          if (context.pageNumber == 1) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  "VRS SOFTWARE",
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+
+                pw.Text(
+                  "Item Wise Stock Report",
+                  style: pw.TextStyle(fontSize: 14),
+                ),
+
+                pw.SizedBox(height: 5),
+                pw.Divider(),
+              ],
+            );
+          }
+
+          return pw.SizedBox(height: 10);
+        },
+
+        build: (context) => content,
+      ),
+    );
+
+    final bytes = await pdf.save();
+
+    final directory = await getApplicationDocumentsDirectory();
+
+    final file = File("${directory.path}/stock_report.pdf");
+
+    await file.writeAsBytes(bytes);
+
+    await OpenFile.open(file.path);
+  }
+
+  pw.Widget _cell(String text, double width) {
+    return pw.Container(
+      width: width,
+      alignment: pw.Alignment.center,
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Text(
+        text,
+        style: const pw.TextStyle(fontSize: 9),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
   }
 
   int _getActiveFilterCount() {
@@ -764,10 +512,22 @@ class _StockReportPageState extends State<StockReportPage> {
         userId: 'admin',
         fcYrId: '24',
         cobr: '01',
-        brandKey: selectedBrands.isNotEmpty ? selectedBrands.map((b) => b.brandKey).join(',') : null,
-        styleKey: selectedStyles.isNotEmpty ? selectedStyles.map((s) => s.styleKey).join(',') : null,
-        shadeKey: selectedShades.isNotEmpty ? selectedShades.map((s) => s.shadeKey).join(',') : null,
-        sizeKey: selectedSizes.isNotEmpty ? selectedSizes.map((s) => s.itemSizeKey).join(',') : null,
+        brandKey:
+            selectedBrands.isNotEmpty
+                ? selectedBrands.map((b) => b.brandKey).join(',')
+                : null,
+        styleKey:
+            selectedStyles.isNotEmpty
+                ? selectedStyles.map((s) => s.styleKey).join(',')
+                : null,
+        shadeKey:
+            selectedShades.isNotEmpty
+                ? selectedShades.map((s) => s.shadeKey).join(',')
+                : null,
+        sizeKey:
+            selectedSizes.isNotEmpty
+                ? selectedSizes.map((s) => s.itemSizeKey).join(',')
+                : null,
         fromMRP: fromMRP.isNotEmpty ? double.tryParse(fromMRP) : null,
         toMRP: toMRP.isNotEmpty ? double.tryParse(toMRP) : null,
       );
@@ -776,6 +536,11 @@ class _StockReportPageState extends State<StockReportPage> {
         stockReportItems = stockReport;
         isLoadingStockReport = false;
       });
+
+      // Show bottom sheet with results
+      if (stockReport.isNotEmpty && mounted) {
+        _showStockReportBottomSheet();
+      }
     } catch (e) {
       setState(() {
         isLoadingStockReport = false;
@@ -784,6 +549,943 @@ class _StockReportPageState extends State<StockReportPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading stock report: $e')));
     }
+  }
+
+  void _showStockReportBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey[200]!),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.inventory,
+                              color: Colors.blue,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Stock Report',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${selectedCategoryName ?? 'Category'} • ${selectedItems.length} item(s)',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Content
+                    Expanded(child: _buildStockReportContent(scrollController)),
+                    // Bottom buttons
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, -5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildBottomSheetButton(
+                              icon: Icons.download,
+                              label: 'Download PDF',
+                              color: Colors.blue,
+                              onTap: () {
+                                Navigator.pop(context);
+                                _downloadStockReport();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildBottomSheetButton(
+                              icon: FontAwesomeIcons.whatsapp,
+                              label: 'WhatsApp',
+                              color: Colors.green,
+                              isFaIcon: true,
+                              onTap: () {
+                                Navigator.pop(context); // Close bottom sheet
+                                _shareViaWhatsApp(); // Call the WhatsApp method
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+    );
+  }
+
+  Widget _buildBottomSheetButton({
+    required dynamic icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isFaIcon = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            isFaIcon
+                ? FaIcon(icon, size: 18, color: color)
+                : Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockReportContent(ScrollController scrollController) {
+    int grandTotal = 0;
+    Map<String, int> itemTotals = {};
+
+    final groupedByItemAndStyle = _groupItemsByItemAndStyle();
+
+    groupedByItemAndStyle.forEach((itemName, styleGroups) {
+      int itemTotal = 0;
+      styleGroups.forEach((styleCode, items) {
+        itemTotal += items.fold(0, (sum, item) => sum + (item.total ?? 0));
+      });
+      itemTotals[itemName] = itemTotal;
+      grandTotal += itemTotal;
+    });
+
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.all(16),
+      children: [
+        ...groupedByItemAndStyle.entries.map((entry) {
+          return _buildStyledItemSection(entry.key, entry.value);
+        }).toList(),
+        if (groupedByItemAndStyle.isNotEmpty)
+          _buildGrandTotalCard(itemTotals, grandTotal),
+      ],
+    );
+  }
+
+  Widget _buildStyledItemSection(
+    String itemName,
+    Map<String, List<StockReportItem>> styleGroups,
+  ) {
+    int itemTotal = 0;
+    List<Widget> styleTables = [];
+
+    styleGroups.forEach((styleCode, items) {
+      int styleTotal = 0;
+
+      // Parse details to extract size-wise quantities
+      Map<String, Map<String, int>> shadeSizeQuantities = {};
+      List<String> allSizes = [];
+
+      for (var item in items) {
+        styleTotal += item.total ?? 0;
+
+        if (item.details != null && item.details!.isNotEmpty) {
+          Map<String, int> sizeMap = {};
+          List<String> sizePairs = item.details!.split(',');
+
+          for (String pair in sizePairs) {
+            List<String> parts = pair.split(':');
+            if (parts.length == 2) {
+              String size = parts[0].trim();
+              int quantity = int.tryParse(parts[1].trim()) ?? 0;
+              sizeMap[size] = quantity;
+
+              if (!allSizes.contains(size)) {
+                allSizes.add(size);
+              }
+            }
+          }
+
+          shadeSizeQuantities[item.shadeName ?? 'Unknown'] = sizeMap;
+        }
+      }
+
+      itemTotal += styleTotal;
+
+      // Sort sizes numerically
+      allSizes.sort((a, b) {
+        int? aNum = int.tryParse(a);
+        int? bNum = int.tryParse(b);
+        if (aNum != null && bNum != null) {
+          return aNum.compareTo(bNum);
+        }
+        return a.compareTo(b);
+      });
+
+      // Calculate totals
+      Map<String, int> sizeTotals = {};
+
+      for (var size in allSizes) {
+        sizeTotals[size] = 0;
+      }
+
+      for (var item in items) {
+        if (shadeSizeQuantities.containsKey(item.shadeName)) {
+          var sizeMap = shadeSizeQuantities[item.shadeName]!;
+          for (var size in sizeMap.keys) {
+            sizeTotals[size] = (sizeTotals[size] ?? 0) + (sizeMap[size] ?? 0);
+          }
+        }
+      }
+
+      styleTables.add(
+        _buildStyleTable(
+          styleCode: styleCode,
+          items: items,
+          allSizes: allSizes,
+          shadeSizeQuantities: shadeSizeQuantities,
+          sizeTotals: sizeTotals,
+          styleTotal: styleTotal,
+        ),
+      );
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Item Header with border only
+        Container(
+          margin: const EdgeInsets.only(top: 16, bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.blue.shade200),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.inventory_2,
+                  color: Colors.blue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  itemName.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue.shade200),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Total: $itemTotal',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Style Tables
+        ...styleTables,
+      ],
+    );
+  }
+
+  Widget _buildStyleTable({
+    required String styleCode,
+    required List<StockReportItem> items,
+    required List<String> allSizes,
+    required Map<String, Map<String, int>> shadeSizeQuantities,
+    required Map<String, int> sizeTotals,
+    required int styleTotal,
+  }) {
+    // Define consistent column widths
+    const double shadeColumnWidth = 120;
+    const double sizeColumnWidth = 50;
+    const double totalColumnWidth = 60;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Style Header with compact design
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+              border: Border(bottom: BorderSide(color: Colors.blue.shade100)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                if (withImage && items.isNotEmpty)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blue.shade200),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        _getImageUrl(items.first),
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (context, error, stackTrace) => const Icon(
+                              Icons.image_not_supported,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        styleCode,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                      if (items.isNotEmpty && items.first.brandName != null)
+                        Text(
+                          items.first.brandName!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue.shade200),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '$styleTotal',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Table with Fixed Shade Column and Scrollable Content
+          if (allSizes.isNotEmpty && shadeSizeQuantities.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Fixed Shade Column Section (doesn't scroll) - Matching design
+                  Container(
+                    width: shadeColumnWidth,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey[300]!),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Shade Header - Matching scrollable header design
+                        Container(
+                          height: 38,
+                          color: Colors.blue[50],
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'SHADE',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ),
+
+                        // Shade names with alternating colors - Matching row design
+                        ...shadeSizeQuantities.entries.map((entry) {
+                          String shade = entry.key;
+                          int index = shadeSizeQuantities.entries
+                              .toList()
+                              .indexOf(entry);
+
+                          return Container(
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  index % 2 == 0
+                                      ? Colors.white
+                                      : Colors.grey[50],
+                              border: Border(
+                                bottom: BorderSide(color: Colors.grey[300]!),
+                              ),
+                            ),
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              shade,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[800],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+
+                        // Total row shade - Matching total row design
+                        Container(
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            border: Border(
+                              top: BorderSide(color: Colors.grey[300]!),
+                            ),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'TOTAL',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              color: Colors.grey[900],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Scrollable Content Section
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Scrollable Header
+                          Container(
+                            height: 38,
+                            color: Colors.blue[50],
+                            child: Row(
+                              children: [
+                                ...allSizes.map(
+                                  (size) => Container(
+                                    width: sizeColumnWidth,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        size,
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10,
+                                          color: Colors.blue.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Total column header
+                                Container(
+                                  width: totalColumnWidth,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[100],
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'TOTAL',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10,
+                                        color: Colors.blue.shade900,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Scrollable Data Rows
+                          ...shadeSizeQuantities.entries.map((entry) {
+                            Map<String, int> sizeMap = entry.value;
+                            int shadeTotal = sizeMap.values.fold(
+                              0,
+                              (a, b) => a + b,
+                            );
+                            int index = shadeSizeQuantities.entries
+                                .toList()
+                                .indexOf(entry);
+
+                            return Container(
+                              height: 32,
+                              color:
+                                  index % 2 == 0
+                                      ? Colors.white
+                                      : Colors.grey[50],
+                              child: Row(
+                                children: [
+                                  // Size columns
+                                  ...allSizes.map(
+                                    (size) => Container(
+                                      width: sizeColumnWidth,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          right: BorderSide(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          sizeMap[size]?.toString() ?? '0',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 10,
+                                            fontWeight:
+                                                (sizeMap[size] ?? 0) > 0
+                                                    ? FontWeight.w500
+                                                    : FontWeight.normal,
+                                            color:
+                                                (sizeMap[size] ?? 0) > 0
+                                                    ? Colors.blue.shade700
+                                                    : Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Total column
+                                  Container(
+                                    width: totalColumnWidth,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        shadeTotal.toString(),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.blue.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+
+                          // Scrollable Total Row
+                          Container(
+                            height: 32,
+                            color: Colors.grey[100],
+                            child: Row(
+                              children: [
+                                // Size total columns
+                                ...allSizes.map(
+                                  (size) => Container(
+                                    width: sizeColumnWidth,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        sizeTotals[size]?.toString() ?? '0',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10,
+                                          color: Colors.grey[900],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Grand total column
+                                Container(
+                                  width: totalColumnWidth,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[100],
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      styleTotal.toString(),
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                        color: Colors.blue.shade900,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          if (allSizes.isEmpty || shadeSizeQuantities.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: Text(
+                  'No size-wise data available',
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrandTotalCard(Map<String, int> itemTotals, int grandTotal) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16, bottom: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blue.shade200),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.blue.shade100)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue.shade200),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.summarize,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GRAND TOTAL',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                      Text(
+                        '${selectedCategoryName?.toUpperCase() ?? 'LADIES WEAR'}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue.shade200),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    grandTotal.toString(),
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.blue.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Item breakdowns
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ...itemTotals.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          entry.key,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.blue.shade100),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            entry.value.toString(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+
+          // Footer
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              border: Border(top: BorderSide(color: Colors.blue.shade100)),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total Items: ${itemTotals.length}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  'Generated: ${DateTime.now().toString().substring(0, 10)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _fetchCategories() async {
@@ -851,7 +1553,9 @@ class _StockReportPageState extends State<StockReportPage> {
 
   Future<void> _fetchStyles(String itemGrpKey) async {
     try {
-      final fetchedStyles = await ApiService.fetchStylesByItemGrpKey(itemGrpKey);
+      final fetchedStyles = await ApiService.fetchStylesByItemGrpKey(
+        itemGrpKey,
+      );
       setState(() {
         styles = fetchedStyles;
       });
@@ -864,7 +1568,9 @@ class _StockReportPageState extends State<StockReportPage> {
 
   Future<void> _fetchShades(String itemGrpKey) async {
     try {
-      final fetchedShades = await ApiService.fetchShadesByItemGrpKey(itemGrpKey);
+      final fetchedShades = await ApiService.fetchShadesByItemGrpKey(
+        itemGrpKey,
+      );
       setState(() {
         shades = fetchedShades;
       });
@@ -877,7 +1583,9 @@ class _StockReportPageState extends State<StockReportPage> {
 
   Future<void> _fetchSizes(String itemGrpKey) async {
     try {
-      final fetchedSizes = await ApiService.fetchStylesSizeByItemGrpKey(itemGrpKey);
+      final fetchedSizes = await ApiService.fetchStylesSizeByItemGrpKey(
+        itemGrpKey,
+      );
       setState(() {
         sizes = fetchedSizes;
       });
@@ -905,7 +1613,8 @@ class _StockReportPageState extends State<StockReportPage> {
     final result = await Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => StockFilterPage(),
+        pageBuilder:
+            (context, animation, secondaryAnimation) => StockFilterPage(),
         settings: RouteSettings(
           arguments: {
             'styles': styles,
@@ -968,6 +1677,7 @@ class _StockReportPageState extends State<StockReportPage> {
       fromMRP = '';
       toMRP = '';
       stockReportItems = [];
+      hasSearched = false;
     });
     _fetchAllItems();
   }
@@ -975,858 +1685,512 @@ class _StockReportPageState extends State<StockReportPage> {
   // Helper method to group stock report items by item name first, then by style code
   Map<String, Map<String, List<StockReportItem>>> _groupItemsByItemAndStyle() {
     Map<String, Map<String, List<StockReportItem>>> groupedItems = {};
-    
+
     for (var item in stockReportItems) {
       final itemName = item.itemName ?? 'Unknown Item';
       final styleCode = item.styleCode ?? 'Unknown';
-      
+
       if (!groupedItems.containsKey(itemName)) {
         groupedItems[itemName] = {};
       }
-      
+
       if (!groupedItems[itemName]!.containsKey(styleCode)) {
         groupedItems[itemName]![styleCode] = [];
       }
-      
+
       groupedItems[itemName]![styleCode]!.add(item);
     }
-    
+
     return groupedItems;
   }
 
-  Widget _buildItemSection(String itemName, Map<String, List<StockReportItem>> styleGroups) {
-    int itemTotal = 0;
-    List<Widget> styleTables = [];
-    
-    styleGroups.forEach((styleCode, items) {
-      int styleTotal = 0;
-      
-      // Parse details to extract size-wise quantities
-      Map<String, Map<String, int>> shadeSizeQuantities = {};
-      List<String> allSizes = [];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      drawer: DrawerScreen(),
+      appBar: AppBar(
+        title: Text(
+          'Stock Report',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: AppColors.primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          // Clear button in app bar
+          IconButton(
+            onPressed: clearFilters,
+            icon: const Icon(Icons.clear, color: Colors.white),
+            tooltip: "Clear All",
+          ),
+          const SizedBox(width: 4),
 
-      for (var item in items) {
-        styleTotal += item.total ?? 0;
-        
-        if (item.details != null && item.details!.isNotEmpty) {
-          Map<String, int> sizeMap = {};
-          List<String> sizePairs = item.details!.split(',');
-
-          for (String pair in sizePairs) {
-            List<String> parts = pair.split(':');
-            if (parts.length == 2) {
-              String size = parts[0].trim();
-              int quantity = int.tryParse(parts[1].trim()) ?? 0;
-              sizeMap[size] = quantity;
-
-              if (!allSizes.contains(size)) {
-                allSizes.add(size);
-              }
-            }
-          }
-
-          shadeSizeQuantities[item.shadeName ?? 'Unknown'] = sizeMap;
-        }
-      }
-      
-      itemTotal += styleTotal;
-
-      // Sort sizes numerically
-      allSizes.sort((a, b) {
-        int? aNum = int.tryParse(a);
-        int? bNum = int.tryParse(b);
-        if (aNum != null && bNum != null) {
-          return aNum.compareTo(bNum);
-        }
-        return a.compareTo(b);
-      });
-
-      // Calculate totals
-      Map<String, int> sizeTotals = {};
-
-      for (var size in allSizes) {
-        sizeTotals[size] = 0;
-      }
-
-      for (var item in items) {
-        if (shadeSizeQuantities.containsKey(item.shadeName)) {
-          var sizeMap = shadeSizeQuantities[item.shadeName]!;
-          for (var size in sizeMap.keys) {
-            sizeTotals[size] = (sizeTotals[size] ?? 0) + (sizeMap[size] ?? 0);
-          }
-        }
-      }
-
-      styleTables.add(
-        Card(
-          margin: const EdgeInsets.only(bottom: 20),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Filter button with badge
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              // Style Header
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1E3A8A),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    if (withImage && items.isNotEmpty)
-                      Container(
-                        width: 48,
-                        height: 48,
-                        margin: const EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _getImageUrl(items.first),
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.image_not_supported,
-                              size: 24,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        styleCode,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+              IconButton(
+                onPressed: _showFilterDialog,
+                icon: const Icon(Icons.filter_list, color: Colors.white),
+                tooltip: "Filter",
+              ),
+              if (_getActiveFilterCount() > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.pink,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      '${_getActiveFilterCount()}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // Style Total Chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.inventory_2, size: 16, color: Colors.white),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Total: $styleTotal',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Category Card with border only
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.blue.shade200),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.category,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Select Category',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownSearch<String>(
+                      items:
+                          categories
+                              .map((category) => category.itemSubGrpName)
+                              .toList(),
+                      selectedItem: selectedCategoryName,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCategoryName = value;
+                          selectedItem = null;
+                          if (value != null) {
+                            Category? selectedCategory;
+                            try {
+                              for (var cat in categories) {
+                                if (cat.itemSubGrpName == value) {
+                                  selectedCategory = cat;
+                                  break;
+                                }
+                              }
+                              if (selectedCategory != null) {
+                                selectedCategoryKey =
+                                    selectedCategory.itemSubGrpKey;
+                                _fetchItemsByCategory(selectedCategoryKey!);
+                              } else {
+                                selectedCategoryKey = null;
+                                _fetchAllItems();
+                              }
+                            } catch (e) {
+                              selectedCategoryKey = null;
+                              _fetchAllItems();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error selecting category: $e'),
+                                ),
+                              );
+                            }
+                          } else {
+                            selectedCategoryKey = null;
+                            _fetchAllItems();
+                          }
+                        });
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: "Choose category",
+                          hintStyle: GoogleFonts.poppins(fontSize: 13),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.blue,
+                              width: 2,
                             ),
                           ),
-                        ],
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                      popupProps: PopupProps.menu(
+                        showSearchBox: true,
+                        fit: FlexFit.loose,
+                        searchFieldProps: TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: "Search Category",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        containerBuilder:
+                            (context, popupWidget) => Container(
+                              color: Colors.white,
+                              child: popupWidget,
+                            ),
+                        loadingBuilder:
+                            isLoadingCategories
+                                ? (context, searchEntry) => Center(
+                                  child: LoadingAnimationWidget.waveDots(
+                                    color: Colors.blue,
+                                    size: 40,
+                                  ),
+                                )
+                                : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Items Card with border only
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.blue.shade200),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.inventory,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Select Items',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownSearch<Item>.multiSelection(
+                      items: items,
+                      itemAsString: (Item i) => i.itemName ?? '',
+                      selectedItems: selectedItems,
+                      onChanged: (List<Item> value) {
+                        setState(() {
+                          selectedItems = value;
+                          if (value.isNotEmpty) {
+                            String itemSubGrpKey =
+                                value.first.itemSubGrpKey ?? '';
+                            Category? matchingCategory;
+                            try {
+                              matchingCategory = categories.firstWhere(
+                                (cat) => cat.itemSubGrpKey == itemSubGrpKey,
+                              );
+                            } catch (e) {
+                              matchingCategory = null;
+                            }
+                            if (matchingCategory != null) {
+                              selectedCategoryKey =
+                                  matchingCategory.itemSubGrpKey;
+                              selectedCategoryName =
+                                  matchingCategory.itemSubGrpName;
+                            }
+                          }
+                        });
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
+                        dropdownSearchDecoration: InputDecoration(
+                          hintText: "Choose items",
+                          hintStyle: GoogleFonts.poppins(fontSize: 13),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.blue,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                      popupProps: PopupPropsMultiSelection.menu(
+                        showSearchBox: true,
+                        searchFieldProps: TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: "Search Item",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        loadingBuilder:
+                            isLoadingItems
+                                ? (context, searchEntry) => Center(
+                                  child: LoadingAnimationWidget.waveDots(
+                                    color: Colors.blue,
+                                    size: 40,
+                                  ),
+                                )
+                                : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Action Buttons with border only
+            // Action Buttons with icon and label in same line
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildHorizontalButton(
+                      icon: Icons.visibility,
+                      label: "View",
+                      color: Colors.blue,
+                      onTap: _fetchStockReport,
+                    ),
+                    Container(height: 30, width: 1, color: Colors.grey[300]),
+                    _buildHorizontalButton(
+                      icon: Icons.download,
+                      label: "PDF",
+                      color: Colors.blue,
+                      onTap: _downloadStockReport,
+                    ),
+                    Container(height: 30, width: 1, color: Colors.grey[300]),
+                    _buildHorizontalButton(
+                      icon: FontAwesomeIcons.whatsapp,
+                      label: "WhatsApp",
+                      color: Colors.green,
+                      isFaIcon: true,
+                      onTap: _shareViaWhatsApp,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Info Banner
+            if (selectedItems.isNotEmpty && !hasSearched)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${selectedItems.length} item(s) selected. Tap View to see stock report.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.blue.shade900,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // Table Container
-              if (allSizes.isNotEmpty && shadeSizeQuantities.isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade200),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Table Header
-                        Container(
-                          color: Colors.grey.shade50,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 140,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'Shade',
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                              ...allSizes.map(
-                                (size) => Container(
-                                  width: 80,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Center(
-                                    child: Text(
-                                      size,
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 80,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Center(
-                                  child: Text(
-                                    'Total',
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Table Rows
-                        ...shadeSizeQuantities.entries.map((entry) {
-                          String shade = entry.key;
-                          Map<String, int> sizeMap = entry.value;
-                          int shadeTotal = items.firstWhere(
-                            (item) => item.shadeName == shade,
-                            orElse: () => StockReportItem(),
-                          ).total ?? 0;
-
-                          return Container(
-                            decoration: BoxDecoration(
-                              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 140,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Text(
-                                    shade,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade800,
-                                    ),
-                                  ),
-                                ),
-                                ...allSizes.map(
-                                  (size) => Container(
-                                    width: 80,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                    child: Center(
-                                      child: Text(
-                                        sizeMap[size]?.toString() ?? '0',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 13,
-                                          fontWeight: (sizeMap[size] ?? 0) > 0 ? FontWeight.w500 : FontWeight.normal,
-                                          color: (sizeMap[size] ?? 0) > 0 ? Colors.green.shade700 : Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: 80,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      shadeTotal.toString(),
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-
-                        // Style Total Row
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            border: Border(top: BorderSide(color: Colors.grey.shade300)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 140,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Text(
-                                  'Style Total',
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                              ...allSizes.map(
-                                (size) => Container(
-                                  width: 80,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                  child: Center(
-                                    child: Text(
-                                      sizeTotals[size]?.toString() ?? '0',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                        color: Colors.grey.shade800,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 80,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    styleTotal.toString(),
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Colors.blue.shade900,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              if (allSizes.isEmpty || shadeSizeQuantities.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Center(
-                    child: Text(
-                      'No size-wise data available',
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Item Header
-        Container(
-          margin: const EdgeInsets.only(top: 16, bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.deepOrange,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Text(
-                itemName.toUpperCase(),
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                selectedCategoryName?.toUpperCase() ?? 'LADIES WEAR',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Style Tables
-        ...styleTables,
-        
-        // Item Total
-        Container(
-          margin: const EdgeInsets.only(top: 8, bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.amber.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.amber.shade600),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$itemName TOTAL:',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade900,
-                ),
-              ),
-              Text(
-                itemTotal.toString(),
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade900,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    int grandTotal = 0;
-    Map<String, int> itemTotals = {};
-    
-    final groupedByItemAndStyle = _groupItemsByItemAndStyle();
-    
-    groupedByItemAndStyle.forEach((itemName, styleGroups) {
-      int itemTotal = 0;
-      styleGroups.forEach((styleCode, items) {
-        itemTotal += items.fold(0, (sum, item) => sum + (item.total ?? 0));
-      });
-      itemTotals[itemName] = itemTotal;
-      grandTotal += itemTotal;
-    });
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Text('Stock Report', style: TextStyle(color: AppColors.white)),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: _showFilterDialog,
-                  icon: const Icon(Icons.filter_list, color: Colors.white),
-                  tooltip: "Filter",
-                ),
-                if (_getActiveFilterCount() > 0)
-                  Positioned(
-                    right: 2,
-                    top: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.pink,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1),
-                      ),
-                      child: Text(
-                        '${_getActiveFilterCount()}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Container(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Category Dropdown
-              DropdownSearch<String>(
-                items: categories.map((category) => category.itemSubGrpName).toList(),
-                selectedItem: selectedCategoryName,
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategoryName = value;
-                    selectedItem = null;
-                    if (value != null) {
-                      Category? selectedCategory;
-                      try {
-                        for (var cat in categories) {
-                          if (cat.itemSubGrpName == value) {
-                            selectedCategory = cat;
-                            break;
-                          }
-                        }
-                        if (selectedCategory != null) {
-                          selectedCategoryKey = selectedCategory.itemSubGrpKey;
-                          _fetchItemsByCategory(selectedCategoryKey!);
-                        } else {
-                          selectedCategoryKey = null;
-                          _fetchAllItems();
-                        }
-                      } catch (e) {
-                        selectedCategoryKey = null;
-                        _fetchAllItems();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error selecting category: $e')),
-                        );
-                      }
-                    } else {
-                      selectedCategoryKey = null;
-                      _fetchAllItems();
-                    }
-                  });
-                },
-                dropdownDecoratorProps: DropDownDecoratorProps(
-                  dropdownSearchDecoration: InputDecoration(
-                    labelText: "Select Category",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  fit: FlexFit.loose,
-                  searchFieldProps: TextFieldProps(
-                    decoration: InputDecoration(
-                      hintText: "Search Category",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  containerBuilder: (context, popupWidget) =>
-                      Container(color: Colors.white, child: popupWidget),
-                  loadingBuilder: isLoadingCategories
-                      ? (context, searchEntry) => Center(
-                          child: LoadingAnimationWidget.waveDots(color: Colors.blue, size: 40),
-                        )
-                      : null,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              
-              // Item Dropdown
-              DropdownSearch<Item>.multiSelection(
-                items: items,
-                itemAsString: (Item i) => i.itemName ?? '',
-                selectedItems: selectedItems,
-                onChanged: (List<Item> value) {
-                  setState(() {
-                    selectedItems = value;
-                    if (value.isNotEmpty) {
-                      String itemSubGrpKey = value.first.itemSubGrpKey ?? '';
-                      Category? matchingCategory;
-                      try {
-                        matchingCategory = categories.firstWhere(
-                          (cat) => cat.itemSubGrpKey == itemSubGrpKey,
-                        );
-                      } catch (e) {
-                        matchingCategory = null;
-                      }
-                      if (matchingCategory != null) {
-                        selectedCategoryKey = matchingCategory.itemSubGrpKey;
-                        selectedCategoryName = matchingCategory.itemSubGrpName;
-                      }
-                    }
-                  });
-                },
-                dropdownDecoratorProps: DropDownDecoratorProps(
-                  dropdownSearchDecoration: InputDecoration(
-                    labelText: "Select Items",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                popupProps: PopupPropsMultiSelection.menu(
-                  showSearchBox: true,
-                  searchFieldProps: TextFieldProps(
-                    decoration: InputDecoration(
-                      hintText: "Search Item",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  loadingBuilder: isLoadingItems
-                      ? (context, searchEntry) => Center(
-                          child: LoadingAnimationWidget.waveDots(color: Colors.blue, size: 40),
-                        )
-                      : null,
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Action Buttons
-              Row(
-                children: [
-                  _buildActionButton(
-                    icon: Icons.visibility,
-                    label: "View",
-                    color: Colors.blue,
-                    onTap: _fetchStockReport,
-                  ),
-                  _buildActionButton(
-                    icon: Icons.download,
-                    label: "Download",
-                    color: Colors.deepPurple,
-                    onTap: _downloadStockReport,
-                  ),
-                  _buildActionButton(
-                    icon: FontAwesomeIcons.whatsapp,
-                    label: "WhatsApp",
-                    color: Colors.green,
-                    isFaIcon: true,
-                    onTap: () {},
-                  ),
-                  _buildActionButton(
-                    icon: Icons.clear,
-                    label: "Clear",
-                    color: Colors.red,
-                    onTap: clearFilters,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              
-              // Stock Items Table
+            // Loading indicator
+            if (isLoadingStockReport)
               Expanded(
-                child: isLoadingStockReport
-                    ? Center(
-                        child: LoadingAnimationWidget.waveDots(color: Colors.blue, size: 40),
-                      )
-                    : !hasSearched
-                        ? const SizedBox()
-                        : stockReportItems.isEmpty
-                            ? const Center(child: Text('No stock data found'))
-                            : SingleChildScrollView(
-                                child: Column(
-                                  children: [
-                                    // Build item sections
-                                    ...groupedByItemAndStyle.entries.map((entry) {
-                                      return _buildItemSection(entry.key, entry.value);
-                                    }).toList(),
-
-                                    // Grand Total with Item Breakdown
-                                    if (groupedByItemAndStyle.isNotEmpty)
-                                      Card(
-                                        margin: const EdgeInsets.only(top: 8, bottom: 16),
-                                        elevation: 3,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [Colors.blue.shade700, Colors.blue.shade900],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                            ),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Column(
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.all(8),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white.withOpacity(0.2),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.summarize,
-                                                      color: Colors.white,
-                                                      size: 24,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(
-                                                          'GRAND TOTAL',
-                                                          style: GoogleFonts.poppins(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 14,
-                                                            color: Colors.white.withOpacity(0.9),
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          'All Items Combined',
-                                                          style: GoogleFonts.poppins(
-                                                            fontSize: 12,
-                                                            color: Colors.white.withOpacity(0.7),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius: BorderRadius.circular(20),
-                                                    ),
-                                                    child: Text(
-                                                      grandTotal.toString(),
-                                                      style: GoogleFonts.poppins(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 20,
-                                                        color: Colors.blue.shade900,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 12),
-                                              const Divider(color: Colors.white30),
-                                              const SizedBox(height: 8),
-                                              ...itemTotals.entries.map((entry) {
-                                                return Padding(
-                                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                    children: [
-                                                      Text(
-                                                        '${entry.key}:',
-                                                        style: GoogleFonts.poppins(
-                                                          fontSize: 12,
-                                                          color: Colors.white70,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        entry.value.toString(),
-                                                        style: GoogleFonts.poppins(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }).toList(),
-                                              const SizedBox(height: 8),
-                                              Container(
-                                                padding: const EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.amber.shade50,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      'Total --> ${selectedCategoryName?.toUpperCase() ?? 'LADIES WEAR'}:',
-                                                      style: GoogleFonts.poppins(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.amber.shade900,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      grandTotal.toString(),
-                                                      style: GoogleFonts.poppins(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.amber.shade900,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      LoadingAnimationWidget.waveDots(
+                        color: Colors.blue,
+                        size: 50,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Fetching stock data...',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
+
+            // Empty state
+            if (!isLoadingStockReport &&
+                hasSearched &&
+                stockReportItems.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No stock data found',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Try selecting different items or filters',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Hint for empty state
+            if (!hasSearched && selectedItems.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No items selected',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Select category and items to view stock report',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
       bottomNavigationBar: BottomNavigationWidget(
@@ -1835,49 +2199,74 @@ class _StockReportPageState extends State<StockReportPage> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
+  Widget _buildHorizontalButton({
+    required dynamic icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
     bool isFaIcon = false,
   }) {
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: isFaIcon
-                      ? FaIcon(icon, size: 20, color: color)
-                      : Icon(icon, size: 22, color: color),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isFaIcon
+                  ? FaIcon(icon, size: 16, color: color)
+                  : Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: color,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBorderButton({
+    required dynamic icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isFaIcon = false,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: color.withOpacity(0.3)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isFaIcon
+                  ? FaIcon(icon, size: 18, color: color)
+                  : Icon(icon, size: 20, color: color),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: color,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1900,5 +2289,584 @@ class _StockReportPageState extends State<StockReportPage> {
         ),
       ),
     );
+  }
+
+  // Add this method to handle WhatsApp sharing
+  Future<void> _shareViaWhatsApp() async {
+    if (selectedCategoryKey == null || selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select both category and item first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Show mobile number dialog
+    final result = await _showMobileNumberDialog();
+
+    if (result == null) return; // User cancelled
+
+    String mobileNo = result['mobileNo'] ?? '';
+
+    // Show loading dialog
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LoadingAnimationWidget.waveDots(color: Colors.green, size: 50),
+                const SizedBox(height: 20),
+                Text(
+                  'Preparing stock report for WhatsApp...',
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      // Fetch stock data
+      String itemKeys = selectedItems
+          .map((e) => e.itemKey)
+          .where((e) => e != null && e.isNotEmpty)
+          .join(',');
+
+      final fetchedStockReport = await ApiService.fetchStockReport(
+        itemSubGrpKey: selectedCategoryKey!,
+        itemKey: itemKeys,
+        userId: 'admin',
+        fcYrId: '24',
+        cobr: '01',
+        brandKey:
+            selectedBrands.isNotEmpty
+                ? selectedBrands.map((b) => b.brandKey).join(',')
+                : null,
+        styleKey:
+            selectedStyles.isNotEmpty
+                ? selectedStyles.map((s) => s.styleKey).join(',')
+                : null,
+        shadeKey:
+            selectedShades.isNotEmpty
+                ? selectedShades.map((s) => s.shadeKey).join(',')
+                : null,
+        sizeKey:
+            selectedSizes.isNotEmpty
+                ? selectedSizes.map((s) => s.itemSizeKey).join(',')
+                : null,
+        fromMRP: fromMRP.isNotEmpty ? double.tryParse(fromMRP) : null,
+        toMRP: toMRP.isNotEmpty ? double.tryParse(toMRP) : null,
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+      }
+
+      // Send PDF via Node API (whatsappType == "1")
+      await _sendPDFViaNodeAPI(fetchedStockReport, mobileNo);
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to send PDF via Node API (whatsappType == "1")
+  Future<void> _sendPDFViaNodeAPI(
+    List<StockReportItem> stockData,
+    String mobileNo,
+  ) async {
+    try {
+      // Generate PDF first
+      final pdf = await _generateStockReportPDF(stockData);
+
+      // Save to temp file
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/stock_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(await pdf.save());
+
+      // Read file bytes and convert to base64
+      final pdfBytes = await file.readAsBytes();
+      String fileBase64 = base64Encode(pdfBytes);
+
+      // Prepare caption
+      String caption = _prepareStockReportCaption();
+
+      // Show sending dialog
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sending via WhatsApp...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Send via Node API (same as CatalogPage)
+      final response = await http.post(
+        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+        body: {
+          'data': fileBase64,
+          'filename': 'stock_report.pdf',
+          'key': AppConstants.whatsappKey,
+          'number': '91$mobileNo',
+          'caption': caption,
+        },
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Stock report sent successfully to $mobileNo'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Optionally clear selection after successful send
+        setState(() {
+          // You can clear selections if needed
+          // selectedItems = [];
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send via WhatsApp'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error sending PDF via Node API: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  // Mobile number dialog (simplified version without format selection)
+  Future<Map<String, String>?> _showMobileNumberDialog() {
+    TextEditingController mobileController = TextEditingController();
+
+    return showDialog<Map<String, String>?>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Enter Mobile Number",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Mobile number input
+              TextField(
+                controller: mobileController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  labelText: "Mobile Number",
+                  prefixIcon: const Icon(Icons.phone, size: 20),
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.green, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Info message
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.green[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Stock report will be sent as PDF via WhatsApp',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[900],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final mobileNo = mobileController.text.trim();
+                if (mobileNo.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter mobile number'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (mobileNo.length != 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please enter valid 10-digit mobile number',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter numbers only'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {'mobileNo': mobileNo});
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text("Send via WhatsApp"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Prepare caption for WhatsApp message
+  String _prepareStockReportCaption() {
+    String category = selectedCategoryName ?? 'Category';
+    int itemCount = selectedItems.length;
+
+    // Calculate totals
+    int totalQuantity = 0;
+    for (var item in stockReportItems) {
+      totalQuantity += item.total ?? 0;
+    }
+
+    return '''
+📊 *Stock Report* - $category
+📅 Date: ${DateTime.now().toString().substring(0, 10)}
+🏢 Company: VRS Software
+
+Generated from VRS ERP App
+  ''';
+  }
+
+  // Extract PDF generation to a reusable method
+  Future<pw.Document> _generateStockReportPDF(
+    List<StockReportItem> stockData,
+  ) async {
+    final pdf = pw.Document();
+
+    /// Collect all sizes
+    List<String> allSizes = [];
+
+    for (var item in stockData) {
+      if (item.details != null) {
+        for (var pair in item.details!.split(',')) {
+          final parts = pair.split(':');
+          if (parts.length == 2) {
+            String size = parts[0].trim();
+            if (!allSizes.contains(size)) {
+              allSizes.add(size);
+            }
+          }
+        }
+      }
+    }
+
+    allSizes.sort();
+
+    /// Group by item
+    Map<String, List<StockReportItem>> groupedItems = {};
+
+    for (var item in stockData) {
+      final itemName = item.itemName ?? "Unknown";
+      groupedItems.putIfAbsent(itemName, () => []);
+      groupedItems[itemName]!.add(item);
+    }
+
+    int categoryTotal = 0;
+
+    List<pw.Widget> content = [];
+
+    for (var entry in groupedItems.entries) {
+      String itemName = entry.key;
+      List<StockReportItem> items = entry.value;
+
+      Map<String, Map<String, int>> shadeData = {};
+      Map<String, int> sizeTotals = {};
+
+      for (var size in allSizes) {
+        sizeTotals[size] = 0;
+      }
+
+      for (var item in items) {
+        String shade = item.shadeName ?? "Unknown";
+
+        shadeData.putIfAbsent(shade, () => {});
+
+        if (item.details != null) {
+          for (var pair in item.details!.split(',')) {
+            var parts = pair.split(':');
+
+            if (parts.length == 2) {
+              String size = parts[0].trim();
+              int qty = int.tryParse(parts[1]) ?? 0;
+
+              shadeData[shade]![size] = qty;
+              sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
+            }
+          }
+        }
+      }
+
+      /// Build table rows
+      List<pw.TableRow> rows = [];
+
+      /// HEADER
+      rows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          children: [
+            _cell("Shade", 70),
+            if (withImage) _cell("Img", 35),
+            ...allSizes.map((s) => _cell(s, 40)),
+            _cell("Total", 50),
+          ],
+        ),
+      );
+
+      int itemTotal = 0;
+
+      /// DATA ROWS
+      for (var shadeEntry in shadeData.entries) {
+        String shade = shadeEntry.key;
+        Map<String, int> sizeMap = shadeEntry.value;
+
+        int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
+        itemTotal += shadeTotal;
+
+        pw.MemoryImage? image;
+
+        if (withImage) {
+          final url = _getImageUrl(items.first);
+          image = await _loadPdfImage(url);
+        }
+
+        rows.add(
+          pw.TableRow(
+            children: [
+              _cell(shade, 70),
+              if (withImage)
+                pw.Container(
+                  width: 25,
+                  height: 25,
+                  alignment: pw.Alignment.center,
+                  child:
+                      image != null
+                          ? pw.Image(
+                            image,
+                            width: 16,
+                            height: 16,
+                            fit: pw.BoxFit.contain,
+                          )
+                          : pw.SizedBox(),
+                ),
+              ...allSizes.map((size) {
+                int qty = sizeMap[size] ?? 0;
+                return _cell(qty.toString(), 40);
+              }),
+              _cell(shadeTotal.toString(), 50),
+            ],
+          ),
+        );
+      }
+
+      /// TOTAL ROW
+      rows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _cell("Total", 70),
+            if (withImage) _cell("", 35),
+            ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
+            _cell(itemTotal.toString(), 50),
+          ],
+        ),
+      );
+
+      categoryTotal += itemTotal;
+
+      content.add(
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 12),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              /// ITEM TITLE
+              pw.Text(
+                "$itemName - ${selectedCategoryName ?? ''}",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+
+              /// TABLE
+              pw.Table(
+                border: pw.TableBorder.all(),
+                defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+                children: rows,
+              ),
+              pw.SizedBox(height: 4),
+
+              /// ITEM TOTAL (RIGHT SIDE)
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    "$itemName : $itemTotal",
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    /// CATEGORY TOTAL
+    content.add(
+      pw.Container(
+        decoration: pw.BoxDecoration(border: pw.Border.all()),
+        padding: const pw.EdgeInsets.all(6),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Text(
+              "${selectedCategoryName ?? ''} : $categoryTotal",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    /// GRAND TOTAL
+    content.add(
+      pw.Container(
+        decoration: pw.BoxDecoration(border: pw.Border.all()),
+        padding: const pw.EdgeInsets.all(6),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Text(
+              "Grand Total : $categoryTotal",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
+        header: (pw.Context context) {
+          if (context.pageNumber == 1) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  "VRS SOFTWARE",
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  "Item Wise Stock Report",
+                  style: pw.TextStyle(fontSize: 14),
+                ),
+                pw.SizedBox(height: 5),
+                pw.Divider(),
+              ],
+            );
+          }
+          return pw.SizedBox(height: 10);
+        },
+        build: (context) => content,
+      ),
+    );
+
+    return pdf;
   }
 }
