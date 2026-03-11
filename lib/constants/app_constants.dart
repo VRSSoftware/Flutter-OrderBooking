@@ -8,10 +8,10 @@ class AppConstants {
   static bool isLive = true;
   //  static  String? BASE_URL;
   //  static  String? BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
-  static String? BASE_URL = "https://43.227.186.253:8080/vrs_erp/api/v1";
+  static String? BASE_URL = "http://43.227.186.253:8080/vrs_erp/api/v1";
   static String? whatsappKey;
   static String? bookingType;
-  static String? whatsappType="2";
+  static String? whatsappType;
   static String? seprateBarcodeWiseBooking = "1";
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com";
   // static  String Pdf_url = "https://localhost:44303";
@@ -20,14 +20,14 @@ class AppConstants {
   static String Pdf_url =
       "https://api.vrsretail.in/vrs_erp/api/v1/report/getRptReport";
 
-      static String OrderReportView="http://192.168.0.254:8080/api/v1";
+      static String OrderReportView="http://192.168.0.6:8080/api/v1";
 
       //static String whatsapptypepdf="https://rmnvwnd6-8080.inc1.devtunnels.ms/api/v1";
 }
 
 class AppColors {
   // Primary color
-  static const Color primaryColor = Color(0xFF2196F3);
+  static const Color primaryColor = Color(0xFF072F5F);
   // Secondary color
   static const Color secondaryColor = Color.fromARGB(
     255,
