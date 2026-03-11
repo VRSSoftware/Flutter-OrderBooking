@@ -467,7 +467,7 @@ class _LoginPageState extends State<LoginScreen> {
   //     ),
   //   );
   // }
-  @override
+ // @override
   // Widget build(BuildContext context) {
   //   return Scaffold(
   //     backgroundColor: Colors.white,
@@ -715,359 +715,390 @@ class _LoginPageState extends State<LoginScreen> {
   //     ),
   //   );
   // }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:
-          Colors.grey[100], // Light grey background to make card stand out
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => BaseUrlSettingsScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final containerWidth = screenWidth > 600 ? 500.0 : double.infinity;
-            final isMobile = screenWidth < 600;
 
-            return Center(
+  
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    resizeToAvoidBottomInset: true,
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.settings, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => BaseUrlSettingsScreen()),
+            );
+          },
+        ),
+      ],
+    ),
+    body: SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final containerWidth = screenWidth > 600 ? 450.0 : double.infinity;
+          final isMobile = screenWidth < 600;
+
+          return Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               child: Container(
                 width: containerWidth,
                 margin: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 0,
+                  horizontal: isMobile ? 20 : 0,
                   vertical: 20,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  // Enhanced shadow to make card pop
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withOpacity(0.1),
                       spreadRadius: 2,
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
+                      blurRadius: 30,
+                      offset: Offset(0, 15),
                     ),
                     BoxShadow(
-                      color: AppColors.primaryColor.withOpacity(0.1),
+                      color: AppColors.primaryColor.withOpacity(0.08),
                       spreadRadius: 1,
-                      blurRadius: 15,
-                      offset: Offset(0, 5),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Top gradient border
+                      // Decorative top section with gradient
                       Container(
-                        height: 4,
+                        height: 120,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primaryColor, AppColors.maroon],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryColor,
+                              AppColors.maroon,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(30),
+                            bottomRight: Radius.circular(30),
                           ),
                         ),
-                      ),
-
-                      // Form content - EXACTLY as original
-                      Form(
-                        key: _formKey,
-                        child: Column(
+                        child: Stack(
                           children: [
-                            // Background image with logo - ORIGINAL
-                            Stack(
-                              alignment: Alignment.bottomCenter,
-                              clipBehavior: Clip.none,
-                              children: [
-                                Image.asset(
-                                  "assets/images/background.png",
-                                  width: double.infinity,
-                                  height: 150,
-                                  fit: BoxFit.cover,
+                            // Decorative circles
+                            Positioned(
+                              top: -20,
+                              right: -20,
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                Positioned(
-                                  bottom: -40,
-                                  child: CircleAvatar(
-                                    radius: 50,
-                                    backgroundColor: Colors.white,
-                                    child: ClipOval(
-                                      child: Image.asset(
-                                        "assets/images/logo.png",
-                                        width: 300,
-                                        height: 350,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-
-                            // Form fields container - ORIGINAL
-                            Container(
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  SizedBox(
-                                    height: 40,
-                                  ), // Space for overlapping logo
-                                  // ORIGINAL "Login Now" text
-                                  Text(
-                                    "LOGIN NOW",
-                                    style: TextStyle(
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.w900,
-                                      foreground:
-                                          Paint()
-                                            ..shader = LinearGradient(
-                                              colors: [
-                                                AppColors.primaryColor,
-                                                Color(
-                                                  0xFF6A11CB,
-                                                ), // Deep Purple
-                                                AppColors.maroon,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ).createShader(
-                                              Rect.fromLTWH(0, 0, 200, 70),
-                                            ),
-                                      shadows: [
-                                        Shadow(
-                                          color: AppColors.primaryColor
-                                              .withOpacity(0.5),
-                                          offset: Offset(3, 3),
-                                          blurRadius: 7,
-                                        ),
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.9),
-                                          offset: Offset(1, 1),
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-
-                                  // ORIGINAL form fields exactly as before
-                                  _buildTextField(
-                                    "User",
-                                    "Enter your username",
-                                    controller: _usernameController,
-                                    focusNode: _usernameFocus,
-                                    nextFocus: _passwordFocus,
-                                    validator:
-                                        (value) =>
-                                            value == null || value.isEmpty
-                                                ? 'Username is required'
-                                                : null,
-                                  ),
-
-                                  _buildTextField(
-                                    "Password",
-                                    "Enter your password",
-                                    obscureText: true,
-                                    controller: _passwordController,
-                                    focusNode: _passwordFocus,
-                                    nextFocus: _companyFocus,
-                                    validator:
-                                        (value) =>
-                                            value == null || value.isEmpty
-                                                ? 'Password is required'
-                                                : null,
-                                  ),
-
-                                  _buildDropdown(
-                                    "Company",
-                                    "Select your Company",
-                                    items: _companies,
-                                    value: _selectedCompany,
-                                    focusNode: _companyFocus,
-                                    nextFocus: _yearFocus,
-                                    onChanged:
-                                        (val) => setState(
-                                          () => _selectedCompany = val,
-                                        ),
-                                    validator:
-                                        (value) =>
-                                            value == null
-                                                ? 'Please select a company'
-                                                : null,
-                                  ),
-
-                                  _buildDropdown(
-                                    "Year",
-                                    "Select Year",
-                                    items: _years,
-                                    value: _selectedYear,
-                                    focusNode: _yearFocus,
-                                    onChanged:
-                                        (val) =>
-                                            setState(() => _selectedYear = val),
-                                    validator:
-                                        (value) =>
-                                            value == null
-                                                ? 'Please select a year'
-                                                : null,
-                                  ),
-
-                                  SizedBox(height: 8),
-
-                                  // ORIGINAL login button
-                                  Container(
-                                    width: double.infinity,
-                                    height: 45,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          AppColors.primaryColor,
-                                          AppColors.maroon,
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                    ),
-                                    child: ElevatedButton(
-                                      onPressed:
-                                          _isLoading
-                                              ? null
-                                              : () => login(context),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        shadowColor: Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                      child:
-                                          _isLoading
-                                              ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Text(
-                                                    'Log in...',
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  const SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2.5,
-                                                          color: Colors.white,
-                                                        ),
-                                                  ),
-                                                ],
-                                              )
-                                              : const Text(
-                                                "Log in",
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                    ),
-                                  ),
-
-                                  // ORIGINAL register link
-                                  isRegistered == '1'
-                                      ? Container()
-                                      : TextButton(
-                                        onPressed:
-                                            () => Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) =>
-                                                        RegisterScreen(),
-                                              ),
-                                            ),
-                                        child: RichText(
-                                          text: TextSpan(
-                                            text: "New user? ",
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                            children: [
-                                              TextSpan(
-                                                text: "Register here",
-                                                style: TextStyle(
-                                                  color: AppColors.primaryColor,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                ],
+                            Positioned(
+                              bottom: -30,
+                              left: -30,
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            // Welcome text
+                            Center(
+                              child: Text(
+                                "Welcome Back!",
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                             ),
                           ],
+                        ),
+                      ),
+
+                      // Form content
+                      Form(
+                        key: _formKey,
+                        child: Container(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              // Login header
+                              Text(
+                                "LOGIN TO CONTINUE",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade800,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              
+                              SizedBox(height: 8),
+                              
+                              // Subtitle
+                              Text(
+                                "Please enter your credentials",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              
+                              SizedBox(height: 24),
+
+                              // Form fields
+                              _buildTextField(
+                                "Username",
+                                "Enter your username",
+                                controller: _usernameController,
+                                focusNode: _usernameFocus,
+                                nextFocus: _passwordFocus,
+                                prefixIcon: Icons.person_outline,
+                                validator:
+                                    (value) =>
+                                        value == null || value.isEmpty
+                                            ? 'Username is required'
+                                            : null,
+                              ),
+
+                              _buildTextField(
+                                "Password",
+                                "Enter your password",
+                                obscureText: true,
+                                controller: _passwordController,
+                                focusNode: _passwordFocus,
+                                nextFocus: _companyFocus,
+                                prefixIcon: Icons.lock_outline,
+                                validator:
+                                    (value) =>
+                                        value == null || value.isEmpty
+                                            ? 'Password is required'
+                                            : null,
+                              ),
+
+                              _buildDropdown(
+                                "Company",
+                                "Select your Company",
+                                items: _companies,
+                                value: _selectedCompany,
+                                focusNode: _companyFocus,
+                                nextFocus: _yearFocus,
+                                prefixIcon: Icons.business_center_outlined,
+                                onChanged:
+                                    (val) => setState(
+                                      () => _selectedCompany = val,
+                                    ),
+                                validator:
+                                    (value) =>
+                                        value == null
+                                            ? 'Please select a company'
+                                            : null,
+                              ),
+
+                              _buildDropdown(
+                                "Financial Year",
+                                "Select Year",
+                                items: _years,
+                                value: _selectedYear,
+                                focusNode: _yearFocus,
+                                prefixIcon: Icons.calendar_today_outlined,
+                                onChanged:
+                                    (val) =>
+                                        setState(() => _selectedYear = val),
+                                validator:
+                                    (value) =>
+                                        value == null
+                                            ? 'Please select a year'
+                                            : null,
+                              ),
+
+                              SizedBox(height: 16),
+
+                              // Login button
+                              Container(
+                                width: double.infinity,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primaryColor,
+                                      AppColors.maroon,
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryColor.withOpacity(0.3),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed:
+                                      _isLoading
+                                          ? null
+                                          : () => login(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child:
+                                      _isLoading
+                                          ? Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                'LOGGING IN...',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                  letterSpacing: 1,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      color: Colors.white,
+                                                    ),
+                                              ),
+                                            ],
+                                          )
+                                          : const Text(
+                                            "LOG IN",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                ),
+                              ),
+
+                              SizedBox(height: 16),
+
+                              // Register link
+                              isRegistered == '1'
+                                  ? Container()
+                                  : TextButton(
+                                    onPressed:
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) =>
+                                                    RegisterScreen(),
+                                          ),
+                                        ),
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text: "New user? ",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 14,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: "Register here",
+                                            style: TextStyle(
+                                              color: AppColors.primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildTextField(
-    String label,
-    String hint, {
-    bool obscureText = false,
-    TextEditingController? controller,
-    String? Function(String?)? validator,
-    FocusNode? focusNode,
-    FocusNode? nextFocus,
-    bool isLastField = false,
-    TextInputAction textInputAction = TextInputAction.next,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+// Updated _buildTextField with icon support
+Widget _buildTextField(
+  String label,
+  String hint, {
+  bool obscureText = false,
+  TextEditingController? controller,
+  String? Function(String?)? validator,
+  FocusNode? focusNode,
+  FocusNode? nextFocus,
+  bool isLastField = false,
+  TextInputAction textInputAction = TextInputAction.next,
+  IconData? prefixIcon, // New parameter for icon
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.grey.shade800,
           ),
-          SizedBox(height: 2),
-          TextFormField(
+        ),
+        SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryColor.withOpacity(0.05),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextFormField(
             controller: controller,
             focusNode: focusNode,
             obscureText: obscureText,
@@ -1077,95 +1108,129 @@ class _LoginPageState extends State<LoginScreen> {
             },
             decoration: InputDecoration(
               hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
               isDense: true,
               contentPadding: EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 12,
+                vertical: 14,
+                horizontal: 16,
               ),
+              prefixIcon: prefixIcon != null 
+                  ? Icon(prefixIcon, color: AppColors.primaryColor, size: 20)
+                  : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2.0,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 3.0,
-                ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2.0,
-                ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
               ),
-              errorStyle: TextStyle(height: 0.7),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.red.shade300, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.red, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              errorStyle: TextStyle(height: 1.2, fontSize: 12),
             ),
             validator: validator,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildDropdown(
-    String label,
-    String hint, {
-    required List<Map<String, dynamic>> items,
-    required Map<String, dynamic>? value,
-    required Function(Map<String, dynamic>?) onChanged,
-    String? Function(Map<String, dynamic>?)? validator,
-    FocusNode? focusNode,
-    FocusNode? nextFocus,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+// Updated _buildDropdown with icon support
+Widget _buildDropdown(
+  String label,
+  String hint, {
+  required List<Map<String, dynamic>> items,
+  required Map<String, dynamic>? value,
+  required Function(Map<String, dynamic>?) onChanged,
+  String? Function(Map<String, dynamic>?)? validator,
+  FocusNode? focusNode,
+  FocusNode? nextFocus,
+  IconData? prefixIcon, // New parameter for icon
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.grey.shade800,
           ),
-          SizedBox(height: 2),
-          DropdownButtonFormField<Map<String, dynamic>>(
+        ),
+        SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryColor.withOpacity(0.05),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<Map<String, dynamic>>(
             value: value,
             focusNode: focusNode,
             isExpanded: true,
             decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
               isDense: true,
               contentPadding: EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 12,
+                vertical: 14,
+                horizontal: 16,
               ),
+              prefixIcon: prefixIcon != null 
+                  ? Icon(prefixIcon, color: AppColors.primaryColor, size: 20)
+                  : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2.0,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 3.0,
-                ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2.0,
-                ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
               ),
-              errorStyle: TextStyle(height: 0.7),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.red.shade300, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.red, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              errorStyle: TextStyle(height: 1.2, fontSize: 12),
             ),
-            hint: Text(hint, overflow: TextOverflow.ellipsis),
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryColor),
+            dropdownColor: Colors.white,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontSize: 14,
+            ),
             items:
                 items.map((item) {
                   return DropdownMenuItem<Map<String, dynamic>>(
@@ -1175,6 +1240,7 @@ class _LoginPageState extends State<LoginScreen> {
                           ? item['coBr_name']
                           : item['fcYrName'],
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 14),
                     ),
                   );
                 }).toList(),
@@ -1184,8 +1250,10 @@ class _LoginPageState extends State<LoginScreen> {
             },
             validator: validator,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 }

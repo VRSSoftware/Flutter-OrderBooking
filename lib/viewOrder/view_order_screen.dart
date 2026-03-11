@@ -374,121 +374,123 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   //   }
   // }
 
+  Future<void> _saveOrderLocally() async {
+    if (!_formKey.currentState!.validate()) return;
 
-
-
-Future<void> _saveOrderLocally() async {
-  if (!_formKey.currentState!.validate()) return;
-
-  String? consigneeLedKey = '';
-  String? stationStnKey = '';
-  final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-  if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-    final selectedConsignee = consignees.firstWhere(
-      (consignee) => consignee.ledName == selectedConsigneeName,
-      orElse:
-          () => Consignee(
-            ledKey: '',
-            ledName: '',
-            stnKey: '',
-            stnName: '',
-            paymentTermsKey: '',
-            paymentTermsName: '',
-            pytTermDiscdays: '0',
-          ),
-    );
-    consigneeLedKey = selectedConsignee.ledKey;
-    stationStnKey = selectedConsignee.stnKey;
-  }
-
-  final orderData = {
-    "saleorderno": _orderControllers.orderNo.text,
-    "orderdate": formatDate(_orderControllers.date.text, true),
-    "customer": _orderControllers.selectedPartyKey ?? '',
-    "broker": _orderControllers.selectedBrokerKey ?? '',
-    "comission": _orderControllers.comm.text,
-    "transporter": _orderControllers.selectedTransporterKey ?? '',
-    "delivaryday": _orderControllers.deliveryDays.text,
-    "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-    "totitem": _orderControllers.totalItem.text,
-    "totqty": _orderControllers.totalQty.text,
-    "remark": _orderControllers.remark.text,
-    "consignee": consigneeLedKey,
-    "station": stationStnKey,
-    "paymentterms":
-        _additionalInfo['paymentterms'] ??
-        _orderControllers.pytTermDiscKey ??
-        '',
-    "paymentdays":
-        _additionalInfo['paymentdays'] ??
-        _orderControllers.creditPeriod?.toString() ??
-        '0',
-    "duedate": calculateDueDate(),
-    "refno": _additionalInfo['refno'] ?? '',
-    "date": getTodayWithZeroTime(),
-    "bookingtype": _additionalInfo['bookingtype'] ?? '',
-    "salesman":
-        _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-  };
-  final orderDataJson = jsonEncode(orderData);
-  print("Saved Order Data:");
-  print(orderDataJson);
-
-  try {
-    final response = await insertFinalSalesOrder(orderDataJson);
-    if (response != null && response != "fail") {
-      Provider.of<CartModel>(context, listen: false).clearAddedItems();
-      final formattedOrderNo = "SO$response";
-
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Text('Order Saved'),
-              content: Text('Order $formattedOrderNo saved successfully'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // REPLACE THIS: Navigator.push to PdfViewerScreen
-                    // WITH THIS: Navigator.push to OrderReportViewPage
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OrderReportViewPage(
-                          orderNo: response, // Use the response which is the order number
-                          orderData: null, // You can pass additional data if needed
-                          showOnlyWithImage: false, // Default to false
-                        ),
-                      ),
-                    );
-                  },
-                  child: Text('View Report'), // Changed from 'View PDF' to 'View Report'
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()),
-                    );
-                  },
-                  child: Text('Done'),
-                ),
-              ],
+    String? consigneeLedKey = '';
+    String? stationStnKey = '';
+    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+      final selectedConsignee = consignees.firstWhere(
+        (consignee) => consignee.ledName == selectedConsigneeName,
+        orElse:
+            () => Consignee(
+              ledKey: '',
+              ledName: '',
+              stnKey: '',
+              stnName: '',
+              paymentTermsKey: '',
+              paymentTermsName: '',
+              pytTermDiscdays: '0',
             ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save order. Please try again.')),
-      );
+      consigneeLedKey = selectedConsignee.ledKey;
+      stationStnKey = selectedConsignee.stnKey;
     }
-  } catch (e) {
-    print('Error during order saving: $e');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+
+    final orderData = {
+      "saleorderno": _orderControllers.orderNo.text,
+      "orderdate": formatDate(_orderControllers.date.text, true),
+      "customer": _orderControllers.selectedPartyKey ?? '',
+      "broker": _orderControllers.selectedBrokerKey ?? '',
+      "comission": _orderControllers.comm.text,
+      "transporter": _orderControllers.selectedTransporterKey ?? '',
+      "delivaryday": _orderControllers.deliveryDays.text,
+      "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+      "totitem": _orderControllers.totalItem.text,
+      "totqty": _orderControllers.totalQty.text,
+      "remark": _orderControllers.remark.text,
+      "consignee": consigneeLedKey,
+      "station": stationStnKey,
+      "paymentterms":
+          _additionalInfo['paymentterms'] ??
+          _orderControllers.pytTermDiscKey ??
+          '',
+      "paymentdays":
+          _additionalInfo['paymentdays'] ??
+          _orderControllers.creditPeriod?.toString() ??
+          '0',
+      "duedate": calculateDueDate(),
+      "refno": _additionalInfo['refno'] ?? '',
+      "date": getTodayWithZeroTime(),
+      "bookingtype": _additionalInfo['bookingtype'] ?? '',
+      "salesman":
+          _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+    };
+    final orderDataJson = jsonEncode(orderData);
+    print("Saved Order Data:");
+    print(orderDataJson);
+
+    try {
+      final response = await insertFinalSalesOrder(orderDataJson);
+      if (response != null && response != "fail") {
+        Provider.of<CartModel>(context, listen: false).clearAddedItems();
+        final formattedOrderNo = "SO$response";
+
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Order Saved'),
+                content: Text('Order $formattedOrderNo saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // REPLACE THIS: Navigator.push to PdfViewerScreen
+                      // WITH THIS: Navigator.push to OrderReportViewPage
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => OrderReportViewPage(
+                                orderNo:
+                                    response, // Use the response which is the order number
+                                orderData:
+                                    null, // You can pass additional data if needed
+                                showOnlyWithImage: false, // Default to false
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'View Report',
+                    ), // Changed from 'View PDF' to 'View Report'
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                    child: Text('Done'),
+                  ),
+                ],
+              ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save order. Please try again.')),
+        );
+      }
+    } catch (e) {
+      print('Error during order saving: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+    }
   }
-}
 
   void _updateTotals() {
     int totalQty = 0;
@@ -528,8 +530,6 @@ Future<void> _saveOrderLocally() async {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
-
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
@@ -542,7 +542,7 @@ Future<void> _saveOrderLocally() async {
             fontSize: 20,
           ),
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: AppColors.primaryColor,
         elevation: 4,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -598,7 +598,7 @@ Future<void> _saveOrderLocally() async {
   }
 
   Widget _buildTabBar() {
-    final Color primaryBlue = const Color(0xFF2196F3);
+   
 
     return Container(
       color: Colors.white,
@@ -620,7 +620,7 @@ Future<void> _saveOrderLocally() async {
                     bottom: BorderSide(
                       color:
                           _activeTab == ActiveTab.transaction
-                              ? primaryBlue
+                              ? AppColors.primaryColor
                               : Colors.transparent,
                       width: 2,
                     ),
@@ -632,7 +632,7 @@ Future<void> _saveOrderLocally() async {
                   style: TextStyle(
                     color:
                         _activeTab == ActiveTab.transaction
-                            ? primaryBlue
+                            ? AppColors.primaryColor
                             : Colors.grey,
                     fontWeight:
                         _activeTab == ActiveTab.transaction
@@ -662,7 +662,7 @@ Future<void> _saveOrderLocally() async {
                     bottom: BorderSide(
                       color:
                           _activeTab == ActiveTab.customerDetails
-                              ? primaryBlue
+                              ? AppColors.primaryColor
                               : Colors.transparent,
                       width: 2,
                     ),
@@ -674,7 +674,7 @@ Future<void> _saveOrderLocally() async {
                   style: TextStyle(
                     color:
                         _activeTab == ActiveTab.customerDetails
-                            ? primaryBlue
+                            ? AppColors.primaryColor
                             : Colors.grey,
                     fontWeight:
                         _activeTab == ActiveTab.customerDetails
@@ -691,11 +691,82 @@ Future<void> _saveOrderLocally() async {
     );
   }
 
-Widget _buildBottomButtons() {
-  final Color primaryBlue = const Color(0xFF2196F3);
+  Widget _buildBottomButtons() {
+    // CUSTOMER DETAILS TAB
+    if (_activeTab == ActiveTab.customerDetails) {
+      return Container(
+        color: AppColors.primaryColor,
+        child: SizedBox(
+          height: 45,
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  color: const Color.fromARGB(255, 220, 239, 248),
+                  child: TextButton(
+                    onPressed: () async {
+                      final result = await showDialog(
+                        context: context,
+                        builder:
+                            (context) => AddMoreInfoDialog(
+                              salesPersonList: _dropdownData.salesPersonList,
+                              partyLedKey: _orderControllers.selectedPartyKey,
+                              pytTermDiscKey: _orderControllers.pytTermDiscKey,
+                              salesPersonKey: _orderControllers.salesPersonKey,
+                              creditPeriod: _orderControllers.creditPeriod,
+                              salesLedKey: _orderControllers.salesLedKey,
+                              ledgerName: _orderControllers.ledgerName,
+                              additionalInfo: _additionalInfo,
+                              consignees: consignees,
+                              paymentTerms: paymentTerms,
+                              bookingTypes: _bookingTypes,
+                              onValueChanged: (newInfo) {
+                                setState(() {
+                                  _additionalInfo = newInfo;
+                                });
+                              },
+                              isSalesmanDropdownEnabled:
+                                  UserSession.userType != 'S',
+                            ),
+                      );
 
-  // CUSTOMER DETAILS TAB
-  if (_activeTab == ActiveTab.customerDetails) {
+                      if (result != null) {
+                        setState(() {
+                          _additionalInfo = result;
+                        });
+                      }
+                    },
+                    child: const Text(
+                      "Add More Info",
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: _saveOrderLocally,
+                  child: const Text(
+                    "Save",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // TRANSACTION TAB
     return Container(
       color: AppColors.primaryColor,
       child: SizedBox(
@@ -706,41 +777,18 @@ Widget _buildBottomButtons() {
               child: Container(
                 color: const Color.fromARGB(255, 220, 239, 248),
                 child: TextButton(
-                  onPressed: () async {
-                    final result = await showDialog(
-                      context: context,
-                      builder: (context) => AddMoreInfoDialog(
-                        salesPersonList: _dropdownData.salesPersonList,
-                        partyLedKey: _orderControllers.selectedPartyKey,
-                        pytTermDiscKey: _orderControllers.pytTermDiscKey,
-                        salesPersonKey: _orderControllers.salesPersonKey,
-                        creditPeriod: _orderControllers.creditPeriod,
-                        salesLedKey: _orderControllers.salesLedKey,
-                        ledgerName: _orderControllers.ledgerName,
-                        additionalInfo: _additionalInfo,
-                        consignees: consignees,
-                        paymentTerms: paymentTerms,
-                        bookingTypes: _bookingTypes,
-                        onValueChanged: (newInfo) {
-                          setState(() {
-                            _additionalInfo = newInfo;
-                          });
-                        },
-                        isSalesmanDropdownEnabled:
-                            UserSession.userType != 'S',
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderBookingScreen(),
                       ),
                     );
-
-                    if (result != null) {
-                      setState(() {
-                        _additionalInfo = result;
-                      });
-                    }
                   },
                   child: const Text(
-                    "Add More Info",
+                    "Add More",
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -750,7 +798,17 @@ Widget _buildBottomButtons() {
             ),
             Expanded(
               child: TextButton(
-                onPressed: _saveOrderLocally,
+                onPressed: () {
+                  if (_activeTab == ActiveTab.transaction) {
+                    if (!_formKey.currentState!.validate()) return;
+
+                    setState(() {
+                      isCustomerTabEnabled = true;
+                      _activeTab = ActiveTab.customerDetails;
+                      _showForm = true;
+                    });
+                  }
+                },
                 child: const Text(
                   "Save",
                   style: TextStyle(
@@ -767,64 +825,6 @@ Widget _buildBottomButtons() {
     );
   }
 
-  // TRANSACTION TAB
-  return Container(
-    color: AppColors.primaryColor,
-    child: SizedBox(
-      height: 45,
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              color: const Color.fromARGB(255, 220, 239, 248),
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OrderBookingScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Add More",
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextButton(
-              onPressed: () {
-                if (_activeTab == ActiveTab.transaction) {
-                  if (!_formKey.currentState!.validate()) return;
-
-                  setState(() {
-                    isCustomerTabEnabled = true;
-                    _activeTab = ActiveTab.customerDetails;
-                    _showForm = true;
-                  });
-                }
-              },
-              child: const Text(
-                "Save",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
   Color _getColorCode(String color) {
     switch (color.toLowerCase()) {
       case 'red':
@@ -992,7 +992,7 @@ class _DropdownData {
     final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/users/getLedger'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? ''}),
+      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? '',"ledKey":UserSession.userLedKey ?? '',"userType":UserSession.userType ?? ''}),
     );
     return response.statusCode == 200
         ? (jsonDecode(response.body) as List)
@@ -1224,7 +1224,6 @@ class _OrderForm extends StatefulWidget {
 }
 
 class _OrderFormState extends State<_OrderForm> {
-  final Color primaryBlue = const Color(0xFF2196F3);
   final Color slate600 = const Color(0xFF64748B);
   final Color slateBorder = const Color(0xFFCBD5E1);
 
@@ -1358,6 +1357,7 @@ class _OrderFormState extends State<_OrderForm> {
           widget.controllers.totalAmt,
           readOnly: true,
         ),
+
         // Row(
         //   children: [
         //     Expanded(
@@ -1447,9 +1447,6 @@ class _OrderFormState extends State<_OrderForm> {
         //     ),
         //   ],
         // ),
-    
-    
-    
       ],
     );
   }
@@ -1472,10 +1469,17 @@ class _OrderFormState extends State<_OrderForm> {
           height: 54,
           width: 54,
           decoration: BoxDecoration(
-            color: primaryBlue,
+            color: AppColors.primaryColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              fixedSize: const Size(54, 54),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             icon: const Icon(Icons.add, color: Colors.white),
             onPressed:
                 UserSession.userType == 'C'
@@ -1507,31 +1511,31 @@ class _OrderFormState extends State<_OrderForm> {
           }
           return null;
         },
-  popupProps: PopupProps.menu(
-    showSearchBox: true,
-    searchFieldProps: TextFieldProps(
-      decoration: InputDecoration(
-        hintText: _getSearchHint(label),
-        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+        popupProps: PopupProps.menu(
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: InputDecoration(
+              hintText: _getSearchHint(label),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-      ),
-    ),
-  ),
 
-  items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
+        items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
 
-  /// ✅ SEARCH ONLY BEFORE -->
-  filterFn: (item, filter) {
-    if (filter.isEmpty) return true;
+        /// ✅ SEARCH ONLY BEFORE -->
+        filterFn: (item, filter) {
+          if (filter.isEmpty) return true;
 
-    final namePart = item.split('-->').first.trim().toLowerCase();
-    return namePart.contains(filter.toLowerCase());
-  },
+          final namePart = item.split('-->').first.trim().toLowerCase();
+          return namePart.contains(filter.toLowerCase());
+        },
 
-  selectedItem: selectedValue,
+        selectedItem: selectedValue,
         dropdownDecoratorProps: DropDownDecoratorProps(
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
@@ -1631,7 +1635,7 @@ Widget buildTextField(
   VoidCallback? onTap,
   bool isText = false,
 }) {
-  final Color primaryBlue = const Color(0xFF2196F3);
+  
   final Color slateBorder = const Color(0xFFCBD5E1);
 
   return Padding(
@@ -1657,7 +1661,7 @@ Widget buildTextField(
           borderRadius: BorderRadius.circular(8),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: primaryBlue, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
           borderRadius: BorderRadius.circular(8),
         ),
         labelStyle: const TextStyle(
@@ -1782,7 +1786,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
+  
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1809,7 +1813,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: primaryBlue,
+                      color: AppColors.primaryColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1899,7 +1903,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                     child: ElevatedButton(
                       onPressed: _onSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryBlue,
+                        backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(

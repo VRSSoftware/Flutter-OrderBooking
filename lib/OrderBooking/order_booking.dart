@@ -23,9 +23,10 @@ import 'package:vrs_erp/widget/bottom_navbar.dart';
 import 'package:vrs_erp/widget/filterdailogwidget.dart';
 
 class OrderBookingScreen extends StatefulWidget {
-    final bool startWithBarcode;
+  final bool startWithBarcode;
 
-  const OrderBookingScreen({Key? key, this.startWithBarcode = false}) : super(key: key);
+  const OrderBookingScreen({Key? key, this.startWithBarcode = false})
+    : super(key: key);
 
   @override
   _OrderBookingScreenState createState() => _OrderBookingScreenState();
@@ -70,7 +71,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
   @override
   void initState() {
     super.initState();
-     showBarcodeWidget = widget.startWithBarcode;
+    showBarcodeWidget = widget.startWithBarcode;
     _fetchCategories();
     fetchAllItems();
 
@@ -202,79 +203,96 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                 ),
         automaticallyImplyLeading: false,
         actions: [
-          // Cart Icon for both modes (Order Booking and Barcode)
-          IconButton(
-            icon: Stack(
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              clipBehavior:
+                  Clip.none, // Important to allow badge to show outside
               children: [
-                const Icon(CupertinoIcons.cart_badge_plus, color: Colors.white),
+                // Cart Icon for both modes (Order Booking and Barcode)
+                IconButton(
+                  icon: const Icon(
+                    CupertinoIcons.cart_badge_plus,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    String route;
+
+                    if (showBarcodeWidget) {
+                      // Barcode routes
+                      if (AppConstants.bookingType == "1") {
+                        route = '/viewOrderBarcode';
+                      } else if (AppConstants.bookingType == "2") {
+                        route = '/viewOrderBarcode2';
+                      } else {
+                        route = '/viewOrderBarcode'; // fallback
+                      }
+                    } else {
+                      // Normal routes
+                      if (AppConstants.bookingType == "1") {
+                        route = '/viewOrder';
+                      } else if (AppConstants.bookingType == "2") {
+                        route = '/viewOrder2';
+                      } else {
+                        route = '/viewOrder'; // fallback
+                      }
+                    }
+
+                    Navigator.pushNamed(
+                      context,
+                      route,
+                      arguments: {Constants.barcode: showBarcodeWidget},
+                    ).then((_) => _fetchCartCount());
+                  },
+                ),
+
                 if (cartModel.count > 0)
                   Positioned(
-                    right: 0,
-                    top: 0,
+                    right: 6, // Adjusted position
+                    top: 7, // Adjusted position
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.circular(6),
+                        shape: BoxShape.circle,
                       ),
                       constraints: const BoxConstraints(
-                        minWidth: 14,
-                        minHeight: 14,
+                        minWidth: 18,
+                        minHeight: 18,
                       ),
-                      child: Text(
-                        '${cartModel.count}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
+                      child: Center(
+                        child: Text(
+                          '${cartModel.count}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
               ],
             ),
-            onPressed: () {
-              String route;
 
-              if (showBarcodeWidget) {
-                // Barcode routes
-                if (AppConstants.bookingType == "1") {
-                  route = '/viewOrderBarcode';
-                } else if (AppConstants.bookingType == "2") {
-                  route = '/viewOrderBarcode2';
-                } else {
-                  route = '/viewOrderBarcode'; // fallback
-                }
-              } else {
-                // Normal routes
-                if (AppConstants.bookingType == "1") {
-                  route = '/viewOrder';
-                } else if (AppConstants.bookingType == "2") {
-                  route = '/viewOrder2';
-                } else {
-                  route = '/viewOrder'; // fallback
-                }
-              }
-
-              Navigator.pushNamed(
-                context,
-                route,
-                arguments: {Constants.barcode: showBarcodeWidget},
-              ).then((_) => _fetchCartCount());
-            },
+            // Orders icon (commented out as in your code)
+            // IconButton(
+            //   icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+            //   tooltip: 'My Orders',
+            //   onPressed: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(builder: (context) => RegisterPage()),
+            //     );
+            //   },
+            // ),
           ),
-
-          // Orders icon
-          // IconButton(
-          //   icon: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-          //   tooltip: 'My Orders',
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (context) => RegisterPage()),
-          //     );
-          //   },
-          // ),
         ],
       ),
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 
 class OrderDetailsPage123 extends StatefulWidget {
@@ -12,13 +13,13 @@ class OrderDetailsPage123 extends StatefulWidget {
 class _OrderDetailsPage123State extends State<OrderDetailsPage123> {
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
+  
     final Color slate600 = const Color(0xFF64748B);
     final Color slateBorder = const Color(0xFFCBD5E1);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBlue,
+        backgroundColor: AppColors.primaryColor,
         leading: const Icon(Icons.arrow_back, color: Colors.white),
         title: const Text("View Order", 
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 20)),
@@ -55,7 +56,7 @@ class _OrderDetailsPage123State extends State<OrderDetailsPage123> {
                         height: 54,
                         width: 54,
                         decoration: BoxDecoration(
-                          color: primaryBlue,
+                          color: AppColors.primaryColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.add, color: Colors.white),
@@ -124,8 +125,8 @@ class _OrderDetailsPage123State extends State<OrderDetailsPage123> {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue.withOpacity(0.1),
-                      foregroundColor: primaryBlue,
+                      backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+                      foregroundColor: AppColors.primaryColor,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -138,7 +139,7 @@ class _OrderDetailsPage123State extends State<OrderDetailsPage123> {
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
+                      backgroundColor: AppColors.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -20,7 +20,7 @@ class CreateOrderScreen extends StatefulWidget {
     Key? key,
     required this.catalogs,
     required this.onSuccess,
-      this.routeArguments,
+    this.routeArguments,
   }) : super(key: key);
 
   @override
@@ -33,17 +33,40 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Map<String, Map<String, Map<String, int>>> quantities = {};
   bool isLoading = true;
   final Map<String, TextEditingController> _controllers = {};
+  List<CatalogOrderData> filteredCatalogOrderList = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _loadOrderDetails();
+    _searchController.addListener(_filterSearchResults);
   }
 
   @override
   void dispose() {
     _controllers.forEach((_, controller) => controller.dispose());
+    _searchController.removeListener(_filterSearchResults); // ADD THIS LINE
+    _searchController.dispose();
     super.dispose();
+  }
+
+  // ADD THIS NEW METHOD
+  void _filterSearchResults() {
+    if (_searchController.text.isEmpty) {
+      setState(() {
+        filteredCatalogOrderList = List.from(catalogOrderList);
+      });
+    } else {
+      String searchTerm = _searchController.text.toLowerCase().trim();
+      setState(() {
+        filteredCatalogOrderList =
+            catalogOrderList.where((order) {
+              return order.catalog.styleCode.toLowerCase().contains(searchTerm);
+            }).toList();
+      });
+    }
   }
 
   Color _getColorCode(String color) {
@@ -114,6 +137,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     setState(() {
       catalogOrderList = tempList;
+      filteredCatalogOrderList = List.from(tempList);
       isLoading = false;
     });
   }
@@ -139,6 +163,142 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       quantities.remove(styleKey);
       _controllers.removeWhere((key, _) => key.contains('$styleKey-'));
     });
+  }
+
+  Future<void> _confirmDeleteStyle(String styleKey, String styleCode) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 8,
+          titlePadding: const EdgeInsets.only(top: 30, bottom: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 8,
+          ),
+          actionsPadding: const EdgeInsets.only(
+            bottom: 24,
+            right: 24,
+            left: 24,
+          ),
+
+          title: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Style code highlight
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    styleCode,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Are you sure you want to delete this style?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          actions: [
+            // Side-by-side buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade600,
+                      backgroundColor: Colors.grey.shade50,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ).copyWith(
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return Colors.red.shade700;
+                        }
+                        return null;
+                      }),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.delete_outline, size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "Delete",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      _deleteStyle(styleKey);
+    }
   }
 
   void _copyStyleQuantities(
@@ -356,7 +516,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                             Navigator.pushReplacement(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => OrderPage(),
@@ -416,15 +576,55 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
+     title: AnimatedSwitcher(
+  duration: const Duration(milliseconds: 250),
+  transitionBuilder: (child, animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: SizeTransition(
+        sizeFactor: animation,
+        axis: Axis.horizontal,
+        child: child,
+      ),
+    );
+  },
+  child: _isSearching
+      ? Container(
+          key: const ValueKey("search"),
+          height: 36, // smaller height
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25), // smooth curve
+          ),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(fontSize: 14, color: Colors.black),
+            decoration: const InputDecoration(
+              hintText: "Search by Style Code...",
+              hintStyle: TextStyle(color: Colors.grey),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(vertical: 8),
+              prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
+            ),
+          ),
+        )
+      : Text(
           'Order Booking',
+          key: const ValueKey("title"),
           style: GoogleFonts.poppins(color: Colors.white),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Icon(Icons.signal_cellular_alt),
-          ),
+),
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20.0),
@@ -440,7 +640,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   const VerticalDivider(color: Colors.white),
                   Text(
-                    'Total Item: ${catalogOrderList.length}',
+                    'Total Item: ${filteredCatalogOrderList.length}', // CHANGED THIS LINE
                     style: GoogleFonts.roboto(color: Colors.white),
                   ),
                   const VerticalDivider(color: Colors.white, thickness: 2),
@@ -464,7 +664,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
+                          //   vertical: 12,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -509,7 +709,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 10),
-                      ...catalogOrderList.map(
+                      ...filteredCatalogOrderList.map(
+                        // CHANGED THIS LINE
                         (catalogOrder) => Column(
                           children: [
                             buildOrderItem(catalogOrder),
@@ -521,29 +722,55 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                 ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        height: 60,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12.0),
+      bottomNavigationBar: SafeArea(
+        child: SizedBox(
+          height: 40,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('BACK', style: GoogleFonts.montserrat()),
+              Expanded(
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 227, 238, 243),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'BACK',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
               ),
-              TextButton(
-                onPressed:
-                    _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
-                child: Text(
-                  'SAVE',
-                  style: GoogleFonts.montserrat(
-                    color:
+              Expanded(
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor:
                         _calculateTotalQuantity() > 0
-                            ? Colors.black
-                            : Colors.grey,
+                            ? Colors.blue
+                            : Colors.grey.shade300,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  onPressed:
+                      _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
+                  child: Text(
+                    'SAVE',
+                    style: GoogleFonts.montserrat(
+                      color:
+                          _calculateTotalQuantity() > 0
+                              ? Colors.white
+                              : Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
@@ -594,176 +821,204 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final catalog = catalogOrder.catalog;
     final Set<String> selectedColors = selectedColors2[catalog.styleKey] ?? {};
 
+    final imageUrl =
+        catalog.fullImagePath.contains("http")
+            ? catalog.fullImagePath
+            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  final imageUrl =
-                      catalog.fullImagePath.contains("http")
-                          ? catalog.fullImagePath
-                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => ImageZoomScreen(
-                            imageUrls: [imageUrl],
-                            initialIndex: 0,
+        Card(
+          elevation: 3,
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Product Image
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => ImageZoomScreen(
+                              imageUrls: [imageUrl],
+                              initialIndex: 0,
+                            ),
+                      ),
+                    );
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: Image.network(
+                      imageUrl,
+                      width: 70,
+                      height: 90,
+                      fit: BoxFit.contain,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            width: 70,
+                            height: 90,
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.broken_image),
                           ),
                     ),
-                  );
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    catalog.fullImagePath.contains("http")
-                        ? catalog.fullImagePath
-                        : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                    width: 60,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) => Container(
-                          width: 60,
-                          height: 80,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.error, size: 30),
-                        ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            catalog.styleCode,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Colors.blue,
+
+                const SizedBox(width: 12),
+
+                /// Details Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// Style Code + Actions
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Chip(
+                            label: Text(
+                              catalog.styleCode,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
+                            backgroundColor: Colors.blue.shade50,
                           ),
-                        ),
-                        Row(
-                          children: [
-                            // Copy button with circular background
-                            Container(
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors
-                                        .blue
-                                        .shade50, // Light blue background
-                                shape: BoxShape.circle, // Circular shape
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.copy,
-                                  size: 16,
-                                  color: Colors.blue.shade700, // Dark blue icon
-                                ),
-                                padding: const EdgeInsets.all(8),
-                                constraints: const BoxConstraints(),
-                                onPressed: () async {
-                                  final result = await showDialog<Set<String>>(
-                                    context: context,
-                                    builder:
-                                        (context) => CopyToStylesDialog(
-                                          styleKeys:
-                                              catalogOrderList
-                                                  .map(
-                                                    (order) =>
-                                                        order.catalog.styleKey,
-                                                  )
-                                                  .where(
-                                                    (key) =>
-                                                        key != catalog.styleKey,
-                                                  )
-                                                  .toList(),
-                                          styleCodes:
-                                              catalogOrderList
-                                                  .map(
-                                                    (order) =>
-                                                        order.catalog.styleCode,
-                                                  )
-                                                  .toList(),
-                                          sourceStyleKey: catalog.styleKey,
-                                          sourceStyleCode: catalog.styleCode,
-                                        ),
-                                  );
 
-                                  if (result != null && result.isNotEmpty) {
-                                    _copyStyleQuantities(
-                                      catalog.styleKey,
-                                      result,
+                          Row(
+                            children: [
+                              /// Copy Button
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.blue.shade50,
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.copy,
+                                    size: 18,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                  onPressed: () async {
+                                    final result = await showDialog<
+                                      Set<String>
+                                    >(
+                                      context: context,
+                                      builder:
+                                          (context) => CopyToStylesDialog(
+                                            styleKeys:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleKey,
+                                                    )
+                                                    .where(
+                                                      (key) =>
+                                                          key !=
+                                                          catalog.styleKey,
+                                                    )
+                                                    .toList(),
+                                            styleCodes:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleCode,
+                                                    )
+                                                    .toList(),
+                                            sourceStyleKey: catalog.styleKey,
+                                            sourceStyleCode: catalog.styleCode,
+                                          ),
                                     );
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
 
-                            // Delete button with circular background
-                            Container(
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors.red.shade50, // Light red background
-                                shape: BoxShape.circle, // Circular shape
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.delete,
-                                  size: 16,
-                                  color: Colors.red.shade700, // Dark red icon
+                                    if (result != null && result.isNotEmpty) {
+                                      _copyStyleQuantities(
+                                        catalog.styleKey,
+                                        result,
+                                      );
+                                    }
+                                  },
                                 ),
-                                padding: const EdgeInsets.all(8),
-                                constraints: const BoxConstraints(),
-                                onPressed: () {
-                                  _deleteStyle(catalog.styleKey);
-                                },
                               ),
-                            ),
-                          ],
+
+                              const SizedBox(width: 8),
+
+                              /// Delete Button
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.red.shade50,
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.delete,
+                                    size: 18,
+                                    color: Colors.red.shade700,
+                                  ),
+                                  // onPressed: () {
+                                  //   _deleteStyle(catalog.styleKey);
+                                  // },
+                                  onPressed: () {
+                                    _confirmDeleteStyle(
+                                      catalog.styleKey,
+                                      catalog.styleCode,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      /// Quantity
+                      Text(
+                        'Total Qty: ${_calculateCatalogQuantity(catalog.styleKey)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Total Qty: ${_calculateCatalogQuantity(catalog.styleKey)}',
-                      style: GoogleFonts.roboto(fontSize: 14),
-                    ),
-                    Text(
-                      'Pending Qty: 0 | Wip Stock: 0',
-                      style: GoogleFonts.roboto(fontSize: 14),
-                    ),
-                  ],
+                      ),
+
+                      const SizedBox(height: 2),
+
+                      Text(
+                        'Pending Qty: 0   |   WIP Stock: 0',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
 
-        const SizedBox(height: 15),
+        //  const SizedBox(height: 10),
+
+        /// Color Sections
         ...selectedColors.map(
           (color) => Column(
             children: [
               _buildColorSection(catalogOrder, color),
-              const SizedBox(height: 15),
+              const SizedBox(height: 12),
             ],
           ),
         ),
-        const SizedBox(height: 15),
+
+        const SizedBox(height: 10),
       ],
     );
   }
@@ -909,45 +1164,45 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             ),
                           ),
                           // Always show a container for debugging
-                          if (UserSession.imageDependsOn == 'S') 
-                          Container(
-                            margin: const EdgeInsets.only(left: 0),
+                          if (UserSession.imageDependsOn == 'S')
+                            Container(
+                              margin: const EdgeInsets.only(left: 0),
 
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.image,
-                                size: 24, // increased icon size
-                                color:
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.image,
+                                  size: 24, // increased icon size
+                                  color:
+                                      imageUrl != null
+                                          ? Colors.blue.shade700
+                                          : Colors.red.shade700,
+                                ),
+
+                                splashColor:
+                                    Colors.transparent, // removes splash shadow
+                                highlightColor:
+                                    Colors.transparent, // removes highlight
+                                tooltip:
                                     imageUrl != null
-                                        ? Colors.blue.shade700
-                                        : Colors.red.shade700,
+                                        ? 'View shade image'
+                                        : 'No image available',
+                                onPressed:
+                                    imageUrl != null
+                                        ? () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) => ImageZoomScreen(
+                                                    imageUrls: [imageUrl],
+                                                    initialIndex: 0,
+                                                  ),
+                                            ),
+                                          );
+                                        }
+                                        : null,
                               ),
-
-                              splashColor:
-                                  Colors.transparent, // removes splash shadow
-                              highlightColor:
-                                  Colors.transparent, // removes highlight
-                              tooltip:
-                                  imageUrl != null
-                                      ? 'View shade image'
-                                      : 'No image available',
-                              onPressed:
-                                  imageUrl != null
-                                      ? () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) => ImageZoomScreen(
-                                                  imageUrls: [imageUrl],
-                                                  initialIndex: 0,
-                                                ),
-                                          ),
-                                        );
-                                      }
-                                      : null,
                             ),
-                          ),
                         ],
                       ),
                     ),

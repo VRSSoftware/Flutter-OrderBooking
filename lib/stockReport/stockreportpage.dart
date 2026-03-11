@@ -61,6 +61,8 @@ class _StockReportPageState extends State<StockReportPage> {
   String coBr = '';
   bool withImage = false;
 
+  final Item selectAllItem = Item(itemName: "All Items", itemKey: "ALL");
+  
   @override
   void initState() {
     super.initState();
@@ -70,10 +72,10 @@ class _StockReportPageState extends State<StockReportPage> {
   }
 
   Future<void> _downloadStockReport() async {
-    if (selectedCategoryKey == null || selectedItems.isEmpty) {
+    if (selectedCategoryKey == null ) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select both category and item first'),
+          content: Text('Please select category '),
         ),
       );
       return;
@@ -204,7 +206,7 @@ class _StockReportPageState extends State<StockReportPage> {
     Map<String, List<StockReportItem>> groupedItems = {};
 
     for (var item in stockData) {
-      final itemName = item.itemName ?? "Unknown";
+      final itemName = item.itemName ?? "";
       groupedItems.putIfAbsent(itemName, () => []);
       groupedItems[itemName]!.add(item);
     }
@@ -225,7 +227,7 @@ class _StockReportPageState extends State<StockReportPage> {
       }
 
       for (var item in items) {
-        String shade = item.shadeName ?? "Unknown";
+        String shade = item.shadeName ?? "";
 
         shadeData.putIfAbsent(shade, () => {});
 
@@ -345,6 +347,15 @@ class _StockReportPageState extends State<StockReportPage> {
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 13,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+
+              pw.Text(
+                "Design : ${items.first.styleCode ?? ''}",
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
                 ),
               ),
 
@@ -488,9 +499,9 @@ class _StockReportPageState extends State<StockReportPage> {
       hasSearched = true;
     });
 
-    if (selectedCategoryKey == null || selectedItems.isEmpty) {
+    if (selectedCategoryKey == null ) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both category and item')),
+        const SnackBar(content: Text('Please select category')),
       );
       return;
     }
@@ -1952,29 +1963,28 @@ class _StockReportPageState extends State<StockReportPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownSearch<Item>.multiSelection(
-                      items: items,
-                      itemAsString: (Item i) => i.itemName ?? '',
+                      
+                      items: [selectAllItem, ...items],
+                      compareFn: (Item a, Item b) => a.itemKey == b.itemKey,
+                      itemAsString:
+                          (Item i) =>
+                              i.itemName == "All Items"
+                                  ? "All"
+                                  : (i.itemName ?? ''),
                       selectedItems: selectedItems,
                       onChanged: (List<Item> value) {
                         setState(() {
-                          selectedItems = value;
-                          if (value.isNotEmpty) {
-                            String itemSubGrpKey =
-                                value.first.itemSubGrpKey ?? '';
-                            Category? matchingCategory;
-                            try {
-                              matchingCategory = categories.firstWhere(
-                                (cat) => cat.itemSubGrpKey == itemSubGrpKey,
-                              );
-                            } catch (e) {
-                              matchingCategory = null;
-                            }
-                            if (matchingCategory != null) {
-                              selectedCategoryKey =
-                                  matchingCategory.itemSubGrpKey;
-                              selectedCategoryName =
-                                  matchingCategory.itemSubGrpName;
-                            }
+                          bool isSelectAll = value.any(
+                            (item) => item.itemKey == "ALL",
+                          );
+
+                          if (isSelectAll) {
+                            selectedItems = [selectAllItem, ...items];
+                          } else {
+                            selectedItems =
+                                value
+                                    .where((item) => item.itemKey != "ALL")
+                                    .toList();
                           }
                         });
                       },
@@ -2014,7 +2024,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
+                          ),        
                         ),
                         loadingBuilder:
                             isLoadingItems
@@ -2293,10 +2303,10 @@ class _StockReportPageState extends State<StockReportPage> {
 
   // Add this method to handle WhatsApp sharing
   Future<void> _shareViaWhatsApp() async {
-    if (selectedCategoryKey == null || selectedItems.isEmpty) {
+    if (selectedCategoryKey == null ) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select both category and item first'),
+          content: Text('Please select category'),
           backgroundColor: Colors.red,
         ),
       );
@@ -2771,6 +2781,15 @@ Generated from VRS ERP App
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 13,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+
+              pw.Text(
+                "Design : ${items.first.styleCode ?? ''}",
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
                 ),
               ),
               pw.SizedBox(height: 6),

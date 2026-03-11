@@ -112,11 +112,11 @@ class BottomNavigationWidget extends StatelessWidget {
       ]);
     }
 
-    navItems.add({
-      'label': 'Packing',
-      'icon': CupertinoIcons.cube_box_fill,
-      'route': '/packingBooking',
-    });
+    // navItems.add({
+    //   'label': 'Packing',
+    //   'icon': CupertinoIcons.cube_box_fill,
+    //   'route': '/packingBooking',
+    // });
 
     final int currentIndex =
         navItems.indexWhere((item) => item['route'] == currentScreen);

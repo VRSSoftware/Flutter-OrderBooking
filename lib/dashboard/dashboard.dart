@@ -55,12 +55,36 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
   bool isLoadingOrderDetails = false;
   bool isLoadingSalesperson = true;
 
+  final ScrollController _dateRangeScrollController = ScrollController();
+  bool _showCustomDatePicker = false;
+
+  final List<String> dateRanges = [
+    'Custom',
+    'Today',
+    'Yesterday',
+    'This Week',
+    'Previous Week',
+    'This Month',
+    'Previous Month',
+    'This Quarter',
+    'Previous Quarter',
+    'This Year',
+    'Previous Year',
+ 
+  ];
+
   @override
   void initState() {
     super.initState();
     _updateDateRange('Today');
     _loadDropdownData();
     _fetchOrderSummary();
+  }
+
+  @override
+  void dispose() {
+    _dateRangeScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDropdownData() async {
@@ -122,7 +146,6 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
         } else {
           toDate = picked;
         }
-        selectedRange = 'Custom';
       });
       _fetchOrderSummary();
     }
@@ -131,14 +154,14 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
   void _updateDateRange(String range) {
     final now = DateTime.now();
     setState(() {
-      // selectedRange = range;
-   selectedRange = range; // Update selectedRange directly
-    FilterData.selectedDateRange = range;
+      selectedRange = range;
+      FilterData.selectedDateRange = range;
+      _showCustomDatePicker = (range == 'Custom');
+      
       switch (range) {
         case 'Today':
           fromDate = DateTime(now.year, now.month, now.day);
           toDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-
           break;
         case 'Yesterday':
           final yesterday = now.subtract(const Duration(days: 1));
@@ -226,7 +249,7 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
 
   Future<void> _fetchOrderSummary() async {
     setState(() {
-     isLoadingOrderDetails = true;
+      isLoadingOrderDetails = true;
     });
     final String apiUrl =
         '${AppConstants.BASE_URL}/orderRegister/order-details-dash';
@@ -297,497 +320,43 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() {
+        isLoadingOrderDetails = false;
+      });
     }
-finally {
-    setState(() {
-      isLoadingOrderDetails = false; // Reset the overlay loader
-    });
-  }
-
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate progress for each status based on orderDocCount
-    double totalOrders = double.tryParse(orderDocCount) ?? 0;
-    double pendingProgress =
-        totalOrders > 0
-            ? (double.tryParse(pendingDocCount) ?? 0) / totalOrders
-            : 0;
-    double packedProgress =
-        totalOrders > 0
-            ? (double.tryParse(packedDocCount) ?? 0) / totalOrders
-            : 0;
-    double cancelledProgress =
-        totalOrders > 0
-            ? (double.tryParse(cancelledDocCount) ?? 0) / totalOrders
-            : 0;
-    double invoicedProgress =
-        totalOrders > 0
-            ? (double.tryParse(invoicedDocCount) ?? 0) / totalOrders
-            : 0;
-    double inHandProgress =
-        totalOrders > 0 ? (double.tryParse(inHand) ?? 0) / totalOrders : 0;
-    double toBeReceivedProgress =
-        totalOrders > 0
-            ? (double.tryParse(toBeReceived) ?? 0) / totalOrders
-            : 0;
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body:Stack(
-      children: [
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date Range Selection
-                    Card(
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Colors.grey),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Select Date Range',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownSearch<String>(
-                                    items: [
-                                      'Custom',
-                                      'Today',
-                                      'Yesterday',
-                                      'This Week',
-                                      'Previous Week',
-                                      'This Month',
-                                      'Previous Month',
-                                      'This Quarter',
-                                      'Previous Quarter',
-                                      'This Year',
-                                      'Previous Year',
-                                    ],
-                                    selectedItem: selectedRange,
-                                    onChanged: (String? newValue) {
-                                      if (newValue != null) {
-                                        setState(() {
-                                          selectedRange = newValue;
-                                          FilterData.selectedDateRange =
-                                              newValue;
-                                        });
-                                        _updateDateRange(newValue);
-                                      }
-                                    },
-                                    dropdownDecoratorProps:
-                                        const DropDownDecoratorProps(
-                                          dropdownSearchDecoration:
-                                              InputDecoration(
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.zero,
-                                                ),
-                                                contentPadding:
-                                                    EdgeInsets.symmetric(
-                                                      horizontal: 14,
-                                                      vertical: 8,
-                                                    ),
-                                              ),
-                                        ),
-                                    popupProps: PopupProps.menu(
-                                      showSearchBox: true,
-                                      fit: FlexFit.loose,
-                                      searchFieldProps: const TextFieldProps(
-                                        decoration: InputDecoration(
-                                          hintText: 'Search...',
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius
-                                                    .zero, 
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius
-                                                    .zero, 
-                                            borderSide: BorderSide(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius
-                                                    .zero,
-                                            borderSide: BorderSide(
-                                              color: Colors.blue,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-
-                                      containerBuilder:
-                                          (context, popupWidget) => Container(
-                                            width: 600,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius
-                                                      .zero, 
-                                              border: Border.all(
-                                                color: Colors.grey.shade300,
-                                              ),
-                                            ),
-                                            child: popupWidget,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 16),
-                            if (selectedRange == 'Custom') ...[
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'From Date',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        GestureDetector(
-                                          onTap:
-                                              () => _selectDate(context, true),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF5F7FA),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  '${fromDate.day.toString().padLeft(2, '0')}/${fromDate.month.toString().padLeft(2, '0')}/${fromDate.year}',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.black54,
-                                                  ),
-                                                ),
-                                                const Icon(
-                                                  Icons.calendar_today,
-                                                  size: 20,
-                                                  color: Colors.grey,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'To Date',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        GestureDetector(
-                                          onTap:
-                                              () => _selectDate(context, false),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF5F7FA),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  '${toDate.day.toString().padLeft(2, '0')}/${toDate.month.toString().padLeft(2, '0')}/${toDate.year}',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.black54,
-                                                  ),
-                                                ),
-                                                const Icon(
-                                                  Icons.calendar_today,
-                                                  size: 20,
-                                                  color: Colors.grey,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Total Orders Box with Status Cards
-                    Card(
-                      elevation: 0,
-                      color: Colors.blue.withOpacity(0.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                _showOrderDetails('TOTALORDER');
-                                // Your tap logic here
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFB2EBF2),
-                                      Color(0xFF80DEEA),
-                                    ], // Example blue gradient
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'TOTAL ORDER',
-                                          style: GoogleFonts.quando(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.deepPurple,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          orderDocCount,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.deepPurple,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Qty: ${double.parse(orderQty).toStringAsFixed(0)}',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            color: Colors.deepPurple,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-                            // Row 1: Pending, Packed
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'PENDING',
-                                    count: pendingDocCount,
-                                    qty: pendingQty,
-                                    progress: pendingProgress,
-                                    color: const Color(0xFFE6F0FA),
-                                    icon: Icons.hourglass_empty,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'PACKED',
-                                    count: packedDocCount,
-                                    qty: packedQty,
-                                    progress: packedProgress,
-                                    color: const Color(0xFFE8F5E9),
-                                    icon: Icons.check_circle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Row 2: Cancelled, Invoiced
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'CANCELLED',
-                                    count: cancelledDocCount,
-                                    qty: cancelledQty,
-                                    progress: cancelledProgress,
-                                    color: const Color(0xFFFFE6E6),
-                                    icon: Icons.cancel,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'INVOICED',
-                                    count: invoicedDocCount,
-                                    qty: invoicedQty,
-                                    progress: invoicedProgress,
-                                    color: const Color(0xFFF3E8FF),
-                                    icon: Icons.receipt,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    // Inventory Summary Box
-                    Card(
-                      elevation: 0,
-                      color: const Color(0xFFE0F7FA),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Inventory Summary',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'IN HAND',
-                                    count: inHand,
-                                    qty: '0',
-                                    progress: inHandProgress,
-                                    color: Colors.white,
-                                    icon: Icons.inventory,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildStatusCard(
-                                    title: 'TO BE RECEIVED',
-                                    count: toBeReceived,
-                                    qty: '0',
-                                    progress: toBeReceivedProgress,
-                                    color: Colors.white,
-                                    icon: Icons.local_shipping,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Overlay loader for order details
-        if (isLoadingOrderDetails)
-          Container(
-            color: Colors.black.withOpacity(0.5), // Semi-transparent background
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          ),
-      ],
+     appBar: AppBar(
+  title: Text(
+    'Dashboard',
+    style: GoogleFonts.poppins(
+      color: Colors.white,
+      fontWeight: FontWeight.w600,
+      fontSize: 20,
     ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 50),
-        child: FloatingActionButton(
-          backgroundColor: Colors.blue,
+  ),
+  backgroundColor: AppColors.primaryColor,
+  elevation: 0,
+  leading: Builder(
+    builder:
+        (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+  ),
+  actions: [
+    Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: CircleAvatar(
+        backgroundColor: Colors.white.withOpacity(0.2),
+        child: IconButton(
+          icon: const Icon(Icons.filter_list, color: Colors.white, size: 20),
           onPressed: () async {
             await Navigator.push(
               context,
@@ -819,6 +388,7 @@ finally {
                                   FilterData.selectedDateRange ?? 'Today';
                               fromDate = FilterData.fromDate;
                               toDate = FilterData.toDate;
+                              _showCustomDatePicker = (selectedRange == 'Custom');
                             });
 
                             _fetchOrderSummary();
@@ -837,27 +407,635 @@ finally {
               ),
             );
           },
-          tooltip: 'Filter Orders',
-          child: const Icon(Icons.filter_list, color: Colors.white),
         ),
       ),
-      bottomNavigationBar: BottomNavigationWidget(currentScreen:  '/dashboard',),
-      // bottomNavigationBar: BottomNavigationWidget(
-      //   currentIndex: 3, // 👈 Highlight Order icon
-      //   onTap: (index) {
-      //     if (index == 0) Navigator.pushNamed(context, '/home');
-      //     if (index == 1) Navigator.pushNamed(context, '/catalog');
-      //     if (index == 2) Navigator.pushNamed(context, '/orderbooking');
-      //     if (index == 3) return;
-      //     if (index == 4) Navigator.pushNamed(context, '/stockReport');
+    ),
+  ],
+  iconTheme: const IconThemeData(color: Colors.white),
+),
+      body: Stack(
+        children: [
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Horizontal Date Range Scroll
+                    _buildHorizontalDateRange(),
+                    
+                    if (_showCustomDatePicker) ...[
+                      const SizedBox(height: 16),
+                      _buildCustomDatePicker(),
+                    ],
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Key Metrics - Total Orders
+                    _buildKeyMetricsSection(),
+                    const SizedBox(height: 20),
+
+                    // Order Status Section
+                    _buildOrderStatusSection(),
+                    const SizedBox(height: 20),
+
+                    // Inventory Summary
+                    _buildInventorySection(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+
+          if (isLoadingOrderDetails)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
+            ),
+        ],
+      ),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () async {
+      //     await Navigator.push(
+      //       context,
+      //       PageRouteBuilder(
+      //         pageBuilder:
+      //             (context, animation, secondaryAnimation) =>
+      //                 DashboardFilterPage(
+      //                   ledgerList: ledgerList,
+      //                   salespersonList: salespersonList,
+      //                   onApplyFilters: ({
+      //                     KeyName? selectedLedger,
+      //                     KeyName? selectedSalesperson,
+      //                     DateTime? fromDate,
+      //                     DateTime? toDate,
+      //                     KeyName? selectedState,
+      //                     KeyName? selectedCity,
+      //                   }) {
+      //                     setState(() {
+      //                       this.selectedLedger = selectedLedger;
+      //                       this.selectedSalesperson = selectedSalesperson;
+      //                       this.fromDate = fromDate ?? this.fromDate;
+      //                       this.toDate = toDate ?? this.toDate;
+      //                       this.selectedCity =
+      //                           selectedCity ??
+      //                           KeyName(key: '', name: 'All Cities');
+      //                     });
+      //                     setState(() {
+      //                       selectedRange =
+      //                           FilterData.selectedDateRange ?? 'Today';
+      //                       fromDate = FilterData.fromDate;
+      //                       toDate = FilterData.toDate;
+      //                       _showCustomDatePicker = (selectedRange == 'Custom');
+      //                     });
+
+      //                     _fetchOrderSummary();
+      //                   },
+      //                 ),
+      //         settings: RouteSettings(
+      //           arguments: {
+      //             'ledgerList': ledgerList,
+      //             'salespersonList': salespersonList,
+      //             'statesList': statesList,
+      //             'citiesList': citiesList,
+      //             'fromDate': fromDate,
+      //             'toDate': toDate,
+      //           },
+      //         ),
+      //       ),
+      //     );
       //   },
+      //   backgroundColor: AppColors.primaryColor,
+      //   icon: const Icon(Icons.filter_list, color: Colors.white),
+      //   label: Text(
+      //     'Filter',
+      //     style: GoogleFonts.poppins(
+      //       color: Colors.white,
+      //       fontWeight: FontWeight.w500,
+      //     ),
+      //   ),
       // ),
+      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/dashboard'),
+    );
+  }
+
+  Widget _buildHorizontalDateRange() {
+    return Container(
+      height: 50,
+      child: ListView.builder(
+        controller: _dateRangeScrollController,
+        scrollDirection: Axis.horizontal,
+        itemCount: dateRanges.length,
+        itemBuilder: (context, index) {
+          final range = dateRanges[index];
+          final isSelected = selectedRange == range;
+          
+          return GestureDetector(
+            onTap: () => _updateDateRange(range),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryColor : Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
+                ),
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ] : null,
+              ),
+              child: Center(
+                child: Text(
+                  range,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCustomDatePicker() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildDatePickerField(
+              label: 'From',
+              date: fromDate,
+              onTap: () => _selectDate(context, true),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildDatePickerField(
+              label: 'To',
+              date: toDate,
+              onTap: () => _selectDate(context, false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePickerField({
+    required String label,
+    required DateTime date,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+                Icon(
+                  Icons.calendar_today,
+                  size: 18,
+                  color: AppColors.primaryColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKeyMetricsSection() {
+    return GestureDetector(
+      onTap: () => _showOrderDetails('TOTALORDER'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF667eea).withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Orders',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  orderDocCount,
+                  style: GoogleFonts.poppins(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Qty: ${double.parse(orderQty).toStringAsFixed(0)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.shopping_cart,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderStatusSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.pie_chart, color: Colors.green, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Order Status',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactStatusCard(
+                  title: 'PENDING',
+                  count: pendingDocCount,
+                  qty: pendingQty,
+                  color: const Color(0xFF3B82F6),
+                  icon: Icons.hourglass_empty,
+                  onTap: () => _showOrderDetails('PENDINGORDER'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCompactStatusCard(
+                  title: 'PACKED',
+                  count: packedDocCount,
+                  qty: packedQty,
+                  color: const Color(0xFF10B981),
+                  icon: Icons.check_circle,
+                  onTap: () => _showOrderDetails('PACKEDORDER'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactStatusCard(
+                  title: 'CANCELLED',
+                  count: cancelledDocCount,
+                  qty: cancelledQty,
+                  color: const Color(0xFFEF4444),
+                  icon: Icons.cancel,
+                  onTap: () => _showOrderDetails('CANCELLEDORDER'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCompactStatusCard(
+                  title: 'INVOICED',
+                  count: invoicedDocCount,
+                  qty: invoicedQty,
+                  color: const Color(0xFF8B5CF6),
+                  icon: Icons.receipt,
+                  onTap: () => _showOrderDetails('INVOICEDORDER'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactStatusCard({
+    required String title,
+    required String count,
+    required String qty,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        count,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${double.parse(qty).toStringAsFixed(0)})',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInventorySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.inventory, color: Colors.orange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Inventory Summary',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactInventoryCard(
+                  title: 'In Hand',
+                  count: inHand,
+                  color: const Color(0xFFF59E0B),
+                  icon: Icons.inventory_2,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCompactInventoryCard(
+                  title: 'To Be Received',
+                  count: toBeReceived,
+                  color: const Color(0xFF3B82F6),
+                  icon: Icons.local_shipping,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactInventoryCard({
+    required String title,
+    required String count,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  count,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _showOrderDetails(String orderType) async {
     setState(() {
-  isLoadingOrderDetails = true;
+      isLoadingOrderDetails = true;
     });
     try {
       String formattedOrderType = orderType
@@ -935,171 +1113,10 @@ finally {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }finally {
-    setState(() {
-      isLoadingOrderDetails = false; // Reset the order details loading state
-    });
-  }
-
-  }
-
-  Widget _buildStatusCard({
-    required String title,
-    required String count,
-    required String qty,
-    required double progress,
-    required Color color,
-    required IconData icon,
-  }) {
-    return _StatusCard(
-      title: title,
-      count: count,
-      qty: qty,
-      progress: progress,
-      color: color,
-      icon: icon,
-      onTap: () {
-        String orderType = title.replaceAll(' ', '');
-        print(orderType);
-        if (orderType.contains('INHAND') ||
-            orderType.contains('TOBERECEIVED')) {
-        } else if (orderType.contains('PENDING') ||
-            orderType.contains('PACKED') ||
-            orderType.contains('CANCELLED') ||
-            orderType.contains('INVOICED')) {
-          _showOrderDetails(orderType + 'ORDER');
-        }
-      },
-    );
-  }
-}
-
-class _StatusCard extends StatefulWidget {
-  final String title;
-  final String count;
-  final String qty;
-  final double progress;
-  final Color color;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _StatusCard({
-    required this.title,
-    required this.count,
-    required this.qty,
-    required this.progress,
-    required this.color,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  __StatusCardState createState() => __StatusCardState();
-}
-
-class __StatusCardState extends State<_StatusCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _progressAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: widget.progress,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-    _controller.forward();
-  }
-
-  @override
-  void didUpdateWidget(_StatusCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.progress != widget.progress) {
-      _progressAnimation = Tween<double>(
-        begin: _progressAnimation.value,
-        end: widget.progress,
-      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-      _controller
-        ..reset()
-        ..forward();
+    } finally {
+      setState(() {
+        isLoadingOrderDetails = false;
+      });
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Card(
-        elevation: 0,
-        color: widget.color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: AnimatedBuilder(
-                      animation: _progressAnimation,
-                      builder: (context, child) {
-                        return CircularProgressIndicator(
-                          value: _progressAnimation.value,
-                          strokeWidth: 6,
-                          backgroundColor: Colors.white.withOpacity(0.3),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.blueAccent,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Text(
-                    widget.count,
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.title,
-                style: GoogleFonts.lemon(
-                  fontSize: 13,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Qty: ${double.parse(widget.qty).toStringAsFixed(0)}',
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -512,10 +512,10 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
 
                         iconSize: 20,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.blue.shade50,
+                          backgroundColor: AppColors.lightBlue,
                           shape: const CircleBorder(),
                           padding: const EdgeInsets.all(8),
-                          foregroundColor: Colors.blue.shade700,
+                          foregroundColor: AppColors.primaryColor,
                         ),
                         onPressed: () {
                           showDialog(
@@ -580,7 +580,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                                             bottom: 10,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue,
+                                            color: AppColors.primaryColor,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -611,7 +611,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                                             bottom: 10,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue,
+                                            color: AppColors.primaryColor,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -873,13 +873,13 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.close, color: Colors.blue),
+                  Icon(Icons.close, color: AppColors.primaryColor),
                   SizedBox(width: 6),
                   Text(
                     'Cancel',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -894,7 +894,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
             onTap: hasQty ? _submitAllOrders : null,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              color: hasQty ? Colors.blue : Colors.blueGrey,
+              color: hasQty ? AppColors.primaryColor : Colors.blueGrey,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1080,7 +1080,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                                     ),
                                     margin: const EdgeInsets.only(bottom: 10),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue,
+                                      color: AppColors.primaryColor,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     alignment: Alignment.center,
@@ -1114,7 +1114,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                                     ),
                                     margin: const EdgeInsets.only(bottom: 10),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue,
+                                      color: AppColors.primaryColor,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     alignment: Alignment.center,
@@ -1198,7 +1198,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                             icon: Icon(
                               Icons.image,
                               size: 14,
-                              color: Colors.blue.shade700,
+                              color: AppColors.primaryColor,
                             ),
                             padding: EdgeInsets.zero, // No padding
                             constraints: const BoxConstraints(
@@ -1529,7 +1529,7 @@ class _TableHeaderCell extends StatelessWidget {
                 'Shade',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: AppColors.primaryColor,
                 ),
               ),
             ),

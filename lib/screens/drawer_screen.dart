@@ -300,6 +300,7 @@
 //     );
 //   }
 // }
+//-----------------------------------------------------------------------------
 
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -314,47 +315,42 @@ class _DrawerScreenState extends State<DrawerScreen> {
   String? selectedSection;
   String? hoveredSection;
 
+  // Color palette for menu items
+  final Map<String, Color> _menuColors = {
+    'Home': Color(0xFF2196F3), // Blue
+    'Dashboard': Color(0xFF9C27B0), // Purple
+    'Order Booking': Color(0xFF4CAF50), // Green
+    'Catalog': Color(0xFFFF9800), // Orange
+    'Order Register': Color(0xFF009688), // Teal
+    'Stock Report': Color(0xFF3F51B5), // Indigo
+    'Setting': Color(0xFF607D8B), // Blue Grey
+    'Delete Account': Color(0xFFF44336), // Red
+  };
+
   final Map<String, String> _iconPaths = {
     'Home': 'assets/images/home.png',
     'Dashboard': 'assets/images/dashboard.png',
     'Order Booking': 'assets/images/orderbooking.png',
     'Catalog': 'assets/images/catalog.png',
     'Order Register': 'assets/images/register.png',
-    // 'Packing': 'assets/images/packing.png',
-    // 'Packing Register': 'assets/images/packing_register.pngg',
     'Stock Report': 'assets/images/report.png',
-    // 'Sale Bill': 'assets/images/salebill.png',
-    // 'Sale Bill Register': 'assets/images/sale.png',
-    //'Production': 'assets/images/production.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
   };
 
   final Map<String, IconData> _fallbackIcons = {
     'Home': Icons.home,
-
     'Order Booking': Icons.shopping_cart_checkout,
-
     'Catalog': Icons.inventory_2,
-
     'Order Register': Icons.receipt_long,
-
     'Packing': Icons.inventory,
-
     'Packing Register': Icons.fact_check,
-
     'Stock Report': Icons.bar_chart,
-
     'Sale Bill': Icons.point_of_sale,
-
     'Sale Bill Register': Icons.menu_book,
-
     'Dashboard': Icons.dashboard_customize,
-
     'Production': Icons.precision_manufacturing,
-
     'Setting': Icons.settings,
-
     'Delete Account': Icons.delete_forever,
   };
 
@@ -412,75 +408,141 @@ class _DrawerScreenState extends State<DrawerScreen> {
 
     setState(() => selectedSection = section);
     Navigator.pop(context);
-    Navigator.pushReplacementNamed(context, route);
+    Navigator.pushNamed(context, route);
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 600;
-    final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.70);
+    final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.75);
 
     return Drawer(
-      width: drawerWidth.clamp(260.0, 400.0),
-      backgroundColor: Colors.white,
+      width: drawerWidth.clamp(280.0, 400.0),
+      backgroundColor: Color(0xFF1A1A2E), // Dark navy background
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(25),
+          bottomRight: Radius.circular(25),
+        ),
+      ),
       child: Column(
         children: [
-          /// 🔵 GRADIENT PROFILE HEADER (Now covers status bar)
+          // Compact Header with Dark Theme
           Container(
             width: double.infinity,
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 30, // ✅ Fix here
-              left: 20,
-              right: 20,
-              bottom: 30,
+              top: MediaQuery.of(context).padding.top + 10, // Reduced top space
+              left: 16,
+              right: 16,
+              bottom: 20,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryColor,
-                  AppColors.primaryColor.withOpacity(0.75),
-                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF16213E), // Dark blue
+                  Color(0xFF0F3460), // Medium blue
+                ],
               ),
               borderRadius: const BorderRadius.only(
-                bottomRight: Radius.circular(35),
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: _buildProfileContent(),
           ),
 
-          /// 🔹 REST CONTENT SAFE
+          // Menu Items - No Scroll
           Expanded(
-            child: SafeArea(
-              top: false, // ✅ Important
+            child: Container(
+              color: Color(0xFF1A1A2E), // Match drawer background
               child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(), // Disable scrolling
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 15),
+
+                    // Main Menu Section
+                    _buildSectionHeader('MAIN MENU'),
+                    const SizedBox(height: 5),
 
                     ..._iconPaths.keys
                         .where((title) {
-                          if (UserSession.userType != 'C') return true;
-                          return title != 'Stock Report' &&
-                              title != 'Dashboard';
+                          if (title == 'Stock Report' || title == 'Dashboard') {
+                            return UserSession.userType == 'A';
+                          }
+                          return title != 'Setting' && title != 'Delete Account';
                         })
-                        .map(
-                          (title) => _buildDrawerItem(
-                            title,
-                            _getRouteFromSection(title),
-                          ),
-                        ),
-
-                    const Divider(thickness: 1),
-
-                    _buildLogoutButton(),
+                        .map((title) => _buildDrawerItem(
+                              title,
+                              _getRouteFromSection(title),
+                            )),
 
                     const SizedBox(height: 20),
+                    
+                    // Account Section
+                    _buildSectionHeader('ACCOUNT'),
+                    const SizedBox(height: 5),
+
+                    _buildDrawerItem('Setting', '/setting'),
+                    _buildDrawerItem('Delete Account', '/deleteAccount'),
+
+                    const SizedBox(height: 20),
+                    
+                    // Logout Button
+                    _buildLogoutButton(),
+
+                    const SizedBox(height: 15),
+
+                    // Version Info
+                    Text(
+                      'Version 2.0.0',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade500,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: Colors.grey.shade800,
             ),
           ),
         ],
@@ -524,28 +586,74 @@ class _DrawerScreenState extends State<DrawerScreen> {
   Widget _buildProfileContent() {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 30,
-          backgroundImage: AssetImage('assets/images/logo.png'),
-          backgroundColor: Colors.white,
+        // Profile Image
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+          ),
+          child: const CircleAvatar(
+            radius: 28,
+            backgroundImage: AssetImage('assets/images/logo.png'),
+            backgroundColor: Colors.white,
+          ),
         ),
-        const SizedBox(width: 15),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                UserSession.name ?? 'Guest',
+                UserSession.name ?? 'Guest User',
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 5),
-              Text(
-                UserSession.userType == 'C' ? 'Customer' : 'User',
-                style: const TextStyle(fontSize: 13, color: Colors.white70),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: UserSession.userType == 'A' 
+                          ? Colors.amber.withOpacity(0.2)
+                          : Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      UserSession.userType == 'C' 
+                          ? 'CUSTOMER' 
+                          : UserSession.userType == 'A' 
+                              ? 'ADMIN' 
+                              : 'USER',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: UserSession.userType == 'A' 
+                            ? Colors.amber 
+                            : Colors.blue.shade300,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      UserSession.coBrName ?? '',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -557,45 +665,82 @@ class _DrawerScreenState extends State<DrawerScreen> {
   Widget _buildDrawerItem(String title, String route) {
     final isSelected = selectedSection == title;
     final isHovered = hoveredSection == title;
-    final iconPath = _iconPaths[title]!;
+    final itemColor = _menuColors[title] ?? AppColors.primaryColor;
+    final iconPath = _iconPaths[title];
 
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredSection = title),
       onExit: (_) => setState(() => hoveredSection = null),
-      child: InkWell(
-        onTap: () => _navigateTo(title, route),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color:
-                isSelected || isHovered
-                    ? AppColors.primaryColor.withOpacity(0.10)
-                    : Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected || isHovered
+              ? itemColor.withOpacity(0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(
+                  color: itemColor.withOpacity(0.3),
+                  width: 1,
+                )
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _navigateTo(title, route),
             borderRadius: BorderRadius.circular(10),
-          ),
-          child: ListTile(
-            leading: Image.asset(
-              iconPath,
-              width: 24,
-              height: 24,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  _fallbackIcons[title]!,
-                  color:
-                      isSelected || isHovered
-                          ? AppColors.primaryColor
-                          : Colors.grey[800],
-                );
-              },
-            ),
-            title: Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color:
-                    isSelected || isHovered
-                        ? AppColors.primaryColor
-                        : Colors.grey[800],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  // Icon
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: iconPath != null
+                        ? Image.asset(
+                            iconPath,
+                            width: 18,
+                            height: 18,
+                            color: isSelected || isHovered
+                                ? itemColor
+                                : Colors.grey.shade400,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                _fallbackIcons[title] ?? Icons.help,
+                                size: 18,
+                                color: isSelected || isHovered
+                                    ? itemColor
+                                    : Colors.grey.shade400,
+                              );
+                            },
+                          )
+                        : Icon(
+                            _fallbackIcons[title] ?? Icons.help,
+                            size: 18,
+                            color: isSelected || isHovered
+                                ? itemColor
+                                : Colors.grey.shade400,
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Title
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected || isHovered
+                            ? itemColor
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -604,32 +749,54 @@ class _DrawerScreenState extends State<DrawerScreen> {
     );
   }
 
-  /// 🔴 LOGOUT BUTTON (Different Color)
   Widget _buildLogoutButton() {
     final isHovered = hoveredSection == 'Logout';
 
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredSection = 'Logout'),
       onExit: (_) => setState(() => hoveredSection = null),
-      child: InkWell(
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, '/login');
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color:
-                isHovered ? Colors.red.withOpacity(0.08) : Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: isHovered ? Colors.red.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+                (route) => false,
+              );
+            },
             borderRadius: BorderRadius.circular(10),
-          ),
-          child: const ListTile(
-            leading: Icon(Icons.logout, color: Colors.red),
-            title: Text(
-              'Logout',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.red, // 🔴 Different color
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.logout,
+                      size: 18,
+                      color: isHovered ? Colors.red : Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isHovered ? Colors.red : Colors.grey.shade300,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

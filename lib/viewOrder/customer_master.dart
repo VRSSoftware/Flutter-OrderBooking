@@ -79,7 +79,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
+   
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -99,7 +99,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                 children: [
                   Text(
                     "Customer Master",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryBlue),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
                   ),
                   const SizedBox(height: 4),
                   Divider(color: Colors.grey.shade300, height: 1),
@@ -109,7 +109,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
             
             Expanded(
               child: _isLoading
-                  ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryBlue)))
+                  ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor)))
                   : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                       child: Form(
@@ -179,7 +179,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : onSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryBlue,
+                        backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -234,7 +234,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
             borderRadius: BorderRadius.circular(6),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+            borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
             borderRadius: BorderRadius.circular(6),
           ),
           labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
@@ -296,7 +296,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
               borderRadius: BorderRadius.circular(6),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
               borderRadius: BorderRadius.circular(6),
             ),
             labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
@@ -376,7 +376,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                       Navigator.of(context).pop();
                       Navigator.of(context).pop(true);
                     },
-                    child: const Text("OK", style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold)),
+                    child: const Text("OK", style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

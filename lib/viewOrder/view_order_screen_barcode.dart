@@ -609,7 +609,7 @@ Future<void> _saveOrderLocally() async {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
+  
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -623,7 +623,7 @@ Future<void> _saveOrderLocally() async {
             fontSize: 20,
           ),
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: AppColors.primaryColor,
         elevation: 4,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -636,7 +636,7 @@ Future<void> _saveOrderLocally() async {
               vertical: 8.0,
               horizontal: 16.0,
             ),
-            color: primaryBlue,
+            color: AppColors.primaryColor,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -740,7 +740,7 @@ Future<void> _saveOrderLocally() async {
   }
 
   Widget _buildTabBar() {
-    final Color primaryBlue = const Color(0xFF2196F3);
+  
 
     return Container(
       color: Colors.white,
@@ -762,7 +762,7 @@ Future<void> _saveOrderLocally() async {
                     bottom: BorderSide(
                       color:
                           _activeTab == ActiveTab.transaction
-                              ? primaryBlue
+                              ? AppColors.primaryColor
                               : Colors.transparent,
                       width: 2,
                     ),
@@ -774,7 +774,7 @@ Future<void> _saveOrderLocally() async {
                   style: TextStyle(
                     color:
                         _activeTab == ActiveTab.transaction
-                            ? primaryBlue
+                            ? AppColors.primaryColor
                             : Colors.grey,
                     fontWeight:
                         _activeTab == ActiveTab.transaction
@@ -803,7 +803,7 @@ onTap: isCustomerTabEnabled
                     bottom: BorderSide(
                       color:
                           _activeTab == ActiveTab.customerDetails
-                              ? primaryBlue
+                              ? AppColors.primaryColor
                               : Colors.transparent,
                       width: 2,
                     ),
@@ -815,7 +815,7 @@ onTap: isCustomerTabEnabled
                   style: TextStyle(
                     color:
                         _activeTab == ActiveTab.customerDetails
-                            ? primaryBlue
+                            ? AppColors.primaryColor
                             : Colors.grey,
                     fontWeight:
                         _activeTab == ActiveTab.customerDetails
@@ -832,7 +832,7 @@ onTap: isCustomerTabEnabled
     );
   }
 Widget _buildBottomButtons() {
-  final Color primaryBlue = const Color(0xFF2196F3);
+
 
   // CUSTOMER DETAILS TAB
   if (_activeTab == ActiveTab.customerDetails) {
@@ -900,7 +900,7 @@ Widget _buildBottomButtons() {
                   child: const Text(
                     "Add More Info",
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -958,7 +958,7 @@ Widget _buildBottomButtons() {
                 child: const Text(
                   "Add More",
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -979,7 +979,7 @@ Widget _buildBottomButtons() {
                   });
                 }
               },
-              icon: Icon(Icons.chevron_right, size: 18, color: primaryBlue),
+              icon: Icon(Icons.chevron_right, size: 18, color: AppColors.primaryColor),
               label: const Text(
                 "Save",
                 style: TextStyle(
@@ -1165,7 +1165,7 @@ class _DropdownData {
     final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/users/getLedger'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? ''}),
+      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? '',"ledKey":UserSession.userLedKey ?? '',"userType":UserSession.userType ?? ''}),
     );
     return response.statusCode == 200
         ? (jsonDecode(response.body) as List)
@@ -1723,12 +1723,12 @@ class _StyleCardState extends State<StyleCard> {
                         side: BorderSide(
                           color:
                               _hasQuantityChanged
-                                  ? Colors.blue
+                                  ? AppColors.primaryColor
                                   : Colors.grey.shade400,
                         ),
                         backgroundColor:
                             _hasQuantityChanged
-                                ? Colors.blue.withOpacity(0.1)
+                                ? AppColors.primaryColor.withOpacity(0.1)
                                 : Colors.grey.withOpacity(0.1),
                       ),
                       child:
@@ -1739,7 +1739,7 @@ class _StyleCardState extends State<StyleCard> {
                                   const Text(
                                     'Updating...',
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: AppColors.primaryColor,
                                       fontSize: 16.0,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1750,7 +1750,7 @@ class _StyleCardState extends State<StyleCard> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      color: Colors.blue,
+                                      color: AppColors.primaryColor,
                                     ),
                                   ),
                                 ],
@@ -1762,7 +1762,7 @@ class _StyleCardState extends State<StyleCard> {
                                     Icons.save,
                                     color:
                                         _hasQuantityChanged
-                                            ? Colors.blue
+                                            ? AppColors.primaryColor
                                             : Colors.grey.shade400,
                                   ),
                                   const SizedBox(width: 8),
@@ -1771,7 +1771,7 @@ class _StyleCardState extends State<StyleCard> {
                                     style: TextStyle(
                                       color:
                                           _hasQuantityChanged
-                                              ? Colors.blue
+                                              ? AppColors.primaryColor
                                               : Colors.grey.shade400,
                                       fontSize: 16.0,
                                       fontWeight: FontWeight.w600,
@@ -1909,7 +1909,7 @@ class _StyleCardState extends State<StyleCard> {
                               'Shade',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue,
+                                color: AppColors.primaryColor,
                                 fontSize: 14,
                               ),
                             ),
@@ -2469,7 +2469,7 @@ class _OrderForm extends StatefulWidget {
 }
 
 class _OrderFormState extends State<_OrderForm> {
-  final Color primaryBlue = const Color(0xFF2196F3);
+  
   final Color slate600 = const Color(0xFF64748B);
   final Color slateBorder = const Color(0xFFCBD5E1);
 
@@ -2658,8 +2658,8 @@ class _OrderFormState extends State<_OrderForm> {
         //           }
         //         },
         //         style: ElevatedButton.styleFrom(
-        //           backgroundColor: primaryBlue.withOpacity(0.1),
-        //           foregroundColor: primaryBlue,
+        //           backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+        //           foregroundColor: AppColors.primaryColor,
         //           elevation: 0,
         //           padding: const EdgeInsets.symmetric(vertical: 16),
         //           shape: RoundedRectangleBorder(
@@ -2677,7 +2677,7 @@ class _OrderFormState extends State<_OrderForm> {
         //       child: ElevatedButton(
         //         onPressed: widget.isSaving ? null : widget.saveOrder,
         //         style: ElevatedButton.styleFrom(
-        //           backgroundColor: primaryBlue,
+        //           backgroundColor: AppColors.primaryColor,
         //           foregroundColor: Colors.white,
         //           padding: const EdgeInsets.symmetric(vertical: 16),
         //           shape: RoundedRectangleBorder(
@@ -2740,7 +2740,7 @@ class _OrderFormState extends State<_OrderForm> {
           height: 54,
           width: 54,
           decoration: BoxDecoration(
-            color: primaryBlue,
+            color: AppColors.primaryColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: IconButton(
@@ -2899,7 +2899,7 @@ Widget buildTextField(
   VoidCallback? onTap,
   bool isText = false,
 }) {
-  final Color primaryBlue = const Color(0xFF2196F3);
+  
   final Color slateBorder = const Color(0xFFCBD5E1);
 
   return Padding(
@@ -2925,7 +2925,7 @@ Widget buildTextField(
           borderRadius: BorderRadius.circular(8),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: primaryBlue, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
           borderRadius: BorderRadius.circular(8),
         ),
         labelStyle: const TextStyle(
@@ -3050,7 +3050,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF2196F3);
+
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -3076,7 +3076,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: primaryBlue,
+                      color: AppColors.primaryColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -3157,7 +3157,7 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
                     child: ElevatedButton(
                       onPressed: _onSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryBlue,
+                        backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(

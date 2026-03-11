@@ -266,7 +266,7 @@ Widget _buildImageSection(String imageUrl) {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.blue,
+                color: AppColors.primaryColor,
               ),
             ),
 
@@ -414,7 +414,7 @@ Widget _buildImageSection(String imageUrl) {
         SizedBox(width: 8),
         ElevatedButton(
           onPressed: () => _showCustomerMasterDialog(context),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.lightBlue),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryColor),
           child: Text('+ Add'),
         ),
       ],
