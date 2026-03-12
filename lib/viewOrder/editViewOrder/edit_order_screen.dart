@@ -1,3 +1,672 @@
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:google_fonts/google_fonts.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/models/CatalogOrderData.dart';
+// import 'package:vrs_erp/models/OrderMatrix.dart';
+// import 'package:vrs_erp/models/catalog.dart';
+// import 'package:vrs_erp/models/keyName.dart';
+// import 'package:vrs_erp/services/app_services.dart';
+// import 'package:vrs_erp/viewOrder/editViewOrder/addMoreItemsForEdit.dart';
+// import 'package:vrs_erp/viewOrder/editViewOrder/customer_details_tab.dart';
+// import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
+// import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab3.dart';
+
+// enum ActiveTab { transaction, customerDetails }
+
+// class EditOrderScreen extends StatefulWidget {
+//   final String docId;
+
+//   const EditOrderScreen({Key? key, required this.docId}) : super(key: key);
+
+//   @override
+//   _EditOrderScreenState createState() => _EditOrderScreenState();
+// }
+
+// class _EditOrderScreenState extends State<EditOrderScreen> {
+//   ActiveTab _activeTab = ActiveTab.transaction;
+//   late PageController _pageController;
+
+//   double totalAmount = 0;
+//   int totalItems = 0;
+//   int totalQuantity = 0;
+
+//   bool isOrderItemsLoaded = false;
+
+//   @override
+//   void initState() {
+//     super.initState();
+
+//     _pageController = PageController(initialPage: 0);
+//     // fetchOrderItems(doc_Id: widget.docId);
+//     if (widget.docId != '-1') {
+//       EditOrderData.clear();
+//       EditOrderData.doc_id = widget.docId;
+//       fetchOrderItems(doc_Id: widget.docId);
+//       fetchOrderHeaderDetails(widget.docId);
+//     } else {
+//       setState(() {
+//         isOrderItemsLoaded = true;
+//       });
+//     }
+//   }
+
+//   @override
+//   void dispose() {
+//     _pageController.dispose();
+//     super.dispose();
+//   }
+
+//   Future<void> _saveEditedOrder() async {
+//     final payload = {
+//       "doc_id": EditOrderData.doc_id,
+//       "login_id": UserSession.userName ?? 'admin',
+//       "coBr_id": UserSession.coBrId ?? '01',
+//       "fcYr_id": UserSession.userFcYr ?? '25',
+//       "data": {
+//         "delivarydate": EditOrderData.deliveryDate,
+//         // "duedate": EditOrderData.dueDate,
+//         "broker": EditOrderData.brokerKey,
+//         "comission": EditOrderData.commission,
+//         "transporter": EditOrderData.transporterKey,
+//         "remark": EditOrderData.remark,
+//         "delivaryday": EditOrderData.deliveryDays,
+//         "customer": EditOrderData.partyKey,
+//       },
+//       "items":
+//           EditOrderData.data.expand((item) {
+//             final styleCode = item.catalog.styleCode;
+//             final shade = item.catalog.shadeName;
+//             final mrp = item.catalog.mrp;
+//             final wsp = item.catalog.wsp;
+//             final barcode = item.catalog.barcode;
+//             final totalQty = item.catalog.clqty;
+//             final List<Map<String, dynamic>> matrixItems = [];
+//             for (int i = 0; i < item.orderMatrix.shades.length; i++) {
+//               for (int j = 0; j < item.orderMatrix.sizes.length; j++) {
+//                 final matrixEntry = item.orderMatrix.matrix[i][j];
+//                 final split = matrixEntry.split(',');
+//                 final qty =
+//                     int.tryParse(split.length > 2 ? split[2] : '0') ?? 0;
+//                 if (qty > 0) {
+//                   matrixItems.add({
+//                     "style_code": styleCode,
+//                     "shade": item.orderMatrix.shades[i],
+//                     "size": item.orderMatrix.sizes[j],
+//                     "qty": qty,
+//                     "totQty": totalQty,
+//                     "mrp": double.tryParse(split[0]) ?? mrp,
+//                     "wsp": double.tryParse(split[1]) ?? wsp,
+//                     "barcode": barcode,
+//                     "note": "",
+//                   });
+//                 }
+//               }
+//             }
+//             return matrixItems;
+//           }).toList(),
+//     };
+
+//     try {
+//       final response = await http.post(
+//         Uri.parse(
+//           '${AppConstants.BASE_URL}/orderRegister/saveEditedSalesOrder',
+//         ),
+//         headers: {'Content-Type': 'application/json'},
+//         body: jsonEncode(payload),
+//       );
+//       if (response.statusCode == 200) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           const SnackBar(content: Text('Order updated successfully')),
+//         );
+//       } else {
+//         ScaffoldMessenger.of(
+//           context,
+//         ).showSnackBar(SnackBar(content: Text('Failed: ${response.body}')));
+//       }
+//     } catch (e) {
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+//     }
+//   }
+
+//   Future<void> fetchOrderHeaderDetails(String docId) async {
+//     try {
+//       final response = await http.post(
+//         Uri.parse('${AppConstants.BASE_URL}/users/detailsForEdit'),
+//         headers: {'Content-Type': 'application/json'},
+//         body: jsonEncode({"doc_id": docId}),
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = jsonDecode(response.body);
+//         EditOrderData.partyKey = data['Led_Key'] ?? '';
+//         EditOrderData.partyName = data['partyName'] ?? '';
+//         EditOrderData.brokerKey = data['Broker_Key'] ?? '';
+//         EditOrderData.transporterKey = data['Trsp_Key'] ?? '';
+//         EditOrderData.commission = data['Broker_Comm']?.toString() ?? '';
+//         EditOrderData.deliveryDays = data['dlv_Days']?.toString() ?? '';
+//         EditOrderData.deliveryDate =
+//             data['DlvDate']?.toString().substring(0, 10) ?? '';
+//         EditOrderData.remark = data['Remark'] ?? '';
+
+//         final brokerRes = await ApiService.fetchLedgers(
+//           ledCat: 'B',
+//           coBrId: UserSession.coBrId ?? '',
+//         );
+//         EditOrderData.brokerList =
+//             (brokerRes['result'] as List<KeyName>)
+//                 .map((e) => {"key": e.key, "name": e.name})
+//                 .toList();
+
+//         final transporterRes = await ApiService.fetchLedgers(
+//           ledCat: 'T',
+//           coBrId: UserSession.coBrId ?? '',
+//         );
+//         EditOrderData.transporterList =
+//             (transporterRes['result'] as List<KeyName>)
+//                 .map((e) => {"key": e.key, "name": e.name})
+//                 .toList();
+
+//         EditOrderData.brokerName =
+//             EditOrderData.brokerList.firstWhere(
+//               (e) => e['key'] == EditOrderData.brokerKey,
+//               orElse: () => {"name": ""},
+//             )['name']!;
+
+//         EditOrderData.transporterName =
+//             EditOrderData.transporterList.firstWhere(
+//               (e) => e['key'] == EditOrderData.transporterKey,
+//               orElse: () => {"name": ""},
+//             )['name']!;
+//       }
+//     } catch (e) {
+//       print('Error fetching header details: $e');
+//     }
+//   }
+
+//   // ✅ API Method
+//   Future<void> fetchOrderItems({required String doc_Id}) async {
+//     // docId = doc_Id;
+//     if (doc_Id != '-1') {
+//       EditOrderData.doc_id = doc_Id;
+//       try {
+//         final response = await http.post(
+//           Uri.parse('${AppConstants.BASE_URL}/orderRegister/editOrderData2'),
+//           headers: {'Content-Type': 'application/json'},
+//           body: json.encode({"doc_id": doc_Id}),
+//         );
+
+//         print(
+//           'Fetch API Response: ${response.statusCode}, Body: ${response.body}',
+//         );
+
+//         if (response.statusCode == 200) {
+//           final items = json.decode(response.body);
+//           if (items is List && items.isNotEmpty) {
+//             final groupedByStyle = <String, List<dynamic>>{};
+//             for (var item in items) {
+//               final styleCode =
+//                   item['styleCode']?.toString() ?? 'No Style Code';
+//               groupedByStyle.putIfAbsent(styleCode, () => []).add(item);
+//             }
+//             EditOrderData.data =
+//                 groupedByStyle.entries.map((entry) {
+//                   final catalogOrder = _convertToCatalogOrderData(
+//                     entry.key,
+//                     entry.value,
+//                   );
+//                   print(
+//                     'Fetched style: ${entry.key}, Matrix: ${catalogOrder.orderMatrix.matrix}',
+//                   );
+//                   return catalogOrder;
+//                 }).toList();
+//             calculateTotals();
+//           } else {
+//             print('No items found in response');
+//             EditOrderData.data = [];
+//           }
+//         } else {
+//           print('API Error: ${response.statusCode}');
+//           EditOrderData.data = [];
+//         }
+//       } catch (e) {
+//         print('Error fetching order items: $e');
+//         EditOrderData.data = [];
+//       }
+//     }
+//     setState(() {
+//       isOrderItemsLoaded = true;
+//     });
+//   }
+
+//   void calculateTotals() {
+//     double totalAmt = 0;
+//     int totalQty = 0;
+//     int totalItms = 0;
+
+//     for (var item in EditOrderData.data) {
+//       totalAmt += item.catalog.wsp * item.catalog.clqty;
+//       totalQty += item.catalog.clqty;
+//       totalItms += 1;
+//     }
+
+//     setState(() {
+//       totalAmount = totalAmt;
+//       totalQuantity = totalQty;
+//       totalItems = totalItms;
+//     });
+//   }
+
+//   CatalogOrderData _convertToCatalogOrderData(
+//     String styleKey,
+//     List<dynamic> items,
+//   ) {
+//     print('Converting to CatalogOrderData for style: $styleKey, Items: $items');
+//     if (items.isEmpty) {
+//       print('Error: Empty items list for style $styleKey');
+//       return CatalogOrderData(
+//         catalog: Catalog(
+//           itemSubGrpKey: '',
+//           itemSubGrpName: '',
+//           itemKey: '',
+//           itemName: 'Unknown',
+//           brandKey: '',
+//           brandName: '',
+//           styleKey: styleKey,
+//           styleCode: styleKey,
+//           shadeKey: '',
+//           shadeName: '',
+//           styleSizeId: '',
+//           sizeName: '',
+//           mrp: 0.0,
+//           wsp: 0.0,
+//           onlyMRP: 0.0,
+//           clqty: 0,
+//           total: 0,
+//           fullImagePath: '/NoImage.jpg',
+//           remark: '',
+//           imageId: '',
+//           sizeDetails: '',
+//           sizeDetailsWithoutWSp: '',
+//           sizeWithMrp: '',
+//           styleCodeWithcount: styleKey,
+//           onlySizes: '',
+//           sizeWithWsp: '',
+//           createdDate: '',
+//           shadeImages: '',
+//           upcoming_Stk: '0',
+//         ),
+//         orderMatrix: OrderMatrix(shades: [], sizes: [], matrix: []),
+//       );
+//     }
+
+//     final shades =
+//         items
+//             .map((i) => i['shadeName']?.toString() ?? '')
+//             .where((s) => s.isNotEmpty)
+//             .toSet()
+//             .toList();
+//     final sizes =
+//         items
+//             .map((i) => i['sizeName']?.toString() ?? '')
+//             .where((s) => s.isNotEmpty)
+//             .toSet()
+//             .toList();
+//     final firstItem = items.first;
+
+//     if (shades.isEmpty || sizes.isEmpty) {
+//       print(
+//         'Error: Empty shades or sizes for style $styleKey (Shades: $shades, Sizes: $sizes)',
+//       );
+//     }
+
+//     final matrix = List.generate(shades.length, (shadeIndex) {
+//       return List.generate(sizes.length, (sizeIndex) {
+//         final item = items.firstWhere(
+//           (i) =>
+//               (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+//               (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+//           orElse: () => {},
+//         );
+//         final mrp = item['mrp']?.toString() ?? '0';
+//         final wsp = item['wsp']?.toString() ?? '0';
+//         final qty = item['clqty']?.toString() ?? '0';
+//         final stkQty = item['data2']?.toString() ?? '0';
+//         final matrixEntry = '$mrp,$wsp,$qty,$stkQty';
+//         print(
+//           'Matrix entry for $styleKey/$shadeIndex/$sizeIndex: $matrixEntry',
+//         );
+//         return matrixEntry;
+//       });
+//     });
+
+//     final catalog = Catalog(
+//       itemSubGrpKey: '',
+//       itemSubGrpName: '',
+//       itemKey: '',
+//       itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+//       brandKey: '',
+//       brandName: '',
+//       styleKey: styleKey,
+//       styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+//       shadeKey: '',
+//       shadeName: shades.join(','),
+//       styleSizeId: '',
+//       sizeName: sizes.join(','),
+//       mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+//       wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+//       onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+//       clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+//       total: items.fold(
+//         0,
+//         (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+//       ),
+//       fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+//       remark: firstItem['remark']?.toString() ?? '',
+//       imageId: '',
+//       sizeDetails: sizes
+//           .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+//           .join(','),
+//       sizeDetailsWithoutWSp: sizes
+//           .map((s) => '$s (${firstItem['mrp']})')
+//           .join(','),
+//       sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+//       styleCodeWithcount: styleKey,
+//       onlySizes: sizes.join(','),
+//       sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+//       createdDate: '',
+//       shadeImages: '',
+//       upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '0',
+//       barcode: '',
+//     );
+
+//     print('Catalog created for $styleKey: ${catalog.toJson()}');
+//     return CatalogOrderData(
+//       catalog: catalog,
+//       orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
+//     );
+//   }
+
+//   // ✅ Tab Bar Widget
+//   Widget _buildTabBar() {
+//     return Column(
+//       children: [
+//         Row(
+//           children: [
+//             Expanded(
+//               child: TextButton(
+//                 onPressed: () {
+//                   setState(() {
+//                     _activeTab = ActiveTab.transaction;
+//                     _pageController.animateToPage(
+//                       0,
+//                       duration: Duration(milliseconds: 300),
+//                       curve: Curves.easeInOut,
+//                     );
+//                   });
+//                 },
+//                 child: Text('Transaction'),
+//                 style: TextButton.styleFrom(
+//                   foregroundColor:
+//                       _activeTab == ActiveTab.transaction
+//                           ? AppColors.primaryColor
+//                           : Colors.grey,
+//                   padding: EdgeInsets.symmetric(vertical: 16),
+//                 ),
+//               ),
+//             ),
+//             Expanded(
+//               child: TextButton(
+//                 onPressed: () {
+//                   setState(() {
+//                     _activeTab = ActiveTab.customerDetails;
+//                     _pageController.animateToPage(
+//                       1,
+//                       duration: Duration(milliseconds: 300),
+//                       curve: Curves.easeInOut,
+//                     );
+//                   });
+//                 },
+//                 child: Text('Customer Details'),
+//                 style: TextButton.styleFrom(
+//                   foregroundColor:
+//                       _activeTab == ActiveTab.customerDetails
+//                           ? AppColors.primaryColor
+//                           : Colors.grey,
+//                   padding: EdgeInsets.symmetric(vertical: 16),
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//         Container(
+//           height: 2,
+//           color: Colors.grey[300],
+//           child: AnimatedAlign(
+//             duration: Duration(milliseconds: 300),
+//             alignment:
+//                 _activeTab == ActiveTab.transaction
+//                     ? Alignment.centerLeft
+//                     : Alignment.centerRight,
+//             child: Container(
+//               width: MediaQuery.of(context).size.width / 2,
+//               height: 2,
+//               color: AppColors.primaryColor,
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // ✅ Bottom Navigation Buttons
+//   Widget _buildBottomButtons() {
+//     return SafeArea(
+//       top: false,
+//       child: Padding(
+//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//         child: Row(
+//           children: [
+//             Expanded(
+//               child: ElevatedButton(
+//                 onPressed: () {
+//                   if (_activeTab == ActiveTab.customerDetails) {
+//                     _pageController.previousPage(
+//                       duration: const Duration(milliseconds: 300),
+//                       curve: Curves.easeInOut,
+//                     );
+//                   }
+//                 },
+//                 style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+//                 child: const Text('Back'),
+//               ),
+//             ),
+//             const SizedBox(width: 16),
+//             Expanded(
+//               child:
+//                   _activeTab == ActiveTab.transaction
+//                       ? ElevatedButton(
+//                         onPressed: () {
+//                           _pageController.nextPage(
+//                             duration: const Duration(milliseconds: 300),
+//                             curve: Curves.easeInOut,
+//                           );
+//                         },
+//                         style: ElevatedButton.styleFrom(
+//                           backgroundColor: AppColors.primaryColor,
+//                         ),
+//                         child: const Text('Next'),
+//                       )
+//                       : ElevatedButton(
+//                         onPressed: () {
+//                           _saveEditedOrder();
+//                         },
+//                         style: ElevatedButton.styleFrom(
+//                           backgroundColor: AppColors.primaryColor,
+//                         ),
+//                         child: const Text('Save'),
+//                       ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   // ✅ AppBar with Bottom Info
+//   AppBar _buildAppBar() {
+//     return AppBar(
+//       title: const Text(
+//         'Update Order1234',
+//         style: TextStyle(color: Colors.white),
+//       ),
+//       backgroundColor: AppColors.primaryColor,
+//       elevation: 1,
+//       leading: IconButton(
+//         icon: const Icon(Icons.arrow_back, color: Colors.white),
+//         onPressed: () => Navigator.pop(context),
+//       ),
+//       bottom: PreferredSize(
+//         preferredSize: const Size.fromHeight(48.0),
+//         child: Container(
+//           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+//           color: AppColors.primaryColor,
+//           child: Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//             children: [
+//               Flexible(
+//                 child: Text(
+//                   'Total: ₹${totalAmount.toStringAsFixed(2)}',
+//                   style: GoogleFonts.roboto(
+//                     color: Colors.white,
+//                     fontSize: 12,
+//                     fontWeight: FontWeight.w500,
+//                   ),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//               ),
+//               _buildDivider(),
+//               Flexible(
+//                 child: Text(
+//                   'Items: $totalItems',
+//                   style: GoogleFonts.roboto(
+//                     color: Colors.white,
+//                     fontSize: 12,
+//                     fontWeight: FontWeight.w500,
+//                   ),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//               ),
+//               _buildDivider(),
+//               Flexible(
+//                 child: Text(
+//                   'Qty: $totalQuantity',
+//                   style: GoogleFonts.roboto(
+//                     color: Colors.white,
+//                     fontSize: 12,
+//                     fontWeight: FontWeight.w500,
+//                   ),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildDivider() {
+//     return Container(
+//       width: 1,
+//       height: 20,
+//       color: Colors.white.withOpacity(0.5),
+//       margin: const EdgeInsets.symmetric(horizontal: 8.0),
+//     );
+//   }
+
+//   // ✅ Main Build
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: _buildAppBar(),
+//       body: Column(
+//         children: [
+//           _buildTabBar(),
+//           Expanded(
+//             child:
+//                 isOrderItemsLoaded
+//                     ? PageView(
+//                       controller: _pageController,
+//                       onPageChanged: (index) {
+//                         setState(() {
+//                           _activeTab =
+//                               index == 0
+//                                   ? ActiveTab.transaction
+//                                   : ActiveTab.customerDetails;
+//                         });
+//                       },
+//                       children: [TransactionTab3(), CustomerDetailTab()],
+//                     )
+//                     : const Center(child: CircularProgressIndicator()),
+//           ),
+//           _buildBottomButtons(),
+//         ],
+//       ),
+//       floatingActionButton: Padding(
+//         padding: const EdgeInsets.only(bottom: 40),
+//         child: FloatingActionButton(
+//           onPressed: _handleAddAction,
+//           backgroundColor: AppColors.primaryColor,
+//           child: const Icon(Icons.add, color: Colors.white),
+//           tooltip: 'Add New Item',
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _handleAddAction() {
+//     Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder:
+//             (context) => AddMoreItemsForEdit(
+//               // onFilterPressed: (String filter) {},
+//               // edit: true,
+//             ),
+//       ),
+//     ).then((result) {
+//       if (result != null && result is List<Map<String, dynamic>>) {
+//         setState(() {
+//           final groupedByStyle = <String, List<dynamic>>{};
+//           for (var item in result) {
+//             final styleCode = item['styleCode']?.toString() ?? 'No Style Code';
+//             groupedByStyle.putIfAbsent(styleCode, () => []).add(item);
+//           }
+
+//           for (var entry in groupedByStyle.entries) {
+//             final styleCode = entry.key;
+//             final items = entry.value;
+//             final existingIndex = EditOrderData.data.indexWhere(
+//               (order) => order.catalog.styleCode == styleCode,
+//             );
+//             final catalogOrder = _convertToCatalogOrderData(styleCode, items);
+//             if (existingIndex != -1) {
+//               EditOrderData.data[existingIndex] = catalogOrder;
+//             } else {
+//               EditOrderData.data.add(catalogOrder);
+//             }
+//           }
+//         });
+//       }
+//     });
+//   }
+// }
+
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,8 +680,6 @@ import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/addMoreItemsForEdit.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/customer_details_tab.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
-import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab.dart';
-import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab2.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab3.dart';
 
 enum ActiveTab { transaction, customerDetails }
@@ -35,13 +702,14 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   int totalQuantity = 0;
 
   bool isOrderItemsLoaded = false;
+  bool isCustomerTabEnabled = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-
     _pageController = PageController(initialPage: 0);
-    // fetchOrderItems(doc_Id: widget.docId);
+    
     if (widget.docId != '-1') {
       EditOrderData.clear();
       EditOrderData.doc_id = widget.docId;
@@ -61,6 +729,10 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   }
 
   Future<void> _saveEditedOrder() async {
+    if (_isSaving) return;
+    
+    setState(() => _isSaving = true);
+
     final payload = {
       "doc_id": EditOrderData.doc_id,
       "login_id": UserSession.userName ?? 'admin',
@@ -68,7 +740,6 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
       "fcYr_id": UserSession.userFcYr ?? '25',
       "data": {
         "delivarydate": EditOrderData.deliveryDate,
-        // "duedate": EditOrderData.dueDate,
         "broker": EditOrderData.brokerKey,
         "comission": EditOrderData.commission,
         "transporter": EditOrderData.transporterKey,
@@ -118,20 +789,53 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
+      
+      setState(() => _isSaving = false);
+      
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order updated successfully')),
-        );
+        _showSuccessDialog();
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed: ${response.body}')));
+        _showErrorDialog('Failed: ${response.body}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      setState(() => _isSaving = false);
+      _showErrorDialog('Error: $e');
     }
+  }
+
+void _showSuccessDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Success'),
+      content: Text('Order Updated Successfully'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context, true); // Return to Register page with result = true
+          },
+          child: Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> fetchOrderHeaderDetails(String docId) async {
@@ -189,9 +893,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     }
   }
 
-  // ✅ API Method
   Future<void> fetchOrderItems({required String doc_Id}) async {
-    // docId = doc_Id;
     if (doc_Id != '-1') {
       EditOrderData.doc_id = doc_Id;
       try {
@@ -199,10 +901,6 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
           Uri.parse('${AppConstants.BASE_URL}/orderRegister/editOrderData2'),
           headers: {'Content-Type': 'application/json'},
           body: json.encode({"doc_id": doc_Id}),
-        );
-
-        print(
-          'Fetch API Response: ${response.statusCode}, Body: ${response.body}',
         );
 
         if (response.statusCode == 200) {
@@ -220,18 +918,13 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
                     entry.key,
                     entry.value,
                   );
-                  print(
-                    'Fetched style: ${entry.key}, Matrix: ${catalogOrder.orderMatrix.matrix}',
-                  );
                   return catalogOrder;
                 }).toList();
             calculateTotals();
           } else {
-            print('No items found in response');
             EditOrderData.data = [];
           }
         } else {
-          print('API Error: ${response.statusCode}');
           EditOrderData.data = [];
         }
       } catch (e) {
@@ -266,9 +959,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     String styleKey,
     List<dynamic> items,
   ) {
-    print('Converting to CatalogOrderData for style: $styleKey, Items: $items');
     if (items.isEmpty) {
-      print('Error: Empty items list for style $styleKey');
       return CatalogOrderData(
         catalog: Catalog(
           itemSubGrpKey: '',
@@ -319,12 +1010,6 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
             .toList();
     final firstItem = items.first;
 
-    if (shades.isEmpty || sizes.isEmpty) {
-      print(
-        'Error: Empty shades or sizes for style $styleKey (Shades: $shades, Sizes: $sizes)',
-      );
-    }
-
     final matrix = List.generate(shades.length, (shadeIndex) {
       return List.generate(sizes.length, (sizeIndex) {
         final item = items.firstWhere(
@@ -337,11 +1022,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
         final wsp = item['wsp']?.toString() ?? '0';
         final qty = item['clqty']?.toString() ?? '0';
         final stkQty = item['data2']?.toString() ?? '0';
-        final matrixEntry = '$mrp,$wsp,$qty,$stkQty';
-        print(
-          'Matrix entry for $styleKey/$shadeIndex/$sizeIndex: $matrixEntry',
-        );
-        return matrixEntry;
+        return '$mrp,$wsp,$qty,$stkQty';
       });
     });
 
@@ -385,132 +1066,223 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
       barcode: '',
     );
 
-    print('Catalog created for $styleKey: ${catalog.toJson()}');
     return CatalogOrderData(
       catalog: catalog,
       orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
     );
   }
 
-  // ✅ Tab Bar Widget
+  // ✅ Tab Bar Widget - ViewOrder Design
   Widget _buildTabBar() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _activeTab = ActiveTab.transaction;
-                    _pageController.animateToPage(
-                      0,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  });
-                },
-                child: Text('Transaction'),
-                style: TextButton.styleFrom(
-                  foregroundColor:
-                      _activeTab == ActiveTab.transaction
-                          ? Colors.blue
-                          : Colors.grey,
-                  padding: EdgeInsets.symmetric(vertical: 16),
+    return Container(
+      color: Colors.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeTab = ActiveTab.transaction;
+                  isCustomerTabEnabled = false;
+                  _pageController.animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          _activeTab == ActiveTab.transaction
+                              ? AppColors.primaryColor
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Transaction',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color:
+                        _activeTab == ActiveTab.transaction
+                            ? AppColors.primaryColor
+                            : Colors.grey,
+                    fontWeight:
+                        _activeTab == ActiveTab.transaction
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _activeTab = ActiveTab.customerDetails;
-                    _pageController.animateToPage(
-                      1,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  });
-                },
-                child: Text('Customer Details'),
-                style: TextButton.styleFrom(
-                  foregroundColor:
-                      _activeTab == ActiveTab.customerDetails
-                          ? Colors.blue
-                          : Colors.grey,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-        Container(
-          height: 2,
-          color: Colors.grey[300],
-          child: AnimatedAlign(
-            duration: Duration(milliseconds: 300),
-            alignment:
-                _activeTab == ActiveTab.transaction
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
-            child: Container(
-              width: MediaQuery.of(context).size.width / 2,
-              height: 2,
-              color: Colors.blue,
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ Bottom Navigation Buttons
-  Widget _buildBottomButtons() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_activeTab == ActiveTab.customerDetails) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                child: const Text('Back'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child:
-                  _activeTab == ActiveTab.transaction
-                      ? ElevatedButton(
-                        onPressed: () {
-                          _pageController.nextPage(
+          Expanded(
+            child: GestureDetector(
+              onTap:
+                  isCustomerTabEnabled
+                      ? () {
+                        setState(() {
+                          _activeTab = ActiveTab.customerDetails;
+                          _pageController.animateToPage(
+                            1,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                           );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                        ),
-                        child: const Text('Next'),
-                      )
-                      : ElevatedButton(
-                        onPressed: () {
-                          _saveEditedOrder();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                        ),
-                        child: const Text('Save'),
+                        });
+                      }
+                      : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          _activeTab == ActiveTab.customerDetails
+                              ? AppColors.primaryColor
+                              : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Customer Details',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color:
+                        _activeTab == ActiveTab.customerDetails
+                            ? AppColors.primaryColor
+                            : Colors.grey,
+                    fontWeight:
+                        _activeTab == ActiveTab.customerDetails
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Bottom Navigation Buttons - ViewOrder Design
+  Widget _buildBottomButtons() {
+    if (_activeTab == ActiveTab.customerDetails) {
+      return Container(
+        color: AppColors.primaryColor,
+        child: SizedBox(
+          height: 45,
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  color: const Color.fromARGB(255, 220, 239, 248),
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _activeTab = ActiveTab.transaction;
+                        _pageController.animateToPage(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      });
+                    },
+                    child: const Text(
+                      "Back to Items",
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: _isSaving ? null : _saveEditedOrder,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          "Update Order",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      color: AppColors.primaryColor,
+      child: SizedBox(
+        height: 45,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color.fromARGB(255, 220, 239, 248),
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: AppColors.primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: TextButton(
+                onPressed: () {
+                  if (_activeTab == ActiveTab.transaction) {
+                    setState(() {
+                      isCustomerTabEnabled = true;
+                      _activeTab = ActiveTab.customerDetails;
+                      _pageController.animateToPage(
+                        1,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    });
+                  }
+                },
+                child: const Text(
+                  "Next",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -519,67 +1291,113 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   }
 
   // ✅ AppBar with Bottom Info
-  AppBar _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'Update Orderaarrr',
-        style: TextStyle(color: Colors.white),
+ AppBar _buildAppBar() {
+  return AppBar(
+    title: const Text(
+      'Update Order',
+      style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 18, // Reduced from 20 to 18
       ),
-      backgroundColor: AppColors.primaryColor,
-      elevation: 1,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48.0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-          color: AppColors.primaryColor,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  'Total: ₹${totalAmount.toStringAsFixed(2)}',
-                  style: GoogleFonts.roboto(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              _buildDivider(),
-              Flexible(
-                child: Text(
-                  'Items: $totalItems',
-                  style: GoogleFonts.roboto(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              _buildDivider(),
-              Flexible(
-                child: Text(
-                  'Qty: $totalQuantity',
-                  style: GoogleFonts.roboto(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    ),
+    backgroundColor: AppColors.primaryColor,
+    elevation: 4,
+    toolbarHeight: 50, // Reduced toolbar height (default is 56)
+    leading: IconButton(
+      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22), // Slightly smaller icon
+      onPressed: () => Navigator.of(context).pop(),
+      padding: const EdgeInsets.all(12), // Reduced padding
+      constraints: const BoxConstraints(),
+    ),
+    actions: [
+      if (_activeTab == ActiveTab.transaction)
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(18), // Slightly smaller radius
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 20, // Reduced from 22 to 20
+            ),
+            onPressed: _handleAddAction,
+            tooltip: 'Add New Item',
+            splashRadius: 18,
+            padding: const EdgeInsets.all(6), // Reduced padding
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
           ),
         ),
+    ],
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(49.0),
+      child: Column(
+        children: [
+          // Divider line
+          Container(
+            height: 1,
+            color: Colors.white.withOpacity(0.2),
+          ),
+          // Bottom bar
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            color: AppColors.maroon,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Total: ₹${totalAmount.toStringAsFixed(2)}',
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                _buildDivider(),
+                Flexible(
+                  child: Text(
+                    'Items: $totalItems',
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                _buildDivider(),
+                Flexible(
+                  child: Text(
+                    'Qty: $totalQuantity',
+                    style: GoogleFonts.roboto(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDivider() {
     return Container(
@@ -594,52 +1412,45 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildTabBar(),
-          Expanded(
-            child:
-                isOrderItemsLoaded
-                    ? PageView(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _activeTab =
-                              index == 0
-                                  ? ActiveTab.transaction
-                                  : ActiveTab.customerDetails;
-                        });
-                      },
-                      children: [TransactionTab3(), CustomerDetailTab()],
-                    )
-                    : const Center(child: CircularProgressIndicator()),
-          ),
-          _buildBottomButtons(),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 40),
-        child: FloatingActionButton(
-          onPressed: _handleAddAction,
-          backgroundColor: Colors.blue,
-          child: const Icon(Icons.add, color: Colors.white),
-          tooltip: 'Add New Item',
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTabBar(),
+            Expanded(
+              child:
+                  isOrderItemsLoaded
+                      ? PageView(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: (index) {
+                            setState(() {
+                              _activeTab =
+                                  index == 0
+                                      ? ActiveTab.transaction
+                                      : ActiveTab.customerDetails;
+                            });
+                          },
+                          children: [
+                            TransactionTab3(onUpdate: calculateTotals),
+                            const CustomerDetailTab(),
+                          ],
+                        )
+                      : const Center(child: CircularProgressIndicator()),
+            ),
+            _buildBottomButtons(),
+          ],
         ),
       ),
+      
     );
   }
 
   void _handleAddAction() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder:
-            (context) => AddMoreItemsForEdit(
-              // onFilterPressed: (String filter) {},
-              // edit: true,
-            ),
-      ),
+      MaterialPageRoute(builder: (context) => AddMoreItemsForEdit()),
     ).then((result) {
       if (result != null && result is List<Map<String, dynamic>>) {
         setState(() {
@@ -662,6 +1473,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
               EditOrderData.data.add(catalogOrder);
             }
           }
+          calculateTotals();
         });
       }
     });

@@ -785,7 +785,7 @@ Widget build(BuildContext context) {
                             end: Alignment.bottomRight,
                             colors: [
                               AppColors.primaryColor,
-                              AppColors.maroon,
+                              AppColors.Prime,
                             ],
                           ),
                           borderRadius: BorderRadius.only(
@@ -823,7 +823,7 @@ Widget build(BuildContext context) {
                             // Welcome text
                             Center(
                               child: Text(
-                                "Welcome Back!",
+                                "VRS SOFTWARE",
                                 style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
@@ -944,7 +944,7 @@ Widget build(BuildContext context) {
                                   gradient: LinearGradient(
                                     colors: [
                                       AppColors.primaryColor,
-                                      AppColors.maroon,
+                                      AppColors.Prime,
                                     ],
                                     begin: Alignment.centerLeft,
                                     end: Alignment.centerRight,

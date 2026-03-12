@@ -329,13 +329,18 @@ class _DrawerScreenState extends State<DrawerScreen> {
 
   final Map<String, String> _iconPaths = {
     'Home': 'assets/images/home.png',
-    'Dashboard': 'assets/images/dashboard.png',
-    'Order Booking': 'assets/images/orderbooking.png',
     'Catalog': 'assets/images/catalog.png',
+    'Order Booking': 'assets/images/orderbooking.png',
     'Order Register': 'assets/images/register.png',
     'Stock Report': 'assets/images/report.png',
+    'Dashboard': 'assets/images/dashboard.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
+    // 'Sale Bill': 'assets/images/salebill.png',
+    // 'Sale Bill Register': 'assets/images/sale.png',
+    // 'Production': 'assets/images/production.png',
+    //  'Packing': 'assets/images/packing.png',
+    // 'Packing Register': 'assets/images/packing_register.pngg',
   };
 
   final Map<String, IconData> _fallbackIcons = {
@@ -415,10 +420,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 600;
-    final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.75);
+    final drawerWidth = screenWidth * (isLargeScreen ? 0.3 : 0.35);
 
     return Drawer(
-      width: drawerWidth.clamp(280.0, 400.0),
+      width: drawerWidth.clamp(230.0, 350.0),
       backgroundColor: Color(0xFF1A1A2E), // Dark navy background
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -442,8 +447,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF16213E), // Dark blue
-                  Color(0xFF0F3460), // Medium blue
+                  AppColors.darkPurple, // Dark blue
+                  AppColors.primaryColor, // Medium blue
                 ],
               ),
               borderRadius: const BorderRadius.only(

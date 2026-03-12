@@ -995,7 +995,7 @@ Widget _buildBottomButtons() {
               },
               icon: Icon(Icons.chevron_right, size: 18, color: AppColors.white),
               label: const Text(
-                "Save",
+                "Confirm",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -1502,67 +1502,211 @@ class _StyleCard2State extends State<StyleCard2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Row(
+      Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 0.1, vertical: 5.0),
+  child: Container(
+     width: 800, // Ensures card takes full width
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Colors.grey.shade300, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              AppColors.primaryColor.withOpacity(0.02),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4.0),
-                ),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.3,
-                  child: AspectRatio(
-                    aspectRatio: 3 / 4,
-                    child: GestureDetector(
-                      onTap: () {
-                        final imageUrl =
-                            catalog.fullImagePath.contains("http")
-                                ? catalog.fullImagePath
-                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ImageZoomScreen(
-                                  imageUrls: [imageUrl],
-                                  initialIndex: 0,
+              // Top row with image and details
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product Image with reduced height
+                  Container(
+                    width: 80,  // Reduced width
+                    height: 60, // Fixed height - reduced from dynamic height
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: GestureDetector(
+                        onTap: () {
+                          final imageUrl =
+                              catalog.fullImagePath.contains("http")
+                                  ? catalog.fullImagePath
+                                  : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => ImageZoomScreen(
+                                    imageUrls: [imageUrl],
+                                    initialIndex: 0,
+                                  ),
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              catalog.fullImagePath.contains("http")
+                                  ? catalog.fullImagePath
+                                  : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                              fit: BoxFit.contain,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey.shade100,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 25,
+                                          height: 25,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  AppColors.primaryColor,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    color: Colors.grey.shade100,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.broken_image,
+                                            size: 25,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'No Image',
+                                            style: TextStyle(
+                                              fontSize: 8,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                            ),
+                            // Image overlay on tap hint
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  shape: BoxShape.circle,
                                 ),
-                          ),
-                        );
-                      },
-                      child: Image.network(
-                        catalog.fullImagePath.contains("http")
-                            ? catalog.fullImagePath
-                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                const Icon(Icons.error, size: 60),
+                                child: const Icon(
+                                  Icons.zoom_in,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  
+                  const SizedBox(width: 12),
+                  
+                  // Details Section - Expanded to take remaining width
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Align(
-                          alignment: Alignment.topLeft,
+                        // Style Code with border
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.red.shade200,
+                              width: 1,
+                            ),
+                          ),
                           child: Text(
                             catalog.styleCode,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14.5,
+                              fontSize: 13,
                               color: Colors.red.shade900,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 6),
+                        
+                        // Shade Name with border
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              color: AppColors.primaryColor.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            catalog.shadeName,
+                            style: GoogleFonts.roboto(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: AppColors.primaryColor.shade900,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1570,43 +1714,195 @@ class _StyleCard2State extends State<StyleCard2> {
                         ),
                       ],
                     ),
-                    Text(
-                      catalog.shadeName,
-                      style: GoogleFonts.roboto(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.blue.shade900,
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Stats row below the image - all in one line
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Stock Type
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.inventory,
+                              size: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Type',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            catalog.upcoming_Stk == '1' ? 'Upcoming' : 'Ready',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                    Table(
-                      columnWidths: const {
-                        0: FixedColumnWidth(100),
-                        1: FixedColumnWidth(10),
-                        2: FlexColumnWidth(100),
-                      },
-                      defaultVerticalAlignment: TableCellVerticalAlignment.top,
-                      children: [
-                        _buildTableRow('Remark', ''),
-                        _buildTableRow(
-                          'Stk Type',
-                          catalog.upcoming_Stk == '1' ? 'Upcoming' : 'Ready',
-                        ),
-                        _buildTableRow(
-                          'Stock Qty',
-                          _calculateStockQuantity().toString(),
-                          valueColor: Colors.green[700],
-                        ),
-                        _buildTableRow(
-                          'Order Qty',
-                          _calculateCatalogQuantity().toString(),
-                          valueColor: Colors.orange[800],
-                        ),
-                        _buildTableRow(
-                          'Order Amount',
-                          _calculateCatalogPrice().toStringAsFixed(2),
-                          valueColor: Colors.purple[800],
-                        ),
-                      ],
+                    
+                    // Vertical Divider
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.grey.shade300,
+                    ),
+                    
+                    // Stock Qty
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.storage,
+                              size: 12,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Stock',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            _calculateStockQuantity().toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Vertical Divider
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.grey.shade300,
+                    ),
+                    
+                    // Order Qty
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.shopping_bag,
+                              size: 12,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Order',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            _calculateCatalogQuantity().toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Vertical Divider
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.grey.shade300,
+                    ),
+                    
+                    // Amount
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.currency_rupee,
+                              size: 12,
+                              color: Colors.purple.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Amount',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            '₹${_calculateCatalogPrice().toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple.shade700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1614,6 +1910,10 @@ class _StyleCard2State extends State<StyleCard2> {
             ],
           ),
         ),
+      ),
+    ),
+  ),
+),
         const SizedBox(height: 15),
 
         ...widget.selectedColors.map(
@@ -2511,7 +2811,7 @@ class _OrderForm2 extends StatefulWidget {
 }
 
 class _OrderForm2State extends State<_OrderForm2> {
-  final Color primaryBlue = const Color(0xFF2196F3);
+  
   final Color slate600 = const Color(0xFF64748B);
   final Color slateBorder = const Color(0xFFCBD5E1);
 

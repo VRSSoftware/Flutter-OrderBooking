@@ -91,7 +91,7 @@ class _StockReportPageState extends State<StockReportPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LoadingAnimationWidget.waveDots(color: Colors.blue, size: 50),
+                LoadingAnimationWidget.waveDots(color: AppColors.primaryColor, size: 50),
                 const SizedBox(height: 20),
                 Text(
                   'Fetching stock data...',
@@ -607,12 +607,12 @@ class _StockReportPageState extends State<StockReportPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.blue[50],
+                              color: AppColors.primaryColor[50],
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.inventory,
-                              color: Colors.blue,
+                              color: AppColors.primaryColor,
                               size: 24,
                             ),
                           ),
@@ -666,7 +666,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             child: _buildBottomSheetButton(
                               icon: Icons.download,
                               label: 'Download PDF',
-                              color: Colors.blue,
+                              color: AppColors.primaryColor,
                               onTap: () {
                                 Navigator.pop(context);
                                 _downloadStockReport();
@@ -848,7 +848,7 @@ class _StockReportPageState extends State<StockReportPage> {
           margin: const EdgeInsets.only(top: 16, bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue.shade200),
+            border: Border.all(color: AppColors.primaryColor.shade200),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -856,12 +856,12 @@ class _StockReportPageState extends State<StockReportPage> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: AppColors.primaryColor.shade200),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
                   Icons.inventory_2,
-                  color: Colors.blue,
+                  color: AppColors.primaryColor,
                   size: 20,
                 ),
               ),
@@ -872,7 +872,7 @@ class _StockReportPageState extends State<StockReportPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade900,
+                    color: AppColors.primaryColor.shade900,
                   ),
                 ),
               ),
@@ -882,7 +882,7 @@ class _StockReportPageState extends State<StockReportPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: AppColors.primaryColor.shade200),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -890,7 +890,7 @@ class _StockReportPageState extends State<StockReportPage> {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade700,
+                    color: AppColors.primaryColor.shade700,
                   ),
                 ),
               ),
@@ -930,12 +930,12 @@ class _StockReportPageState extends State<StockReportPage> {
           // Style Header with compact design
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: AppColors.primaryColor[50],
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
               ),
-              border: Border(bottom: BorderSide(color: Colors.blue.shade100)),
+              border: Border(bottom: BorderSide(color: AppColors.primaryColor.shade100)),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -946,7 +946,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     height: 32,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue.shade200),
+                      border: Border.all(color: AppColors.primaryColor.shade200),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: ClipRRect(
@@ -973,7 +973,7 @@ class _StockReportPageState extends State<StockReportPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade900,
+                          color: AppColors.primaryColor.shade900,
                         ),
                       ),
                       if (items.isNotEmpty && items.first.brandName != null)
@@ -993,7 +993,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: AppColors.primaryColor.shade200),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -1001,7 +1001,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Colors.blue.shade700,
+                      color: AppColors.primaryColor.shade700,
                     ),
                   ),
                 ),
@@ -1031,7 +1031,7 @@ class _StockReportPageState extends State<StockReportPage> {
                         // Shade Header - Matching scrollable header design
                         Container(
                           height: 38,
-                          color: Colors.blue[50],
+                          color: AppColors.primaryColor[50],
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -1039,7 +1039,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
-                              color: Colors.blue.shade900,
+                              color: AppColors.primaryColor.shade900,
                             ),
                           ),
                         ),
@@ -1117,7 +1117,7 @@ class _StockReportPageState extends State<StockReportPage> {
                           // Scrollable Header
                           Container(
                             height: 38,
-                            color: Colors.blue[50],
+                            color: AppColors.primaryColor[50],
                             child: Row(
                               children: [
                                 ...allSizes.map(
@@ -1139,7 +1139,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
-                                          color: Colors.blue.shade900,
+                                          color: AppColors.primaryColor.shade900,
                                         ),
                                       ),
                                     ),
@@ -1152,7 +1152,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                     horizontal: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue[100],
+                                    color: AppColors.primaryColor[100],
                                     border: Border(
                                       right: BorderSide(
                                         color: Colors.grey[300]!,
@@ -1165,7 +1165,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 10,
-                                        color: Colors.blue.shade900,
+                                        color: AppColors.primaryColor.shade900,
                                       ),
                                     ),
                                   ),
@@ -1219,7 +1219,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                                     : FontWeight.normal,
                                             color:
                                                 (sizeMap[size] ?? 0) > 0
-                                                    ? Colors.blue.shade700
+                                                    ? AppColors.primaryColor.shade700
                                                     : Colors.grey.shade500,
                                           ),
                                         ),
@@ -1234,7 +1234,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue[50],
+                                      color: AppColors.primaryColor[50],
                                       border: Border(
                                         right: BorderSide(
                                           color: Colors.grey[300]!,
@@ -1247,7 +1247,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.blue.shade900,
+                                          color: AppColors.primaryColor.shade900,
                                         ),
                                       ),
                                     ),
@@ -1298,7 +1298,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue[100],
+                                    color: AppColors.primaryColor[100],
                                     border: Border(
                                       right: BorderSide(
                                         color: Colors.grey[300]!,
@@ -1311,7 +1311,7 @@ class _StockReportPageState extends State<StockReportPage> {
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 11,
-                                        color: Colors.blue.shade900,
+                                        color: AppColors.primaryColor.shade900,
                                       ),
                                     ),
                                   ),
@@ -1349,7 +1349,7 @@ class _StockReportPageState extends State<StockReportPage> {
     return Container(
       margin: const EdgeInsets.only(top: 16, bottom: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: AppColors.primaryColor.shade200),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1358,19 +1358,19 @@ class _StockReportPageState extends State<StockReportPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.blue.shade100)),
+              border: Border(bottom: BorderSide(color: AppColors.primaryColor.shade100)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: AppColors.primaryColor.shade200),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.summarize,
-                    color: Colors.blue,
+                    color: AppColors.primaryColor,
                     size: 24,
                   ),
                 ),
@@ -1384,7 +1384,7 @@ class _StockReportPageState extends State<StockReportPage> {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: Colors.blue.shade900,
+                          color: AppColors.primaryColor.shade900,
                         ),
                       ),
                       Text(
@@ -1403,7 +1403,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: AppColors.primaryColor.shade200),
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Text(
@@ -1411,7 +1411,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
-                      color: Colors.blue.shade900,
+                      color: AppColors.primaryColor.shade900,
                     ),
                   ),
                 ),
@@ -1443,7 +1443,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue.shade100),
+                            border: Border.all(color: AppColors.primaryColor.shade100),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -1451,7 +1451,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade700,
+                              color: AppColors.primaryColor.shade700,
                             ),
                           ),
                         ),
@@ -1468,7 +1468,7 @@ class _StockReportPageState extends State<StockReportPage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              border: Border(top: BorderSide(color: Colors.blue.shade100)),
+              border: Border(top: BorderSide(color: AppColors.primaryColor.shade100)),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
@@ -1735,48 +1735,99 @@ class _StockReportPageState extends State<StockReportPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Clear button in app bar
-          IconButton(
-            onPressed: clearFilters,
-            icon: const Icon(Icons.clear, color: Colors.white),
-            tooltip: "Clear All",
-          ),
-          const SizedBox(width: 4),
-
-          // Filter button with badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                onPressed: _showFilterDialog,
-                icon: const Icon(Icons.filter_list, color: Colors.white),
-                tooltip: "Filter",
-              ),
-              if (_getActiveFilterCount() > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.pink,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Text(
-                      '${_getActiveFilterCount()}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 8),
+  // Clear button - circular
+  Container(
+    margin: const EdgeInsets.only(right: 4),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.2),
+          Colors.white.withOpacity(0.1),
         ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: IconButton(
+      onPressed: clearFilters,
+      icon: const Icon(Icons.clear, color: Colors.white, size: 18),
+      tooltip: "Clear All",
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(
+        minWidth: 36,
+        minHeight: 36,
+      ),
+    ),
+  ),
+  const SizedBox(width: 8),
+
+  // Filter button with badge - circular
+  Container(
+    margin: const EdgeInsets.only(right: 8),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.2),
+          Colors.white.withOpacity(0.1),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          onPressed: _showFilterDialog,
+          icon: const Icon(Icons.filter_list, color: Colors.white, size: 18),
+          tooltip: "Filter",
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
+          ),
+        ),
+        if (_getActiveFilterCount() > 0)
+          Positioned(
+            right: 2,
+            top: 2,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: Text(
+                '${_getActiveFilterCount()}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  ),
+],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1799,12 +1850,12 @@ class _StockReportPageState extends State<StockReportPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue.shade200),
+                            border: Border.all(color: AppColors.primaryColor.shade200),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
                             Icons.category,
-                            color: Colors.blue,
+                            color: AppColors.primaryColor,
                             size: 20,
                           ),
                         ),
@@ -1877,7 +1928,7 @@ class _StockReportPageState extends State<StockReportPage> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Colors.blue,
+                              color: AppColors.primaryColor,
                               width: 2,
                             ),
                           ),
@@ -1910,7 +1961,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             isLoadingCategories
                                 ? (context, searchEntry) => Center(
                                   child: LoadingAnimationWidget.waveDots(
-                                    color: Colors.blue,
+                                    color: AppColors.primaryColor,
                                     size: 40,
                                   ),
                                 )
@@ -1941,12 +1992,12 @@ class _StockReportPageState extends State<StockReportPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue.shade200),
+                            border: Border.all(color: AppColors.primaryColor.shade200),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
                             Icons.inventory,
-                            color: Colors.blue,
+                            color: AppColors.primaryColor,
                             size: 20,
                           ),
                         ),
@@ -2003,7 +2054,7 @@ class _StockReportPageState extends State<StockReportPage> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Colors.blue,
+                              color: AppColors.primaryColor,
                               width: 2,
                             ),
                           ),
@@ -2030,7 +2081,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             isLoadingItems
                                 ? (context, searchEntry) => Center(
                                   child: LoadingAnimationWidget.waveDots(
-                                    color: Colors.blue,
+                                    color: AppColors.primaryColor,
                                     size: 40,
                                   ),
                                 )
@@ -2060,14 +2111,14 @@ class _StockReportPageState extends State<StockReportPage> {
                     _buildHorizontalButton(
                       icon: Icons.visibility,
                       label: "View",
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       onTap: _fetchStockReport,
                     ),
                     Container(height: 30, width: 1, color: Colors.grey[300]),
                     _buildHorizontalButton(
                       icon: Icons.download,
                       label: "PDF",
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       onTap: _downloadStockReport,
                     ),
                     Container(height: 30, width: 1, color: Colors.grey[300]),
@@ -2090,20 +2141,20 @@ class _StockReportPageState extends State<StockReportPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: AppColors.primaryColor[50],
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: AppColors.primaryColor.shade200),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    Icon(Icons.info_outline, color: AppColors.primaryColor.shade700),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         '${selectedItems.length} item(s) selected. Tap View to see stock report.',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.blue.shade900,
+                          color: AppColors.primaryColor.shade900,
                         ),
                       ),
                     ),
@@ -2119,7 +2170,7 @@ class _StockReportPageState extends State<StockReportPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       LoadingAnimationWidget.waveDots(
-                        color: Colors.blue,
+                        color: AppColors.primaryColor,
                         size: 50,
                       ),
                       const SizedBox(height: 16),

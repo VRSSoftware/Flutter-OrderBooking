@@ -228,11 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           border: const Border(
             top: BorderSide(
-              color: Color(0xFF800000),
+              // color: Color(0xFF800000),
+              color:AppColors.primaryColor,
               width: 1.5, // 🔥 Reduced
             ),
             bottom: BorderSide(
-              color: Color(0xFF800000),
+              // color: Color(0xFF800000),
+                color:AppColors.primaryColor,
               width: 1.5, // 🔥 Reduced
             ),
           ),
@@ -266,10 +268,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: kTextLight,
+                    style: GoogleFonts.lora(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryColor,
                     ),
                   ),
                 ],

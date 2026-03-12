@@ -27,7 +27,22 @@ class AppConstants {
 
 class AppColors {
   // Primary color
-  static const Color primaryColor = Color(0xFF072F5F);
+   static const MaterialColor primaryColor = MaterialColor(
+    0xFF072F5F,
+    <int, Color>{
+      50: Color(0xFFE3E9F0),
+      100: Color(0xFFB8C8D9),
+      200: Color(0xFF89A3C1),
+      300: Color(0xFF5A7EA9),
+      400: Color(0xFF36638F),
+      500: Color(0xFF072F5F),
+      600: Color(0xFF062A57),
+      700: Color(0xFF05234D),
+      800: Color(0xFF041D43),
+      900: Color(0xFF021230),
+    },
+  );
+
   // Secondary color
   static const Color secondaryColor = Color.fromARGB(
     255,
@@ -56,11 +71,14 @@ class AppColors {
   static const Color blue = Color(0xFF194A66); // Muted Lavender shade
   static const Color mutedPink = Color(0xFF917898); // Muted Pink shade
   static const Color deepPurple = Color(0xFF4c394f); // Deep Purple shade
-  static const Color maroon = Color(0xFF2e1a1e); // Maroon shade
+ static const Color Prime = Color(0xFF2e1a1e);
   static const Color red = Colors.red;
   static const Color accentColor = Colors.green;
   static const Color background = Colors.white;
   static const Color textColor = Colors.black87;
+    static const Color pink = Colors.pinkAccent;
+    static const Color maroon = Color(0xFF8B0000);
+
 }
 
 class UserSession {

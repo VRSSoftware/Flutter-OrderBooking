@@ -988,17 +988,50 @@ List<String> _getSizesForCategory(dynamic category) {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor,
-        title: Text("Order Form", style: const TextStyle(color: Colors.white)),
-        automaticallyImplyLeading: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.white),
-            onPressed: isLoading ? null : _sharePDF,
-          ),
-        ],
+    appBar: AppBar(
+  backgroundColor: AppColors.primaryColor,
+  title: Text("Order Form", style: const TextStyle(color: Colors.white)),
+  leading: IconButton(
+    icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
+    onPressed: () => Navigator.of(context).pop(),
+  ),
+  actions: [
+  Container(
+  margin: const EdgeInsets.only(right: 8),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [
+        Colors.white.withOpacity(0.25),
+        Colors.white.withOpacity(0.15),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    shape: BoxShape.circle,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.1),
+        blurRadius: 4,
+        offset: const Offset(0, 2),
       ),
+    ],
+  ),
+  child: IconButton(
+    icon: const Icon(
+      Icons.share,
+      color: Colors.white,
+      size: 20,
+    ),
+    onPressed: isLoading ? null : _sharePDF,
+    padding: const EdgeInsets.all(8),
+    constraints: const BoxConstraints(
+      minWidth: 40,
+      minHeight: 40,
+    ),
+  ),
+),
+  ],
+),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : pdfError

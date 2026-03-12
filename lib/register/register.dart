@@ -280,11 +280,11 @@ class _RegisterPageState extends State<RegisterPage>
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.95),
+              color: AppColors.maroon.withOpacity(0.95),
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(20),
+                bottom: Radius.circular(0),
               ),
               border: const Border(
                 top: BorderSide(color: Colors.white, width: 0.5),
@@ -690,396 +690,425 @@ class _RegisterPageState extends State<RegisterPage>
     );
   }
 
-Widget buildOrderItem(RegisterOrder registerOrder) {
-  checkedOrders.putIfAbsent(registerOrder.orderNo, () => false);
+  Widget buildOrderItem(RegisterOrder registerOrder) {
+    checkedOrders.putIfAbsent(registerOrder.orderNo, () => false);
 
-  return FadeTransition(
-    opacity: _fadeAnimation,
-    child: Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Left border with curved design
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.primaryColor,
-                      AppColors.primaryColor.withOpacity(0.6),
-                      AppColors.primaryColor.withOpacity(0.3),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Left border with curved design
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 6,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.primaryColor,
+                        AppColors.primaryColor.withOpacity(0.6),
+                        AppColors.primaryColor.withOpacity(0.3),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      bottomLeft: Radius.circular(20),
+                    ),
                   ),
                 ),
               ),
-            ),
-            
-         
-            // Main content with left padding to accommodate the border
-            Padding(
-              padding: const EdgeInsets.only(left: 12, top: 16, right: 16, bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.shopping_bag,
-                                color: AppColors.primaryColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    registerOrder.itemName,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+
+              // Main content with left padding to accommodate the border
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 12,
+                  top: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.1,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          registerOrder.orderNo,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 11,
-                                            color: Colors.green[700],
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.shopping_bag,
+                                  color: AppColors.primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      registerOrder.itemName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1E293B),
                                       ),
-                                      // Delivery Type Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(30),
-                                          border: Border.all(
-                                            color: Colors.blue.withOpacity(0.2),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            registerOrder.orderNo,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              color: Colors.green[700],
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.local_shipping,
-                                              color: Colors.blue,
-                                              size: 12,
+                                        // Delivery Type Badge
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              30,
                                             ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              registerOrder.deliveryType,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.blue,
+                                            border: Border.all(
+                                              color: Colors.blue.withOpacity(
+                                                0.2,
                                               ),
                                             ),
-                                          ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.local_shipping,
+                                                color: Colors.blue,
+                                                size: 12,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                registerOrder.deliveryType,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.more_vert,
+                              color: AppColors.primaryColor,
+                              size: 18,
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          onSelected:
+                              (value) =>
+                                  _handleMenuSelection(value, registerOrder),
+                          itemBuilder:
+                              (BuildContext context) => [
+                                PopupMenuItem<String>(
+                                  value: 'checkbox',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        checkedOrders[registerOrder.orderNo] ??
+                                                false
+                                            ? Icons.check_box
+                                            : Icons.check_box_outline_blank,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'With Image',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'reportView',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.table_chart,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Report View',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'whatsapp',
+                                  child: Row(
+                                    children: [
+                                      FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        size: 20,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'WhatsApp',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'download',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.download,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Download',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'view',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.visibility,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'View',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // PopupMenuItem<String>(
+                                //   value: 'editBarcode',
+                                //   child: Row(
+                                //     children: [
+                                //       Icon(
+                                //         Icons.qr_code_scanner,
+                                //         color: AppColors.primaryColor,
+                                //         size: 20,
+                                //       ),
+                                //       const SizedBox(width: 12),
+                                //       Text(
+                                //         'Edit Barcode',
+                                //         style: GoogleFonts.poppins(fontSize: 14),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ),
+                                PopupMenuItem<String>(
+                                  value: 'edit2',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.edit,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Update Order',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Order Details Grid
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildDetailItem(
+                              label: 'Date',
+                              value: registerOrder.orderDate,
+                              icon: Icons.calendar_today,
+                            ),
+                          ),
+                          Container(
+                            height: 30,
+                            width: 1,
+                            color: Colors.grey.shade300,
+                          ),
+                          Expanded(
+                            child: _buildDetailItem(
+                              label: 'Quantity',
+                              value: '${registerOrder.quantity}',
+                              icon: Icons.inventory,
+                            ),
+                          ),
+                          Container(
+                            height: 30,
+                            width: 1,
+                            color: Colors.grey.shade300,
+                          ),
+                          Expanded(
+                            child: _buildDetailItem(
+                              label: 'Amount',
+                              value:
+                                  '₹${registerOrder.amount.toStringAsFixed(0)}',
+                              icon: Icons.currency_rupee,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (registerOrder.salesPersonName.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.person, size: 14, color: Colors.purple),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Salesperson: ',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Text(
+                              registerOrder.salesPersonName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.purple,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      PopupMenuButton<String>(
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.more_vert,
-                            color: AppColors.primaryColor,
-                            size: 18,
-                          ),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 4,
-                        onSelected: (value) => _handleMenuSelection(value, registerOrder),
-                        itemBuilder: (BuildContext context) => [
-                          PopupMenuItem<String>(
-                            value: 'checkbox',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  checkedOrders[registerOrder.orderNo] ?? false
-                                      ? Icons.check_box
-                                      : Icons.check_box_outline_blank,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'With Image',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'reportView',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.table_chart,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Report View',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'whatsapp',
-                            child: Row(
-                              children: [
-                                FaIcon(
-                                  FontAwesomeIcons.whatsapp,
-                                  size: 20,
-                                  color: AppColors.primaryColor,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'WhatsApp',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'download',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.download,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Download',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'view',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.visibility,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'View',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'editBarcode',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.qr_code_scanner,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Edit Barcode',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'edit2',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.edit,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Edit Order',
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Order Details Grid
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildDetailItem(
-                            label: 'Date',
-                            value: registerOrder.orderDate,
-                            icon: Icons.calendar_today,
-                          ),
-                        ),
-                        Container(
-                          height: 30,
-                          width: 1,
-                          color: Colors.grey.shade300,
-                        ),
-                        Expanded(
-                          child: _buildDetailItem(
-                            label: 'Quantity',
-                            value: '${registerOrder.quantity}',
-                            icon: Icons.inventory,
-                          ),
-                        ),
-                        Container(
-                          height: 30,
-                          width: 1,
-                          color: Colors.grey.shade300,
-                        ),
-                        Expanded(
-                          child: _buildDetailItem(
-                            label: 'Amount',
-                            value: '₹${registerOrder.amount.toStringAsFixed(0)}',
-                            icon: Icons.currency_rupee,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (registerOrder.salesPersonName.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.person, size: 14, color: Colors.purple),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Salesperson: ',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          Text(
-                            registerOrder.salesPersonName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.purple,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildDetailItem({
     required String label,
     required String value,
@@ -1185,12 +1214,17 @@ Widget buildOrderItem(RegisterOrder registerOrder) {
         break;
 
       case 'edit2':
-        Navigator.push(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => EditOrderScreen(docId: registerOrder.orderId),
           ),
         );
+
+        // Refresh orders if update was successful
+        if (result == true) {
+          fetchOrders();
+        }
         break;
     }
   }

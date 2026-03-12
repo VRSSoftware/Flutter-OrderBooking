@@ -22,6 +22,7 @@ import 'package:vrs_erp/models/item.dart';
 import 'package:vrs_erp/models/catalog.dart';
 import 'package:vrs_erp/models/OrderMatrix.dart';
 import 'package:vrs_erp/models/CatalogOrderData.dart';
+import 'package:vrs_erp/viewOrder/style_card.dart';
 
 enum ActiveTab { transaction, customerDetails }
 
@@ -223,9 +224,9 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
     try {
       final response = await http.post(
         Uri.parse(
-          AppConstants.seprateBarcodeWiseBooking =="1" ?  
-         '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
-         : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
+          AppConstants.seprateBarcodeWiseBooking == "1"
+              ? '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
+              : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
@@ -458,117 +459,118 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
   //   }
   // }
 
+  Future<void> _saveOrderLocally() async {
+    if (!_formKey.currentState!.validate()) return;
 
-
-Future<void> _saveOrderLocally() async {
-  if (!_formKey.currentState!.validate()) return;
-
-  String? consigneeLedKey = '';
-  String? stationStnKey = '';
-  final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-  if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-    final selectedConsignee = consignees.firstWhere(
-      (consignee) => consignee.ledName == selectedConsigneeName,
-      orElse:
-          () => Consignee(
-            ledKey: '',
-            ledName: '',
-            stnKey: '',
-            stnName: '',
-            paymentTermsKey: '',
-            paymentTermsName: '',
-            pytTermDiscdays: '0',
-          ),
-    );
-    consigneeLedKey = selectedConsignee.ledKey;
-    stationStnKey = selectedConsignee.stnKey;
-  }
-
-  final orderData = {
-    "saleorderno": _orderControllers.orderNo.text,
-    "orderdate": formatDate(_orderControllers.date.text, true),
-    "customer": _orderControllers.selectedPartyKey ?? '',
-    "broker": _orderControllers.selectedBrokerKey ?? '',
-    "comission": _orderControllers.comm.text,
-    "transporter": _orderControllers.selectedTransporterKey ?? '',
-    "delivaryday": _orderControllers.deliveryDays.text,
-    "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-    "totitem": _orderControllers.totalItem.text,
-    "totqty": _orderControllers.totalQty.text,
-    "remark": _orderControllers.remark.text,
-    "consignee": consigneeLedKey,
-    "station": stationStnKey,
-    "paymentterms":
-        _additionalInfo['paymentterms'] ??
-        _orderControllers.pytTermDiscKey ??
-        '',
-    "paymentdays":
-        _additionalInfo['paymentdays'] ??
-        _orderControllers.creditPeriod?.toString() ??
-        '0',
-    "duedate": calculateDueDate(),
-    "refno": _additionalInfo['refno'] ?? '',
-    "date": getTodayWithZeroTime(),
-    "bookingtype": _additionalInfo['bookingtype'] ?? '',
-    "salesman":
-        _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-  };
-
-  final orderDataJson = jsonEncode(orderData);
-  print("Saved Order Data:");
-  print(orderDataJson);
-
-  try {
-    final orderNumber = await insertFinalSalesOrder(orderDataJson);
-    if (orderNumber != null && orderNumber != "fail") {
-      final formattedOrderNo = "SO$orderNumber";
-      print("formattedOrderNo: ${formattedOrderNo}");
-
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Text('Order Saved'),
-              content: Text('Order $formattedOrderNo saved successfully'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // REPLACE PdfViewerScreen with OrderReportViewPage
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => OrderReportViewPage(
-                              orderNo: orderNumber, // Use orderNumber directly (without "SO" prefix)
-                              orderData: null,
-                              showOnlyWithImage: false,
-                            ),
-                      ),
-                    );
-                  },
-                  child: Text('View Report'), // Changed from 'View PDF' to 'View Report'
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()),
-                    );
-                  },
-                  child: Text('Done'),
-                ),
-              ],
+    String? consigneeLedKey = '';
+    String? stationStnKey = '';
+    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+      final selectedConsignee = consignees.firstWhere(
+        (consignee) => consignee.ledName == selectedConsigneeName,
+        orElse:
+            () => Consignee(
+              ledKey: '',
+              ledName: '',
+              stnKey: '',
+              stnName: '',
+              paymentTermsKey: '',
+              paymentTermsName: '',
+              pytTermDiscdays: '0',
             ),
       );
+      consigneeLedKey = selectedConsignee.ledKey;
+      stationStnKey = selectedConsignee.stnKey;
     }
-  } catch (e) {
-    print('Error during order saving: $e');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+
+    final orderData = {
+      "saleorderno": _orderControllers.orderNo.text,
+      "orderdate": formatDate(_orderControllers.date.text, true),
+      "customer": _orderControllers.selectedPartyKey ?? '',
+      "broker": _orderControllers.selectedBrokerKey ?? '',
+      "comission": _orderControllers.comm.text,
+      "transporter": _orderControllers.selectedTransporterKey ?? '',
+      "delivaryday": _orderControllers.deliveryDays.text,
+      "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+      "totitem": _orderControllers.totalItem.text,
+      "totqty": _orderControllers.totalQty.text,
+      "remark": _orderControllers.remark.text,
+      "consignee": consigneeLedKey,
+      "station": stationStnKey,
+      "paymentterms":
+          _additionalInfo['paymentterms'] ??
+          _orderControllers.pytTermDiscKey ??
+          '',
+      "paymentdays":
+          _additionalInfo['paymentdays'] ??
+          _orderControllers.creditPeriod?.toString() ??
+          '0',
+      "duedate": calculateDueDate(),
+      "refno": _additionalInfo['refno'] ?? '',
+      "date": getTodayWithZeroTime(),
+      "bookingtype": _additionalInfo['bookingtype'] ?? '',
+      "salesman":
+          _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+    };
+
+    final orderDataJson = jsonEncode(orderData);
+    print("Saved Order Data:");
+    print(orderDataJson);
+
+    try {
+      final orderNumber = await insertFinalSalesOrder(orderDataJson);
+      if (orderNumber != null && orderNumber != "fail") {
+        final formattedOrderNo = "SO$orderNumber";
+        print("formattedOrderNo: ${formattedOrderNo}");
+
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text('Order Saved'),
+                content: Text('Order $formattedOrderNo saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // REPLACE PdfViewerScreen with OrderReportViewPage
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => OrderReportViewPage(
+                                orderNo:
+                                    orderNumber, // Use orderNumber directly (without "SO" prefix)
+                                orderData: null,
+                                showOnlyWithImage: false,
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'View Report',
+                    ), // Changed from 'View PDF' to 'View Report'
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                      );
+                    },
+                    child: Text('Done'),
+                  ),
+                ],
+              ),
+        );
+      }
+    } catch (e) {
+      print('Error during order saving: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+    }
   }
-}
 
   void _updateTotals() {
     int totalQty = 0;
@@ -601,16 +603,14 @@ Future<void> _saveOrderLocally() async {
     _orderControllers.totalItem.text =
         _styleManager.groupedItems.length.toString();
     _orderControllers.totalAmt.text = totalAmt.toStringAsFixed(2);
-   setState(() {
-  isCustomerTabEnabled = false;
-  isTransactionSaved = false;
-});
+    setState(() {
+      isCustomerTabEnabled = false;
+      isTransactionSaved = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-  
-
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
@@ -624,66 +624,79 @@ Future<void> _saveOrderLocally() async {
           ),
         ),
         backgroundColor: AppColors.primaryColor,
-        elevation: 4,
+        elevation: 0, // Set to 0 to remove default shadow
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              vertical: 8.0,
-              horizontal: 16.0,
-            ),
-            color: AppColors.primaryColor,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
+          preferredSize: const Size.fromHeight(
+            49.0,
+          ),
+          child: Column(
+            children: [
+              // White divider line
+              Container(
+                height: 1,
+                width: double.infinity,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              // Bottom container
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 16.0,
+                ),
+                color: AppColors.maroon,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 20,
-                  color: Colors.white.withOpacity(0.5),
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                ),
-                Flexible(
-                  child: Text(
-                    'Items: ${_calculateTotalItems()}',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Colors.white.withOpacity(0.5),
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 20,
-                  color: Colors.white.withOpacity(0.5),
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                ),
-                Flexible(
-                  child: Text(
-                    'Qty: ${_calculateTotalQuantity()}',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
+                    Flexible(
+                      child: Text(
+                        'Items: ${_calculateTotalItems()}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Colors.white.withOpacity(0.5),
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                    ),
+                    Flexible(
+                      child: Text(
+                        'Qty: ${_calculateTotalQuantity()}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -740,21 +753,19 @@ Future<void> _saveOrderLocally() async {
   }
 
   Widget _buildTabBar() {
-  
-
     return Container(
       color: Colors.white,
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
-             onTap: () {
-  setState(() {
-    _activeTab = ActiveTab.transaction;
-    _showForm = false;
-    isCustomerTabEnabled = false;
-  });
-},
+              onTap: () {
+                setState(() {
+                  _activeTab = ActiveTab.transaction;
+                  _showForm = false;
+                  isCustomerTabEnabled = false;
+                });
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -788,14 +799,15 @@ Future<void> _saveOrderLocally() async {
           ),
           Expanded(
             child: GestureDetector(
-onTap: isCustomerTabEnabled
-    ? () {
-        setState(() {
-          _activeTab = ActiveTab.customerDetails;
-          _showForm = true;
-        });
-      }
-    : null,
+              onTap:
+                  isCustomerTabEnabled
+                      ? () {
+                        setState(() {
+                          _activeTab = ActiveTab.customerDetails;
+                          _showForm = true;
+                        });
+                      }
+                      : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -831,11 +843,115 @@ onTap: isCustomerTabEnabled
       ),
     );
   }
-Widget _buildBottomButtons() {
 
+  Widget _buildBottomButtons() {
+    // CUSTOMER DETAILS TAB
+    if (_activeTab == ActiveTab.customerDetails) {
+      return Container(
+        color: AppColors.primaryColor,
+        child: SizedBox(
+          height: 45,
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  color: const Color.fromARGB(255, 220, 239, 248),
+                  child: TextButton(
+                    onPressed: () async {
+                      if (UserSession.userType == 'S' &&
+                          (_orderControllers.selectedPartyKey == null ||
+                              _orderControllers.selectedPartyKey!.isEmpty)) {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('Party Selection Required'),
+                                content: const Text(
+                                  'Please select a party before adding more information.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                        );
+                        return;
+                      }
 
-  // CUSTOMER DETAILS TAB
-  if (_activeTab == ActiveTab.customerDetails) {
+                      final result = await showDialog(
+                        context: context,
+                        builder:
+                            (context) => AddMoreInfoDialog(
+                              salesPersonList: _dropdownData.salesPersonList,
+                              partyLedKey: _orderControllers.selectedPartyKey,
+                              pytTermDiscKey: _orderControllers.pytTermDiscKey,
+                              salesPersonKey: _orderControllers.salesPersonKey,
+                              creditPeriod: _orderControllers.creditPeriod,
+                              salesLedKey: _orderControllers.salesLedKey,
+                              ledgerName: _orderControllers.ledgerName,
+                              additionalInfo: _additionalInfo,
+                              consignees: consignees,
+                              paymentTerms: paymentTerms,
+                              bookingTypes: _bookingTypes,
+                              onValueChanged: (newInfo) {
+                                setState(() {
+                                  _additionalInfo = newInfo;
+                                });
+                              },
+                              isSalesmanDropdownEnabled:
+                                  UserSession.userType != 'S',
+                            ),
+                      );
+
+                      if (result != null) {
+                        setState(() {
+                          _additionalInfo = result;
+                        });
+                      }
+                    },
+                    child: const Text(
+                      "Add More Info",
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: _isSaving ? null : _handleSave,
+                  child:
+                      _isSaving
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            "Save",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.white,
+                            ),
+                          ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // TRANSACTION TAB
     return Container(
       color: AppColors.primaryColor,
       child: SizedBox(
@@ -846,59 +962,18 @@ Widget _buildBottomButtons() {
               child: Container(
                 color: const Color.fromARGB(255, 220, 239, 248),
                 child: TextButton(
-                  onPressed: () async {
-                    if (UserSession.userType == 'S' &&
-                        (_orderControllers.selectedPartyKey == null ||
-                            _orderControllers.selectedPartyKey!.isEmpty)) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Party Selection Required'),
-                          content: const Text(
-                              'Please select a party before adding more information.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
-                      return;
-                    }
-
-                    final result = await showDialog(
-                      context: context,
-                      builder: (context) => AddMoreInfoDialog(
-                        salesPersonList: _dropdownData.salesPersonList,
-                        partyLedKey: _orderControllers.selectedPartyKey,
-                        pytTermDiscKey: _orderControllers.pytTermDiscKey,
-                        salesPersonKey: _orderControllers.salesPersonKey,
-                        creditPeriod: _orderControllers.creditPeriod,
-                        salesLedKey: _orderControllers.salesLedKey,
-                        ledgerName: _orderControllers.ledgerName,
-                        additionalInfo: _additionalInfo,
-                        consignees: consignees,
-                        paymentTerms: paymentTerms,
-                        bookingTypes: _bookingTypes,
-                        onValueChanged: (newInfo) {
-                          setState(() {
-                            _additionalInfo = newInfo;
-                          });
-                        },
-                        isSalesmanDropdownEnabled:
-                            UserSession.userType != 'S',
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                OrderBookingScreen(startWithBarcode: true),
                       ),
                     );
-
-                    if (result != null) {
-                      setState(() {
-                        _additionalInfo = result;
-                      });
-                    }
                   },
                   child: const Text(
-                    "Add More Info",
+                    "Add More",
                     style: TextStyle(
                       color: AppColors.primaryColor,
                       fontWeight: FontWeight.bold,
@@ -909,25 +984,31 @@ Widget _buildBottomButtons() {
               ),
             ),
             Expanded(
-              child: TextButton(
-                onPressed: _isSaving ? null : _handleSave,
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        "Save",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppColors.white,
-                        ),
-                      ),
+              child: TextButton.icon(
+                onPressed: () {
+                  if (_activeTab == ActiveTab.transaction) {
+                    if (!_formKey.currentState!.validate()) return;
+
+                    setState(() {
+                      isCustomerTabEnabled = true;
+                      _activeTab = ActiveTab.customerDetails;
+                      _showForm = true;
+                    });
+                  }
+                },
+                icon: Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: AppColors.primaryColor,
+                ),
+                label: const Text(
+                  "Confirm",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.white,
+                  ),
+                ),
               ),
             ),
           ],
@@ -936,65 +1017,6 @@ Widget _buildBottomButtons() {
     );
   }
 
-  // TRANSACTION TAB
-  return Container(
-    color: AppColors.primaryColor,
-    child: SizedBox(
-      height: 45,
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              color: const Color.fromARGB(255, 220, 239, 248),
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            OrderBookingScreen(startWithBarcode: true)),
-                  );
-                },
-                child: const Text(
-                  "Add More",
-                  style: TextStyle(
-                    color: AppColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextButton.icon(
-              onPressed: () {
-                if (_activeTab == ActiveTab.transaction) {
-                  if (!_formKey.currentState!.validate()) return;
-
-                  setState(() {
-                    isCustomerTabEnabled = true;
-                    _activeTab = ActiveTab.customerDetails;
-                    _showForm = true;
-                  });
-                }
-              },
-              icon: Icon(Icons.chevron_right, size: 18, color: AppColors.primaryColor),
-              label: const Text(
-                "Save",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
   void _handlePartySelection(String? val, String? key) async {
     if (key == null) return;
     setState(() {
@@ -1049,9 +1071,9 @@ Widget _buildBottomButtons() {
         return Colors.black;
       case 'white':
         return Colors.grey;
-       case 'brown':
+      case 'brown':
         return Colors.brown;
-          
+
       default:
         return Colors.black;
     }
@@ -1165,7 +1187,12 @@ class _DropdownData {
     final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/users/getLedger'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? '',"ledKey":UserSession.userLedKey ?? '',"userType":UserSession.userType ?? ''}),
+      body: jsonEncode({
+        "ledCat": ledCat,
+        "coBrId": UserSession.coBrId ?? '',
+        "ledKey": UserSession.userLedKey ?? '',
+        "userType": UserSession.userType ?? '',
+      }),
     );
     return response.statusCode == 200
         ? (jsonDecode(response.body) as List)
@@ -1209,9 +1236,11 @@ class _StyleManager {
 
   Future<void> fetchOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1230,9 +1259,11 @@ class _StyleManager {
 
   Future<void> refreshOrderItems({required bool barcode}) async {
     final response = await http.post(
-      Uri.parse(AppConstants.seprateBarcodeWiseBooking == "1" ? 
-      '${AppConstants.BASE_URL}/orderBooking/GetViewOrder' : 
-      '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder'),
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/GetViewOrder'
+            : '${AppConstants.BASE_URL}/orderBooking/GetAllViewOrder',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         "coBrId": UserSession.coBrId ?? '',
@@ -1498,52 +1529,77 @@ class _StyleCardState extends State<StyleCard> {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 1,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: buildOrderItem(widget.catalogOrder, context),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header section with image and details (same as previous design)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: _buildHeaderSection(),
+              ),
+
+              const SizedBox(height: 4),
+
+              // Stats row (same as previous design)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _buildStatsRow(),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Price Table - FULL WIDTH (enhanced design)
+              ...widget.selectedColors.map(
+                (color) => Column(
+                  children: [
+                    _buildEnhancedPriceTable(color),
+                    const SizedBox(height: 5),
+
+                    // Action buttons (enhanced design but same functionality)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: _buildActionButtons(),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ],
           ),
+
+          // Loading overlay (unchanged)
           if (_isLoading)
             ModalBarrier(
               dismissible: false,
               color: Colors.black.withOpacity(0.4),
             ),
           if (_isLoading)
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Updating...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
+            const Center(
+              child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 16),
+                      Text(
+                        'Updating...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1552,73 +1608,80 @@ class _StyleCardState extends State<StyleCard> {
     );
   }
 
-  Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
-    final catalog = catalogOrder.catalog;
+  // New header section with enhanced design
+  Widget _buildHeaderSection() {
+    final catalog = widget.catalogOrder.catalog;
+    final firstItem = widget.items.first;
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Row(
+        // Image (unchanged functionality)
+        _buildItemImage(catalog.fullImagePath),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Style Code with gradient background (enhanced design)
               Container(
-                height: 160,
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(4.0),
-                ),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.3,
-                  child: AspectRatio(
-                    aspectRatio: 3 / 4,
-                    child: GestureDetector(
-                      onTap: () {
-                        final imageUrl =
-                            catalog.fullImagePath.contains("http")
-                                ? catalog.fullImagePath
-                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ImageZoomScreen(
-                                  imageUrls: [imageUrl],
-                                  initialIndex: 0,
-                                ),
-                          ),
-                        );
-                      },
-                      child: Image.network(
-                        catalog.fullImagePath.contains("http")
-                            ? catalog.fullImagePath
-                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                const Icon(Icons.error, size: 60),
-                      ),
-                    ),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primaryColor.withOpacity(0.08),
+                      Colors.white,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withOpacity(0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryColor.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Style Code with badge
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Align(
-                          alignment: Alignment.topLeft,
-                          child: Text(
-                            catalog.styleCode,
-                            style: GoogleFonts.poppins(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'STYLE',
+                            style: TextStyle(
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14.5,
-                              color: Colors.red.shade900,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.styleCode,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryColor,
+                              letterSpacing: 0.3,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1626,42 +1689,38 @@ class _StyleCardState extends State<StyleCard> {
                         ),
                       ],
                     ),
-                    Text(
-                      catalog.shadeName,
-                      style: GoogleFonts.roboto(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.blue.shade900,
-                      ),
+
+                    const SizedBox(height: 8),
+
+                    // Divider
+                    Divider(
+                      color: AppColors.primaryColor.withOpacity(0.2),
+                      height: 1,
+                      thickness: 1,
                     ),
-                    Table(
-                      columnWidths: const {
-                        0: FixedColumnWidth(100),
-                        1: FixedColumnWidth(10),
-                        2: FlexColumnWidth(100),
-                      },
-                      defaultVerticalAlignment: TableCellVerticalAlignment.top,
+
+                    const SizedBox(height: 8),
+
+                    // Details in wrap layout (same data, enhanced presentation)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
                       children: [
-                        _buildTableRow('Remark', ''),
-                        _buildTableRow(
-                          'Stk Type',
-                          catalog.upcoming_Stk == '1' ? 'Upcoming' : 'Ready',
-                        ),
-                        _buildTableRow(
-                          'Stock Qty',
-                          _calculateStockQuantity().toString(),
-                          valueColor: Colors.green[700],
-                        ),
-                        _buildTableRow(
-                          'Order Qty',
-                          _calculateCatalogQuantity().toString(),
-                          valueColor: Colors.orange[800],
-                        ),
-                        _buildTableRow(
-                          'Order Amount',
-                          _calculateCatalogPrice().toStringAsFixed(2),
-                          valueColor: Colors.purple[800],
-                        ),
+                        if (firstItem['itemSubGrpName'] != null)
+                          _buildCompactDetailChip(
+                            'Category',
+                            firstItem['itemSubGrpName'],
+                          ),
+                        if (firstItem['itemName'] != null)
+                          _buildCompactDetailChip(
+                            'Product',
+                            firstItem['itemName'],
+                          ),
+                        if (firstItem['brandName'] != null)
+                          _buildCompactDetailChip(
+                            'Brand',
+                            firstItem['brandName'],
+                          ),
                       ],
                     ),
                   ],
@@ -1670,151 +1729,689 @@ class _StyleCardState extends State<StyleCard> {
             ],
           ),
         ),
-        const SizedBox(height: 15),
+      ],
+    );
+  }
 
-        ...widget.selectedColors.map(
-          (color) => Column(
-            children: [
-              _buildColorSection(widget.catalogOrder, color),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed:
-                          _isLoading ? null : () => _submitDelete(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 10.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: BorderSide(color: Colors.red.shade600),
-                      ),
-                      icon: Icon(Icons.delete, color: Colors.red.shade600),
-                      label: Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.red.shade600,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12.0),
-                  Expanded(
-                    child: TextButton(
-                      onPressed:
-                          _isLoading || !_hasQuantityChanged
-                              ? null
-                              : () => _submitUpdate(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 10.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: BorderSide(
-                          color:
-                              _hasQuantityChanged
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade400,
-                        ),
-                        backgroundColor:
-                            _hasQuantityChanged
-                                ? AppColors.primaryColor.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
-                      ),
-                      child:
-                          _isLoading
-                              ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Updating...',
-                                    style: TextStyle(
-                                      color: AppColors.primaryColor,
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: AppColors.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              )
-                              : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.save,
-                                    color:
-                                        _hasQuantityChanged
-                                            ? AppColors.primaryColor
-                                            : Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Update',
-                                    style: TextStyle(
-                                      color:
-                                          _hasQuantityChanged
-                                              ? AppColors.primaryColor
-                                              : Colors.grey.shade400,
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-            ],
+  // Helper method for detail chips
+  Widget _buildCompactDetailChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: TableColors.priceRowBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: TableColors.borderColor.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade800,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // New stats row
+  Widget _buildStatsRow() {
+    return Row(
+      children: [
+        // Expanded(
+        //   child: _buildStatRow(
+        //     'Stock',
+        //     _calculateStockQuantity().toString(),
+        //     Icons.inventory,
+        //     Colors.blue.shade700,
+        //   ),
+        // ),
+        // const SizedBox(width: 6),
+        Expanded(
+          child: _buildStatRow(
+            'Qty',
+            _calculateCatalogQuantity().toString(),
+            Icons.shopping_bag,
+            Colors.orange.shade700,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _buildStatRow(
+            'Amt',
+            '₹${_calculateCatalogPrice().toStringAsFixed(0)}',
+            Icons.currency_rupee,
+            Colors.green.shade700,
           ),
         ),
       ],
     );
   }
 
-  TableRow _buildTableRow(String label, String value, {Color? valueColor}) {
-    return TableRow(
-      children: [
-        Align(
-          alignment: Alignment.topLeft,
-          child: Text(label, style: GoogleFonts.roboto(fontSize: 14)),
-        ),
-        Align(
-          alignment: Alignment.center,
-          child: const Text(":", style: TextStyle(fontSize: 14)),
-        ),
-        Align(
-          alignment: Alignment.topLeft,
-          child: Text(
+  Widget _buildStatRow(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
             value,
-            style: GoogleFonts.roboto(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.black,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced price table with full width
+  Widget _buildEnhancedPriceTable(String shade) {
+    final matrix = widget.catalogOrder.orderMatrix;
+    final shadeIndex = matrix.shades.indexOf(shade.trim());
+    if (shadeIndex == -1) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: TableColors.borderColor),
+          bottom: BorderSide(color: TableColors.borderColor),
+        ),
+        color: Colors.white,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Table(
+              border: TableBorder.all(
+                color: TableColors.borderColor,
+                width: 0.5,
+              ),
+              columnWidths: _buildColumnWidths(matrix.sizes.length),
+              children: [
+                // Header row with enhanced diagonal
+                _buildEnhancedHeaderRow(matrix.sizes),
+
+                // MRP row
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.priceRowBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        color: TableColors.accentColor.withOpacity(0.1),
+                        child: const Text(
+                          'MRP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: TableColors.accentColor,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...matrix.sizes.asMap().entries.map((entry) {
+                      final sizeIndex = entry.key;
+                      final matrixData = matrix.matrix[sizeIndex][shadeIndex]
+                          .split(',');
+                      final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: TableColors.borderColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '₹$mrp',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+
+                // WSP row
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.priceRowBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        color: TableColors.accentColor.withOpacity(0.1),
+                        child: const Text(
+                          'WSP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: TableColors.accentColor,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...matrix.sizes.asMap().entries.map((entry) {
+                      final sizeIndex = entry.key;
+                      final matrixData = matrix.matrix[sizeIndex][shadeIndex]
+                          .split(',');
+                      final wsp = matrixData.length > 1 ? matrixData[1] : '0';
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: TableColors.borderColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '₹$wsp',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+
+                // Shade row with quantity fields (same functionality)
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.evenRowBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(
+                              color: TableColors.borderColor,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Copy icon (same functionality as before)
+                            Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(4),
+                                  onTap: () => _showShadeCopyOptions(shade),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: TableColors.accentColor
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Icon(
+                                      Icons.copy_all,
+                                      size: 14,
+                                      color: TableColors.accentColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                shade,
+                                style: TextStyle(
+                                  color: widget.getColor(shade),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    ...matrix.sizes.asMap().entries.map((entry) {
+                      final sizeIndex = entry.key;
+                      final size = entry.value;
+                      final currentQty = widget.quantities[shade]?[size] ?? 0;
+
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: TableColors.borderColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: TextField(
+                            controller:
+                                widget.styleManager.controllers[widget
+                                    .styleCode]?[shade]?[size],
+                            textAlign: TextAlign.center,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
+                              hintText: currentQty.toString(),
+                              hintStyle: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade400,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: TableColors.accentColor,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
+                            onChanged: (value) {
+                              final newQuantity =
+                                  int.tryParse(value.isEmpty ? '0' : value) ??
+                                  0;
+                              if (widget.quantities[shade] != null) {
+                                setState(() {
+                                  widget.quantities[shade]![size] = newQuantity;
+                                  _hasQuantityChanged = _checkQuantityChanged();
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Enhanced header row with diagonal
+  TableRow _buildEnhancedHeaderRow(List<String> sizes) {
+    return TableRow(
+      decoration: BoxDecoration(color: TableColors.headerBg),
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            height: 50,
+            child: CustomPaint(
+              painter: _SimpleDiagonalPainter(),
+              child: const Stack(
+                children: [
+                  Positioned(
+                    left: 12,
+                    top: 22,
+                    child: Text(
+                      'SHADE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                        fontSize: 14,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 14,
+                    bottom: 22,
+                    child: Text(
+                      'SIZE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber,
+                        fontSize: 14,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        ...sizes.map(
+          (size) => TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  size,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Map<int, TableColumnWidth> _buildColumnWidths(int sizeCount) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double firstColumnWidth = 140;
+    double remainingWidth = screenWidth - firstColumnWidth;
+    double sizeColumnWidth = remainingWidth / (sizeCount > 0 ? sizeCount : 1);
+
+    if (sizeColumnWidth < 70) {
+      sizeColumnWidth = 70;
+    }
+
+    return {
+      0: FixedColumnWidth(firstColumnWidth),
+      for (var i = 0; i < sizeCount; i++)
+        i + 1: FixedColumnWidth(sizeColumnWidth),
+    };
+  }
+
+  // Enhanced action buttons with reduced height
+  Widget _buildActionButtons() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Note field (unchanged functionality)
+        TextField(
+          controller: TextEditingController(
+            text: widget.catalogOrder.catalog.remark,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Note',
+            labelStyle: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TableColors.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 7,
+            ),
+            isDense: true,
+          ),
+          style: const TextStyle(fontSize: 11),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            // Update Button
+            Expanded(
+              child: _buildCompactGradientButton(
+                label: 'Update',
+                icon: Icons.update,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                onPressed:
+                    _isLoading || !_hasQuantityChanged
+                        ? null
+                        : () => _submitUpdate(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Remove Button
+            Expanded(
+              child: _buildCompactGradientButton(
+                label: 'Remove',
+                icon: Icons.delete,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFf44336), Color(0xFFd32f2f)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                onPressed: _isLoading ? null : () => _submitDelete(context),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactGradientButton({
+    required String label,
+    required IconData icon,
+    required LinearGradient gradient,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      height: 32,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          minimumSize: const Size(double.infinity, 28),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showShadeCopyOptions(String shade) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Copy Options for $shade',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: TableColors.accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.copy_all,
+                    color: TableColors.accentColor,
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Copy Qty in shade only',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                subtitle: Text(
+                  'Copy first quantity to all sizes in this shade',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  final firstQty =
+                      widget
+                          .styleManager
+                          .controllers[widget.styleCode]?[shade]
+                          ?.values
+                          .first
+                          .text;
+                  for (var size
+                      in widget
+                          .styleManager
+                          .controllers[widget.styleCode]![shade]!
+                          .keys) {
+                    widget
+                        .styleManager
+                        .controllers[widget.styleCode]![shade]![size]
+                        ?.text = firstQty ?? '0';
+                  }
+                  widget.onUpdate();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Original functionality methods (unchanged)
+  bool _checkQuantityChanged() {
+    for (var shade in widget.quantities.keys) {
+      for (var size in widget.quantities[shade]!.keys) {
+        final currentQty = widget.quantities[shade]![size]!;
+        final lastQty = _lastSavedQuantities[shade]?[size] ?? 0;
+        if (currentQty != lastQty) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   int _calculateCatalogQuantity() {
@@ -1866,262 +2463,60 @@ class _StyleCardState extends State<StyleCard> {
     return total;
   }
 
-  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-    final matrix = catalogOrder.orderMatrix;
-    final shadeIndex = matrix.shades.indexOf(shade.trim());
-    if (shadeIndex == -1) return const SizedBox.shrink();
+  Widget _buildItemImage(String imagePath) {
+    final imageUrl =
+        imagePath.contains("http")
+            ? imagePath
+            : '${AppConstants.BASE_URL}/images$imagePath';
 
-    // Calculate required width based on number of sizes
-    final screenWidth = MediaQuery.of(context).size.width;
-    final baseTableWidth = 120 + (90 * matrix.sizes.length);
-    final requiredTableWidth =
-        screenWidth > baseTableWidth ? screenWidth : baseTableWidth.toDouble();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: requiredTableWidth),
-          child: Table(
-            border: TableBorder.all(color: Colors.grey.shade400, width: 1),
-            columnWidths: {
-              0: const FixedColumnWidth(120),
-              for (int i = 0; i < matrix.sizes.length; i++)
-                i + 1: const FixedColumnWidth(90),
-            },
-            children: [
-  
-              /// HEADER ROW with diagonal line (Shade/Size)
-              TableRow(
-                children: [
-                  Container(
-                    height: 42,
-                    color: const Color.fromARGB(255, 236, 212, 204),
-                    child: CustomPaint(
-                      painter: _DiagonalLinePainter(),
-                      child: const Stack(
-                        children: [
-                          Positioned(
-                            left: 8,
-                            top: 20,
-                            child: Text(
-                              'Shade',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryColor,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 8,
-                            bottom: 20,
-                            child: Text(
-                              'Size',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    ImageZoomScreen(imageUrls: [imageUrl], initialIndex: 0),
+          ),
+        );
+      },
+      child: Container(
+        width: 90,
+        height: 110,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: TableColors.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            loadingBuilder:
+                (context, child, loadingProgress) =>
+                    loadingProgress == null
+                        ? child
+                        : const Center(child: CircularProgressIndicator()),
+            errorBuilder:
+                (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade200,
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 30,
+                    color: Colors.grey,
                   ),
-                  ...matrix.sizes
-                      .map(
-                        (size) => Container(
-                          height: 42,
-                          color: const Color.fromARGB(255, 236, 212, 204),
-                          alignment: Alignment.center,
-                          child: Text(
-                            size,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ],
-              ),
-
-                           /// MRP ROW
-              TableRow(
-                decoration: const BoxDecoration(color: Colors.white),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: Text(
-                        'MRP',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ...matrix.sizes.asMap().entries.map((entry) {
-                    final sizeIndex = entry.key;
-                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
-                        .split(',');
-                    final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
-                    return Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      color: Colors.grey.shade100,
-                      child: Center(
-                        child: Text(
-                          "$mrp",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-
-              /// WSP ROW
-              TableRow(
-                decoration: const BoxDecoration(color: Colors.white),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: Text('WSP', style: TextStyle(fontSize: 13)),
-                    ),
-                  ),
-                  ...matrix.sizes.asMap().entries.map((entry) {
-                    final sizeIndex = entry.key;
-                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
-                        .split(',');
-                    final wsp = matrixData.length > 1 ? matrixData[1] : '0';
-                    return Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      color: Colors.grey.shade100,
-                      child: Center(
-                        child: Text(
-                          "$wsp",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-
-         
-              /// SHADE ROW with color-coded shade name
-              TableRow(
-                children: [
-                  Container(
-                    height: 40,
-                    color: Colors.grey.shade50,
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                       
-                          Text(
-                            shade,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: widget.getColor(shade),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  ...matrix.sizes.asMap().entries.map((entry) {
-                    final sizeIndex = entry.key;
-                    final size = entry.value;
-
-                    final matrixData = matrix.matrix[sizeIndex][shadeIndex]
-                        .split(',');
-                    final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
-                    final currentQty = widget.quantities[shade]?[size] ?? 0;
-
-                    return Container(
-                      height: 40,
-                      color: Colors.white,
-                      padding: const EdgeInsets.all(4),
-                      child: Center(
-                        child: TextField(
-                          controller:
-                              widget.styleManager.controllers[widget
-                                  .styleCode]?[shade]?[size],
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: currentQty.toString(),
-                            hintStyle: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade400,
-                            ),
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(4),
-                          ],
-                          onChanged: (value) {
-                            final newQuantity =
-                                int.tryParse(value.isEmpty ? '0' : value) ?? 0;
-                            if (widget.quantities[shade] != null) {
-                              setState(() {
-                                widget.quantities[shade]![size] = newQuantity;
-                                _hasQuantityChanged = _checkQuantityChanged();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ],
+                ),
           ),
         ),
       ),
     );
-  }
-
-  bool _checkQuantityChanged() {
-    for (var shade in widget.quantities.keys) {
-      for (var size in widget.quantities[shade]!.keys) {
-        final currentQty = widget.quantities[shade]![size]!;
-        final lastQty = _lastSavedQuantities[shade]?[size] ?? 0;
-        if (currentQty != lastQty) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   void _showErrorDialog(BuildContext context, String message) {
@@ -2408,6 +2803,23 @@ class _StyleCardState extends State<StyleCard> {
   }
 }
 
+// Simple diagonal painter
+class _SimpleDiagonalPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.3)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+
+    canvas.drawLine(Offset.zero, Offset(size.width, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class ImageZoomScreen extends StatelessWidget {
   final List<String> imageUrls;
   final int initialIndex;
@@ -2469,7 +2881,6 @@ class _OrderForm extends StatefulWidget {
 }
 
 class _OrderFormState extends State<_OrderForm> {
-  
   final Color slate600 = const Color(0xFF64748B);
   final Color slateBorder = const Color(0xFFCBD5E1);
 
@@ -2603,6 +3014,7 @@ class _OrderFormState extends State<_OrderForm> {
           widget.controllers.totalAmt,
           readOnly: true,
         ),
+
         // Row(
         //   children: [
         //     Expanded(
@@ -2717,8 +3129,6 @@ class _OrderFormState extends State<_OrderForm> {
         //     ),
         //   ],
         // ),
-     
-     
       ],
     );
   }
@@ -2758,87 +3168,88 @@ class _OrderFormState extends State<_OrderForm> {
     );
   }
 
-Widget _buildDropdown(
-  String label,
-  String ledCat,
-  String? selectedValue,
-  Function(String?, String?) onChanged, {
-  bool isEnabled = true,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: DropdownSearch<String>(
-      popupProps: PopupProps.menu(
-        showSearchBox: true,
-        searchFieldProps: TextFieldProps(
-          decoration: InputDecoration(
-            hintText: _getSearchHint(label),
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-            border: OutlineInputBorder(
+  Widget _buildDropdown(
+    String label,
+    String ledCat,
+    String? selectedValue,
+    Function(String?, String?) onChanged, {
+    bool isEnabled = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DropdownSearch<String>(
+        popupProps: PopupProps.menu(
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: InputDecoration(
+              hintText: _getSearchHint(label),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
+        ),
+
+        items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
+
+        /// ⭐ SEARCH ONLY BEFORE -->
+        filterFn: (item, filter) {
+          if (filter.isEmpty) return true;
+
+          final namePart =
+              item.contains('-->')
+                  ? item.split('-->').first.trim().toLowerCase()
+                  : item.toLowerCase();
+
+          return namePart.contains(filter.toLowerCase());
+        },
+
+        selectedItem: selectedValue,
+
+        dropdownDecoratorProps: DropDownDecoratorProps(
+          dropdownSearchDecoration: InputDecoration(
+            labelText: label,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
               borderRadius: BorderRadius.circular(8),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            labelStyle: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
+
+        dropdownBuilder: (context, selectedItem) {
+          return Text(
+            selectedItem ?? '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16),
+          );
+        },
+
+        onChanged:
+            isEnabled
+                ? (val) => onChanged(val, _getKeyFromValue(ledCat, val))
+                : null,
+
+        enabled: isEnabled,
       ),
-
-      items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
-
-      /// ⭐ SEARCH ONLY BEFORE -->
-      filterFn: (item, filter) {
-        if (filter.isEmpty) return true;
-
-        final namePart = item.contains('-->')
-            ? item.split('-->').first.trim().toLowerCase()
-            : item.toLowerCase();
-
-        return namePart.contains(filter.toLowerCase());
-      },
-
-      selectedItem: selectedValue,
-
-      dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: InputDecoration(
-          labelText: label,
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          labelStyle: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-
-      dropdownBuilder: (context, selectedItem) {
-        return Text(
-          selectedItem ?? '',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16),
-        );
-      },
-
-      onChanged:
-          isEnabled
-              ? (val) => onChanged(val, _getKeyFromValue(ledCat, val))
-              : null,
-
-      enabled: isEnabled,
-    ),
-  );
-}
+    );
+  }
 
   List<Map<String, String>> _getLedgerList(String ledCat) {
     switch (ledCat) {
@@ -2899,7 +3310,6 @@ Widget buildTextField(
   VoidCallback? onTap,
   bool isText = false,
 }) {
-  
   final Color slateBorder = const Color(0xFFCBD5E1);
 
   return Padding(
@@ -3050,8 +3460,6 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       insetPadding: const EdgeInsets.symmetric(

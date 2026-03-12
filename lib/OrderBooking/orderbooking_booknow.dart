@@ -742,41 +742,44 @@ class _OrderPageState extends State<OrderPage> {
           ],
         ),
       ),
-      floatingActionButton: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          FloatingActionButton(
-            onPressed: _showFilterDialog,
-            backgroundColor:
-                _getActiveFilterCount() > 0
-                    ? Colors.pink
-                    : AppColors.primaryColor,
-            child: Icon(Icons.filter_alt, color: Colors.white),
-            tooltip: 'Filter',
-          ),
-          if (_getActiveFilterCount() > 0)
-            Positioned(
-              right: 0,
-              top: -5,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.pink,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: Text(
-                  '${_getActiveFilterCount()}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+   floatingActionButton: Padding(
+  padding: const EdgeInsets.only(bottom: 40), // Add bottom padding to move it up
+  child: Stack(
+    clipBehavior: Clip.none,
+    children: [
+      FloatingActionButton(
+        onPressed: _showFilterDialog,
+        backgroundColor:
+            _getActiveFilterCount() > 0
+                ? Colors.pink
+                : AppColors.primaryColor,
+        child: Icon(Icons.filter_alt, color: Colors.white),
+        tooltip: 'Filter',
+      ),
+      if (_getActiveFilterCount() > 0)
+        Positioned(
+          right: 0,
+          top: -5,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.pink,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: Text(
+              '${_getActiveFilterCount()}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
               ),
             ),
-        ],
-      ),
+          ),
+        ),
+    ],
+  ),
+),
     );
   }
 
@@ -1671,206 +1674,133 @@ class _OrderPageState extends State<OrderPage> {
     );
   }
 
-  List<Widget> _buildButtonChildren(bool isLargeScreen) {
-    final buttonColor = AppColors.primaryColor;
+ List<Widget> _buildButtonChildren(bool isLargeScreen) {
+  final buttonColor = AppColors.primaryColor;
 
-    final unifiedButtonGroup = Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: buttonColor, width: 1),
+  final unifiedButtonGroup = Container(
+    height: 44,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(10),
+      gradient: LinearGradient(
+        colors: [
+          buttonColor, // Primary color
+          buttonColor.withOpacity(0.8), // Lighter version
+          buttonColor.withOpacity(0.9), // Slightly darker
+        ],
+        stops: const [0.0, 0.6, 1.0],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: buttonColor,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
+      border: Border.all(
+        color: Colors.black.withOpacity(0.3), // Dark border with opacity
+        width: 1.5,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: buttonColor.withOpacity(0.4),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
+          spreadRadius: 1,
+        ),
+      ],
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(9), // Slightly smaller to show border
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            final currentArgs = ModalRoute.of(context)?.settings.arguments;
+            Widget screen;
+
+            if (AppConstants.bookingType == "1") {
+              screen = MultiCatalogBookingPage(
+                catalogs: selectedItems,
+                routeArguments: currentArgs as Map<String, dynamic>?,
+                onSuccess: () {
+                  setState(() {
+                    selectedItems.clear();
+                  });
+                  _fetchCartCount();
+                  Provider.of<CartModel>(
+                    context,
+                    listen: false,
+                  ).refreshAddedItems();
+                },
+              );
+            } else if (AppConstants.bookingType == "2") {
+              screen = CreateOrderScreen(
+                catalogs: selectedItems,
+                routeArguments: currentArgs as Map<String, dynamic>?,
+                onSuccess: () {
+                  setState(() {
+                    selectedItems.clear();
+                  });
+                  _fetchCartCount();
+                  Provider.of<CartModel>(
+                    context,
+                    listen: false,
+                  ).refreshAddedItems();
+                },
+              );
+            } else {
+              screen = CreateOrderScreen3(
+                catalogs: selectedItems,
+                onSuccess: () {
+                  setState(() {
+                    selectedItems.clear();
+                  });
+                  _fetchCartCount();
+                  Provider.of<CartModel>(
+                    context,
+                    listen: false,
+                  ).refreshAddedItems();
+                },
+              );
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => screen),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isEdit ? Icons.add_circle : Icons.shopping_cart,
+                  color: Colors.white,
+                  size: 18,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: () {
-                final currentArgs = ModalRoute.of(context)?.settings.arguments;
-                Widget screen;
-
-                if (AppConstants.bookingType == "1") {
-                  screen = MultiCatalogBookingPage(
-                    catalogs: selectedItems,
-                    routeArguments: currentArgs as Map<String, dynamic>?,
-                    onSuccess: () {
-                      setState(() {
-                        selectedItems.clear();
-                      });
-                      _fetchCartCount();
-                      Provider.of<CartModel>(
-                        context,
-                        listen: false,
-                      ).refreshAddedItems();
-                    },
-                  );
-                } else if (AppConstants.bookingType == "2") {
-                  screen = CreateOrderScreen(
-                    catalogs: selectedItems,
-                    routeArguments: currentArgs as Map<String, dynamic>?,
-                    onSuccess: () {
-                      setState(() {
-                        selectedItems.clear();
-                      });
-                      _fetchCartCount();
-                      Provider.of<CartModel>(
-                        context,
-                        listen: false,
-                      ).refreshAddedItems();
-                    },
-                  );
-                } else {
-                  screen = CreateOrderScreen3(
-                    catalogs: selectedItems,
-                    // routeArguments: currentArgs as Map<String, dynamic>?,
-                    onSuccess: () {
-                      setState(() {
-                        selectedItems.clear();
-                      });
-                      _fetchCartCount();
-                      Provider.of<CartModel>(
-                        context,
-                        listen: false,
-                      ).refreshAddedItems();
-                    },
-                  );
-                }
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => screen),
-                );
-              },
-              child: Text(isEdit ? 'Add more' : 'BOOK NOW'),
+                const SizedBox(width: 8),
+                Text(
+                  isEdit ? 'ADD MORE' : 'BOOK NOW',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
-      // child: Row(
-      //   children: [
-      //     Expanded(
-      //       child: TextButton(
-      //         style: TextButton.styleFrom(
-      //           backgroundColor: Colors.white,
-      //           foregroundColor: buttonColor,
-      //           shape: const RoundedRectangleBorder(
-      //             borderRadius: BorderRadius.only(
-      //               topLeft: Radius.circular(8),
-      //               bottomLeft: Radius.circular(8),
-      //             ),
-      //           ),
-      //           padding: const EdgeInsets.symmetric(vertical: 12),
-      //         ),
-      //         onPressed:
-      //             () => Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder:
-      //                     (context) => MultiCatalogBookingPage(
-      //                       catalogs: selectedItems,
-      //                       onSuccess: () {
-      //                         setState(() {
-      //                           selectedItems.clear();
-      //                         });
-      //                         _fetchCartCount();
-      //                         Provider.of<CartModel>(
-      //                           context,
-      //                           listen: false,
-      //                         ).refreshAddedItems();
-      //                       },
-      //                     ),
-      //               ),
-      //             ),
-      //         child: Text(isEdit ? 'Add more' : 'BOOK NOW4'),
-      //       ),
-      //     ),
-      //     Container(height: 42, width: 2, color: buttonColor),
-      //     Expanded(
-      //       child: TextButton(
-      //         style: TextButton.styleFrom(
-      //           backgroundColor: Colors.white,
-      //           foregroundColor: buttonColor,
-      //           padding: const EdgeInsets.symmetric(vertical: 12),
-      //         ),
-      //         onPressed:
-      //             () => Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder:
-      //                     (context) => CreateOrderScreen(
-      //                       catalogs: selectedItems,
-      //                       onSuccess: () {
-      //                         setState(() {
-      //                           selectedItems.clear();
-      //                         });
-      //                         _fetchCartCount();
-      //                         Provider.of<CartModel>(
-      //                           context,
-      //                           listen: false,
-      //                         ).refreshAddedItems();
-      //                       },
-      //                     ),
-      //               ),
-      //             ),
-      //         child: const Icon(Icons.shopping_cart),
-      //       ),
-      //     ),
-      //     Container(height: 42, width: 2, color: buttonColor),
-      //     Expanded(
-      //       child: TextButton(
-      //         style: TextButton.styleFrom(
-      //           backgroundColor: Colors.white,
-      //           foregroundColor: buttonColor,
-      //           shape: const RoundedRectangleBorder(
-      //             borderRadius: BorderRadius.only(
-      //               topRight: Radius.circular(8),
-      //               bottomRight: Radius.circular(8),
-      //             ),
-      //           ),
-      //           padding: const EdgeInsets.symmetric(vertical: 12),
-      //         ),
-      //         onPressed:
-      //             () => Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder:
-      //                     (context) => CreateOrderScreen3(
-      //                       catalogs: selectedItems,
-      //                       onSuccess: () {
-      //                         setState(() {
-      //                           selectedItems.clear();
-      //                         });
-      //                         _fetchCartCount();
-      //                         Provider.of<CartModel>(
-      //                           context,
-      //                           listen: false,
-      //                         ).refreshAddedItems();
-      //                       },
-      //                     ),
-      //               ),
-      //             ),
-      //         child: const Icon(Icons.assignment),
-      //       ),
-      //     ),
-      //   ],
-      // ),
-    );
+    ),
+  );
 
-    return [
-      if (selectedItems.isNotEmpty)
-        isLargeScreen
-            ? Expanded(child: unifiedButtonGroup)
-            : unifiedButtonGroup,
-    ];
-  }
-
+  return [
+    if (selectedItems.isNotEmpty)
+      isLargeScreen
+          ? Expanded(child: unifiedButtonGroup)
+          : unifiedButtonGroup,
+  ];
+}
   List<String> _getImageUrls(Catalog catalog) {
     final shadeImages = catalog.shadeImages ?? '';
     final fullImagePath = catalog.fullImagePath ?? '';

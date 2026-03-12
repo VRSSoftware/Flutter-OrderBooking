@@ -57,14 +57,14 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         // primarySwatch: AppColors.primaryColor
-        primarySwatch: Colors.blue,
-        progressIndicatorTheme: ProgressIndicatorThemeData(color: Colors.blue),
+        primaryColor: const Color(0xFF072F5F),
+        progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.primaryColor),
         checkboxTheme: CheckboxThemeData(
           checkColor: WidgetStateProperty.all(Colors.white),
-          overlayColor: WidgetStateProperty.all(Colors.blue),
+          overlayColor: WidgetStateProperty.all(AppColors.primaryColor),
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
-              return Colors.blue; // your desired background color when checked
+              return AppColors.primaryColor; // your desired background color when checked
             }
             return Colors.grey.shade300; // color when unchecked
           }),

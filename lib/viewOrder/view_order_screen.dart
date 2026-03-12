@@ -810,7 +810,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                   }
                 },
                 child: const Text(
-                  "Save",
+                  "Confirm",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -2076,3 +2076,5 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
     Navigator.pop(context, newInfo);
   }
 }
+
+

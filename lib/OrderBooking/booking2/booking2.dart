@@ -574,47 +574,52 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColors.primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
-     title: AnimatedSwitcher(
-  duration: const Duration(milliseconds: 250),
-  transitionBuilder: (child, animation) {
-    return FadeTransition(
-      opacity: animation,
-      child: SizeTransition(
-        sizeFactor: animation,
-        axis: Axis.horizontal,
-        child: child,
-      ),
-    );
-  },
-  child: _isSearching
-      ? Container(
-          key: const ValueKey("search"),
-          height: 36, // smaller height
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25), // smooth curve
-          ),
-          child: TextField(
-            controller: _searchController,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
-            decoration: const InputDecoration(
-              hintText: "Search by Style Code...",
-              hintStyle: TextStyle(color: Colors.grey),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-              prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
-            ),
-          ),
-        )
-      : Text(
-          'Order Booking',
-          key: const ValueKey("title"),
-          style: GoogleFonts.poppins(color: Colors.white),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axis: Axis.horizontal,
+                child: child,
+              ),
+            );
+          },
+          child:
+              _isSearching
+                  ? Container(
+                    key: const ValueKey("search"),
+                    height: 36, // smaller height
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25), // smooth curve
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                      decoration: const InputDecoration(
+                        hintText: "Search by Style Code...",
+                        hintStyle: TextStyle(color: Colors.grey),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  )
+                  : Text(
+                    'Order Booking',
+                    key: const ValueKey("title"),
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
         ),
-),
         actions: [
           if (!_isSearching)
             IconButton(
@@ -627,30 +632,56 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(20.0),
-          child: Column(
-            children: [
-              const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Text(
-                    'Total: ₹${_calculateTotalPrice().toStringAsFixed(2)}',
-                    style: GoogleFonts.roboto(color: Colors.white),
+          preferredSize: const Size.fromHeight(
+            40.0,
+          ), // Increased height to accommodate content
+          child: Container(
+            color: AppColors.maroon, // Maroon background color
+            child: Column(
+              children: [
+                const Divider(
+                  color:
+                      Colors
+                          .white30, // Lighter divider color for better visibility
+                  height: 1,
+                  thickness: 1,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text(
+                        'Total: ₹${_calculateTotalPrice().toStringAsFixed(2)}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Container(height: 20, width: 1, color: Colors.white30),
+                      Text(
+                        'Total Item: ${filteredCatalogOrderList.length}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Container(height: 20, width: 1, color: Colors.white30),
+                      Text(
+                        'Total Qty: ${_calculateTotalQuantity()}',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const VerticalDivider(color: Colors.white),
-                  Text(
-                    'Total Item: ${filteredCatalogOrderList.length}', // CHANGED THIS LINE
-                    style: GoogleFonts.roboto(color: Colors.white),
-                  ),
-                  const VerticalDivider(color: Colors.white, thickness: 2),
-                  Text(
-                    'Total Qty: ${_calculateTotalQuantity()}',
-                    style: GoogleFonts.roboto(color: Colors.white),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -741,7 +772,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   child: Text(
                     'BACK',
                     style: GoogleFonts.montserrat(
-                      color: Colors.blue,
+                      color: AppColors.primaryColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
@@ -753,7 +784,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   style: TextButton.styleFrom(
                     backgroundColor:
                         _calculateTotalQuantity() > 0
-                            ? Colors.blue
+                            ? AppColors.primaryColor
                             : Colors.grey.shade300,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
@@ -767,7 +798,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       color:
                           _calculateTotalQuantity() > 0
                               ? Colors.white
-                              : Colors.blue,
+                              : AppColors.primaryColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
@@ -832,176 +863,421 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Card(
           elevation: 3,
           margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// Product Image
-                InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ImageZoomScreen(
-                              imageUrls: [imageUrl],
-                              initialIndex: 0,
-                            ),
-                      ),
-                    );
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
-                    child: Image.network(
-                      imageUrl,
-                      width: 70,
-                      height: 90,
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white,
+                  AppColors.primaryColor.withOpacity(0.03),
+                  AppColors.primaryColor.withOpacity(0.06),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.7, 1.0],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Product Image with improved styling
+                  Material(
+                    borderRadius: BorderRadius.circular(8),
+                    elevation: 2,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ImageZoomScreen(
+                                  imageUrls: [imageUrl],
+                                  initialIndex: 0,
+                                ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 70,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                          gradient: LinearGradient(
+                            colors: [Colors.grey.shade50, Colors.grey.shade100],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(7),
+                          child: Image.network(
+                            imageUrl,
                             width: 70,
                             height: 90,
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.broken_image),
+                            fit: BoxFit.contain,
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  width: 70,
+                                  height: 90,
+                                  color: Colors.grey.shade100,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey.shade400,
+                                    size: 30,
+                                  ),
+                                ),
                           ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
 
-                /// Details Section
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// Style Code + Actions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Chip(
-                            label: Text(
-                              catalog.styleCode,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                  /// Details Section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        /// Style Code + Actions
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            /// Style Code Chip - Improved design with gradient
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primaryColor.withOpacity(0.15),
+                                    AppColors.primaryColor.withOpacity(0.08),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.3,
+                                  ),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                catalog.styleCode,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: AppColors.primaryColor,
+                                ),
                               ),
                             ),
-                            backgroundColor: Colors.blue.shade50,
-                          ),
 
-                          Row(
-                            children: [
-                              /// Copy Button
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.blue.shade50,
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.copy,
-                                    size: 18,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                  onPressed: () async {
-                                    final result = await showDialog<
-                                      Set<String>
-                                    >(
-                                      context: context,
-                                      builder:
-                                          (context) => CopyToStylesDialog(
-                                            styleKeys:
-                                                catalogOrderList
-                                                    .map(
-                                                      (order) =>
-                                                          order
-                                                              .catalog
-                                                              .styleKey,
-                                                    )
-                                                    .where(
-                                                      (key) =>
-                                                          key !=
-                                                          catalog.styleKey,
-                                                    )
-                                                    .toList(),
-                                            styleCodes:
-                                                catalogOrderList
-                                                    .map(
-                                                      (order) =>
-                                                          order
-                                                              .catalog
-                                                              .styleCode,
-                                                    )
-                                                    .toList(),
-                                            sourceStyleKey: catalog.styleKey,
-                                            sourceStyleCode: catalog.styleCode,
-                                          ),
-                                    );
-
-                                    if (result != null && result.isNotEmpty) {
-                                      _copyStyleQuantities(
-                                        catalog.styleKey,
-                                        result,
+                            /// Action Buttons Row
+                            Row(
+                              children: [
+                                /// Copy Button with Material design and gradient
+                                Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () async {
+                                      final result = await showDialog<
+                                        Set<String>
+                                      >(
+                                        context: context,
+                                        builder:
+                                            (context) => CopyToStylesDialog(
+                                              styleKeys:
+                                                  catalogOrderList
+                                                      .map(
+                                                        (order) =>
+                                                            order
+                                                                .catalog
+                                                                .styleKey,
+                                                      )
+                                                      .where(
+                                                        (key) =>
+                                                            key !=
+                                                            catalog.styleKey,
+                                                      )
+                                                      .toList(),
+                                              styleCodes:
+                                                  catalogOrderList
+                                                      .map(
+                                                        (order) =>
+                                                            order
+                                                                .catalog
+                                                                .styleCode,
+                                                      )
+                                                      .toList(),
+                                              sourceStyleKey: catalog.styleKey,
+                                              sourceStyleCode:
+                                                  catalog.styleCode,
+                                            ),
                                       );
-                                    }
-                                  },
+
+                                      if (result != null && result.isNotEmpty) {
+                                        _copyStyleQuantities(
+                                          catalog.styleKey,
+                                          result,
+                                        );
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.primaryColor.withOpacity(
+                                              0.15,
+                                            ),
+                                            AppColors.primaryColor.withOpacity(
+                                              0.05,
+                                            ),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColors.primaryColor
+                                              .withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.copy,
+                                        size: 16,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                /// Delete Button with Material design and gradient
+                                Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () {
+                                      _confirmDeleteStyle(
+                                        catalog.styleKey,
+                                        catalog.styleCode,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.red.withOpacity(0.15),
+                                            Colors.red.withOpacity(0.05),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.red.withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.delete,
+                                        size: 16,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        /// Qty, Pending, WIP in same line
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              /// Quantity
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.shopping_bag,
+                                        size: 12,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Qty',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_calculateCatalogQuantity(catalog.styleKey)}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
 
-                              const SizedBox(width: 8),
+                              /// Vertical Divider
+                              Container(
+                                width: 1,
+                                height: 30,
+                                color: Colors.grey.shade300,
+                              ),
 
-                              /// Delete Button
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.red.shade50,
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    size: 18,
-                                    color: Colors.red.shade700,
-                                  ),
-                                  // onPressed: () {
-                                  //   _deleteStyle(catalog.styleKey);
-                                  // },
-                                  onPressed: () {
-                                    _confirmDeleteStyle(
-                                      catalog.styleKey,
-                                      catalog.styleCode,
-                                    );
-                                  },
+                              /// Pending
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.pending,
+                                        size: 12,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Pending',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '0',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              /// Vertical Divider
+                              Container(
+                                width: 1,
+                                height: 30,
+                                color: Colors.grey.shade300,
+                              ),
+
+                              /// WIP
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.inventory,
+                                        size: 12,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'WIP',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '0',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      /// Quantity
-                      Text(
-                        'Total Qty: ${_calculateCatalogQuantity(catalog.styleKey)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-
-                      const SizedBox(height: 2),
-
-                      Text(
-                        'Pending Qty: 0   |   WIP Stock: 0',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1033,38 +1309,49 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return total;
   }
 
-  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-    final sizes = catalogOrder.orderMatrix.sizes;
-    final styleKey = catalogOrder.catalog.styleKey;
-    final allShades =
-        catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
+Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+  final sizes = catalogOrder.orderMatrix.sizes;
+  final styleKey = catalogOrder.catalog.styleKey;
+  final allShades =
+      catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
 
-    // Debug print to see what's available
-    print('Building color section for shade: $shade');
-    print('Catalog shadeImages: ${catalogOrder.catalog.shadeImages}');
+  // Debug print to see what's available
+  print('Building color section for shade: $shade');
+  print('Catalog shadeImages: ${catalogOrder.catalog.shadeImages}');
 
-    final imageUrl = _getShadeImageUrl(catalogOrder.catalog, shade);
-    print('Image URL for $shade: $imageUrl');
-    print('Should show icon: ${imageUrl != null}');
+  final imageUrl = _getShadeImageUrl(catalogOrder.catalog, shade);
+  print('Image URL for $shade: $imageUrl');
+  print('Should show icon: ${imageUrl != null}');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Column(
-            children: [
-              // Header row with Shade text and copy icon
-              Row(
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          children: [
+            // Header row with Shade text and copy icon
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+              child: Row(
                 children: [
                   Expanded(
                     flex: 2,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 1.0,
-                        horizontal: 8.0,
+                        vertical: 8.0,
+                        horizontal: 12.0,
                       ),
                       decoration: BoxDecoration(
                         border: Border(
@@ -1075,74 +1362,89 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "Shade",
+                            "SHADE",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.lora(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Copy icon - keep as is
-                          IconButton(
-                            icon: Icon(
-                              Icons.copy_all_outlined,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                            onPressed: () async {
-                              final result =
-                                  await showDialog<Map<String, dynamic>>(
-                                    context: context,
-                                    builder:
-                                        (context) => ShadeSelectionDialog(
-                                          shades:
-                                              allShades
-                                                  .where((s) => s != shade)
-                                                  .toList(),
-                                          sourceShade: shade,
-                                        ),
-                                  );
-
-                              if (result != null) {
-                                if (result['option'] == 'all_sizes') {
-                                  _copyShadeToAllSizes(styleKey, shade, sizes);
-                                } else if (result['option'] == 'other_shades') {
-                                  final selectedShades =
-                                      result['selectedShades'] as Set<String>;
-                                  if (selectedShades.isNotEmpty) {
-                                    _copyShadeQuantities(
-                                      styleKey,
-                                      shade,
-                                      selectedShades,
+                          // Copy icon with Material design
+                          Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () async {
+                                final result =
+                                    await showDialog<Map<String, dynamic>>(
+                                      context: context,
+                                      builder:
+                                          (context) => ShadeSelectionDialog(
+                                            shades:
+                                                allShades
+                                                    .where((s) => s != shade)
+                                                    .toList(),
+                                            sourceShade: shade,
+                                          ),
                                     );
+
+                                if (result != null) {
+                                  if (result['option'] == 'all_sizes') {
+                                    _copyShadeToAllSizes(styleKey, shade, sizes);
+                                  } else if (result['option'] == 'other_shades') {
+                                    final selectedShades =
+                                        result['selectedShades'] as Set<String>;
+                                    if (selectedShades.isNotEmpty) {
+                                      _copyShadeQuantities(
+                                        styleKey,
+                                        shade,
+                                        selectedShades,
+                                      );
+                                    }
                                   }
                                 }
-                              }
-                            },
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.copy_all,
+                                  size: 14,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  _buildHeader("Quantity", 1),
-                  _buildHeader("Amount", 1),
+                  _buildHeader("QUANTITY", 1),
+                  _buildHeader("AMOUNT", 1),
                 ],
               ),
+            ),
 
-              Divider(height: 1, color: Colors.grey.shade300),
+            Divider(height: 1, color: Colors.grey.shade300),
 
-              // Shade value row with image icon
-              Row(
+            // Shade value row with image icon
+            Container(
+              color: Colors.white,
+              child: Row(
                 children: [
                   Expanded(
                     flex: 2,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
-                        horizontal: 8.0,
+                        vertical: 8.0,
+                        horizontal: 12.0,
                       ),
                       decoration: BoxDecoration(
                         border: Border(
@@ -1157,8 +1459,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             child: Text(
                               shade,
                               style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                                 color: _getColorCode(shade),
+                                fontSize: 13,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -1166,29 +1469,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           // Always show a container for debugging
                           if (UserSession.imageDependsOn == 'S')
                             Container(
-                              margin: const EdgeInsets.only(left: 0),
-
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.image,
-                                  size: 24, // increased icon size
-                                  color:
-                                      imageUrl != null
-                                          ? Colors.blue.shade700
-                                          : Colors.red.shade700,
-                                ),
-
-                                splashColor:
-                                    Colors.transparent, // removes splash shadow
-                                highlightColor:
-                                    Colors.transparent, // removes highlight
-                                tooltip:
-                                    imageUrl != null
-                                        ? 'View shade image'
-                                        : 'No image available',
-                                onPressed:
-                                    imageUrl != null
-                                        ? () {
+                              margin: const EdgeInsets.only(left: 4),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: imageUrl != null
+                                      ? () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -1200,7 +1488,24 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                             ),
                                           );
                                         }
-                                        : null,
+                                      : null,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: imageUrl != null
+                                          ? AppColors.primaryColor.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 16,
+                                      color: imageUrl != null
+                                          ? AppColors.primaryColor
+                                          : Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                         ],
@@ -1211,7 +1516,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     flex: 1,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
+                        vertical: 8.0,
                         horizontal: 8.0,
                       ),
                       decoration: BoxDecoration(
@@ -1222,7 +1527,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       child: Text(
                         _calculateShadeQuantity(styleKey, shade).toString(),
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(fontSize: 14),
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade700,
+                        ),
                       ),
                     ),
                   ),
@@ -1230,7 +1539,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     flex: 1,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
+                        vertical: 8.0,
                         horizontal: 8.0,
                       ),
                       decoration: BoxDecoration(
@@ -1239,42 +1548,51 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                       ),
                       child: Text(
-                        '₹${_calculateShadePrice(catalogOrder, shade).toStringAsFixed(2)}',
+                        '₹${_calculateShadePrice(catalogOrder, shade).toStringAsFixed(0)}',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(fontSize: 14),
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.purple.shade700,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ),
 
-              Divider(height: 1, color: Colors.grey.shade300),
+            Divider(height: 1, color: Colors.grey.shade300),
 
-              // Size headers
-              Row(
+            // Size headers
+            Container(
+              color: Colors.grey.shade100,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
                 children: [
-                  _buildHeader("Size", 1),
-                  _buildHeader("Qty", 2),
+                  _buildHeader("SIZE", 1),
+                  _buildHeader("QTY", 2),
                   _buildHeader("MRP", 1),
                   _buildHeader("WSP", 1),
-                  _buildHeader("Stock", 1),
+                  _buildHeader("STOCK", 1),
                 ],
               ),
+            ),
 
-              Divider(height: 1, color: Colors.grey.shade300),
+            Divider(height: 1, color: Colors.grey.shade300),
 
-              // Size rows
-              for (var size in sizes) ...[
-                _buildSizeRow(catalogOrder, shade, size),
+            // Size rows
+            for (var size in sizes) ...[
+              _buildSizeRow(catalogOrder, shade, size),
+              if (size != sizes.last) 
                 Divider(height: 1, color: Colors.grey.shade300),
-              ],
             ],
-          ),
+          ],
         ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
   String? _getShadeImageUrl(Catalog catalog, String shadeName) {
     if (catalog.shadeImages.isEmpty) {
       print('shadeImages is empty');
