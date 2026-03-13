@@ -35,6 +35,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final Map<String, TextEditingController> _controllers = {};
   List<CatalogOrderData> filteredCatalogOrderList = [];
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
 
   @override
@@ -49,6 +50,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _controllers.forEach((_, controller) => controller.dispose());
     _searchController.removeListener(_filterSearchResults); // ADD THIS LINE
     _searchController.dispose();
+     _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -599,17 +601,27 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                     child: TextField(
                       controller: _searchController,
+                        focusNode: _searchFocusNode,
                       style: const TextStyle(fontSize: 14, color: Colors.black),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: "Search by Style Code...",
-                        hintStyle: TextStyle(color: Colors.grey),
+                        hintStyle: const TextStyle(color: Colors.grey),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
-                        prefixIcon: Icon(
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        prefixIcon: const Icon(
                           Icons.search,
                           color: Colors.grey,
                           size: 20,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _isSearching = false;
+                            });
+                          },
                         ),
                       ),
                     ),
@@ -625,10 +637,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             IconButton(
               icon: const Icon(Icons.search, color: Colors.white),
               onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                });
-              },
+  setState(() {
+    _isSearching = true;
+  });
+
+  Future.delayed(const Duration(milliseconds: 200), () {
+    _searchFocusNode.requestFocus();
+  });
+},
             ),
         ],
         bottom: PreferredSize(
@@ -1309,290 +1325,306 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return total;
   }
 
-Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
-  final sizes = catalogOrder.orderMatrix.sizes;
-  final styleKey = catalogOrder.catalog.styleKey;
-  final allShades =
-      catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
+  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+    final sizes = catalogOrder.orderMatrix.sizes;
+    final styleKey = catalogOrder.catalog.styleKey;
+    final allShades =
+        catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
 
-  // Debug print to see what's available
-  print('Building color section for shade: $shade');
-  print('Catalog shadeImages: ${catalogOrder.catalog.shadeImages}');
+    // Debug print to see what's available
+    print('Building color section for shade: $shade');
+    print('Catalog shadeImages: ${catalogOrder.catalog.shadeImages}');
 
-  final imageUrl = _getShadeImageUrl(catalogOrder.catalog, shade);
-  print('Image URL for $shade: $imageUrl');
-  print('Should show icon: ${imageUrl != null}');
+    final imageUrl = _getShadeImageUrl(catalogOrder.catalog, shade);
+    print('Image URL for $shade: $imageUrl');
+    print('Should show icon: ${imageUrl != null}');
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Card(
-        margin: EdgeInsets.zero,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          children: [
-            // Header row with Shade text and copy icon
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            children: [
+              // Header row with Shade text and copy icon
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 12.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8.0,
+                          horizontal: 12.0,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "SHADE",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.lora(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              letterSpacing: 0.5,
-                              color: Colors.grey.shade700,
-                            ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.grey.shade300),
                           ),
-                          const SizedBox(width: 8),
-                          // Copy icon with Material design
-                          Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            child: InkWell(
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "SHADE",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.lora(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                letterSpacing: 0.5,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Copy icon with Material design
+                            Material(
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () async {
-                                final result =
-                                    await showDialog<Map<String, dynamic>>(
-                                      context: context,
-                                      builder:
-                                          (context) => ShadeSelectionDialog(
-                                            shades:
-                                                allShades
-                                                    .where((s) => s != shade)
-                                                    .toList(),
-                                            sourceShade: shade,
-                                          ),
-                                    );
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () async {
+                                  final result =
+                                      await showDialog<Map<String, dynamic>>(
+                                        context: context,
+                                        builder:
+                                            (context) => ShadeSelectionDialog(
+                                              shades:
+                                                  allShades
+                                                      .where((s) => s != shade)
+                                                      .toList(),
+                                              sourceShade: shade,
+                                            ),
+                                      );
 
-                                if (result != null) {
-                                  if (result['option'] == 'all_sizes') {
-                                    _copyShadeToAllSizes(styleKey, shade, sizes);
-                                  } else if (result['option'] == 'other_shades') {
-                                    final selectedShades =
-                                        result['selectedShades'] as Set<String>;
-                                    if (selectedShades.isNotEmpty) {
-                                      _copyShadeQuantities(
+                                  if (result != null) {
+                                    if (result['option'] == 'all_sizes') {
+                                      _copyShadeToAllSizes(
                                         styleKey,
                                         shade,
-                                        selectedShades,
+                                        sizes,
                                       );
+                                    } else if (result['option'] ==
+                                        'other_shades') {
+                                      final selectedShades =
+                                          result['selectedShades']
+                                              as Set<String>;
+                                      if (selectedShades.isNotEmpty) {
+                                        _copyShadeQuantities(
+                                          styleKey,
+                                          shade,
+                                          selectedShades,
+                                        );
+                                      }
                                     }
                                   }
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.copy_all,
-                                  size: 14,
-                                  color: AppColors.primaryColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  _buildHeader("QUANTITY", 1),
-                  _buildHeader("AMOUNT", 1),
-                ],
-              ),
-            ),
-
-            Divider(height: 1, color: Colors.grey.shade300),
-
-            // Shade value row with image icon
-            Container(
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 12.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Shade name
-                          Expanded(
-                            child: Text(
-                              shade,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                color: _getColorCode(shade),
-                                fontSize: 13,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          // Always show a container for debugging
-                          if (UserSession.imageDependsOn == 'S')
-                            Container(
-                              margin: const EdgeInsets.only(left: 4),
-                              child: Material(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: imageUrl != null
-                                      ? () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (context) => ImageZoomScreen(
-                                                    imageUrls: [imageUrl],
-                                                    initialIndex: 0,
-                                                  ),
-                                            ),
-                                          );
-                                        }
-                                      : null,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: imageUrl != null
-                                          ? AppColors.primaryColor.withOpacity(0.1)
-                                          : Colors.red.withOpacity(0.1),
-                                      shape: BoxShape.circle,
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor.withOpacity(
+                                      0.1,
                                     ),
-                                    child: Icon(
-                                      Icons.image,
-                                      size: 16,
-                                      color: imageUrl != null
-                                          ? AppColors.primaryColor
-                                          : Colors.red.shade700,
-                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.copy_all,
+                                    size: 14,
+                                    color: AppColors.primaryColor,
                                   ),
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        _calculateShadeQuantity(styleKey, shade).toString(),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.green.shade700,
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        '₹${_calculateShadePrice(catalogOrder, shade).toStringAsFixed(0)}',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.purple.shade700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                    _buildHeader("QUANTITY", 1),
+                    _buildHeader("AMOUNT", 1),
+                  ],
+                ),
               ),
-            ),
 
-            Divider(height: 1, color: Colors.grey.shade300),
+              Divider(height: 1, color: Colors.grey.shade300),
 
-            // Size headers
-            Container(
-              color: Colors.grey.shade100,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  _buildHeader("SIZE", 1),
-                  _buildHeader("QTY", 2),
-                  _buildHeader("MRP", 1),
-                  _buildHeader("WSP", 1),
-                  _buildHeader("STOCK", 1),
-                ],
+              // Shade value row with image icon
+              Container(
+                color: Colors.white,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8.0,
+                          horizontal: 12.0,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Shade name
+                            Expanded(
+                              child: Text(
+                                shade,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: _getColorCode(shade),
+                                  fontSize: 13,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            // Always show a container for debugging
+                            if (UserSession.imageDependsOn == 'S')
+                              Container(
+                                margin: const EdgeInsets.only(left: 4),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap:
+                                        imageUrl != null
+                                            ? () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (context) =>
+                                                          ImageZoomScreen(
+                                                            imageUrls: [
+                                                              imageUrl,
+                                                            ],
+                                                            initialIndex: 0,
+                                                          ),
+                                                ),
+                                              );
+                                            }
+                                            : null,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            imageUrl != null
+                                                ? AppColors.primaryColor
+                                                    .withOpacity(0.1)
+                                                : Colors.red.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 16,
+                                        color:
+                                            imageUrl != null
+                                                ? AppColors.primaryColor
+                                                : Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8.0,
+                          horizontal: 8.0,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        child: Text(
+                          _calculateShadeQuantity(styleKey, shade).toString(),
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8.0,
+                          horizontal: 8.0,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        child: Text(
+                          '₹${_calculateShadePrice(catalogOrder, shade).toStringAsFixed(0)}',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.roboto(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.purple.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            Divider(height: 1, color: Colors.grey.shade300),
+              Divider(height: 1, color: Colors.grey.shade300),
 
-            // Size rows
-            for (var size in sizes) ...[
-              _buildSizeRow(catalogOrder, shade, size),
-              if (size != sizes.last) 
-                Divider(height: 1, color: Colors.grey.shade300),
+              // Size headers
+              Container(
+                color: Colors.grey.shade100,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    _buildHeader("SIZE", 1),
+                    _buildHeader("QTY", 2),
+                    _buildHeader("MRP", 1),
+                    _buildHeader("WSP", 1),
+                    _buildHeader("STOCK", 1),
+                  ],
+                ),
+              ),
+
+              Divider(height: 1, color: Colors.grey.shade300),
+
+              // Size rows
+              for (var size in sizes) ...[
+                _buildSizeRow(catalogOrder, shade, size),
+                if (size != sizes.last)
+                  Divider(height: 1, color: Colors.grey.shade300),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   String? _getShadeImageUrl(Catalog catalog, String shadeName) {
     if (catalog.shadeImages.isEmpty) {
       print('shadeImages is empty');

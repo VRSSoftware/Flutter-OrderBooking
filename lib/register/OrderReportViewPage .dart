@@ -18,8 +18,8 @@ class OrderReportViewPage extends StatefulWidget {
   final bool showOnlyWithImage; // Controls whether to show image column
 
   const OrderReportViewPage({
-    Key? key, 
-    required this.orderNo, 
+    Key? key,
+    required this.orderNo,
     this.orderData,
     this.showOnlyWithImage = false, // Default to false
   }) : super(key: key);
@@ -102,38 +102,41 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     }
   }
 
-// UPDATED METHOD: Now returns 12-size array with sizes starting from 0th index
-List<String> _getSizesForCategory(dynamic category) {
-  const int totalSizePositions = 12;
-  
-  // Get the available sizes from the API
-  List<dynamic> apiSizes = category['sizes'] ?? [];
-  
-  // Convert to strings and sort
-  List<String> availableSizes = apiSizes.map((size) => size.toString()).toList();
-  availableSizes.sort((a, b) {
-    int aNum = int.tryParse(a) ?? 0;
-    int bNum = int.tryParse(b) ?? 0;
-    return aNum.compareTo(bNum);
-  });
-  
-  // Create a new list with 12 elements
-  // Fill first N positions with available sizes, rest with "-"
-  return List.generate(totalSizePositions, (index) {
-    if (index < availableSizes.length) {
-      return availableSizes[index];
-    } else {
-      return "-";
-    }
-  });
-}
+  // UPDATED METHOD: Now returns 12-size array with sizes starting from 0th index
+  List<String> _getSizesForCategory(dynamic category) {
+    const int totalSizePositions = 12;
+
+    // Get the available sizes from the API
+    List<dynamic> apiSizes = category['sizes'] ?? [];
+
+    // Convert to strings and sort
+    List<String> availableSizes =
+        apiSizes.map((size) => size.toString()).toList();
+    availableSizes.sort((a, b) {
+      int aNum = int.tryParse(a) ?? 0;
+      int bNum = int.tryParse(b) ?? 0;
+      return aNum.compareTo(bNum);
+    });
+
+    // Create a new list with 12 elements
+    // Fill first N positions with available sizes, rest with "-"
+    return List.generate(totalSizePositions, (index) {
+      if (index < availableSizes.length) {
+        return availableSizes[index];
+      } else {
+        return "-";
+      }
+    });
+  }
+
   // ALTERNATIVE METHOD: If you want to just take first 12 sizes and fill rest with hyphens
   List<String> _getSizesWithFill(dynamic category) {
     const int totalSizePositions = 12;
-    
+
     List<dynamic> apiSizes = category['sizes'] ?? [];
-    List<String> availableSizes = apiSizes.map((size) => size.toString()).toList();
-    
+    List<String> availableSizes =
+        apiSizes.map((size) => size.toString()).toList();
+
     // Create a new list with 12 elements
     return List.generate(totalSizePositions, (index) {
       if (index < availableSizes.length) {
@@ -210,7 +213,6 @@ List<String> _getSizesForCategory(dynamic category) {
     } else {
       partyAddressLine1 = partyAddress;
     }
-
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -220,21 +222,40 @@ List<String> _getSizesForCategory(dynamic category) {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          pw.Text(
-            headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
-            style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-            textAlign: pw.TextAlign.center,
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            headerData['RegdAdd']?.toString() ?? "",
-            style: const pw.TextStyle(fontSize: 12),
-            textAlign: pw.TextAlign.center,
-          ),
-          pw.Text(
-            "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
-            style: const pw.TextStyle(fontSize: 12),
-            textAlign: pw.TextAlign.center,
+          // Container with background color for the section above divider
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.only(top: 8, bottom: 8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue300, // Light blue-grey background
+              borderRadius: const pw.BorderRadius.only(
+                topLeft: pw.Radius.circular(4),
+                topRight: pw.Radius.circular(4),
+              ),
+            ),
+            child: pw.Column(
+              children: [
+                pw.Text(
+                  headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  headerData['RegdAdd']?.toString() ?? "",
+                  style: const pw.TextStyle(fontSize: 12),
+                  textAlign: pw.TextAlign.center,
+                ),
+                pw.Text(
+                  "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
+                  style: const pw.TextStyle(fontSize: 12),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+            ),
           ),
           pw.Divider(height: 15, thickness: 0.2),
           pw.Row(
@@ -249,7 +270,7 @@ List<String> _getSizesForCategory(dynamic category) {
                       "Party : ",
                       style: pw.TextStyle(
                         fontSize: 12,
-                        color: PdfColors.grey600,
+                        color: PdfColors.grey900,
                       ),
                     ),
                     pw.Expanded(
@@ -284,7 +305,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Address : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Expanded(
@@ -328,7 +349,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Order No : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Text(
@@ -357,7 +378,7 @@ List<String> _getSizesForCategory(dynamic category) {
                       "GST No : ",
                       style: pw.TextStyle(
                         fontSize: 12,
-                        color: PdfColors.grey600,
+                        color: PdfColors.grey900,
                       ),
                     ),
                     pw.Text(
@@ -381,7 +402,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Date : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Text(
@@ -409,7 +430,7 @@ List<String> _getSizesForCategory(dynamic category) {
                       "Mobile : ",
                       style: pw.TextStyle(
                         fontSize: 12,
-                        color: PdfColors.grey600,
+                        color: PdfColors.grey900,
                       ),
                     ),
                     pw.Text(
@@ -433,7 +454,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Salesman : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Text(
@@ -461,7 +482,7 @@ List<String> _getSizesForCategory(dynamic category) {
                       "Del.Date : ",
                       style: pw.TextStyle(
                         fontSize: 12,
-                        color: PdfColors.grey600,
+                        color: PdfColors.grey900,
                       ),
                     ),
                     pw.Text(
@@ -485,7 +506,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Transport : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Text(
@@ -515,7 +536,7 @@ List<String> _getSizesForCategory(dynamic category) {
                       "Remark : ",
                       style: pw.TextStyle(
                         fontSize: 12,
-                        color: PdfColors.grey600,
+                        color: PdfColors.grey900,
                       ),
                     ),
                     pw.Expanded(
@@ -542,7 +563,7 @@ List<String> _getSizesForCategory(dynamic category) {
                           "Broker : ",
                           style: pw.TextStyle(
                             fontSize: 12,
-                            color: PdfColors.grey600,
+                            color: PdfColors.grey900,
                           ),
                         ),
                         pw.Text(
@@ -575,11 +596,13 @@ List<String> _getSizesForCategory(dynamic category) {
 
     for (var category in items) {
       String categoryName = category['item_name']?.toString() ?? '';
-      List<String> categorySizes = _getSizesForCategory(category); // Now returns 12-size array
+      List<String> categorySizes = _getSizesForCategory(
+        category,
+      ); // Now returns 12-size array
       List styles = category['styles'] ?? [];
       int categoryTotalQty = 0;
       int categoryStyleCount = 0;
-      
+
       List<pw.TableRow> categoryRows = [];
 
       for (var style in styles) {
@@ -587,7 +610,7 @@ List<String> _getSizesForCategory(dynamic category) {
         String imageUrl = style['Style_Image']?.toString() ?? '';
         String styleRemark = style['Remark']?.toString() ?? '';
         List shades = style['shades'] ?? [];
-        
+
         bool isFirstRowForStyle = true;
         int shadeCount = 0;
 
@@ -596,21 +619,27 @@ List<String> _getSizesForCategory(dynamic category) {
           List sizeData = shade['size_data'] ?? [];
 
           Map<String, int> sizeQtyMap = {};
-          int totalQty = 0;
           double? wsp;
 
+          // Map size quantities first
           for (var size in sizeData) {
             String sizeName = size['Size_Name']?.toString() ?? '';
-            num qty = size['Qty'] ?? 0;
-            int intQty = qty.toInt();
-            totalQty += intQty;
+            int qty = (size['Qty'] ?? 0).toInt();
+
             if (sizeName.isNotEmpty) {
-              sizeQtyMap[sizeName] = intQty;
+              sizeQtyMap[sizeName] = qty;
             }
+
             if (wsp == null) {
               num rate = size['Rate'] ?? 0;
               wsp = rate.toDouble();
             }
+          }
+
+          // 🔹 Row-wise total calculation from displayed sizes
+          int totalQty = 0;
+          for (var size in categorySizes) {
+            totalQty += sizeQtyMap[size] ?? 0;
           }
 
           categoryTotalQty += totalQty;
@@ -663,39 +692,41 @@ List<String> _getSizesForCategory(dynamic category) {
                   border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
                   color: PdfColors.grey50,
                 ),
-                child: isFirstRowForStyle
-                    ? (imageUrl.isNotEmpty && imageCache.containsKey(imageUrl)
-                        ? pw.Center(
-                            child: pw.Container(
-                              width: 33,
-                              height: 33,
-                              child: pw.Image(
-                                imageCache[imageUrl]!,
-                                fit: pw.BoxFit.contain,
-                              ),
-                            ),
-                          )
-                        : pw.Center(
-                            child: pw.Container(
-                              width: 33,
-                              height: 33,
-                              decoration: pw.BoxDecoration(
-                                color: PdfColors.grey200,
-                                borderRadius: pw.BorderRadius.circular(2),
-                              ),
-                              child: pw.Center(
-                                child: pw.Text(
-                                  'No Image',
-                                  style: pw.TextStyle(
-                                    fontSize: 6,
-                                    color: PdfColors.grey700,
-                                  ),
-                                  textAlign: pw.TextAlign.center,
+                child:
+                    isFirstRowForStyle
+                        ? (imageUrl.isNotEmpty &&
+                                imageCache.containsKey(imageUrl)
+                            ? pw.Center(
+                              child: pw.Container(
+                                width: 33,
+                                height: 33,
+                                child: pw.Image(
+                                  imageCache[imageUrl]!,
+                                  fit: pw.BoxFit.contain,
                                 ),
                               ),
-                            ),
-                          ))
-                    : pw.Container(),
+                            )
+                            : pw.Center(
+                              child: pw.Container(
+                                width: 33,
+                                height: 33,
+                                decoration: pw.BoxDecoration(
+                                  color: PdfColors.grey200,
+                                  borderRadius: pw.BorderRadius.circular(2),
+                                ),
+                                child: pw.Center(
+                                  child: pw.Text(
+                                    'No Image',
+                                    style: pw.TextStyle(
+                                      fontSize: 6,
+                                      color: PdfColors.grey700,
+                                    ),
+                                    textAlign: pw.TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ))
+                        : pw.Container(),
               ),
             );
           }
@@ -773,7 +804,10 @@ List<String> _getSizesForCategory(dynamic category) {
               padding: const pw.EdgeInsets.all(2),
               child: pw.Text(
                 "Image",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -786,7 +820,10 @@ List<String> _getSizesForCategory(dynamic category) {
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 size,
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -812,12 +849,16 @@ List<String> _getSizesForCategory(dynamic category) {
           ),
         ]);
 
-        categoryRows.insert(0, pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          children: headerCells,
-        ));
+        categoryRows.insert(
+          0,
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            children: headerCells,
+          ),
+        );
 
-        int totalColumns = 2 + (widget.showOnlyWithImage ? 1 : 0) + categorySizes.length + 2;
+        int totalColumns =
+            2 + (widget.showOnlyWithImage ? 1 : 0) + categorySizes.length + 2;
         List<pw.Widget> categoryTotalRowCells = [
           pw.Container(
             padding: const pw.EdgeInsets.all(4),
@@ -841,7 +882,11 @@ List<String> _getSizesForCategory(dynamic category) {
           );
         }
 
-        for (int i = 2 + (widget.showOnlyWithImage ? 1 : 0); i < totalColumns - 1; i++) {
+        for (
+          int i = 2 + (widget.showOnlyWithImage ? 1 : 0);
+          i < totalColumns - 1;
+          i++
+        ) {
           categoryTotalRowCells.add(
             pw.Container(
               padding: const pw.EdgeInsets.all(4),
@@ -874,14 +919,32 @@ List<String> _getSizesForCategory(dynamic category) {
             children: [
               pw.Text(
                 categoryName,
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 10,
+                ),
               ),
               pw.SizedBox(height: 5),
               pw.Container(
                 decoration: pw.BoxDecoration(
                   border: pw.Border.all(color: PdfColors.grey400),
                 ),
-                child: pw.Table(border: pw.TableBorder.all(width: 0.5), children: categoryRows),
+                child: pw.Table(
+  border: pw.TableBorder.all(width: 0.5),
+  columnWidths: {
+    0: const pw.FixedColumnWidth(55), // Style
+    1: const pw.FixedColumnWidth(55), // Shade
+    if (widget.showOnlyWithImage) 2: const pw.FixedColumnWidth(40), // Image
+
+    // 12 size columns (always same width)
+    for (int i = 0; i < 12; i++)
+      (widget.showOnlyWithImage ? 3 + i : 2 + i): const pw.FixedColumnWidth(28),
+
+    (widget.showOnlyWithImage ? 15 : 14): const pw.FixedColumnWidth(40), // WSP
+    (widget.showOnlyWithImage ? 16 : 15): const pw.FixedColumnWidth(65), // TotQty
+  },
+  children: categoryRows,
+)
               ),
               pw.SizedBox(height: 15),
             ],
@@ -894,7 +957,8 @@ List<String> _getSizesForCategory(dynamic category) {
     if (items.isNotEmpty) {
       var lastCategory = items.last;
       List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
-      totalColumns = 2 + (widget.showOnlyWithImage ? 1 : 0) + lastCategorySizes.length + 2;
+      totalColumns =
+          2 + (widget.showOnlyWithImage ? 1 : 0) + lastCategorySizes.length + 2;
     }
 
     List<pw.Widget> grandTotalRowCells = [
@@ -905,10 +969,7 @@ List<String> _getSizesForCategory(dynamic category) {
           style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
         ),
       ),
-      pw.Container(
-        padding: const pw.EdgeInsets.all(4),
-        child: pw.Container(),
-      ),
+      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
     ];
 
     if (widget.showOnlyWithImage) {
@@ -920,7 +981,11 @@ List<String> _getSizesForCategory(dynamic category) {
       );
     }
 
-    for (int i = 2 + (widget.showOnlyWithImage ? 1 : 0); i < totalColumns - 1; i++) {
+    for (
+      int i = 2 + (widget.showOnlyWithImage ? 1 : 0);
+      i < totalColumns - 1;
+      i++
+    ) {
       grandTotalRowCells.add(
         pw.Container(
           padding: const pw.EdgeInsets.all(4),
@@ -988,67 +1053,61 @@ List<String> _getSizesForCategory(dynamic category) {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-    appBar: AppBar(
-  backgroundColor: AppColors.primaryColor,
-  title: Text("Order Form", style: const TextStyle(color: Colors.white)),
-  leading: IconButton(
-    icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
-    onPressed: () => Navigator.of(context).pop(),
-  ),
-  actions: [
-  Container(
-  margin: const EdgeInsets.only(right: 8),
-  decoration: BoxDecoration(
-    gradient: LinearGradient(
-      colors: [
-        Colors.white.withOpacity(0.25),
-        Colors.white.withOpacity(0.15),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-    shape: BoxShape.circle,
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.1),
-        blurRadius: 4,
-        offset: const Offset(0, 2),
-      ),
-    ],
-  ),
-  child: IconButton(
-    icon: const Icon(
-      Icons.share,
-      color: Colors.white,
-      size: 20,
-    ),
-    onPressed: isLoading ? null : _sharePDF,
-    padding: const EdgeInsets.all(8),
-    constraints: const BoxConstraints(
-      minWidth: 40,
-      minHeight: 40,
-    ),
-  ),
-),
-  ],
-),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : pdfError
-          ? const Center(child: Text("Error loading PDF"))
-          : PdfPreview(
-              build: (format) => _generatePDF(),
-              allowSharing: false,
-              allowPrinting: false,
-              pdfFileName: 'Order_${widget.orderNo}.pdf',
-              initialPageFormat: PdfPageFormat.a4,
-              canChangePageFormat: false,
-              canChangeOrientation: false,
-              canDebug: false,
-              onError: (context, error) {
-                return Center(child: Text("PDF Error: $error"));
-              },
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryColor,
+        title: Text("Order Form", style: const TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.25),
+                  Colors.white.withOpacity(0.15),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
+            child: IconButton(
+              icon: const Icon(Icons.share, color: Colors.white, size: 20),
+              onPressed: isLoading ? null : _sharePDF,
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            ),
+          ),
+        ],
+      ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : pdfError
+              ? const Center(child: Text("Error loading PDF"))
+              : PdfPreview(
+                build: (format) => _generatePDF(),
+                allowSharing: false,
+                allowPrinting: false,
+                pdfFileName: 'Order_${widget.orderNo}.pdf',
+                initialPageFormat: PdfPageFormat.a4,
+                canChangePageFormat: false,
+                canChangeOrientation: false,
+                canDebug: false,
+                onError: (context, error) {
+                  return Center(child: Text("PDF Error: $error"));
+                },
+              ),
     );
   }
 }

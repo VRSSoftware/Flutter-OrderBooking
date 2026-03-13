@@ -360,11 +360,13 @@ import 'package:vrs_erp/constants/app_constants.dart';
 
 class BarcodeWiseWidget extends StatefulWidget {
   final ValueChanged<String> onFilterPressed;
+  final VoidCallback? onOrderConfirmed;
   final bool edit;
 
   const BarcodeWiseWidget({
     super.key,
     required this.onFilterPressed,
+    this.onOrderConfirmed,
     this.edit = false,
   });
 
@@ -467,14 +469,14 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     });
   }
 
- void _validateAndNavigate(String barcode) async {
+void _validateAndNavigate(String barcode) async {
   if (barcode.isEmpty) {
     _showAlertDialog(
       context,
       'Missing Barcode',
       'Please enter or scan a barcode first.',
     );
-    _barcodeFocusNode.requestFocus(); // Request focus on error
+    _barcodeFocusNode.requestFocus();
     return;
   }
 
@@ -486,7 +488,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       'Already Added',
       'This barcode is already added',
     );
-    _barcodeFocusNode.requestFocus(); // Request focus on error
+    _barcodeFocusNode.requestFocus();
     return;
   }
 
@@ -506,6 +508,12 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
           _barcodeController.clear();
           _noDataFound = false;
         });
+        
+        // Call the onOrderConfirmed callback when order is successful
+        if (widget.onOrderConfirmed != null) {
+          widget.onOrderConfirmed!();
+        }
+        
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
@@ -529,6 +537,12 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
           _barcodeController.clear();
           _noDataFound = false;
         });
+        
+        // Call the onOrderConfirmed callback when order is successful
+        if (widget.onOrderConfirmed != null) {
+          widget.onOrderConfirmed!();
+        }
+        
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
@@ -542,8 +556,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       edit: widget.edit,
     );
   } else {
-    // For bookingType "3" or default, you might want to use a default screen
-    // You can decide which one to use as default (BookOnBarcode2 is current default)
+    // Default case
     screen = BookOnBarcode2(
       barcode: upperBarcode,
       onSuccess: () {
@@ -553,6 +566,12 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
           _barcodeController.clear();
           _noDataFound = false;
         });
+        
+        // Call the onOrderConfirmed callback when order is successful
+        if (widget.onOrderConfirmed != null) {
+          widget.onOrderConfirmed!();
+        }
+        
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });

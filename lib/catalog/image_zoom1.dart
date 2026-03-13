@@ -88,18 +88,19 @@ class _ImageZoomScreen1State extends State<ImageZoomScreen1> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 3,
-        title: Text(
-          widget.item.styleCode,
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: widget.isLargeScreen ? 22 : 20,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black87),
+    appBar: AppBar(
+  backgroundColor: AppColors.primaryColor,
+  elevation: 3,
+  title: Text(
+    widget.item.styleCode,
+    style: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+      fontSize: widget.isLargeScreen ? 22 : 20,
+    ),
+  ),
+
+       iconTheme: const IconThemeData(color: AppColors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.fullscreen),
@@ -107,7 +108,8 @@ class _ImageZoomScreen1State extends State<ImageZoomScreen1> {
           ),
         ],
       ),
-      body: Column(
+      body:SafeArea(
+        child: Column(
         children: [
           // Image Carousel Section
           Expanded(
@@ -145,7 +147,7 @@ class _ImageZoomScreen1State extends State<ImageZoomScreen1> {
                               if (loadingProgress == null) return child;
                               return const Center(
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
                                 ),
                               );
                             },
@@ -343,7 +345,7 @@ class _ImageZoomScreen1State extends State<ImageZoomScreen1> {
             ),
           ),
         ],
-      ),
+        )  ),
     );
   }
 }

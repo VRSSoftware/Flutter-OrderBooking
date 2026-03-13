@@ -553,7 +553,7 @@ static Future<Map<String, dynamic>> fetchCatalogItem({
           'dlvFromDate': dlvFromDate,
           'dlvToDate': dlvToDate,
           'userName': userName,
-          'lastsavedorderid': lastSavedOrderId,
+          'lastsavedorderid': '0',
         }),
       );
 

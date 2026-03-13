@@ -62,7 +62,7 @@ class _StockReportPageState extends State<StockReportPage> {
   bool withImage = false;
 
   final Item selectAllItem = Item(itemName: "All Items", itemKey: "ALL");
-  
+
   @override
   void initState() {
     super.initState();
@@ -72,12 +72,10 @@ class _StockReportPageState extends State<StockReportPage> {
   }
 
   Future<void> _downloadStockReport() async {
-    if (selectedCategoryKey == null ) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select category '),
-        ),
-      );
+    if (selectedCategoryKey == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select category ')));
       return;
     }
 
@@ -91,7 +89,10 @@ class _StockReportPageState extends State<StockReportPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LoadingAnimationWidget.waveDots(color: AppColors.primaryColor, size: 50),
+                LoadingAnimationWidget.waveDots(
+                  color: AppColors.primaryColor,
+                  size: 50,
+                ),
                 const SizedBox(height: 20),
                 Text(
                   'Fetching stock data...',
@@ -499,10 +500,10 @@ class _StockReportPageState extends State<StockReportPage> {
       hasSearched = true;
     });
 
-    if (selectedCategoryKey == null ) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select category')),
-      );
+    if (selectedCategoryKey == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select category')));
       return;
     }
 
@@ -648,45 +649,47 @@ class _StockReportPageState extends State<StockReportPage> {
                     // Content
                     Expanded(child: _buildStockReportContent(scrollController)),
                     // Bottom buttons
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, -5),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildBottomSheetButton(
-                              icon: Icons.download,
-                              label: 'Download PDF',
-                              color: AppColors.primaryColor,
-                              onTap: () {
-                                Navigator.pop(context);
-                                _downloadStockReport();
-                              },
+                    SafeArea(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, -5),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildBottomSheetButton(
-                              icon: FontAwesomeIcons.whatsapp,
-                              label: 'WhatsApp',
-                              color: Colors.green,
-                              isFaIcon: true,
-                              onTap: () {
-                                Navigator.pop(context); // Close bottom sheet
-                                _shareViaWhatsApp(); // Call the WhatsApp method
-                              },
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildBottomSheetButton(
+                                icon: Icons.download,
+                                label: 'Download PDF',
+                                color: AppColors.primaryColor,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _downloadStockReport();
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildBottomSheetButton(
+                                icon: FontAwesomeIcons.whatsapp,
+                                label: 'WhatsApp',
+                                color: Colors.green,
+                                isFaIcon: true,
+                                onTap: () {
+                                  Navigator.pop(context); // Close bottom sheet
+                                  _shareViaWhatsApp(); // Call the WhatsApp method
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -935,7 +938,9 @@ class _StockReportPageState extends State<StockReportPage> {
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
               ),
-              border: Border(bottom: BorderSide(color: AppColors.primaryColor.shade100)),
+              border: Border(
+                bottom: BorderSide(color: AppColors.primaryColor.shade100),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -946,7 +951,9 @@ class _StockReportPageState extends State<StockReportPage> {
                     height: 32,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.primaryColor.shade200),
+                      border: Border.all(
+                        color: AppColors.primaryColor.shade200,
+                      ),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: ClipRRect(
@@ -1139,7 +1146,8 @@ class _StockReportPageState extends State<StockReportPage> {
                                         style: GoogleFonts.poppins(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
-                                          color: AppColors.primaryColor.shade900,
+                                          color:
+                                              AppColors.primaryColor.shade900,
                                         ),
                                       ),
                                     ),
@@ -1219,7 +1227,9 @@ class _StockReportPageState extends State<StockReportPage> {
                                                     : FontWeight.normal,
                                             color:
                                                 (sizeMap[size] ?? 0) > 0
-                                                    ? AppColors.primaryColor.shade700
+                                                    ? AppColors
+                                                        .primaryColor
+                                                        .shade700
                                                     : Colors.grey.shade500,
                                           ),
                                         ),
@@ -1247,7 +1257,8 @@ class _StockReportPageState extends State<StockReportPage> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
-                                          color: AppColors.primaryColor.shade900,
+                                          color:
+                                              AppColors.primaryColor.shade900,
                                         ),
                                       ),
                                     ),
@@ -1358,7 +1369,9 @@ class _StockReportPageState extends State<StockReportPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.primaryColor.shade100)),
+              border: Border(
+                bottom: BorderSide(color: AppColors.primaryColor.shade100),
+              ),
             ),
             child: Row(
               children: [
@@ -1443,7 +1456,9 @@ class _StockReportPageState extends State<StockReportPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.primaryColor.shade100),
+                            border: Border.all(
+                              color: AppColors.primaryColor.shade100,
+                            ),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -1468,7 +1483,9 @@ class _StockReportPageState extends State<StockReportPage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              border: Border(top: BorderSide(color: AppColors.primaryColor.shade100)),
+              border: Border(
+                top: BorderSide(color: AppColors.primaryColor.shade100),
+              ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
@@ -1735,99 +1752,100 @@ class _StockReportPageState extends State<StockReportPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-  // Clear button - circular
-  Container(
-    margin: const EdgeInsets.only(right: 4),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.2),
-          Colors.white.withOpacity(0.1),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: IconButton(
-      onPressed: clearFilters,
-      icon: const Icon(Icons.clear, color: Colors.white, size: 18),
-      tooltip: "Clear All",
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(
-        minWidth: 36,
-        minHeight: 36,
-      ),
-    ),
-  ),
-  const SizedBox(width: 8),
-
-  // Filter button with badge - circular
-  Container(
-    margin: const EdgeInsets.only(right: 8),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.2),
-          Colors.white.withOpacity(0.1),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          onPressed: _showFilterDialog,
-          icon: const Icon(Icons.filter_list, color: Colors.white, size: 18),
-          tooltip: "Filter",
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(
-            minWidth: 36,
-            minHeight: 36,
-          ),
-        ),
-        if (_getActiveFilterCount() > 0)
-          Positioned(
-            right: 2,
-            top: 2,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+          // Clear button - circular
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Text(
-                '${_getActiveFilterCount()}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: clearFilters,
+              icon: const Icon(Icons.clear, color: Colors.white, size: 18),
+              tooltip: "Clear All",
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
           ),
-      ],
-    ),
-  ),
-],
+          const SizedBox(width: 8),
+
+          // Filter button with badge - circular
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: _showFilterDialog,
+                  icon: const Icon(
+                    Icons.filter_list,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  tooltip: "Filter",
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                ),
+                if (_getActiveFilterCount() > 0)
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        '${_getActiveFilterCount()}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1850,7 +1868,9 @@ class _StockReportPageState extends State<StockReportPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.primaryColor.shade200),
+                            border: Border.all(
+                              color: AppColors.primaryColor.shade200,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -1992,7 +2012,9 @@ class _StockReportPageState extends State<StockReportPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.primaryColor.shade200),
+                            border: Border.all(
+                              color: AppColors.primaryColor.shade200,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -2014,7 +2036,6 @@ class _StockReportPageState extends State<StockReportPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownSearch<Item>.multiSelection(
-                      
                       items: [selectAllItem, ...items],
                       compareFn: (Item a, Item b) => a.itemKey == b.itemKey,
                       itemAsString:
@@ -2075,7 +2096,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                          ),        
+                          ),
                         ),
                         loadingBuilder:
                             isLoadingItems
@@ -2147,7 +2168,10 @@ class _StockReportPageState extends State<StockReportPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.primaryColor.shade700),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.primaryColor.shade700,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -2354,7 +2378,7 @@ class _StockReportPageState extends State<StockReportPage> {
 
   // Add this method to handle WhatsApp sharing
   Future<void> _shareViaWhatsApp() async {
-    if (selectedCategoryKey == null ) {
+    if (selectedCategoryKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select category'),

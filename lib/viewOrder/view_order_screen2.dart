@@ -2448,6 +2448,7 @@ class _StyleCard2State extends State<StyleCard2> {
               onPressed: () => Navigator.pop(context),
               child: const Text("OK"),
             ),
+            
           ],
         );
       },

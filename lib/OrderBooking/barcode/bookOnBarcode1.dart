@@ -1690,6 +1690,7 @@ class CatalogItem {
   final String remark;
   final String itemName;
   final String brandName;
+  final String fullImagePath; 
 
   CatalogItem({
     required this.styleCode,
@@ -1704,6 +1705,8 @@ class CatalogItem {
     required this.remark,
     required this.itemName,
     required this.brandName,
+     required this.fullImagePath,
+ 
   });
 
   factory CatalogItem.fromJson(Map<String, dynamic> json) {
@@ -1720,6 +1723,7 @@ class CatalogItem {
       remark: json['remark']?.toString() ?? '',
       itemName: json['itemName']?.toString() ?? '',
       brandName: json['brandName']?.toString() ?? '',
+       fullImagePath: json['fullImagePath']?.toString() ?? '/NoImage.jpg',
     );
   }
 }
@@ -1823,10 +1827,8 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
           clqty: firstItem.clQty,
           total: items.fold(0, (sum, item) => sum + item.clQty),
           upcoming_Stk: firstItem.upcoming_Stk,
-          fullImagePath:
-              firstItem.barcode.isNotEmpty
-                  ? '${AppConstants.BASE_URL}/images/${firstItem.barcode}.jpg'
-                  : '/NoImage.jpg',
+          
+         fullImagePath: items.first.fullImagePath,
           remark: firstItem.remark,
           imageId: '',
           sizeDetails: uniqueSizes
@@ -1880,6 +1882,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                     remark: firstItem.remark,
                     itemName: firstItem.itemName,
                     brandName: firstItem.brandName,
+                    fullImagePath: items.first.fullImagePath,
                   ),
             );
             row.add('${item.mrp},${item.wsp},${item.clQty},${item.stkQty}');
@@ -1901,26 +1904,18 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
         quantities[styleCode] = {};
         copiedRowsMap[styleCode] = [];
 
-        for (var shade in uniqueShades) {
-          quantities[styleCode]![shade] = {};
-          for (var size in uniqueSizes) {
-            quantities[styleCode]![shade]![size];
-            //  UserSession.coBrName == 'G CUBE NX' ? 0 : 0;
-            final controllerKey = '$styleCode-$shade-$size';
-
-            // Get clqty for hint
-            final item = items.firstWhere(
-              (i) => i.shadeName == shade && i.sizeName == size,
-              orElse: () => firstItem,
-            );
-
-            // final controller = TextEditingController(
-            //   text: UserSession.coBrName == 'G CUBE NX' ? '0' : '0',
-            // );
-            // controller.addListener(() => setState(() {}));
-            // _controllers[controllerKey] = controller;
-          }
-        }
+       for (var shade in uniqueShades) {
+  quantities[styleCode]![shade] = {};
+  for (var size in uniqueSizes) {
+    // Initialize with 1 or 0 as needed
+    quantities[styleCode]![shade]![size] = 1; // or 0 based on your requirement
+    
+    final controllerKey = '$styleCode-$shade-$size';
+    final controller = TextEditingController(text: '1'); // or '0'
+    controller.addListener(() => setState(() {}));
+    _controllers[controllerKey] = controller;
+  }
+}
       }
     } else {
       setState(() {
@@ -2099,19 +2094,29 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
     setState(() {});
   }
 
-  void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
-    if (sizes.isEmpty) return;
-    final firstSize = sizes.first;
-    final firstQuantity = _getQuantity(styleKey, shade, firstSize);
+void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
+  if (sizes.isEmpty) return;
+  final firstSize = sizes.first;
+  final firstQuantity = _getQuantity(styleKey, shade, firstSize);
+  
+  setState(() {
     for (var size in sizes) {
+      // Update the quantities map
       _setQuantity(styleKey, shade, size, firstQuantity);
+      
+      // Update the controller text
       final controllerKey = '$styleKey-$shade-$size';
       if (_controllers.containsKey(controllerKey)) {
         _controllers[controllerKey]!.text = firstQuantity.toString();
+      } else {
+        // Create new controller if it doesn't exist
+        final controller = TextEditingController(text: firstQuantity.toString());
+        controller.addListener(() => setState(() {}));
+        _controllers[controllerKey] = controller;
       }
     }
-    setState(() {});
-  }
+  });
+}
 
   Future<void> _submitAllOrders() async {
     List<Future<http.Response>> apiCalls = [];
@@ -2627,7 +2632,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                         catalog.fullImagePath.contains("http")
                             ? catalog.fullImagePath
                             : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey.shade200,
@@ -2714,123 +2719,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                                   ),
                                 ),
                                 // Copy icon
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.copy_outlined,
-                                      size: 18,
-                                      color: AppColors.pink,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 32,
-                                      minHeight: 32,
-                                    ),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext dialogContext) {
-                                          return AlertDialog(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            titlePadding: EdgeInsets.zero,
-                                            contentPadding: EdgeInsets.zero,
-                                            title: Container(
-                                              width: double.infinity,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 12,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey.shade200,
-                                                borderRadius:
-                                                    const BorderRadius.vertical(
-                                                      top: Radius.circular(12),
-                                                    ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  const Expanded(
-                                                    child: Text(
-                                                      'Select an Action',
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.close,
-                                                    ),
-                                                    onPressed: () {
-                                                      Navigator.of(
-                                                        context,
-                                                      ).pop();
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            content: Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      Navigator.of(
-                                                        dialogContext,
-                                                      ).pop();
-                                                      _copySizeQtyToOtherStyles(
-                                                        catalog.styleKey,
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      width: double.infinity,
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            vertical: 10,
-                                                          ),
-                                                      margin:
-                                                          const EdgeInsets.only(
-                                                            bottom: 8,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: const Text(
-                                                        'Copy Size Qty to other Styles',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 13,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
+                               
                               ],
                             ),
                             const SizedBox(height: 8),
