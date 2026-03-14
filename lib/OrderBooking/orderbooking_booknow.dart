@@ -742,44 +742,46 @@ class _OrderPageState extends State<OrderPage> {
           ],
         ),
       ),
-   floatingActionButton: Padding(
-  padding: const EdgeInsets.only(bottom: 40), // Add bottom padding to move it up
-  child: Stack(
-    clipBehavior: Clip.none,
-    children: [
-      FloatingActionButton(
-        onPressed: _showFilterDialog,
-        backgroundColor:
-            _getActiveFilterCount() > 0
-                ? Colors.pink
-                : AppColors.primaryColor,
-        child: Icon(Icons.filter_alt, color: Colors.white),
-        tooltip: 'Filter',
-      ),
-      if (_getActiveFilterCount() > 0)
-        Positioned(
-          right: 0,
-          top: -5,
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.pink,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(
+          bottom: 40,
+        ), // Add bottom padding to move it up
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            FloatingActionButton(
+              onPressed: _showFilterDialog,
+              backgroundColor:
+                  _getActiveFilterCount() > 0
+                      ? Colors.pink
+                      : AppColors.primaryColor,
+              child: Icon(Icons.filter_alt, color: Colors.white),
+              tooltip: 'Filter',
             ),
-            child: Text(
-              '${_getActiveFilterCount()}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+            if (_getActiveFilterCount() > 0)
+              Positioned(
+                right: 0,
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.pink,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Text(
+                    '${_getActiveFilterCount()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+          ],
         ),
-    ],
-  ),
-),
+      ),
     );
   }
 
@@ -863,88 +865,136 @@ class _OrderPageState extends State<OrderPage> {
                         // Replace the current image section (around line 326-348) with:
                         Flexible(
                           flex: 2,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(0),
-                              topRight: Radius.circular(0),
-                            ),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final maxImageHeight =
-                                    constraints.maxWidth * 1.2;
-                                final imageUrls = _getImageUrls(item);
-                                final ValueNotifier<int> currentImageIndex =
-                                    ValueNotifier<int>(0);
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Image section
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(0),
+                                  topRight: Radius.circular(0),
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final maxImageHeight =
+                                        constraints.maxWidth * 1.2;
+                                    final imageUrls = _getImageUrls(item);
+                                    final ValueNotifier<int> currentImageIndex =
+                                        ValueNotifier<int>(0);
 
-                                return ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight: maxImageHeight,
-                                  ),
-                                  child:
-                                      imageUrls.isNotEmpty &&
-                                              imageUrls[0].isNotEmpty
-                                          ? // Replace the current Stack containing the PageView with:
-                                          Stack(
-                                            children: [
-                                              GestureDetector(
-                                                onDoubleTap:
-                                                    () => _openImageZoom(
-                                                      imageUrls,
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight: maxImageHeight,
+                                      ),
+                                      child:
+                                          imageUrls.isNotEmpty &&
+                                                  imageUrls[0].isNotEmpty
+                                              ? Stack(
+                                                children: [
+                                                  GestureDetector(
+                                                    onDoubleTap:
+                                                        () => _openImageZoom(
+                                                          imageUrls,
+                                                        ),
+                                                    child: SizedBox(
+                                                      height: maxImageHeight,
+                                                      width: double.infinity,
+                                                      child: PageView.builder(
+                                                        itemCount:
+                                                            imageUrls.length,
+                                                        onPageChanged: (index) {
+                                                          currentImageIndex
+                                                              .value = index;
+                                                        },
+                                                        itemBuilder: (
+                                                          context,
+                                                          index,
+                                                        ) {
+                                                          return _buildSingleImage(
+                                                            imageUrls[index],
+                                                            maxImageHeight,
+                                                          );
+                                                        },
+                                                      ),
                                                     ),
-                                                child: SizedBox(
-                                                  height: maxImageHeight,
-                                                  width: double.infinity,
-                                                  child: PageView.builder(
-                                                    itemCount: imageUrls.length,
-                                                    onPageChanged: (index) {
-                                                      currentImageIndex.value =
-                                                          index;
-                                                    },
-                                                    itemBuilder: (
-                                                      context,
-                                                      index,
-                                                    ) {
-                                                      return _buildSingleImage(
-                                                        imageUrls[index],
-                                                        maxImageHeight,
-                                                      );
-                                                    },
                                                   ),
-                                                ),
+                                                  if (imageUrls.length > 1)
+                                                    Positioned(
+                                                      bottom: 8,
+                                                      left: 0,
+                                                      right: 0,
+                                                      child: ValueListenableBuilder<
+                                                        int
+                                                      >(
+                                                        valueListenable:
+                                                            currentImageIndex,
+                                                        builder: (
+                                                          context,
+                                                          index,
+                                                          child,
+                                                        ) {
+                                                          return DotIndicator(
+                                                            count:
+                                                                imageUrls
+                                                                    .length,
+                                                            currentIndex: index,
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                ],
+                                              )
+                                              : _buildSingleImage(
+                                                '',
+                                                maxImageHeight,
                                               ),
-                                              if (imageUrls.length > 1)
-                                                Positioned(
-                                                  bottom: 8,
-                                                  left: 0,
-                                                  right: 0,
-                                                  child: ValueListenableBuilder<
-                                                    int
-                                                  >(
-                                                    valueListenable:
-                                                        currentImageIndex,
-                                                    builder: (
-                                                      context,
-                                                      index,
-                                                      child,
-                                                    ) {
-                                                      return DotIndicator(
-                                                        count: imageUrls.length,
-                                                        currentIndex: index,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                            ],
-                                          )
-                                          : _buildSingleImage(
-                                            '',
-                                            maxImageHeight,
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              // Range text below the image
+                              if (item.minMRP != null && item.maxMRP != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 8.0,
+                                    left: 4.0,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withOpacity(
+                                        0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          ' ${item.minMRP} - ${item.maxMRP}',
+                                          style: TextStyle(
+                                            fontSize: isLargeScreen ? 15 : 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primaryColor,
                                           ),
-                                );
-                              },
-                            ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
+
                         SizedBox(width: isLargeScreen ? 16 : 8),
                         Flexible(
                           flex: 3,
@@ -994,6 +1044,23 @@ class _OrderPageState extends State<OrderPage> {
                                       ],
                                     ),
                                     _buildSpacerRow(),
+                                    // if (item.minMRP != null &&
+                                    //     item.maxMRP != null)
+                                    //   TableRow(
+                                    //     children: [
+                                    //       _buildLabelText('Range'),
+                                    //       const Text(':'),
+                                    //       Text(
+                                    //         '${item.minMRP} - ${item.maxMRP}',
+                                    //         style: _valueTextStyle(
+                                    //           isLargeScreen,
+                                    //         ),
+                                    //       ),
+                                    //     ],
+                                    //   ),
+                                    // if (item.minMRP != null &&
+                                    //     item.maxMRP != null)
+                                    //   _buildSpacerRow(),
                                     if (showSizes && item.sizeName.isNotEmpty)
                                       TableRow(
                                         children: [
@@ -1272,6 +1339,19 @@ class _OrderPageState extends State<OrderPage> {
                             ],
                           ),
                           _buildSpacerRow(),
+                          if (item.minMRP != null && item.maxMRP != null)
+                            TableRow(
+                              children: [
+                                _buildLabelText('Range'),
+                                const Text(':'),
+                                Text(
+                                  '${item.minMRP} - ${item.maxMRP}',
+                                  style: _valueTextStyle(isLargeScreen),
+                                ),
+                              ],
+                            ),
+                          if (item.minMRP != null && item.maxMRP != null)
+                            _buildSpacerRow(),
                           if (showSizes && item.sizeName.isNotEmpty)
                             TableRow(
                               children: [
@@ -1510,6 +1590,19 @@ class _OrderPageState extends State<OrderPage> {
                       ],
                     ),
                     _buildSpacerRow(),
+                    // if (item.minMRP != null && item.maxMRP != null)
+                    //   TableRow(
+                    //     children: [
+                    //       _buildLabelText('Range'),
+                    //       const Text(':'),
+                    //       Text(
+                    //         '${item.minMRP} - ${item.maxMRP}',
+                    //         style: _valueTextStyle(isLargeScreen),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // if (item.minMRP != null && item.maxMRP != null)
+                    //   _buildSpacerRow(),
                     if (showSizes && item.sizeName.isNotEmpty)
                       TableRow(
                         children: [
@@ -1674,133 +1767,136 @@ class _OrderPageState extends State<OrderPage> {
     );
   }
 
- List<Widget> _buildButtonChildren(bool isLargeScreen) {
-  final buttonColor = AppColors.primaryColor;
+  List<Widget> _buildButtonChildren(bool isLargeScreen) {
+    final buttonColor = AppColors.primaryColor;
 
-  final unifiedButtonGroup = Container(
-    height: 44,
-    width: double.infinity,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(10),
-      gradient: LinearGradient(
-        colors: [
-          buttonColor, // Primary color
-          buttonColor.withOpacity(0.8), // Lighter version
-          buttonColor.withOpacity(0.9), // Slightly darker
-        ],
-        stops: const [0.0, 0.6, 1.0],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      border: Border.all(
-        color: Colors.black.withOpacity(0.3), // Dark border with opacity
-        width: 1.5,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: buttonColor.withOpacity(0.4),
-          blurRadius: 8,
-          offset: const Offset(0, 3),
-          spreadRadius: 1,
+    final unifiedButtonGroup = Container(
+      height: 44,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          colors: [
+            buttonColor, // Primary color
+            buttonColor.withOpacity(0.8), // Lighter version
+            buttonColor.withOpacity(0.9), // Slightly darker
+          ],
+          stops: const [0.0, 0.6, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(9), // Slightly smaller to show border
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            final currentArgs = ModalRoute.of(context)?.settings.arguments;
-            Widget screen;
+        border: Border.all(
+          color: Colors.black.withOpacity(0.3), // Dark border with opacity
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: buttonColor.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          9,
+        ), // Slightly smaller to show border
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              final currentArgs = ModalRoute.of(context)?.settings.arguments;
+              Widget screen;
 
-            if (AppConstants.bookingType == "1") {
-              screen = MultiCatalogBookingPage(
-                catalogs: selectedItems,
-                routeArguments: currentArgs as Map<String, dynamic>?,
-                onSuccess: () {
-                  setState(() {
-                    selectedItems.clear();
-                  });
-                  _fetchCartCount();
-                  Provider.of<CartModel>(
-                    context,
-                    listen: false,
-                  ).refreshAddedItems();
-                },
-              );
-            } else if (AppConstants.bookingType == "2") {
-              screen = CreateOrderScreen(
-                catalogs: selectedItems,
-                routeArguments: currentArgs as Map<String, dynamic>?,
-                onSuccess: () {
-                  setState(() {
-                    selectedItems.clear();
-                  });
-                  _fetchCartCount();
-                  Provider.of<CartModel>(
-                    context,
-                    listen: false,
-                  ).refreshAddedItems();
-                },
-              );
-            } else {
-              screen = CreateOrderScreen3(
-                catalogs: selectedItems,
-                onSuccess: () {
-                  setState(() {
-                    selectedItems.clear();
-                  });
-                  _fetchCartCount();
-                  Provider.of<CartModel>(
-                    context,
-                    listen: false,
-                  ).refreshAddedItems();
-                },
-              );
-            }
+              if (AppConstants.bookingType == "1") {
+                screen = MultiCatalogBookingPage(
+                  catalogs: selectedItems,
+                  routeArguments: currentArgs as Map<String, dynamic>?,
+                  onSuccess: () {
+                    setState(() {
+                      selectedItems.clear();
+                    });
+                    _fetchCartCount();
+                    Provider.of<CartModel>(
+                      context,
+                      listen: false,
+                    ).refreshAddedItems();
+                  },
+                );
+              } else if (AppConstants.bookingType == "2") {
+                screen = CreateOrderScreen(
+                  catalogs: selectedItems,
+                  routeArguments: currentArgs as Map<String, dynamic>?,
+                  onSuccess: () {
+                    setState(() {
+                      selectedItems.clear();
+                    });
+                    _fetchCartCount();
+                    Provider.of<CartModel>(
+                      context,
+                      listen: false,
+                    ).refreshAddedItems();
+                  },
+                );
+              } else {
+                screen = CreateOrderScreen3(
+                  catalogs: selectedItems,
+                  onSuccess: () {
+                    setState(() {
+                      selectedItems.clear();
+                    });
+                    _fetchCartCount();
+                    Provider.of<CartModel>(
+                      context,
+                      listen: false,
+                    ).refreshAddedItems();
+                  },
+                );
+              }
 
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => screen),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isEdit ? Icons.add_circle : Icons.shopping_cart,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isEdit ? 'ADD MORE' : 'BOOK NOW',
-                  style: const TextStyle(
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => screen),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isEdit ? Icons.add_circle : Icons.shopping_cart,
                     color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                    size: 18,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    isEdit ? 'ADD MORE' : 'BOOK NOW',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
 
-  return [
-    if (selectedItems.isNotEmpty)
-      isLargeScreen
-          ? Expanded(child: unifiedButtonGroup)
-          : unifiedButtonGroup,
-  ];
-}
+    return [
+      if (selectedItems.isNotEmpty)
+        isLargeScreen
+            ? Expanded(child: unifiedButtonGroup)
+            : unifiedButtonGroup,
+    ];
+  }
+
   List<String> _getImageUrls(Catalog catalog) {
     final shadeImages = catalog.shadeImages ?? '';
     final fullImagePath = catalog.fullImagePath ?? '';

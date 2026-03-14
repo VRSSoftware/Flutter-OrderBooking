@@ -306,12 +306,9 @@
 //   }
 // }
 
-
-
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
-import 'package:vrs_erp/models/catalog.dart';
 
 class OrderStatusCard extends StatelessWidget {
   final String productName;
@@ -341,59 +338,107 @@ class OrderStatusCard extends StatelessWidget {
         return Colors.black;
       case 'white':
         return Colors.grey;
+      case 'brown':
+        return Colors.brown;
+      case 'pink':
+        return Colors.pink;
+      case 'orange':
+        return Colors.orange;
+      case 'purple':
+        return Colors.purple;
       default:
-        return Colors.black;
+        return Colors.grey;
     }
+  }
+
+  String _getShadeName(dynamic item) {
+    // First try to get ColorName (if you've mapped it in the main screen)
+    if (item['ColorName'] != null && item['ColorName'].toString().isNotEmpty && item['ColorName'] != 'NA') {
+      return item['ColorName'].toString();
+    }
+    
+    // If ColorName is not available, use the color code
+    if (item['Color'] != null && item['Color'].toString().isNotEmpty) {
+      return item['Color'].toString();
+    }
+    
+    return 'Unknown';
   }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderSection(context),
-            const SizedBox(height: 16),
-            _buildOrderTable(context),
-          ],
-        ),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      elevation: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section with Gradient
+          _buildGradientHeader(context),
+          // Table Section
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildOrderTable(context),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context) {
+  Widget _buildGradientHeader(BuildContext context) {
     final firstItem = items.first;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showImage &&
-            firstItem['Style_Image'] != null &&
-            firstItem['Style_Image'].isNotEmpty)
-          _buildItemImage(context, firstItem['Style_Image']),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                productName,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildDetailRow('Order No:', orderNo),
-            ],
-          ),
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+   colors: [AppColors.primaryColor, AppColors.primaryColor.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          if (showImage &&
+              firstItem['Style_Image'] != null &&
+              firstItem['Style_Image'].isNotEmpty)
+            _buildItemImage(context, firstItem['Style_Image']),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  productName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Order: ${_extractOrderNumber(orderNo)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _extractOrderNumber(String orderNo) {
+    // Extract only the order number without date
+    if (orderNo.contains('\n')) {
+      return orderNo.split('\n')[0];
+    }
+    return orderNo;
   }
 
   Widget _buildItemImage(BuildContext context, String imagePath) {
@@ -403,19 +448,31 @@ class OrderStatusCard extends StatelessWidget {
     return GestureDetector(
       onDoubleTap: () => _openImageZoom(context, imagePath),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 100),
-        height: 100,
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
         child: imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, loadingProgress) =>
-                    loadingProgress == null
-                        ? child
-                        : const Center(child: CircularProgressIndicator()),
-                errorBuilder: (context, error, stackTrace) => const _ImageErrorWidget(),
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) =>
+                      loadingProgress == null
+                          ? child
+                          : const Center(child: CircularProgressIndicator(strokeWidth: 1)),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.image_not_supported,
+                    size: 30,
+                    color: Colors.grey,
+                  ),
+                ),
               )
-            : const _ImageErrorWidget(),
+            : const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
       ),
     );
   }
@@ -431,21 +488,16 @@ class OrderStatusCard extends StatelessWidget {
   }
 
   List<String> _getImageUrls(String imagePath) {
-    // Handle imagePath, which may contain one or more image paths in the format "shadeName:path, shadeName:path"
     if (imagePath.isEmpty) {
-      return ['']; // Return empty string list if no images
+      return [''];
     }
 
-    // Split imagePath by comma to get individual entries
     final imageEntries = imagePath.split(',').map((entry) => entry.trim()).toList();
-
-    // Extract paths and construct URLs
     List<String> imageUrls = [];
+
     for (var entry in imageEntries) {
-      // Split entry by last colon to separate shadeName and path
       final parts = entry.split(':');
       if (parts.length < 2) {
-        // Handle single URL without shadeName
         final path = entry.trim();
         if (path.isNotEmpty) {
           final fileName = path.split('/').last.split('\\').last;
@@ -456,15 +508,12 @@ class OrderStatusCard extends StatelessWidget {
         continue;
       }
 
-      // The path is everything after the first colon
       final path = parts.sublist(1).join(':').trim();
       if (path.isEmpty) continue;
 
-      // Extract filename from path (e.g., img1.jpg from E:/java_projects/Images/img1.jpg)
-      final fileName = path.split('/').last.split('\\').last; // Handle both / and \ separators
+      final fileName = path.split('/').last.split('\\').last;
       if (fileName.isEmpty) continue;
 
-      // Construct URL
       final url = '${AppConstants.BASE_URL}/images/$fileName';
       imageUrls.add(url);
     }
@@ -472,32 +521,16 @@ class OrderStatusCard extends StatelessWidget {
     return imageUrls.isEmpty ? [''] : imageUrls;
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(fontSize: 14, color: Colors.grey[800]),
-          children: [
-            TextSpan(
-              text: '$label ',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            TextSpan(text: value),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildOrderTable(BuildContext context) {
-    final Map<String, List<dynamic>> groupedItems = {};
+    // Group items by shade first
+    final Map<String, List<dynamic>> groupedByShade = {};
+    
     for (var item in items) {
-      final color = item['Color'] ?? 'Unknown';
-      groupedItems.putIfAbsent(color, () => []).add(item);
+      final shade = _getShadeName(item);
+      groupedByShade.putIfAbsent(shade, () => []).add(item);
     }
 
-    // Dynamically build table rows
+    // Build table rows
     final List<TableRow> tableRows = [];
 
     // Table header
@@ -506,64 +539,144 @@ class OrderStatusCard extends StatelessWidget {
         decoration: BoxDecoration(color: Colors.grey.shade100),
         children: [
           _buildTableHeader('Shade'),
-          _buildTableHeader('Size'),
           _buildTableHeader('Party'),
+          _buildTableHeader('Size'),
           _buildTableHeader('Order Qty'),
           _buildTableHeader('Delv Qty'),
           _buildTableHeader('Settle Qty'),
           _buildTableHeader('Pending Qty'),
-          _buildTableHeader('Order No'),
         ],
       ),
     );
 
-    final entries = groupedItems.entries.toList();
-    for (int groupIndex = 0; groupIndex < entries.length; groupIndex++) {
-      final entry = entries[groupIndex];
-      final isLastGroup = groupIndex == entries.length - 1;
+    final shadeEntries = groupedByShade.entries.toList();
+    
+    for (int shadeIndex = 0; shadeIndex < shadeEntries.length; shadeIndex++) {
+      final shadeEntry = shadeEntries[shadeIndex];
+      final isLastShade = shadeIndex == shadeEntries.length - 1;
+      
+      // Get unique sizes for this shade and aggregate quantities
+      final Map<String, Map<String, dynamic>> sizeData = {};
+      String party = '';
+      
+      for (var item in shadeEntry.value) {
+        party = item['Party'] ?? 'Unknown';
+        final size = item['Size']?.toString() ?? 'Unknown';
+        
+        if (!sizeData.containsKey(size)) {
+          sizeData[size] = {
+            'orderQty': 0.0,
+            'delvQty': 0.0,
+            'settleQty': 0.0,
+            'pendingQty': 0.0,
+          };
+        }
+        
+        sizeData[size]!['orderQty'] += (item['OrderQty'] as num?)?.toDouble() ?? 0;
+        sizeData[size]!['delvQty'] += (item['DelvQty'] as num?)?.toDouble() ?? 0;
+        sizeData[size]!['settleQty'] += (item['SettleQty'] as num?)?.toDouble() ?? 0;
+        sizeData[size]!['pendingQty'] += (item['PendingQty'] as num?)?.toDouble() ?? 0;
+      }
 
-      for (int i = 0; i < entry.value.length; i++) {
-        final item = entry.value[i];
+      final sizeEntries = sizeData.entries.toList();
+      
+      // Create rows for each size
+      for (int sizeIndex = 0; sizeIndex < sizeEntries.length; sizeIndex++) {
+        final sizeEntry = sizeEntries[sizeIndex];
+        
         tableRows.add(
           TableRow(
             children: [
-              if (i == 0)
+              // Shade column - only show in first row of this shade group
+              if (sizeIndex == 0)
                 TableCell(
                   verticalAlignment: TableCellVerticalAlignment.middle,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      entry.key,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: _getColorCode(entry.key),
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: _getColorCode(shadeEntry.key),
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: Colors.grey.shade400),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            shadeEntry.key,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: _getColorCode(shadeEntry.key),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )
               else
-                const SizedBox(),
-              _buildTableCell(item['Size'] ?? ''),
-              _buildTableCell(item['Party'] ?? ''),
-              _buildTableCell(item['OrderQty']?.toString() ?? '0'),
-              _buildTableCell(item['DelvQty']?.toString() ?? '0'),
-              _buildTableCell(item['SettleQty']?.toString() ?? '0'),
-              _buildTableCell(item['PendingQty']?.toString() ?? '0'),
-              _buildTableCell(item['OrderNo'] ?? ''),
+                const TableCell(child: SizedBox()),
+              
+              // Party column - only show in first row of this shade group
+              if (sizeIndex == 0)
+                TableCell(
+                  verticalAlignment: TableCellVerticalAlignment.middle,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    child: Text(
+                      party,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                )
+              else
+                const TableCell(child: SizedBox()),
+              
+              // Size column
+              _buildTableCell(sizeEntry.key),
+              
+              // Quantity columns
+              _buildTableCell(sizeEntry.value['orderQty'].toStringAsFixed(0)),
+              _buildTableCell(
+                sizeEntry.value['delvQty'].toStringAsFixed(0),
+                color: Colors.green[700],
+              ),
+              _buildTableCell(
+                sizeEntry.value['settleQty'].toStringAsFixed(0),
+                color: Colors.orange[700],
+              ),
+              _buildTableCell(
+                sizeEntry.value['pendingQty'].toStringAsFixed(0),
+                color: sizeEntry.value['pendingQty'] > 0 
+                    ? Colors.red[700] 
+                    : sizeEntry.value['pendingQty'] < 0 
+                        ? Colors.orange[700] 
+                        : Colors.green[700],
+                isBold: true,
+              ),
             ],
           ),
         );
       }
 
-      if (!isLastGroup) {
+      // Add separator between shades (except after last shade)
+      if (!isLastShade) {
         tableRows.add(
           TableRow(
             children: List.generate(
-              8,
+              7,
               (_) => Container(
-                height: 1,
-                color: const Color.fromARGB(255, 124, 124, 124),
+                height: 2,
+                color: Colors.grey.shade300,
               ),
             ),
           ),
@@ -571,23 +684,53 @@ class OrderStatusCard extends StatelessWidget {
       }
     }
 
+    // Add totals row
+    tableRows.add(
+      TableRow(
+        decoration: BoxDecoration(color: Colors.grey.shade100),
+        children: [
+          _buildTableCell('TOTAL', isBold: true),
+          const TableCell(child: SizedBox()),
+          const TableCell(child: SizedBox()),
+          _buildTableCell(
+            _calculateTotal('OrderQty').toStringAsFixed(0),
+            isBold: true,
+          ),
+          _buildTableCell(
+            _calculateTotal('DelvQty').toStringAsFixed(0),
+            color: Colors.green[700],
+            isBold: true,
+          ),
+          _buildTableCell(
+            _calculateTotal('SettleQty').toStringAsFixed(0),
+            color: Colors.orange[700],
+            isBold: true,
+          ),
+          _buildTableCell(
+            _calculateTotal('PendingQty').toStringAsFixed(0),
+            color: _calculateTotal('PendingQty') > 0 ? Colors.red[700] : Colors.green[700],
+            isBold: true,
+          ),
+        ],
+      ),
+    );
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minWidth: MediaQuery.of(context).size.width - 64,
+          minWidth: MediaQuery.of(context).size.width - 32,
         ),
         child: Table(
-          border: TableBorder.all(color: Colors.grey.shade300, width: 1),
+          border: TableBorder.all(color: Colors.grey.shade300, width: 0.5),
           columnWidths: const {
-            0: FixedColumnWidth(100),
-            1: FixedColumnWidth(80),
-            2: FixedColumnWidth(120),
-            3: FixedColumnWidth(80),
-            4: FixedColumnWidth(80),
-            5: FixedColumnWidth(80),
-            6: FixedColumnWidth(80),
-            7: FixedColumnWidth(100),
+            0: FixedColumnWidth(90),  // Shade
+            1: FixedColumnWidth(100), // Party
+            2: FixedColumnWidth(60),  // Size
+            3: FixedColumnWidth(70),  // Order Qty
+            4: FixedColumnWidth(70),  // Delv Qty
+            5: FixedColumnWidth(70),  // Settle Qty
+            6: FixedColumnWidth(70),  // Pending Qty
           },
           children: tableRows,
         ),
@@ -595,47 +738,49 @@ class OrderStatusCard extends StatelessWidget {
     );
   }
 
+  double _calculateTotal(String field) {
+    double total = 0;
+    for (var item in items) {
+      total += (item[field] as num?)?.toDouble() ?? 0;
+    }
+    return total;
+  }
+
   Widget _buildTableHeader(String text) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  Widget _buildTableCell(String text) {
+  Widget _buildTableCell(
+    String text, {
+    Color? color,
+    bool isBold = false,
+  }) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Text(text, textAlign: TextAlign.center),
-      ),
-    );
-  }
-}
-
-class _ImageErrorWidget extends StatelessWidget {
-  const _ImageErrorWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.image_not_supported, size: 40),
-          SizedBox(height: 8),
-          Text(
-            'Image not available',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            color: color,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),
-        ],
+        ),
       ),
     );
   }

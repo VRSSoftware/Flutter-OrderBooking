@@ -994,6 +994,7 @@ class _RegisterPageState extends State<RegisterPage>
                                 //     ],
                                 //   ),
                                 // ),
+                                if (registerOrder.deliveryType == 'Draft')
                                 PopupMenuItem<String>(
                                   value: 'edit2',
                                   child: Row(

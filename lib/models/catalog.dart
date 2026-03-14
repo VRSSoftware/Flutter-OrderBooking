@@ -30,7 +30,8 @@ class Catalog {
   final String stkQty;
   final String barcode;
   final int total;
-
+  final String? minMRP;
+  final String? maxMRP;
 
   Catalog({
     required this.itemSubGrpKey,
@@ -64,6 +65,8 @@ class Catalog {
     this.shadeImages='',
     this.stkQty = '',
     this.barcode = '',
+    this.minMRP,
+    this.maxMRP,
   });
 
   factory Catalog.fromJson(Map<String, dynamic> json) {
@@ -99,6 +102,8 @@ class Catalog {
        upcoming_Stk: json['upcoming_Stk'] ?? '',
        stkQty: json['data2'] ?? '',
        barcode: json['barcode'] ?? '',
+        minMRP: json['minMRP']?.toString(),
+      maxMRP: json['maxMRP']?.toString(),
     );
   }
 
@@ -133,6 +138,8 @@ class Catalog {
       'shadeImages':shadeImages,
       'stkQty':stkQty,
       'barcode':barcode,
+      'minMRP': minMRP,
+      'maxMRP': maxMRP,
 
     };
   }

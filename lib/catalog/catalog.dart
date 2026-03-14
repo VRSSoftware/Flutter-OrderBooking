@@ -745,7 +745,7 @@ class _CatalogPageState extends State<CatalogPage> {
             ),
         ],
       ),
-    
+
       bottomNavigationBar: BottomNavigationWidget(currentScreen: '/catalog'),
       // bottomNavigationBar: BottomNavigationWidget(
       //   currentIndex: 1,
@@ -806,318 +806,373 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
-    final filteredItems = _getFilteredItems();
+  final filteredItems = _getFilteredItems();
 
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == filteredItems.length && isLoadingMore) {
-          return Center(
-            child: LoadingAnimationWidget.waveDots(
-              color: AppColors.primaryColor,
-              size: 30,
-            ),
+  return ListView.builder(
+    controller: _scrollController,
+    itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
+    itemBuilder: (context, index) {
+      if (index == filteredItems.length && isLoadingMore) {
+        return Center(
+          child: LoadingAnimationWidget.waveDots(
+            color: AppColors.primaryColor,
+            size: 30,
+          ),
+        );
+      }
+
+      final item = filteredItems[index];
+      bool isSelected = selectedItems.contains(item);
+
+      List<String> shades =
+          item.shadeName.isNotEmpty
+              ? item.shadeName
+                  .split(',')
+                  .map((shade) => shade.trim())
+                  .toList()
+              : [];
+
+      final imageUrls = _getImageUrl(item);
+      final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+
+      return GestureDetector(
+        onDoubleTap: () {
+          _openImageZoom1(
+            context,
+            item,
+            showShades: showShades,
+            showMRP: showMRP,
+            showWSP: showWSP,
+            showSizes: showSizes,
+            showProduct: showProduct,
+            showRemark: showRemark,
+            isLargeScreen: isLargeScreen,
           );
-        }
-
-        final item = filteredItems[index];
-        bool isSelected = selectedItems.contains(item);
-
-        List<String> shades =
-            item.shadeName.isNotEmpty
-                ? item.shadeName
-                    .split(',')
-                    .map((shade) => shade.trim())
-                    .toList()
-                : [];
-
-        final imageUrls = _getImageUrl(item);
-        final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
-
-        return GestureDetector(
-          onDoubleTap: () {
-            _openImageZoom1(
-              context,
-              item,
-              showShades: showShades,
-              showMRP: showMRP,
-              showWSP: showWSP,
-              showSizes: showSizes,
-              showProduct: showProduct,
-              showRemark: showRemark,
-              isLargeScreen: isLargeScreen,
-            );
-          },
-          onLongPress: () => _toggleItemSelection(item),
-          onTap: () {
-            if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              elevation: isSelected ? 8 : 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              color: isSelected ? Colors.blue.shade50 : Colors.white,
-              child: Stack(
-                children: [
-                  // Left curved color strip
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    child: Container(
-                      width: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
-                        ),
+        },
+        onLongPress: () => _toggleItemSelection(item),
+        onTap: () {
+          if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: isSelected ? 8 : 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: isSelected ? Colors.blue.shade50 : Colors.white,
+            child: Stack(
+              children: [
+                // Left curved color strip
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  child: Container(
+                    width: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
                       ),
                     ),
                   ),
+                ),
 
-                  Padding(
-                    padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          flex: 2,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              bottomLeft: Radius.circular(12),
-                            ),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final maxImageHeight =
-                                    constraints.maxWidth * 1.2;
+                Padding(
+                  padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left column with image and range
+                      Flexible(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Image section
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                bottomLeft: Radius.circular(12),
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final maxImageHeight =
+                                      constraints.maxWidth * 1.2;
 
-                                return ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight: maxImageHeight,
-                                  ),
-                                  child:
-                                      imageUrls.isNotEmpty &&
-                                              imageUrls[0].isNotEmpty
-                                          ? Stack(
-                                            children: [
-                                              SizedBox(
-                                                height: maxImageHeight,
-                                                width: double.infinity,
-                                                child: PageView.builder(
-                                                  itemCount: imageUrls.length,
-                                                  onPageChanged: (index) {
-                                                    currentImageIndex.value =
-                                                        index;
-                                                  },
-                                                  itemBuilder: (
-                                                    context,
-                                                    index,
-                                                  ) {
-                                                    final imageUrl =
-                                                        imageUrls[index];
-                                                    return _buildSingleImage(
-                                                      imageUrl,
-                                                      maxImageHeight,
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                              if (imageUrls.length > 1)
-                                                Positioned(
-                                                  bottom: 8,
-                                                  left: 0,
-                                                  right: 0,
-                                                  child: ValueListenableBuilder<
-                                                    int
-                                                  >(
-                                                    valueListenable:
-                                                        currentImageIndex,
-                                                    builder: (
-                                                      context,
-                                                      index,
-                                                      child,
-                                                    ) {
-                                                      return DotIndicator(
-                                                        count: imageUrls.length,
-                                                        currentIndex: index,
-                                                      );
-                                                    },
+                                  return ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: maxImageHeight,
+                                    ),
+                                    child:
+                                        imageUrls.isNotEmpty &&
+                                                imageUrls[0].isNotEmpty
+                                            ? Stack(
+                                                children: [
+                                                  SizedBox(
+                                                    height: maxImageHeight,
+                                                    width: double.infinity,
+                                                    child: PageView.builder(
+                                                      itemCount:
+                                                          imageUrls.length,
+                                                      onPageChanged: (index) {
+                                                        currentImageIndex
+                                                            .value = index;
+                                                      },
+                                                      itemBuilder: (
+                                                        context,
+                                                        index,
+                                                      ) {
+                                                        final imageUrl =
+                                                            imageUrls[index];
+                                                        return _buildSingleImage(
+                                                          imageUrl,
+                                                          maxImageHeight,
+                                                        );
+                                                      },
+                                                    ),
                                                   ),
-                                                ),
-                                            ],
-                                          )
-                                          : _buildSingleImage(
-                                            '',
-                                            maxImageHeight,
-                                          ),
-                                );
-                              },
+                                                  if (imageUrls.length > 1)
+                                                    Positioned(
+                                                      bottom: 8,
+                                                      left: 0,
+                                                      right: 0,
+                                                      child:
+                                                          ValueListenableBuilder<
+                                                              int>(
+                                                        valueListenable:
+                                                            currentImageIndex,
+                                                        builder: (
+                                                          context,
+                                                          index,
+                                                          child,
+                                                        ) {
+                                                          return DotIndicator(
+                                                            count:
+                                                                imageUrls.length,
+                                                            currentIndex: index,
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                ],
+                                              )
+                                            : _buildSingleImage(
+                                                '',
+                                                maxImageHeight,
+                                              ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ),
-                        SizedBox(width: isLargeScreen ? 16 : 8),
-                        Flexible(
-                          flex: 5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
+                            
+                            // Range text below the image (only if showMRP is true)
+                            if (showMRP &&
+                                item.minMRP != null &&
+                                item.maxMRP != null)
                               Padding(
-                                padding: EdgeInsets.all(
-                                  isLargeScreen ? 16 : 12,
+                                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: AppColors.primaryColor.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${item.minMRP} - ${item.maxMRP}',
+                                        style: TextStyle(
+                                          fontSize: isLargeScreen ? 12: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Table(
-                                  columnWidths: const {
-                                    0: IntrinsicColumnWidth(),
-                                    1: FixedColumnWidth(8),
-                                    2: FlexColumnWidth(),
-                                  },
-                                  defaultVerticalAlignment:
-                                      TableCellVerticalAlignment.middle,
-                                  children: [
+                              ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: isLargeScreen ? 16 : 8),
+                      
+                      // Right column with details table
+                      Flexible(
+                        flex: 5,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(
+                                isLargeScreen ? 16 : 12,
+                              ),
+                              child: Table(
+                                columnWidths: const {
+                                  0: IntrinsicColumnWidth(),
+                                  1: FixedColumnWidth(8),
+                                  2: FlexColumnWidth(),
+                                },
+                                defaultVerticalAlignment:
+                                    TableCellVerticalAlignment.middle,
+                                children: [
+                                  TableRow(
+                                    children: [
+                                      _buildLabelText('Design'),
+                                      const Text(':'),
+                                      Text(
+                                        item.styleCodeWithcount,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: isLargeScreen ? 20 : 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  _buildSpacerRow(),
+                                  if (showShades && shades.isNotEmpty)
                                     TableRow(
                                       children: [
-                                        _buildLabelText('Design'),
+                                        _buildLabelText('Shade'),
                                         const Text(':'),
                                         Text(
-                                          item.styleCodeWithcount,
+                                          shades.join(', '),
                                           style: TextStyle(
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: isLargeScreen ? 20 : 16,
+                                            fontSize: isLargeScreen ? 14 : 13,
+                                            color: Colors.grey[700],
                                           ),
                                         ),
                                       ],
                                     ),
+                                  if (showShades && shades.isNotEmpty)
                                     _buildSpacerRow(),
-                                    if (showShades && shades.isNotEmpty)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('Shade'),
-                                          const Text(':'),
-                                          Text(
-                                            shades.join(', '),
-                                            style: TextStyle(
-                                              fontSize: isLargeScreen ? 14 : 13,
-                                              color: Colors.grey[700],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    if (showShades && shades.isNotEmpty)
-                                      _buildSpacerRow(),
-                                    if (showMRP)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('MRP'),
-                                          const Text(':'),
-                                          Text(
-                                            item.mrp.toStringAsFixed(2),
+                                  if (showMRP)
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('MRP'),
+                                        const Text(':'),
+                                        Text(
+                                          item.mrp.toStringAsFixed(2),
+                                          style: _valueTextStyle(),
+                                        ),
+                                      ],
+                                    ),
+                                  if (showMRP) _buildSpacerRow(),
+                                  // REMOVE THE RANGE ROW FROM HERE (it's now below the image)
+                                  // if (showMRP &&
+                                  //     item.minMRP != null &&
+                                  //     item.maxMRP != null)
+                                  //   TableRow(...), // Remove this entire block
+                                  // if (showMRP &&
+                                  //     item.minMRP != null &&
+                                  //     item.maxMRP != null)
+                                  //   _buildSpacerRow(), // Remove this too
+                                  
+                                  if (showWSP)
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('WSP'),
+                                        const Text(':'),
+                                        Text(
+                                          item.wsp.toStringAsFixed(2),
+                                          style: _valueTextStyle(),
+                                        ),
+                                      ],
+                                    ),
+                                  if (showWSP) _buildSpacerRow(),
+                                  if (item.sizeName.isNotEmpty && showSizes)
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('Size'),
+                                        const Text(':'),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Text(
+                                            _getSizeText(item),
                                             style: _valueTextStyle(),
                                           ),
-                                        ],
-                                      ),
-                                    if (showMRP) _buildSpacerRow(),
-                                    if (showWSP)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('WSP'),
-                                          const Text(':'),
-                                          Text(
-                                            item.wsp.toStringAsFixed(2),
+                                        ),
+                                      ],
+                                    ),
+                                  if (item.sizeName.isNotEmpty && showSizes)
+                                    _buildSpacerRow(),
+                                  if (showProduct)
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('Product'),
+                                        const Text(':'),
+                                        Text(
+                                          item.itemName,
+                                          style: _valueTextStyle(),
+                                        ),
+                                      ],
+                                    ),
+                                  if (showProduct) _buildSpacerRow(),
+                                  if (showRemark)
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('Remark'),
+                                        const Text(':'),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Text(
+                                            item.remark?.trim().isNotEmpty ==
+                                                    true
+                                                ? item.remark!
+                                                : '--',
                                             style: _valueTextStyle(),
                                           ),
-                                        ],
-                                      ),
-                                    if (showWSP) _buildSpacerRow(),
-                                    if (item.sizeName.isNotEmpty && showSizes)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('Size'),
-                                          const Text(':'),
-                                          SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Text(
-                                              _getSizeText(item),
-                                              style: _valueTextStyle(),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    if (item.sizeName.isNotEmpty && showSizes)
-                                      _buildSpacerRow(),
-                                    if (showProduct)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('Product'),
-                                          const Text(':'),
-                                          Text(
-                                            item.itemName,
-                                            style: _valueTextStyle(),
-                                          ),
-                                        ],
-                                      ),
-                                    if (showProduct) _buildSpacerRow(),
-                                    if (showRemark)
-                                      TableRow(
-                                        children: [
-                                          _buildLabelText('Remark'),
-                                          const Text(':'),
-                                          SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Text(
-                                              item.remark?.trim().isNotEmpty ==
-                                                      true
-                                                  ? item.remark!
-                                                  : '--',
-                                              style: _valueTextStyle(),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                  ],
-                                ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (isSelected)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check_circle,
-                          color: AppColors.primaryColor,
-                          size: 24,
+                            ),
+                          ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+
+                if (isSelected)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: AppColors.primaryColor,
+                        size: 24,
+                      ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
-        );
-      },
-    );
-  }
-
+        ),
+      );
+    },
+  );
+}
   Widget _buildExpandedView(bool isLargeScreen) {
     final filteredItems = _getFilteredItems();
     return ListView.builder(
@@ -1292,6 +1347,26 @@ class _CatalogPageState extends State<CatalogPage> {
                               ],
                             ),
                           if (showMRP) _buildSpacerRow(),
+                          if (showMRP &&
+                              item.minMRP != null &&
+                              item.maxMRP != null)
+                            TableRow(
+                              children: [
+                                Text(
+                                  'Range',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const Text(':'),
+                                Text(
+                                  '${item.minMRP} - ${item.maxMRP}',
+                                  style: _valueTextStyle(),
+                                ),
+                              ],
+                            ),
+                          if (showMRP &&
+                              item.minMRP != null &&
+                              item.maxMRP != null)
+                            _buildSpacerRow(),
                           if (showWSP)
                             TableRow(
                               children: [
@@ -1632,6 +1707,22 @@ class _CatalogPageState extends State<CatalogPage> {
                           ],
                         ),
                       if (showMRP) _buildSpacerRow(),
+                      if (showMRP && item.minMRP != null && item.maxMRP != null)
+                        TableRow(
+                          children: [
+                            _buildLabelText('Range'),
+                            const Text(':'),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                '${item.minMRP} - ${item.maxMRP}',
+                                style: _valueTextStyle(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (showMRP && item.minMRP != null && item.maxMRP != null)
+                        _buildSpacerRow(),
                       if (showWSP)
                         TableRow(
                           children: [

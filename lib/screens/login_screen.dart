@@ -778,7 +778,7 @@ Widget build(BuildContext context) {
                     children: [
                       // Decorative top section with gradient
                       Container(
-                        height: 120,
+                        height: 100,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -801,7 +801,7 @@ Widget build(BuildContext context) {
                               right: -20,
                               child: Container(
                                 width: 100,
-                                height: 100,
+                                height: 80,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.1),
                                   shape: BoxShape.circle,

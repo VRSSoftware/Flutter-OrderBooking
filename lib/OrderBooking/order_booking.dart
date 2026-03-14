@@ -738,6 +738,8 @@
 //   }
 // }
 
+
+
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -882,6 +884,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
 void _showMessageDialog(String title, String message) {
   showDialog(
     context: context,
+    barrierDismissible: true,
     builder: (context) {
       return Dialog(
         shape: RoundedRectangleBorder(
@@ -892,28 +895,39 @@ void _showMessageDialog(String title, String message) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline,
-                  size: 40,
-                  color: AppColors.primaryColor),
-              const SizedBox(height: 10),
+              Icon(
+                title.contains('Error') ? Icons.error_outline : Icons.info_outline,
+                size: 50,
+                color: title.contains('Error') ? Colors.red : AppColors.primaryColor,
+              ),
+              const SizedBox(height: 15),
               Text(
                 title,
                 style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
                 message,
                 textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
+                  minimumSize: const Size(100, 40),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
+                child: const Text(
+                  "OK",
+                  style: TextStyle(fontSize: 16),
+                ),
               )
             ],
           ),
@@ -922,7 +936,6 @@ void _showMessageDialog(String title, String message) {
     },
   );
 }
-
   // Replace the existing _fetchCartCount method
  Future<void> _fetchCartCount() async {
   if (_isFetchingCart) return;

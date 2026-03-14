@@ -376,7 +376,7 @@ class BarcodeWiseWidget extends StatefulWidget {
 
 class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
   final TextEditingController _barcodeController = TextEditingController();
-  final FocusNode _barcodeFocusNode = FocusNode(); // Add FocusNode
+  final FocusNode _barcodeFocusNode = FocusNode();
   List<Map<String, dynamic>> _barcodeResults = [];
   List<String> addedItems = [];
   Map<String, bool> _filters = {
@@ -385,13 +385,12 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     'Shades': true,
     'StyleCode': true,
   };
-  bool _noDataFound = false;
+  // Remove this line: bool _noDataFound = false;
 
   @override
   void initState() {
     super.initState();
     _barcodeController.addListener(_handleBarcodeInput);
-    // Request focus when widget is first built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _barcodeFocusNode.requestFocus();
     });
@@ -400,7 +399,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
   @override
   void dispose() {
     _barcodeController.dispose();
-    _barcodeFocusNode.dispose(); // Dispose FocusNode
+    _barcodeFocusNode.dispose();
     super.dispose();
   }
 
@@ -415,9 +414,14 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     }
   }
 
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.enter) {
+ void _handleKeyEvent(RawKeyEvent event) {
+  if (event is RawKeyDownEvent &&
+      event.logicalKey == LogicalKeyboardKey.enter) {
+    
+    // Check if any dialog is currently open
+    bool isDialogOpen = ModalRoute.of(context)?.isCurrent != true;
+    
+    if (!isDialogOpen) {
       final barcode = _barcodeController.text.trim();
       if (barcode.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -427,68 +431,75 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       }
     }
   }
+}
 
-  Future<void> _scanBarcode() async {
-    final barcode = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
-      // MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
-    );
+ Future<void> _scanBarcode() async {
+  // Hide keyboard before opening scanner
+  FocusManager.instance.primaryFocus?.unfocus();
+  
+  final barcode = await Navigator.push<String>(
+    context,
+    MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
+  );
 
-    if (barcode != null && barcode.isNotEmpty) {
-      final upperBarcode = barcode.toUpperCase();
-      setState(() {
-        _barcodeController.text = upperBarcode;
-        _noDataFound = false;
-      });
-      _validateAndNavigate(upperBarcode);
-    }
-    // Request focus after scan
+  if (barcode != null && barcode.isNotEmpty) {
+    final upperBarcode = barcode.toUpperCase();
+    setState(() {
+      _barcodeController.text = upperBarcode;
+    });
+    _validateAndNavigate(upperBarcode);
+  } else {
+    // Request focus back if scan was cancelled
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _barcodeFocusNode.requestFocus();
     });
   }
-  Future<void> _scanQRCode() async {
-    final barcode = await Navigator.push<String>(
-      context,
-      // MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
-      MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
-    );
+}
 
-    if (barcode != null && barcode.isNotEmpty) {
-      final upperBarcode = barcode.toUpperCase();
-      setState(() {
-        _barcodeController.text = upperBarcode;
-        _noDataFound = false;
-      });
-      _validateAndNavigate(upperBarcode);
-    }
-    // Request focus after scan
+Future<void> _scanQRCode() async {
+  // Hide keyboard before opening scanner
+  FocusManager.instance.primaryFocus?.unfocus();
+  
+  final barcode = await Navigator.push<String>(
+    context,
+    MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
+  );
+
+  if (barcode != null && barcode.isNotEmpty) {
+    final upperBarcode = barcode.toUpperCase();
+    setState(() {
+      _barcodeController.text = upperBarcode;
+    });
+    _validateAndNavigate(upperBarcode);
+  } else {
+    // Request focus back if scan was cancelled
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _barcodeFocusNode.requestFocus();
     });
   }
-
+}
 void _validateAndNavigate(String barcode) async {
   if (barcode.isEmpty) {
+    // Hide keyboard before showing dialog
+    FocusManager.instance.primaryFocus?.unfocus();
     _showAlertDialog(
       context,
       'Missing Barcode',
       'Please enter or scan a barcode first.',
     );
-    _barcodeFocusNode.requestFocus();
     return;
   }
 
   String upperBarcode = barcode.toUpperCase();
   print("Checking barcode: $upperBarcode, addedItems: $addedItems");
   if (addedItems.contains(upperBarcode)) {
+    // Hide keyboard before showing dialog
+    FocusManager.instance.primaryFocus?.unfocus();
     _showAlertDialog(
       context,
       'Already Added',
       'This barcode is already added',
     );
-    _barcodeFocusNode.requestFocus();
     return;
   }
 
@@ -498,7 +509,6 @@ void _validateAndNavigate(String barcode) async {
   Widget screen;
   
   if (AppConstants.bookingType == "1") {
-    // For bookingType "1", use BookOnBarcode1
     screen = BookOnBarcode1(
       barcode: upperBarcode,
       onSuccess: () {
@@ -506,20 +516,20 @@ void _validateAndNavigate(String barcode) async {
           addedItems.add(upperBarcode);
           print("Added barcode: $upperBarcode, addedItems: $addedItems");
           _barcodeController.clear();
-          _noDataFound = false;
         });
         
-        // Call the onOrderConfirmed callback when order is successful
         if (widget.onOrderConfirmed != null) {
           widget.onOrderConfirmed!();
         }
         
+        // Request focus after success
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
       },
       onCancel: () {
         _barcodeController.clear();
+        // Request focus after cancel
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
@@ -527,7 +537,6 @@ void _validateAndNavigate(String barcode) async {
       edit: widget.edit,
     );
   } else if (AppConstants.bookingType == "2") {
-    // For bookingType "2", use BookOnBarcode2
     screen = BookOnBarcode2(
       barcode: upperBarcode,
       onSuccess: () {
@@ -535,20 +544,20 @@ void _validateAndNavigate(String barcode) async {
           addedItems.add(upperBarcode);
           print("Added barcode: $upperBarcode, addedItems: $addedItems");
           _barcodeController.clear();
-          _noDataFound = false;
         });
         
-        // Call the onOrderConfirmed callback when order is successful
         if (widget.onOrderConfirmed != null) {
           widget.onOrderConfirmed!();
         }
         
+        // Request focus after success
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
       },
       onCancel: () {
         _barcodeController.clear();
+        // Request focus after cancel
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
@@ -556,7 +565,6 @@ void _validateAndNavigate(String barcode) async {
       edit: widget.edit,
     );
   } else {
-    // Default case
     screen = BookOnBarcode2(
       barcode: upperBarcode,
       onSuccess: () {
@@ -564,20 +572,20 @@ void _validateAndNavigate(String barcode) async {
           addedItems.add(upperBarcode);
           print("Added barcode: $upperBarcode, addedItems: $addedItems");
           _barcodeController.clear();
-          _noDataFound = false;
         });
         
-        // Call the onOrderConfirmed callback when order is successful
         if (widget.onOrderConfirmed != null) {
           widget.onOrderConfirmed!();
         }
         
+        // Request focus after success
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
       },
       onCancel: () {
         _barcodeController.clear();
+        // Request focus after cancel
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _barcodeFocusNode.requestFocus();
         });
@@ -591,43 +599,64 @@ void _validateAndNavigate(String barcode) async {
     MaterialPageRoute(builder: (context) => screen),
   );
 
-  // Check the result from the booking screen
+  // Show dialog if result is false (No Data Found)
   if (result == false) {
-    setState(() {
-      _noDataFound = true;
-    });
-  } else {
-    setState(() {
-      _noDataFound = false;
-    });
-  }
-  
-  // Request focus after navigation returns
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _barcodeFocusNode.requestFocus();
-  });
-}
-  void _showAlertDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _barcodeFocusNode
-                      .requestFocus(); // Request focus after dialog dismissed
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+    // Hide keyboard before showing dialog
+    FocusManager.instance.primaryFocus?.unfocus();
+    _showAlertDialog(
+      context,
+      'No Data Found',
+      'No data found for barcode: $upperBarcode',
     );
+    // Don't request focus here - dialog will handle focus when dismissed
+  } else {
+    // Only request focus if no dialog was shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _barcodeFocusNode.requestFocus();
+    });
   }
+}
 
+void _showAlertDialog(BuildContext context, String title, String message) {
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Request focus only after dialog is dismissed
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _barcodeFocusNode.requestFocus();
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryColor,
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      );
+    },
+  );
+}
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -644,8 +673,8 @@ void _validateAndNavigate(String barcode) async {
                   Expanded(
                     child: TextFormField(
                       controller: _barcodeController,
-                      focusNode: _barcodeFocusNode, // Assign FocusNode
-                      autofocus: true, // Keep autofocus true
+                      focusNode: _barcodeFocusNode,
+                      autofocus: true,
                       maxLines: 1,
                       keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.none,
@@ -669,7 +698,6 @@ void _validateAndNavigate(String barcode) async {
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
                             color: Color(0xFFE0E0E0),
-                        
                           ),
                         ),
                       ),
@@ -689,8 +717,8 @@ void _validateAndNavigate(String barcode) async {
                     onTap: _scanQRCode,
                     child: Icon(
                       Icons.qr_code_2_rounded,
-                      size: 35, // Optional size
-                      color: Colors.black, // Optional color
+                      size: 35,
+                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -719,7 +747,6 @@ void _validateAndNavigate(String barcode) async {
                   ),
                   child: Row(
                     children: [
-                      // Left diagonal area with "SEARCH"
                       Expanded(
                         child: ClipPath(
                           clipper: DiagonalClipper(),
@@ -738,7 +765,6 @@ void _validateAndNavigate(String barcode) async {
                           ),
                         ),
                       ),
-                      // Icon section
                       Container(
                         width: 38,
                         alignment: Alignment.center,
@@ -753,22 +779,8 @@ void _validateAndNavigate(String barcode) async {
               ),
             ),
           ),
-          // Show "No Data Found" message if applicable
-          if (_noDataFound)
-            const Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Center(
-                child: Text(
-                  "No Data Found",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-            ),
-          // Only show results if _barcodeResults is not empty
+          // Remove the "No Data Found" text section that was here
+          
           if (_barcodeResults.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(12.0),
@@ -815,7 +827,6 @@ void _validateAndNavigate(String barcode) async {
     );
   }
 }
-
 class DiagonalClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

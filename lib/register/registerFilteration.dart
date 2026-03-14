@@ -58,10 +58,12 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
   ];
 
   final List<String> orderStatusOptions = [
-    'All',
     'Draft',
     'Approved',
-    'Dispatched',
+    'Partially Delivered',
+    'Delivered',
+    'Completed',
+    'Partially Completed',
     'Cancelled',
   ];
 

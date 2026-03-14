@@ -1012,27 +1012,27 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Container(
-          //   margin: const EdgeInsets.only(right: 4),
-          //   decoration: BoxDecoration(
-          //     color: Colors.white.withOpacity(0.1),
-          //     borderRadius: BorderRadius.circular(8),
-          //   ),
-          //   child: IconButton(
-          //     icon: const Icon(
-          //       Icons.receipt_long,
-          //       color: Colors.white,
-          //       size: 20,
-          //     ), // Reduced from 22 to 20
-          //     tooltip: 'Order Status',
-          //     onPressed: () {
-          //       Navigator.push(
-          //         context,
-          //         MaterialPageRoute(builder: (context) => const OrderStatus()),
-          //       );
-          //     },
-          //   ),
-          // ),
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.receipt_long,
+                color: Colors.white,
+                size: 20,
+              ), // Reduced from 22 to 20
+              tooltip: 'Order Status',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OrderStatus()),
+                );
+              },
+            ),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert,

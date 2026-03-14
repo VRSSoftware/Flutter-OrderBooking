@@ -2426,7 +2426,6 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
     super.initState();
     _fetchOrderDetails();
   }
-  
 
   Future<void> _fetchOrderDetails() async {
     try {
@@ -2701,7 +2700,6 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
                     ),
                   ],
                 ),
-                
               ),
             ],
           ),
@@ -2820,713 +2818,654 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
                               },
                             ),
                   ),
-
                 ],
               ),
     );
   }
 
-Widget _buildBottomSummaryItem({
-  required String label,
-  required String value,
-  required IconData icon,
-}) {
-  return Expanded(
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 12, color: Colors.white),
-        ),
-        const SizedBox(width: 6),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.roboto(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 9,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            Text(
-              value,
-              style: GoogleFonts.roboto(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildEnhancedOrderCard(Map<String, dynamic> order) {
-  String formattedDateTime = '';
-  try {
-    final date = DateFormat('yyyy-MM-dd').parse(order['OrderDate']);
-    formattedDateTime = DateFormat('dd/MM/yyyy HH:mm').format(date);
-  } catch (e) {
-    formattedDateTime =
-        '${order['OrderDate']} ${order['Created_Time'] ?? 'N/A'}';
-  }
-
-  String formattedDeliveryDate = '';
-  try {
-    final date = DateFormat('yyyy-MM-dd').parse(order['DlvDate']);
-    formattedDeliveryDate = DateFormat('dd/MM/yyyy').format(date);
-  } catch (e) {
-    formattedDeliveryDate = order['DlvDate'] ?? 'N/A';
-  }
-
-  Widget _buildTextWithMarquee(String text, TextStyle style) {
-    final maxWidth = MediaQuery.of(context).size.width / 4;
-    const int lengthThreshold = 12;
-    if (text.length > lengthThreshold) {
-      return SizedBox(
-        width: maxWidth,
-        height: 20.0,
-        child: Marquee(
-          text: text,
-          style: style,
-          scrollAxis: Axis.horizontal,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          blankSpace: 16.0,
-          velocity: 50.0,
-          pauseAfterRound: const Duration(seconds: 1),
-          startPadding: 8.0,
-          accelerationDuration: const Duration(seconds: 1),
-          accelerationCurve: Curves.linear,
-          decelerationDuration: const Duration(milliseconds: 500),
-          decelerationCurve: Curves.linear,
-        ),
-      );
-    }
-    return Text(text, style: style, overflow: TextOverflow.ellipsis);
-  }
-
-  Color deliveryColor;
-  String deliveryType = order['DeliveryType']?.toString() ?? 'N/A';
-  switch (deliveryType) {
-    case 'Approved':
-      deliveryColor = AppColors.primaryColor!;
-      break;
-    case 'Partially Delivered':
-      deliveryColor = AppColors.primaryColor.shade400!;
-      break;
-    case 'Delivered':
-      deliveryColor = AppColors.primaryColor.shade900!;
-      break;
-    case 'Completed':
-      deliveryColor = AppColors.primaryColor.shade600!;
-      break;
-    case 'Partially Completed':
-      deliveryColor = AppColors.primaryColor.shade300!;
-      break;
-    default:
-      deliveryColor = Colors.grey[600]!;
-  }
-
-  return Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade200, width: 1),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
+  Widget _buildBottomSummaryItem({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Left gradient border
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 4,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primaryColor,
-                    AppColors.primaryColor.withOpacity(0.4),
-                  ],
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: Colors.white),
+          ),
+          const SizedBox(width: 6),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.roboto(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedOrderCard(Map<String, dynamic> order) {
+    String formattedDateTime = '';
+    try {
+      final date = DateFormat('yyyy-MM-dd').parse(order['OrderDate']);
+      formattedDateTime = DateFormat('dd/MM/yyyy HH:mm').format(date);
+    } catch (e) {
+      formattedDateTime =
+          '${order['OrderDate']} ${order['Created_Time'] ?? 'N/A'}';
+    }
+
+    String formattedDeliveryDate = '';
+    try {
+      final date = DateFormat('yyyy-MM-dd').parse(order['DlvDate']);
+      formattedDeliveryDate = DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      formattedDeliveryDate = order['DlvDate'] ?? 'N/A';
+    }
+
+    Widget _buildTextWithMarquee(String text, TextStyle style) {
+      final maxWidth = MediaQuery.of(context).size.width / 4;
+      const int lengthThreshold = 12;
+      if (text.length > lengthThreshold) {
+        return SizedBox(
+          width: maxWidth,
+          height: 20.0,
+          child: Marquee(
+            text: text,
+            style: style,
+            scrollAxis: Axis.horizontal,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            blankSpace: 16.0,
+            velocity: 50.0,
+            pauseAfterRound: const Duration(seconds: 1),
+            startPadding: 8.0,
+            accelerationDuration: const Duration(seconds: 1),
+            accelerationCurve: Curves.linear,
+            decelerationDuration: const Duration(milliseconds: 500),
+            decelerationCurve: Curves.linear,
+          ),
+        );
+      }
+      return Text(text, style: style, overflow: TextOverflow.ellipsis);
+    }
+
+    Color deliveryColor;
+    String deliveryType = order['DeliveryType']?.toString() ?? 'N/A';
+    switch (deliveryType) {
+      case 'Approved':
+        deliveryColor = AppColors.primaryColor!;
+        break;
+      case 'Partially Delivered':
+        deliveryColor = AppColors.primaryColor.shade400!;
+        break;
+      case 'Delivered':
+        deliveryColor = AppColors.primaryColor.shade900!;
+        break;
+      case 'Completed':
+        deliveryColor = AppColors.primaryColor.shade600!;
+        break;
+      case 'Partially Completed':
+        deliveryColor = AppColors.primaryColor.shade300!;
+        break;
+      default:
+        deliveryColor = Colors.grey[600]!;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Left gradient border
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.primaryColor,
+                      AppColors.primaryColor.withOpacity(0.4),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 8, 10),
-            child: Column(
-              children: [
-                // ROW 1: Order No, Type, Status, Three Dots
-                Row(
-                  children: [
-                    // Order No with colored background
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        order['OrderNo'] ?? 'N/A',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryColor,
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 8, 10),
+              child: Column(
+                children: [
+                  // ROW 1: Order No, Type, Status, Three Dots
+                  Row(
+                    children: [
+                      // Order No with colored background
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Type with colored background
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Type:',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            order['Order_Type'] ?? 'N/A',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Status with colored background
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: deliveryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: deliveryColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                         
-                          Text(
-                            deliveryType.length > 8
-                                ? '${deliveryType}'
-                                : deliveryType,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: deliveryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                   const Spacer(),
-                    
-                    // Three dots with custom popup that doesn't close on checkbox
-                    PopupMenuButton<String>(
-                      icon: Container(
-                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Icon(
-                          Icons.more_vert,
-                          size: 18,
-                          color: AppColors.primaryColor,
+                        child: Text(
+                          order['OrderNo'] ?? 'N/A',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                          ),
                         ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+
+                      const SizedBox(width: 12),
+
+                      // Type with colored background
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Text(
+                            //   'Type:',
+                            //   style: GoogleFonts.poppins(
+                            //     fontSize: 10,
+                            //     fontWeight: FontWeight.w400,
+                            //     color: Colors.grey.shade600,
+                            //   ),
+                            // ),
+                            const SizedBox(width: 4),
+                            Text(
+                              order['Order_Type'] ?? 'N/A',
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      elevation: 4,
-                      onSelected: (value) {
-                        // Only handle non-checkbox items
-                        if (value != 'checkbox') {
-                          switch (value) {
-                            case 'reportView':
-                              // Handle report view
-                              break;
-                            case 'whatsapp':
-                              _showContactOptions(context, order['WhatsAppMobileNo']?.toString() ?? '');
-                              break;
-                            case 'download':
-                              _handleOrderDownload(order);
-                              break;
-                            case 'view':
-                              _generateAndOpenPdf(order); 
-                              break;
-                          }
-                        }
-                      },
-                      itemBuilder: (BuildContext context) => [
-                        // Checkbox item with custom handling (doesn't close menu)
-                        PopupMenuItem<String>(
-                          value: 'checkbox',
-                          enabled: true,
-                          child: StatefulBuilder(
-                            builder: (context, setState) {
-                              return Row(
-                                children: [
-                                  Container(
-                                    width: 20,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      color: _orderViewChecked[order['OrderNo']] ?? false
-                                          ? AppColors.primaryColor
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(
-                                        color: _orderViewChecked[order['OrderNo']] ?? false
-                                            ? AppColors.primaryColor
-                                            : Colors.grey.shade400,
-                                        width: 2,
-                                      ),
+
+                      const SizedBox(width: 12),
+
+                      // Status with colored background
+                      Container(
+                        width: 125, // fixed width for badge
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: deliveryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child:
+                            deliveryType.length > 10
+                                ? SizedBox(
+                                  height: 18,
+                                  child: Marquee(
+                                    text: deliveryType,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: deliveryColor,
                                     ),
-                                    child: _orderViewChecked[order['OrderNo']] ?? false
-                                        ? const Icon(
-                                            Icons.check,
-                                            size: 16,
-                                            color: Colors.white,
-                                          )
-                                        : null,
+                                    scrollAxis: Axis.horizontal,
+                                    blankSpace: 20,
+                                    velocity: 40,
+                                    pauseAfterRound: const Duration(seconds: 1),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                )
+                                : Text(
+                                  deliveryType,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: deliveryColor,
+                                  ),
+                                ),
+                      ),
+
+                      
+
+                      // Three dots with custom popup that doesn't close on checkbox
+                      PopupMenuButton<String>(
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.more_vert,
+                            size: 18,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                        onSelected: (value) {
+                          // Only handle non-checkbox items
+                          if (value != 'checkbox') {
+                            switch (value) {
+                              case 'reportView':
+                                // Handle report view
+                                break;
+                              case 'whatsapp':
+                                _showContactOptions(
+                                  context,
+                                  order['WhatsAppMobileNo']?.toString() ?? '',
+                                );
+                                break;
+                              case 'download':
+                                _handleOrderDownload(order);
+                                break;
+                              case 'view':
+                                _generateAndOpenPdf(order);
+                                break;
+                            }
+                          }
+                        },
+                        itemBuilder:
+                            (BuildContext context) => [
+                              // Checkbox item with custom handling (doesn't close menu)
+                              PopupMenuItem<String>(
+                                value: 'checkbox',
+                                enabled: true,
+                                child: StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return Row(
                                       children: [
-                                        Text(
-                                          'With Image',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black87,
+                                        Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                _orderViewChecked[order['OrderNo']] ??
+                                                        false
+                                                    ? AppColors.primaryColor
+                                                    : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            border: Border.all(
+                                              color:
+                                                  _orderViewChecked[order['OrderNo']] ??
+                                                          false
+                                                      ? AppColors.primaryColor
+                                                      : Colors.grey.shade400,
+                                              width: 2,
+                                            ),
                                           ),
+                                          child:
+                                              _orderViewChecked[order['OrderNo']] ??
+                                                      false
+                                                  ? const Icon(
+                                                    Icons.check,
+                                                    size: 16,
+                                                    color: Colors.white,
+                                                  )
+                                                  : null,
                                         ),
-                                        Text(
-                                          'Include images in PDF',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            color: Colors.grey.shade500,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'With Image',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Include images in PDF',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 10,
+                                                  color: Colors.grey.shade500,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          onTap: () {
-                            // Handle checkbox tap without closing menu
-                            setState(() {
-                              _orderViewChecked[order['OrderNo']] = 
-                                  !(_orderViewChecked[order['OrderNo']] ?? false);
-                            });
-                            // Don't close the popup
-                            return ;
-                          },
-                        ),
-                        
-                        const PopupMenuDivider(),
-                        
-                        // Report View
-                        PopupMenuItem<String>(
-                          value: 'reportView',
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
+                                    );
+                                  },
                                 ),
-                                child: Icon(
-                                  Icons.table_chart,
-                                  color: AppColors.primaryColor,
-                                  size: 16,
-                                ),
+                                onTap: () {
+                                  // Handle checkbox tap without closing menu
+                                  setState(() {
+                                    _orderViewChecked[order['OrderNo']] =
+                                        !(_orderViewChecked[order['OrderNo']] ??
+                                            false);
+                                  });
+                                  // Don't close the popup
+                                  return;
+                                },
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                              const PopupMenuDivider(),
+
+                              // Report View
+                              PopupMenuItem<String>(
+                                value: 'reportView',
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'Report View',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.table_chart,
+                                        color: AppColors.primaryColor,
+                                        size: 16,
                                       ),
                                     ),
-                                    Text(
-                                      'View detailed report',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Report View',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'View detailed report',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // WhatsApp
+                              PopupMenuItem<String>(
+                                value: 'whatsapp',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        color: Colors.green,
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'WhatsApp',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Share on WhatsApp',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Download
+                              PopupMenuItem<String>(
+                                value: 'download',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.download,
+                                        color: Colors.orange,
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Download',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Save PDF to device',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // View
+                              PopupMenuItem<String>(
+                                value: 'view',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.visibility,
+                                        color: Colors.purple,
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'View',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Open PDF viewer',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  // ROW 2: Qty, Amt, Items with colors
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        // Quantity
+                        Expanded(
+                          flex: 1,
+                          child: _buildColoredStatItem(
+                            label: 'Qty',
+                            value: '${order['TotalQty'] ?? '0'}',
+                            icon: Icons.shopping_bag,
+                            color: Colors.orange,
                           ),
                         ),
-                        
-                        // WhatsApp
-                        PopupMenuItem<String>(
-                          value: 'whatsapp',
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: FaIcon(
-                                  FontAwesomeIcons.whatsapp,
-                                  color: Colors.green,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'WhatsApp',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Share on WhatsApp',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                        Container(
+                          height: 30,
+                          width: 1,
+                          color: Colors.grey.shade300,
+                        ),
+
+                        // Amount
+                        Expanded(
+                          flex: 1,
+                          child: _buildColoredStatItem(
+                            label: 'Amt',
+                            value: '₹${order['TotalAmt'] ?? '0.00'}',
+                            icon: Icons.currency_rupee,
+                            color: Colors.green,
                           ),
                         ),
-                        
-                        // Download
-                        PopupMenuItem<String>(
-                          value: 'download',
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.download,
-                                  color: Colors.orange,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Download',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Save PDF to device',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        Container(
+                          height: 30,
+                          width: 1,
+                          color: Colors.grey.shade300,
                         ),
-                        
-                        // View
-                        PopupMenuItem<String>(
-                          value: 'view',
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.visibility,
-                                  color: Colors.purple,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'View',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Open PDF viewer',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+
+                        // Items
+                        Expanded(
+                          flex: 1,
+                          child: _buildColoredStatItem(
+                            label: 'Items',
+                            value: '${order['TotalItems'] ?? '1'}',
+                            icon: Icons.inventory,
+                            color: Colors.purple,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
 
-                const SizedBox(height: 5),
+                  const SizedBox(height: 12),
 
-      // ROW 2: Qty, Amt, Items with colors
-Container(
-  padding: const EdgeInsets.all(10),
-  decoration: BoxDecoration(
-    color: Colors.grey.shade50,
-    borderRadius: BorderRadius.circular(12),
-  ),
-  child: Row(
-    children: [
-      // Quantity
-      Expanded(
-        flex: 1,
-        child: _buildColoredStatItem(
-          label: 'Qty',
-          value: '${order['TotalQty'] ?? '0'}',
-          icon: Icons.shopping_bag,
-          color: Colors.orange,
-        ),
-      ),
-      Container(height: 30, width: 1, color: Colors.grey.shade300),
-      
-      // Amount
-      Expanded(
-        flex: 1,
-        child: _buildColoredStatItem(
-          label: 'Amt',
-          value: '₹${order['TotalAmt'] ?? '0.00'}',
-          icon: Icons.currency_rupee,
-          color: Colors.green,
-        ),
-      ),
-      Container(height: 30, width: 1, color: Colors.grey.shade300),
-      
-      // Items
-      Expanded(
-        flex: 1,
-        child: _buildColoredStatItem(
-          label: 'Items',
-          value: '${order['TotalItems'] ?? '1'}',
-          icon: Icons.inventory,
-          color: Colors.purple,
-        ),
-      ),
-    ],
-  ),
-),
-
-                const SizedBox(height: 12),
-
-                // ROW 3: Order Date, Delivery Date, WhatsApp with colors
-                Row(
-                  children: [
-                    // Order Date
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 12, color: AppColors.primaryColor),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Order Date',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  Text(
-                                    formattedDateTime,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primaryColor.shade900,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 8),
-                    
-                    // Delivery Date
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.event, size: 12, color: Colors.green.shade600),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Delivery',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  Text(
-                                    formattedDeliveryDate,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 8),
-                    
-                    // WhatsApp
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: (order['WhatsAppMobileNo'] != null &&
-                                order['WhatsAppMobileNo'].toString().trim().isNotEmpty)
-                            ? () => _showContactOptions(
-                                  context,
-                                  order['WhatsAppMobileNo'].toString(),
-                                )
-                            : null,
+                  // ROW 3: Order Date, Delivery Date, WhatsApp with colors
+                  Row(
+                    children: [
+                      // Order Date
+                      Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: (order['WhatsAppMobileNo'] != null &&
-                                    order['WhatsAppMobileNo'].toString().trim().isNotEmpty)
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.grey.shade100,
+                            color: AppColors.primaryColor.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
-                              FaIcon(
-                                FontAwesomeIcons.whatsapp,
+                              Icon(
+                                Icons.calendar_today,
                                 size: 12,
-                                color: (order['WhatsAppMobileNo'] != null &&
-                                        order['WhatsAppMobileNo'].toString().trim().isNotEmpty)
-                                    ? Colors.green
-                                    : Colors.grey.shade400,
+                                color: AppColors.primaryColor,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -3534,7 +3473,7 @@ Container(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'WhatsApp',
+                                      'Order Date',
                                       style: GoogleFonts.poppins(
                                         fontSize: 8,
                                         fontWeight: FontWeight.w500,
@@ -3542,17 +3481,11 @@ Container(
                                       ),
                                     ),
                                     Text(
-                                      (order['WhatsAppMobileNo'] != null &&
-                                              order['WhatsAppMobileNo'].toString().trim().isNotEmpty)
-                                          ? order['WhatsAppMobileNo'].toString()
-                                          : 'Not Available',
+                                      formattedDateTime,
                                       style: GoogleFonts.poppins(
-                                        fontSize: 9,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w600,
-                                        color: (order['WhatsAppMobileNo'] != null &&
-                                                order['WhatsAppMobileNo'].toString().trim().isNotEmpty)
-                                            ? Colors.green.shade700
-                                            : Colors.grey.shade500,
+                                        color: AppColors.primaryColor.shade900,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -3563,66 +3496,208 @@ Container(
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
-// Colored Stat Item for second row
-Widget _buildColoredStatItem({
-  required String label,
-  required String value,
-  required IconData icon,
-  required Color color,
-}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 14, color: color),
-        ),
-        const SizedBox(width: 4),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: color,
+                      const SizedBox(width: 8),
+
+                      // Delivery Date
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.event,
+                                size: 12,
+                                color: Colors.green.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Delivery',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    Text(
+                                      formattedDeliveryDate,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.green.shade700,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // WhatsApp
+                      Expanded(
+                        child: GestureDetector(
+                          onTap:
+                              (order['WhatsAppMobileNo'] != null &&
+                                      order['WhatsAppMobileNo']
+                                          .toString()
+                                          .trim()
+                                          .isNotEmpty)
+                                  ? () => _showContactOptions(
+                                    context,
+                                    order['WhatsAppMobileNo'].toString(),
+                                  )
+                                  : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  (order['WhatsAppMobileNo'] != null &&
+                                          order['WhatsAppMobileNo']
+                                              .toString()
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? Colors.green.withOpacity(0.1)
+                                      : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                FaIcon(
+                                  FontAwesomeIcons.whatsapp,
+                                  size: 12,
+                                  color:
+                                      (order['WhatsAppMobileNo'] != null &&
+                                              order['WhatsAppMobileNo']
+                                                  .toString()
+                                                  .trim()
+                                                  .isNotEmpty)
+                                          ? Colors.green
+                                          : Colors.grey.shade400,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'WhatsApp',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      Text(
+                                        (order['WhatsAppMobileNo'] != null &&
+                                                order['WhatsAppMobileNo']
+                                                    .toString()
+                                                    .trim()
+                                                    .isNotEmpty)
+                                            ? order['WhatsAppMobileNo']
+                                                .toString()
+                                            : 'Not Available',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              (order['WhatsAppMobileNo'] !=
+                                                          null &&
+                                                      order['WhatsAppMobileNo']
+                                                          .toString()
+                                                          .trim()
+                                                          .isNotEmpty)
+                                                  ? Colors.green.shade700
+                                                  : Colors.grey.shade500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      ],
-    ),
-  );
-}
- 
+      ),
+    );
+  }
+
+  // Colored Stat Item for second row
+  Widget _buildColoredStatItem({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 14, color: color),
+          ),
+          const SizedBox(width: 4),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<List<Map<String, dynamic>>> _fetchFullCustomerReport() async {
     try {
       final requestBody = {
@@ -4425,109 +4500,110 @@ Widget _buildColoredStatItem({
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder:  (context) =>SafeArea( 
-      child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Contact Options',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                const Divider(),
-
-                // WhatsApp Option
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
+      builder:
+          (context) => SafeArea(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const FaIcon(
-                      FontAwesomeIcons.whatsapp,
-                      color: Colors.green,
-                      size: 20,
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  title: const Text(
-                    'WhatsApp',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Contact Options',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text(phoneNumber),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _launchWhatsApp(phoneNumber);
-                  },
-                ),
+                  const SizedBox(height: 8),
+                  const Divider(),
 
-                // Call Option
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.call,
-                      color: AppColors.primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  title: const Text(
-                    'Call',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(phoneNumber),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _makePhoneCall(phoneNumber);
-                  },
-                ),
-
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade200,
-                        foregroundColor: Colors.black87,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
+                  // WhatsApp Option
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: const FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'WhatsApp',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(phoneNumber),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _launchWhatsApp(phoneNumber);
+                    },
+                  ),
+
+                  // Call Option
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.call,
+                        color: AppColors.primaryColor,
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'Call',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(phoneNumber),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _makePhoneCall(phoneNumber);
+                    },
+                  ),
+
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black87,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-   ), );
+    );
   }
-
 
   Future<List<Map<String, dynamic>>> _fetchCustomerWiseReport(int docId) async {
     try {
@@ -5083,33 +5159,33 @@ Widget _buildColoredStatItem({
 
     return pdf;
   }
-Future<void> _generateAndOpenPdf(Map<String, dynamic> order) async {
-  try {
-    // Fetch detailed data using the parent state's method
-    final detailedData = await _fetchCustomerWiseReport(
-      order['OrderId'] ?? 0,
-    );
 
-    if (detailedData.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No data available for this order')),
+  Future<void> _generateAndOpenPdf(Map<String, dynamic> order) async {
+    try {
+      // Fetch detailed data using the parent state's method
+      final detailedData = await _fetchCustomerWiseReport(
+        order['OrderId'] ?? 0,
       );
-      return;
+
+      if (detailedData.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No data available for this order')),
+        );
+        return;
+      }
+
+      // Generate PDF using the parent state's method
+      final pdf = await _generatePDF(order, detailedData);
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/order_${order['OrderNo']}.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      // Open the PDF
+      await OpenFile.open(file.path);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
     }
-
-    // Generate PDF using the parent state's method
-    final pdf = await _generatePDF(order, detailedData);
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/order_${order['OrderNo']}.pdf');
-    await file.writeAsBytes(await pdf.save());
-
-    // Open the PDF
-    await OpenFile.open(file.path);
-  } catch (e) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
   }
 }
-}
-
