@@ -673,28 +673,28 @@ Widget _buildCompactDetailChip(String label, String value) {
             child: Row(
               children: [
                 // Copy icon with improved styling
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(4),
-                      onTap: () => _showShadeCopyOptions(shade),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: TableColors.accentColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          Icons.copy_all,
-                          size: 14,
-                          color: TableColors.accentColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // Container(
+                //   margin: const EdgeInsets.only(right: 6),
+                //   child: Material(
+                //     color: Colors.transparent,
+                //     child: InkWell(
+                //       borderRadius: BorderRadius.circular(4),
+                //       onTap: () => _showShadeCopyOptions(shade),
+                //       child: Container(
+                //         padding: const EdgeInsets.all(4),
+                //         decoration: BoxDecoration(
+                //           color: TableColors.accentColor.withOpacity(0.1),
+                //           borderRadius: BorderRadius.circular(4),
+                //         ),
+                //         child: Icon(
+                //           Icons.copy_all,
+                //           size: 14,
+                //           color: TableColors.accentColor,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 Expanded(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

@@ -2357,6 +2357,15 @@
 //   }
 // }
 
+
+
+
+
+
+
+
+
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -3101,9 +3110,7 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
                           // Only handle non-checkbox items
                           if (value != 'checkbox') {
                             switch (value) {
-                              case 'reportView':
-                                // Handle report view
-                                break;
+                             
                               case 'whatsapp':
                                 _showContactOptions(
                                   context,
@@ -3202,52 +3209,7 @@ class _CustomerOrderDetailsPageState extends State<CustomerOrderDetailsPage> {
 
                               const PopupMenuDivider(),
 
-                              // Report View
-                              PopupMenuItem<String>(
-                                value: 'reportView',
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryColor
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Icon(
-                                        Icons.table_chart,
-                                        color: AppColors.primaryColor,
-                                        size: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Report View',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                          Text(
-                                            'View detailed report',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 10,
-                                              color: Colors.grey.shade500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
+                            
                               // WhatsApp
                               PopupMenuItem<String>(
                                 value: 'whatsapp',

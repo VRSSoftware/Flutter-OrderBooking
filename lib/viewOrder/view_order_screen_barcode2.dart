@@ -5012,7 +5012,6 @@ class _StyleCardState extends State<StyleCard> {
                 _buildColorSection(widget.catalogOrder, color),
 
                 const SizedBox(height: 8),
-
                 // Note Field
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

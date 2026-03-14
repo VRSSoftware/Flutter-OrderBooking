@@ -787,7 +787,9 @@ class _ShareOptionsPageState extends State<ShareOptionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return 
+SafeArea(
+   child: Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -940,7 +942,7 @@ class _ShareOptionsPageState extends State<ShareOptionsPage> {
           ),
         ],
       ),
-    );
+),);
   }
 
   Widget _buildShareOption({

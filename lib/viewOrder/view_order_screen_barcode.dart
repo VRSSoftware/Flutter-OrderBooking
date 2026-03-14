@@ -1998,29 +1998,29 @@ class _StyleCardState extends State<StyleCard> {
                         child: Row(
                           children: [
                             // Copy icon (same functionality as before)
-                            Container(
-                              margin: const EdgeInsets.only(right: 6),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(4),
-                                  onTap: () => _showShadeCopyOptions(shade),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: TableColors.accentColor
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Icon(
-                                      Icons.copy_all,
-                                      size: 14,
-                                      color: TableColors.accentColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                            // Container(
+                            //   margin: const EdgeInsets.only(right: 6),
+                            //   child: Material(
+                            //     color: Colors.transparent,
+                            //     child: InkWell(
+                            //       borderRadius: BorderRadius.circular(4),
+                            //       onTap: () => _showShadeCopyOptions(shade),
+                            //       child: Container(
+                            //         padding: const EdgeInsets.all(4),
+                            //         decoration: BoxDecoration(
+                            //           color: TableColors.accentColor
+                            //               .withOpacity(0.1),
+                            //           borderRadius: BorderRadius.circular(4),
+                            //         ),
+                            //         child: Icon(
+                            //           Icons.copy_all,
+                            //           size: 14,
+                            //           color: TableColors.accentColor,
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ),
+                            // ),
                             Expanded(
                               child: Text(
                                 shade,

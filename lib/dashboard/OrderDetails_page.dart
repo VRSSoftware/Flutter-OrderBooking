@@ -791,6 +791,15 @@
 //   }
 // }
 
+
+
+
+
+
+
+
+
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -801,6 +810,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/customerOrderDetailsPage.dart';
 import 'package:vrs_erp/dashboard/orderStatus.dart';
@@ -1012,27 +1022,27 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.receipt_long,
-                color: Colors.white,
-                size: 20,
-              ), // Reduced from 22 to 20
-              tooltip: 'Order Status',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const OrderStatus()),
-                );
-              },
-            ),
-          ),
+          // Container(
+          //   margin: const EdgeInsets.only(right: 4),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white.withOpacity(0.1),
+          //     borderRadius: BorderRadius.circular(8),
+          //   ),
+          //   child: IconButton(
+          //     icon: const Icon(
+          //       Icons.receipt_long,
+          //       color: Colors.white,
+          //       size: 20,
+          //     ), // Reduced from 22 to 20
+          //     tooltip: 'Order Status',
+          //     onPressed: () {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(builder: (context) => const OrderStatus()),
+          //       );
+          //     },
+          //   ),
+          // ),
           PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert,
@@ -1785,13 +1795,63 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       ).showSnackBar(SnackBar(content: Text('Error viewing PDF: $e')));
     }
   }
+void _handleWhatsAppShare() async {
+  try {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
 
-  void _handleWhatsAppShare() {
-    // Implement WhatsApp share functionality (as before)
+    // Generate PDF
+    final pdf = await _generatePDF();
+    final bytes = await pdf.save();
+
+    // Create a temporary file
+    final tempDir = await getTemporaryDirectory();
+    final fileName = 'SalesOrder_Summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final tempFile = File('${tempDir.path}/$fileName');
+    await tempFile.writeAsBytes(bytes);
+
+    // Close loading dialog
+    Navigator.pop(context);
+
+    // Share the file
+    final xFile = XFile(tempFile.path,
+        mimeType: 'application/pdf',
+        name: fileName);
+
+    await Share.shareXFiles(
+      [xFile],
+      text: 'Sales Order Summary Report',
+      sharePositionOrigin: Rect.fromLTWH(0, 0, 300, 300), // For iOS
+    ).then((result) {
+      if (result.status == ShareResultStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF shared successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
+  } catch (e) {
+    // Close loading dialog if open
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('WhatsApp share functionality will be implemented here'),
+      SnackBar(
+        content: Text('Error sharing PDF: $e'),
+        backgroundColor: Colors.red,
       ),
     );
   }
+}
 }
