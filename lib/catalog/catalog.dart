@@ -3015,8 +3015,12 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
       if (response.statusCode == 200) {
         final imageBytes = response.bodyBytes;
 
+        int count = item.shadeName.split(',').length;
+
+        
+
         String caption = '';
-        if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
+        if (includeDesign) caption += '*Design*\t\t: ${item.styleCode} (${count} Colors)\n';
         if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
         if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toStringAsFixed(0)}\n';
         if (includeSize) {
