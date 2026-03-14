@@ -3018,7 +3018,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
         String caption = '';
         if (includeDesign) caption += '*Design*\t\t: ${item.styleCode}\n';
         if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
-        if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toString()}\n';
+        if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toStringAsFixed(0)}\n';
         if (includeSize) {
           String sizeValue = '';
           if (includeSizeMrp && includeSizeWsp) {
