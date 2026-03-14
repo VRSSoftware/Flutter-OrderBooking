@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 // import 'package:installed_apps/installed_apps.dart';
@@ -159,6 +160,58 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
+  // Add this helper function to your class
+Future<void> _showMessageDialog(String message, {bool isError = false}) async {
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: isError ? Colors.red : Colors.green,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isError ? 'Error' : 'Success',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryColor,
+            ),
+            child: Text(
+              'OK',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+
   Future<void> _loadToggleStates() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -268,7 +321,7 @@ class _CatalogPageState extends State<CatalogPage> {
       );
 
       final List<Catalog> items = result["catalogs"] as List<Catalog>;
-
+      if (!mounted) return;
       setState(() {
         catalogItems.addAll(items);
         total = result["total"] ?? items.length;
@@ -463,207 +516,340 @@ class _CatalogPageState extends State<CatalogPage> {
                       context: context,
                       builder: (BuildContext context) {
                         return Dialog(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: Colors.grey.shade300,
-                              width: 1,
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
                             ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(
-                              MediaQuery.of(context).size.width > 600
-                                  ? 24.0
-                                  : 16.0,
-                            ),
-                            child: StatefulBuilder(
-                              builder: (context, setStateDialog) {
-                                return SingleChildScrollView(
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width >
-                                                  600
-                                              ? 600
-                                              : 440,
-                                      minWidth: 320,
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Options",
-                                          style: TextStyle(
-                                            fontSize:
-                                                MediaQuery.of(
-                                                          context,
-                                                        ).size.width >
-                                                        600
-                                                    ? 22
-                                                    : 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        LayoutBuilder(
-                                          builder: (context, constraints) {
-                                            final isWide =
-                                                constraints.maxWidth > 400;
-                                            return isWide
-                                                ? Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Column(
-                                                        children: [
-                                                          _buildToggleRow(
-                                                            "Show MRP",
-                                                            showMRP,
-                                                            (val) {
-                                                              showMRP = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                          _buildToggleRow(
-                                                            "Show WSP",
-                                                            showWSP,
-                                                            (val) {
-                                                              showWSP = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                          _buildToggleRow(
-                                                            "Show Product",
-                                                            showProduct,
-                                                            (val) {
-                                                              showProduct = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 16),
-                                                    Expanded(
-                                                      child: Column(
-                                                        children: [
-                                                          _buildSizeToggleRow(
-                                                            setState,
-                                                          ),
-                                                          _buildToggleRow(
-                                                            "Show Shades",
-                                                            showShades,
-                                                            (val) {
-                                                              showShades = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                          _buildToggleRow(
-                                                            "Show Remark",
-                                                            showRemark,
-                                                            (val) {
-                                                              showRemark = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                                : Column(
-                                                  children: [
-                                                    _buildToggleRow(
-                                                      "Show MRP",
-                                                      showMRP,
-                                                      (val) {
-                                                        showMRP = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                    _buildToggleRow(
-                                                      "Show WSP",
-                                                      showWSP,
-                                                      (val) {
-                                                        showWSP = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                    _buildSizeToggleRow(
-                                                      setState,
-                                                    ),
-                                                    _buildToggleRow(
-                                                      "Show Shades",
-                                                      showShades,
-                                                      (val) {
-                                                        showShades = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                    _buildToggleRow(
-                                                      "Show Product",
-                                                      showProduct,
-                                                      (val) {
-                                                        showProduct = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                    _buildToggleRow(
-                                                      "Show Remark",
-                                                      showRemark,
-                                                      (val) {
-                                                        showRemark = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                  ],
-                                                );
-                                          },
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: TextButton(
-                                            onPressed:
-                                                () =>
-                                                    Navigator.of(context).pop(),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16.0,
-                                                  ),
-                                              child: Text(
-                                                "Close",
+                            child: Padding(
+                              padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width > 600
+                                    ? 24.0
+                                    : 20.0,
+                              ),
+                              child: StatefulBuilder(
+                                builder: (context, setStateDialog) {
+                                  return SingleChildScrollView(
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width >
+                                                    600
+                                                ? 600
+                                                : 440,
+                                        minWidth: 320,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Header with icon and title
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primaryColor
+                                                      .withOpacity(0.1),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.tune_rounded,
+                                                  color: AppColors.primaryColor,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                "Options",
                                                 style: TextStyle(
                                                   fontSize:
                                                       MediaQuery.of(
                                                                 context,
                                                               ).size.width >
                                                               600
-                                                          ? 18
-                                                          : 16,
+                                                          ? 22
+                                                          : 18,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(
+                                                    0xFF1E293B,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                              const Spacer(),
+                                              // Close button
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.shade100,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    Icons.close_rounded,
+                                                    color: Colors.grey.shade700,
+                                                    size: 18,
+                                                  ),
+                                                  onPressed:
+                                                      () =>
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop(),
+                                                  padding: const EdgeInsets.all(
+                                                    6,
+                                                  ),
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                      ],
+
+                                          const SizedBox(height: 20),
+
+                                          // Options
+                                          LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              final isWide =
+                                                  constraints.maxWidth > 400;
+                                              return isWide
+                                                  ? Row(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Expanded(
+                                                        child: Column(
+                                                          children: [
+                                                            _buildToggleRow(
+                                                              "Show MRP",
+                                                              showMRP,
+                                                              (val) {
+                                                                showMRP = val;
+                                                                setStateDialog(
+                                                                  () {},
+                                                                );
+                                                              },
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            _buildToggleRow(
+                                                              "Show WSP",
+                                                              showWSP,
+                                                              (val) {
+                                                                showWSP = val;
+                                                                setStateDialog(
+                                                                  () {},
+                                                                );
+                                                              },
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            _buildToggleRow(
+                                                              "Show Product",
+                                                              showProduct,
+                                                              (val) {
+                                                                showProduct =
+                                                                    val;
+                                                                setStateDialog(
+                                                                  () {},
+                                                                );
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 16),
+                                                      Expanded(
+                                                        child: Column(
+                                                          children: [
+                                                            _buildSizeToggleRow(
+                                                              setState,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            _buildToggleRow(
+                                                              "Show Shades",
+                                                              showShades,
+                                                              (val) {
+                                                                showShades =
+                                                                    val;
+                                                                setStateDialog(
+                                                                  () {},
+                                                                );
+                                                              },
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            _buildToggleRow(
+                                                              "Show Remark",
+                                                              showRemark,
+                                                              (val) {
+                                                                showRemark =
+                                                                    val;
+                                                                setStateDialog(
+                                                                  () {},
+                                                                );
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                  : Column(
+                                                    children: [
+                                                      _buildToggleRow(
+                                                        "Show MRP",
+                                                        showMRP,
+                                                        (val) {
+                                                          showMRP = val;
+                                                          setStateDialog(() {});
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildToggleRow(
+                                                        "Show WSP",
+                                                        showWSP,
+                                                        (val) {
+                                                          showWSP = val;
+                                                          setStateDialog(() {});
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildSizeToggleRow(
+                                                        setState,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildToggleRow(
+                                                        "Show Shades",
+                                                        showShades,
+                                                        (val) {
+                                                          showShades = val;
+                                                          setStateDialog(() {});
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildToggleRow(
+                                                        "Show Product",
+                                                        showProduct,
+                                                        (val) {
+                                                          showProduct = val;
+                                                          setStateDialog(() {});
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildToggleRow(
+                                                        "Show Remark",
+                                                        showRemark,
+                                                        (val) {
+                                                          showRemark = val;
+                                                          setStateDialog(() {});
+                                                        },
+                                                      ),
+                                                    ],
+                                                  );
+                                            },
+                                          ),
+
+                                          const SizedBox(height: 24),
+
+                                          // Action Buttons
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: OutlinedButton(
+                                                  onPressed:
+                                                      () =>
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop(),
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.grey.shade700,
+                                                    side: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade300,
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 12,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    'Cancel',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: ElevatedButton(
+                                                  onPressed:
+                                                      () =>
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop(),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        AppColors.primaryColor,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 12,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    'Apply',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         );
@@ -806,111 +992,111 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Widget _buildListView(BoxConstraints constraints, bool isLargeScreen) {
-  final filteredItems = _getFilteredItems();
+    final filteredItems = _getFilteredItems();
 
-  return ListView.builder(
-    controller: _scrollController,
-    itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-    itemBuilder: (context, index) {
-      if (index == filteredItems.length && isLoadingMore) {
-        return Center(
-          child: LoadingAnimationWidget.waveDots(
-            color: AppColors.primaryColor,
-            size: 30,
-          ),
-        );
-      }
-
-      final item = filteredItems[index];
-      bool isSelected = selectedItems.contains(item);
-
-      List<String> shades =
-          item.shadeName.isNotEmpty
-              ? item.shadeName
-                  .split(',')
-                  .map((shade) => shade.trim())
-                  .toList()
-              : [];
-
-      final imageUrls = _getImageUrl(item);
-      final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
-
-      return GestureDetector(
-        onDoubleTap: () {
-          _openImageZoom1(
-            context,
-            item,
-            showShades: showShades,
-            showMRP: showMRP,
-            showWSP: showWSP,
-            showSizes: showSizes,
-            showProduct: showProduct,
-            showRemark: showRemark,
-            isLargeScreen: isLargeScreen,
-          );
-        },
-        onLongPress: () => _toggleItemSelection(item),
-        onTap: () {
-          if (selectedItems.isNotEmpty) _toggleItemSelection(item);
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: Card(
-            clipBehavior: Clip.antiAlias,
-            elevation: isSelected ? 8 : 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == filteredItems.length && isLoadingMore) {
+          return Center(
+            child: LoadingAnimationWidget.waveDots(
+              color: AppColors.primaryColor,
+              size: 30,
             ),
-            color: isSelected ? Colors.blue.shade50 : Colors.white,
-            child: Stack(
-              children: [
-                // Left curved color strip
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  child: Container(
-                    width: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        bottomLeft: Radius.circular(12),
+          );
+        }
+
+        final item = filteredItems[index];
+        bool isSelected = selectedItems.contains(item);
+
+        List<String> shades =
+            item.shadeName.isNotEmpty
+                ? item.shadeName
+                    .split(',')
+                    .map((shade) => shade.trim())
+                    .toList()
+                : [];
+
+        final imageUrls = _getImageUrl(item);
+        final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
+
+        return GestureDetector(
+          onDoubleTap: () {
+            _openImageZoom1(
+              context,
+              item,
+              showShades: showShades,
+              showMRP: showMRP,
+              showWSP: showWSP,
+              showSizes: showSizes,
+              showProduct: showProduct,
+              showRemark: showRemark,
+              isLargeScreen: isLargeScreen,
+            );
+          },
+          onLongPress: () => _toggleItemSelection(item),
+          onTap: () {
+            if (selectedItems.isNotEmpty) _toggleItemSelection(item);
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              elevation: isSelected ? 8 : 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: isSelected ? Colors.blue.shade50 : Colors.white,
+              child: Stack(
+                children: [
+                  // Left curved color strip
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          bottomLeft: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                Padding(
-                  padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left column with image and range
-                      Flexible(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Image section
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                bottomLeft: Radius.circular(12),
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final maxImageHeight =
-                                      constraints.maxWidth * 1.2;
+                  Padding(
+                    padding: EdgeInsets.all(isLargeScreen ? 12.0 : 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left column with image and range
+                        Flexible(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Image section
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  bottomLeft: Radius.circular(12),
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final maxImageHeight =
+                                        constraints.maxWidth * 1.2;
 
-                                  return ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxHeight: maxImageHeight,
-                                    ),
-                                    child:
-                                        imageUrls.isNotEmpty &&
-                                                imageUrls[0].isNotEmpty
-                                            ? Stack(
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight: maxImageHeight,
+                                      ),
+                                      child:
+                                          imageUrls.isNotEmpty &&
+                                                  imageUrls[0].isNotEmpty
+                                              ? Stack(
                                                 children: [
                                                   SizedBox(
                                                     height: maxImageHeight,
@@ -940,9 +1126,9 @@ class _CatalogPageState extends State<CatalogPage> {
                                                       bottom: 8,
                                                       left: 0,
                                                       right: 0,
-                                                      child:
-                                                          ValueListenableBuilder<
-                                                              int>(
+                                                      child: ValueListenableBuilder<
+                                                        int
+                                                      >(
                                                         valueListenable:
                                                             currentImageIndex,
                                                         builder: (
@@ -952,7 +1138,8 @@ class _CatalogPageState extends State<CatalogPage> {
                                                         ) {
                                                           return DotIndicator(
                                                             count:
-                                                                imageUrls.length,
+                                                                imageUrls
+                                                                    .length,
                                                             currentIndex: index,
                                                           );
                                                         },
@@ -960,219 +1147,226 @@ class _CatalogPageState extends State<CatalogPage> {
                                                     ),
                                                 ],
                                               )
-                                            : _buildSingleImage(
+                                              : _buildSingleImage(
                                                 '',
                                                 maxImageHeight,
                                               ),
-                                  );
-                                },
-                              ),
-                            ),
-                            
-                            // Range text below the image (only if showMRP is true)
-                            if (showMRP &&
-                                item.minMRP != null &&
-                                item.maxMRP != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: AppColors.primaryColor.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '${item.minMRP} - ${item.maxMRP}',
-                                        style: TextStyle(
-                                          fontSize: isLargeScreen ? 12: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: isLargeScreen ? 16 : 8),
-                      
-                      // Right column with details table
-                      Flexible(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.all(
-                                isLargeScreen ? 16 : 12,
-                              ),
-                              child: Table(
-                                columnWidths: const {
-                                  0: IntrinsicColumnWidth(),
-                                  1: FixedColumnWidth(8),
-                                  2: FlexColumnWidth(),
-                                },
-                                defaultVerticalAlignment:
-                                    TableCellVerticalAlignment.middle,
-                                children: [
-                                  TableRow(
-                                    children: [
-                                      _buildLabelText('Design'),
-                                      const Text(':'),
-                                      Text(
-                                        item.styleCodeWithcount,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: isLargeScreen ? 20 : 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  _buildSpacerRow(),
-                                  if (showShades && shades.isNotEmpty)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Shade'),
-                                        const Text(':'),
-                                        Text(
-                                          shades.join(', '),
-                                          style: TextStyle(
-                                            fontSize: isLargeScreen ? 14 : 13,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showShades && shades.isNotEmpty)
-                                    _buildSpacerRow(),
-                                  if (showMRP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('MRP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.mrp.toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showMRP) _buildSpacerRow(),
-                                  // REMOVE THE RANGE ROW FROM HERE (it's now below the image)
-                                  // if (showMRP &&
-                                  //     item.minMRP != null &&
-                                  //     item.maxMRP != null)
-                                  //   TableRow(...), // Remove this entire block
-                                  // if (showMRP &&
-                                  //     item.minMRP != null &&
-                                  //     item.maxMRP != null)
-                                  //   _buildSpacerRow(), // Remove this too
-                                  
-                                  if (showWSP)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('WSP'),
-                                        const Text(':'),
-                                        Text(
-                                          item.wsp.toStringAsFixed(2),
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showWSP) _buildSpacerRow(),
-                                  if (item.sizeName.isNotEmpty && showSizes)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Size'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            _getSizeText(item),
-                                            style: _valueTextStyle(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (item.sizeName.isNotEmpty && showSizes)
-                                    _buildSpacerRow(),
-                                  if (showProduct)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Product'),
-                                        const Text(':'),
-                                        Text(
-                                          item.itemName,
-                                          style: _valueTextStyle(),
-                                        ),
-                                      ],
-                                    ),
-                                  if (showProduct) _buildSpacerRow(),
-                                  if (showRemark)
-                                    TableRow(
-                                      children: [
-                                        _buildLabelText('Remark'),
-                                        const Text(':'),
-                                        SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Text(
-                                            item.remark?.trim().isNotEmpty ==
-                                                    true
-                                                ? item.remark!
-                                                : '--',
-                                            style: _valueTextStyle(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                if (isSelected)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle,
-                        color: AppColors.primaryColor,
-                        size: 24,
-                      ),
+                              // Range text below the image (only if showMRP is true)
+                              if (showMRP &&
+                                  item.minMRP != null &&
+                                  item.maxMRP != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 8.0,
+                                    left: 4.0,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withOpacity(
+                                        0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '${item.minMRP} - ${item.maxMRP}',
+                                          style: TextStyle(
+                                            fontSize: isLargeScreen ? 12 : 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: isLargeScreen ? 16 : 8),
+
+                        // Right column with details table
+                        Flexible(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isLargeScreen ? 16 : 12,
+                                ),
+                                child: Table(
+                                  columnWidths: const {
+                                    0: IntrinsicColumnWidth(),
+                                    1: FixedColumnWidth(8),
+                                    2: FlexColumnWidth(),
+                                  },
+                                  defaultVerticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  children: [
+                                    TableRow(
+                                      children: [
+                                        _buildLabelText('Design'),
+                                        const Text(':'),
+                                        Text(
+                                          item.styleCodeWithcount,
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: isLargeScreen ? 20 : 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    _buildSpacerRow(),
+                                    if (showShades && shades.isNotEmpty)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Shade'),
+                                          const Text(':'),
+                                          Text(
+                                            shades.join(', '),
+                                            style: TextStyle(
+                                              fontSize: isLargeScreen ? 14 : 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showShades && shades.isNotEmpty)
+                                      _buildSpacerRow(),
+                                    if (showMRP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('MRP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.mrp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showMRP) _buildSpacerRow(),
+
+                                    // REMOVE THE RANGE ROW FROM HERE (it's now below the image)
+                                    // if (showMRP &&
+                                    //     item.minMRP != null &&
+                                    //     item.maxMRP != null)
+                                    //   TableRow(...), // Remove this entire block
+                                    // if (showMRP &&
+                                    //     item.minMRP != null &&
+                                    //     item.maxMRP != null)
+                                    //   _buildSpacerRow(), // Remove this too
+                                    if (showWSP)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('WSP'),
+                                          const Text(':'),
+                                          Text(
+                                            item.wsp.toStringAsFixed(2),
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showWSP) _buildSpacerRow(),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Size'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              _getSizeText(item),
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (item.sizeName.isNotEmpty && showSizes)
+                                      _buildSpacerRow(),
+                                    if (showProduct)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Product'),
+                                          const Text(':'),
+                                          Text(
+                                            item.itemName,
+                                            style: _valueTextStyle(),
+                                          ),
+                                        ],
+                                      ),
+                                    if (showProduct) _buildSpacerRow(),
+                                    if (showRemark)
+                                      TableRow(
+                                        children: [
+                                          _buildLabelText('Remark'),
+                                          const Text(':'),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Text(
+                                              item.remark?.trim().isNotEmpty ==
+                                                      true
+                                                  ? item.remark!
+                                                  : '--',
+                                              style: _valueTextStyle(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
+
+                  if (isSelected)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle,
+                          color: AppColors.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
+
   Widget _buildExpandedView(bool isLargeScreen) {
     final filteredItems = _getFilteredItems();
     return ListView.builder(
@@ -1821,6 +2015,8 @@ class _CatalogPageState extends State<CatalogPage> {
                   imageUrl,
                   fit: BoxFit.contain,
                   width: double.infinity,
+                  cacheWidth: 800,
+                  filterQuality: FilterQuality.low,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey.shade300,
@@ -2065,9 +2261,7 @@ class _CatalogPageState extends State<CatalogPage> {
     bool shadeWiseImage = false,
   }) async {
     if (selectedItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select items to share')),
-      );
+    _showMessageDialog('Please select items to share', isError: true);
       return;
     }
 
@@ -3143,66 +3337,291 @@ class _CatalogPageState extends State<CatalogPage> {
     return showDialog<Map<String, String>?>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text("Enter Mobile Number"),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: mobileController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: "Mobile Number",
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-
-                  /// Image Radio
-                  RadioListTile<String>(
-                    title: const Text("Image"),
-                    value: 'image',
-                    groupValue: selectedType,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedType = value!;
-                      });
-                    },
-                  ),
-
-                  /// PDF Radio
-                  RadioListTile<String>(
-                    title: const Text("PDF"),
-                    value: 'pdf',
-                    groupValue: selectedType,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedType = value!;
-                      });
-                    },
-                  ),
-                ],
-              );
-            },
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+          elevation: 4,
+          backgroundColor: Colors.white,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 340),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with title and close
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.share_rounded,
+                            color: AppColors.primaryColor,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Share Order',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Mobile Number Input
+                TextField(
+                  controller: mobileController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: 'Mobile Number',
+                    labelStyle: GoogleFonts.poppins(fontSize: 13),
+                    hintText: 'Enter 10-digit number',
+                    hintStyle: GoogleFonts.poppins(fontSize: 13),
+                    prefixIcon: Icon(
+                      Icons.phone_android_rounded,
+                      color: AppColors.primaryColor,
+                      size: 18,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppColors.primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    counterText: '',
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Options without radio buttons
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildSelectionOption(
+                            title: 'Image',
+                            isSelected: selectedType == 'image',
+                            icon: Icons.image_rounded,
+                            iconColor: Colors.blue[700]!,
+                            onTap: () {
+                              setState(() {
+                                selectedType = 'image';
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSelectionOption(
+                            title: 'PDF',
+                            isSelected: selectedType == 'pdf',
+                            icon: Icons.picture_as_pdf_rounded,
+                            iconColor: Colors.red[700]!,
+                            onTap: () {
+                              setState(() {
+                                selectedType = 'pdf';
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // Action Buttons with icons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cancel',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final mobileNo = mobileController.text.trim();
+                          if (mobileNo.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Enter mobile number'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                            return;
+                          }
+                          if (mobileNo.length != 10) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Enter 10-digit number'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context, {
+                            'mobileNo': mobileNo,
+                            'shareType': selectedType,
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Send',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.send_rounded, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context, {
-                  'mobileNo': mobileController.text.trim(),
-                  'shareType': selectedType,
-                });
-              },
-              child: const Text("Send"),
-            ),
-          ],
+          ),
         );
       },
+    );
+  }
+
+  // New helper widget for selection option without radio button
+  Widget _buildSelectionOption({
+    required String title,
+    required bool isSelected,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          color:
+              isSelected
+                  ? AppColors.primaryColor.withOpacity(0.05)
+                  : Colors.white,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon only - no radio button
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 6),
+            // Title
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected ? AppColors.primaryColor : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -4214,26 +4633,112 @@ class _CatalogPageState extends State<CatalogPage> {
   Widget _buildSizeToggleRow(void Function(void Function()) parentSetState) {
     return StatefulBuilder(
       builder: (context, setStateDialog) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text('Show Sizes', style: TextStyle(fontSize: 16)),
-                  if (showMRP && showWSP && showSizes) Row(),
-                ],
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color:
+                  showSizes
+                      ? AppColors.primaryColor.withOpacity(0.3)
+                      : Colors.grey.shade200,
+              width: showSizes ? 1.2 : 0.8,
+            ),
+            color:
+                showSizes
+                    ? AppColors.primaryColor.withOpacity(0.02)
+                    : Colors.white,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (!showSizes)
+                  parentSetState(() => showFullSizeDetails = false);
+                parentSetState(() => showSizes = !showSizes);
+                setStateDialog(() {});
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Title with optional indicator
+                    Row(
+                      children: [
+                        if (showSizes)
+                          Text(
+                            'Show Sizes',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight:
+                                  showSizes
+                                      ? FontWeight.w500
+                                      : FontWeight.normal,
+                              color:
+                                  showSizes
+                                      ? AppColors.primaryColor
+                                      : const Color(0xFF1E293B),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    // Compact custom switch
+                    GestureDetector(
+                      onTap: () {
+                        if (!showSizes)
+                          parentSetState(() => showFullSizeDetails = false);
+                        parentSetState(() => showSizes = !showSizes);
+                        setStateDialog(() {});
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        height: 18,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color:
+                              showSizes
+                                  ? AppColors.primaryColor
+                                  : Colors.grey.shade300,
+                        ),
+                        child: Stack(
+                          children: [
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              left: showSizes ? 15 : 2,
+                              right: showSizes ? 2 : 15,
+                              top: 2,
+                              bottom: 2,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 1,
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Switch(
-                value: showSizes,
-                onChanged: (val) {
-                  if (!val) parentSetState(() => showFullSizeDetails = false);
-                  parentSetState(() => showSizes = val);
-                  setStateDialog(() {});
-                },
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -4241,9 +4746,89 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Widget _buildToggleRow(String title, bool value, Function(bool) onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [Text(title), Switch(value: value, onChanged: onChanged)],
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color:
+              value
+                  ? AppColors.primaryColor.withOpacity(0.3)
+                  : Colors.grey.shade200,
+          width: value ? 1.2 : 0.8,
+        ),
+        color: value ? AppColors.primaryColor.withOpacity(0.02) : Colors.white,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onChanged(!value),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Title
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: value ? FontWeight.w500 : FontWeight.normal,
+                    color:
+                        value
+                            ? AppColors.primaryColor
+                            : const Color(0xFF1E293B),
+                  ),
+                ),
+
+                // Compact custom switch
+                GestureDetector(
+                  onTap: () => onChanged(!value),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    height: 18,
+                    width: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color:
+                          value ? AppColors.primaryColor : Colors.grey.shade300,
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          left: value ? 15 : 2,
+                          right: value ? 2 : 15,
+                          top: 2,
+                          bottom: 2,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 1,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
+
+  
 }
