@@ -3752,95 +3752,179 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
   }
 
   void _showDeleteConfirmationDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Delete Orders'),
-        content: const Text('Do you want to delete Orders?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close first dialog
-              _showSecondConfirmationDialog();
-            },
-            child: const Text('Yes'),
-          ),
-        ],
-      );
-    },
-  );
-}
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Orders'),
+          content: const Text('Do you want to delete Orders?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close first dialog
+                _showSecondConfirmationDialog();
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-void _showSecondConfirmationDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              _deleteAllItemsAndNavigate();
-            },
-            child: const Text('Yes, Delete'),
-          ),
-        ],
-      );
-    },
-  );
-}
+  void _showSecondConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteAllItemsAndNavigate();
+              },
+              child: const Text('Yes, Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-void _deleteAllItemsAndNavigate() {
-  // Clear all items from style manager
-  setState(() {
-    _styleManager.removedStyles.clear();
-    _styleManager.controllers.clear();
-    _styleManager._orderItems.clear();
-    
-    // Clear quantities and selected colors
-    quantities.clear();
-    selectedColors.clear();
-    
-    // Reset form fields
-    _orderControllers.totalItem.text = '0';
-    _orderControllers.totalQty.text = '0';
-    _orderControllers.totalAmt.text = '0';
-    
-    // Reset any other relevant state
-    _additionalInfo = {};
-    isCustomerTabEnabled = false;
-    isTransactionSaved = false;
-    _activeTab = ActiveTab.transaction;
-    _showForm = false;
-    _isSaving = false;
-  });
-  
-  // Show success message
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('All orders deleted successfully'),
-      backgroundColor: Colors.green,
-    ),
-  );
-  
-  // Navigate to OrderBookingScreen with barcode parameter
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => OrderBookingScreen(startWithBarcode: true),
-    ),
-  );
-}
+  void _deleteAllItemsAndNavigate() {
+    // Clear all items from style manager
+    setState(() {
+      _styleManager.removedStyles.clear();
+      _styleManager.controllers.clear();
+      _styleManager._orderItems.clear();
+
+      // Clear quantities and selected colors
+      quantities.clear();
+      selectedColors.clear();
+
+      // Reset form fields
+      _orderControllers.totalItem.text = '0';
+      _orderControllers.totalQty.text = '0';
+      _orderControllers.totalAmt.text = '0';
+
+      // Reset any other relevant state
+      _additionalInfo = {};
+      isCustomerTabEnabled = false;
+      isTransactionSaved = false;
+      _activeTab = ActiveTab.transaction;
+      _showForm = false;
+      _isSaving = false;
+    });
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All orders deleted successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Navigate to OrderBookingScreen with barcode parameter
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderBookingScreen(startWithBarcode: true),
+      ),
+    );
+  }
+
+  void _showClearCartDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear Cart'),
+          content: const Text('Do you want to delete all cart items?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showFinalConfirmation();
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFinalConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: const Text('This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _clearCartApi();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _clearCartApi() async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteOrderCart'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "userName": UserSession.userName,
+          "barcodeFlag": true,
+          "seprateBarcodeWiseBooking":
+              AppConstants.seprateBarcodeWiseBooking ?? "0",
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cart cleared successfully')),
+        );
+
+        // Optional: Refresh UI
+        // _refreshCart();
+        _initializeData();
+      } else {
+        _initializeData();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to clear cart')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3856,18 +3940,19 @@ void _deleteAllItemsAndNavigate() {
             fontSize: 20,
           ),
         ),
+
         backgroundColor: AppColors.primaryColor,
         elevation: 4,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-          actions: [
-        IconButton(
-          icon: const Icon(Icons.exit_to_app, color: Colors.white),
-          onPressed: _showDeleteConfirmationDialog,
-        ),
-      ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app, color: Colors.white),
+            onPressed: _showDeleteConfirmationDialog,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(

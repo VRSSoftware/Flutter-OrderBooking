@@ -608,6 +608,90 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       isTransactionSaved = false;
     });
   }
+  	
+  void _showClearCartDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear Cart'),
+          content: const Text('Do you want to delete all cart items?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showFinalConfirmation();
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFinalConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: const Text('This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _clearCartApi();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _clearCartApi() async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteOrderCart'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "userName": UserSession.userName,
+          "barcodeFlag": true,
+          "seprateBarcodeWiseBooking":
+              AppConstants.seprateBarcodeWiseBooking ?? "0",
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cart cleared successfully')),
+        );
+
+        // Optional: Refresh UI
+        // _refreshCart();
+        _initializeData();
+      } else {
+        _initializeData();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to clear cart')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -629,7 +713,29 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'clear_cart') {
+                _showClearCartDialog();
+              }
+            },
+            itemBuilder:
+                (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'clear_cart',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Clear Cart'),
+                      ],
+                    ),
+                  ),
+                ],
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(
             49.0,
