@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:pdf/pdf.dart';
@@ -930,21 +931,27 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                   border: pw.Border.all(color: PdfColors.grey400),
                 ),
                 child: pw.Table(
-  border: pw.TableBorder.all(width: 0.5),
-  columnWidths: {
-    0: const pw.FixedColumnWidth(55), // Style
-    1: const pw.FixedColumnWidth(55), // Shade
-    if (widget.showOnlyWithImage) 2: const pw.FixedColumnWidth(40), // Image
+                  border: pw.TableBorder.all(width: 0.5),
+                  columnWidths: {
+                    0: const pw.FixedColumnWidth(55), // Style
+                    1: const pw.FixedColumnWidth(55), // Shade
+                    if (widget.showOnlyWithImage)
+                      2: const pw.FixedColumnWidth(40), // Image
+                    // 12 size columns (always same width)
+                    for (int i = 0; i < 12; i++)
+                      (widget.showOnlyWithImage
+                          ? 3 + i
+                          : 2 + i): const pw.FixedColumnWidth(28),
 
-    // 12 size columns (always same width)
-    for (int i = 0; i < 12; i++)
-      (widget.showOnlyWithImage ? 3 + i : 2 + i): const pw.FixedColumnWidth(28),
-
-    (widget.showOnlyWithImage ? 15 : 14): const pw.FixedColumnWidth(40), // WSP
-    (widget.showOnlyWithImage ? 16 : 15): const pw.FixedColumnWidth(65), // TotQty
-  },
-  children: categoryRows,
-)
+                    (widget.showOnlyWithImage
+                        ? 15
+                        : 14): const pw.FixedColumnWidth(40), // WSP
+                    (widget.showOnlyWithImage
+                        ? 16
+                        : 15): const pw.FixedColumnWidth(65), // TotQty
+                  },
+                  children: categoryRows,
+                ),
               ),
               pw.SizedBox(height: 15),
             ],
@@ -1051,14 +1058,29 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+  canPop: false,
+  onPopInvoked: (didPop) {
+    if (!didPop) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+      );
+    }
+  },
+  child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: AppColors.primaryColor,
         title: Text("Order Form", style: const TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+            );
+          },
         ),
         actions: [
           Container(
@@ -1108,6 +1130,6 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                   return Center(child: Text("PDF Error: $error"));
                 },
               ),
-    );
+      )  );
   }
 }
