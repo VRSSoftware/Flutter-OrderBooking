@@ -2020,7 +2020,7 @@ Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
                     ),
                     const SizedBox(height: 12),
                     DropdownSearch<Item>.multiSelection(
-                      items: [selectAllItem, ...items],
+                      items: items,
                       compareFn: (Item a, Item b) => a.itemKey == b.itemKey,
                       itemAsString:
                           (Item i) =>
@@ -2028,23 +2028,11 @@ Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
                                   ? "All"
                                   : (i.itemName ?? ''),
                       selectedItems: selectedItems,
-                      onChanged: (List<Item> value) {
-                        setState(() {
-                          bool isSelectAll = value.any(
-                            (item) => item.itemKey == "ALL",
-                          );
-
-                          if (isSelectAll) {
-                            selectedItems = [selectAllItem, ...items];
-                          } else {
-                            selectedItems =
-                                value
-                                    .where((item) => item.itemKey != "ALL")
-                                    .toList();
-                          }
-                        });
-                      },
-                      dropdownDecoratorProps: DropDownDecoratorProps(
+onChanged: (List<Item> value) {
+  setState(() {
+    selectedItems = value;
+  });
+},                   dropdownDecoratorProps: DropDownDecoratorProps(
                         dropdownSearchDecoration: InputDecoration(
                           hintText: "Choose items",
                           hintStyle: GoogleFonts.poppins(fontSize: 13),

@@ -452,30 +452,30 @@ class _OrderPageState extends State<OrderPage> {
                       CupertinoIcons.cart_badge_plus,
                       color: Colors.white,
                     ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          '${cartModel.count}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
+if (cartModel.count > 0)
+  Positioned(
+    right: 0,
+    top: 0,
+    child: Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      constraints: const BoxConstraints(
+        minWidth: 14,
+        minHeight: 14,
+      ),
+      child: Text(
+        '${cartModel.count}',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  ),               ],
                 ),
                 onPressed: () {
                   String viewOrderRoute;
