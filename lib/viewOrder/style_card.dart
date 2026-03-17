@@ -652,139 +652,197 @@ Widget _buildCompactDetailChip(String label, String value) {
     );
   }
 
-  TableRow _buildEnhancedShadeRow(String shade, List<String> sizes, int rowIndex) {
-    final isEvenRow = rowIndex % 2 == 0;
-    final imageUrl = _getShadeImageUrl(shade);
-
-    return TableRow(
-      decoration: BoxDecoration(
-        color: isEvenRow ? TableColors.evenRowBg : TableColors.oddRowBg,
-      ),
-      children: [
-        TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: TableColors.borderColor, width: 0.5),
-              ),
+  void _clearShadeQuantities(String shade) {
+  // Show confirmation dialog
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text(
+          'Clear Shade Quantities',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to set all quantities for shade "$shade" to zero?',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
             ),
-            child: Row(
-              children: [
-                // Copy icon with improved styling
-                // Container(
-                //   margin: const EdgeInsets.only(right: 6),
-                //   child: Material(
-                //     color: Colors.transparent,
-                //     child: InkWell(
-                //       borderRadius: BorderRadius.circular(4),
-                //       onTap: () => _showShadeCopyOptions(shade),
-                //       child: Container(
-                //         padding: const EdgeInsets.all(4),
-                //         decoration: BoxDecoration(
-                //           color: TableColors.accentColor.withOpacity(0.1),
-                //           borderRadius: BorderRadius.circular(4),
-                //         ),
-                //         child: Icon(
-                //           Icons.copy_all,
-                //           size: 14,
-                //           color: TableColors.accentColor,
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          shade,
-                          style: TextStyle(
-                            color: widget.getColor(shade),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              
+              // Set all quantity controllers for this shade to "0"
+              if (widget.controllers.containsKey(shade)) {
+                widget.controllers[shade]!.forEach((size, controller) {
+                  controller.text = '0';
+                });
+                
+                // Update totals after clearing
+                widget.updateTotals();
+                
+                // Show feedback
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cleared all quantities for shade "$shade"'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Clear All',
+              style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+ TableRow _buildEnhancedShadeRow(String shade, List<String> sizes, int rowIndex) {
+  final isEvenRow = rowIndex % 2 == 0;
+  final imageUrl = _getShadeImageUrl(shade);
+
+  return TableRow(
+    decoration: BoxDecoration(
+      color: isEvenRow ? TableColors.evenRowBg : TableColors.oddRowBg,
+    ),
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: TableColors.borderColor, width: 0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              // ADD THIS - Clear icon for each shade
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => _clearShadeQuantities(shade),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      if (imageUrl != null)
-                        Container(
-                          margin: const EdgeInsets.only(left: 4),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(10),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageZoomScreen(
-                                      imageUrls: [imageUrl],
-                                      initialIndex: 0,
-                                    ),
+                      child: Icon(
+                        Icons.clear_all,
+                        size: 14,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // END OF ADDED CODE
+              
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        shade,
+                        style: TextStyle(
+                          color: widget.getColor(shade),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                    if (imageUrl != null)
+                      Container(
+                        margin: const EdgeInsets.only(left: 4),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ImageZoomScreen(
+                                    imageUrls: [imageUrl],
+                                    initialIndex: 0,
                                   ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                child: Icon(
-                                  Icons.image,
-                                  size: 12,
-                                  color: TableColors.accentColor,
                                 ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.image,
+                                size: 12,
+                                color: TableColors.accentColor,
                               ),
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      ...sizes.map(
+        (size) => TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: TableColors.borderColor, width: 0.5),
+              ),
+            ),
+            child: TextField(
+              controller: widget.controllers[shade]?[size],
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              onChanged: (_) => widget.updateTotals(),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                hintText: '0',
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: TableColors.accentColor, width: 1),
+                ),
+              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             ),
           ),
         ),
-        ...sizes.map(
-          (size) => TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: TableColors.borderColor, width: 0.5),
-                ),
-              ),
-              child: TextField(
-                controller: widget.controllers[shade]?[size],
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                onChanged: (_) => widget.updateTotals(),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  hintText: '0',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: TableColors.accentColor, width: 1),
-                  ),
-                ),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
   String? _getShadeImageUrl(String shadeName) {
     // Implement this based on your data structure
     // This is a placeholder - you'll need to implement based on how shade images are stored
