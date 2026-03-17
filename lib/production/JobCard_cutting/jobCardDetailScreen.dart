@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vrs_erp/production/fabric_details_screen.dart';
-import 'package:vrs_erp/production/finishdetailsscreen.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/production/JobCard_cutting/fabric_details_screen.dart';
+import 'package:vrs_erp/production/JobCard_cutting/finishdetailsscreen.dart';
 
 class JobCardDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? jobCard;
@@ -227,7 +228,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: focusNode.hasFocus
-                    ? const Color(0xFF4A90E2)
+                    ?  AppColors.primaryColor
                     : Colors.grey.shade300,
                 width: focusNode.hasFocus ? 2 : 1,
               ),
@@ -268,7 +269,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                             isDate ? Icons.calendar_today : Icons.arrow_drop_down,
                             size: 20,
                             color: isDate
-                                ? const Color(0xFF4A90E2)
+                                ?  AppColors.primaryColor
                                 : Colors.grey.shade600,
                           )
                         : null,
@@ -404,11 +405,11 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                                         if (allowAdd && i == filtered.length) {
                                           return ListTile(
                                             leading: const Icon(Icons.add, 
-                                                color: Color(0xFF4A90E2), size: 20),
+                                                color: AppColors.primaryColor, size: 20),
                                             title: Text(
                                               'Add New $label',
                                               style: const TextStyle(
-                                                color: Color(0xFF4A90E2),
+                                                color: AppColors.primaryColor,
                                                 fontSize: 13,
                                               ),
                                             ),
@@ -434,7 +435,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                                           ),
                                           selected: selected == item,
                                           selectedTileColor:
-                                              const Color(0xFF4A90E2).withOpacity(0.1),
+                                               AppColors.primaryColor.withOpacity(0.1),
                                           onTap: () {
                                             _removeOverlay();
                                             setState(() {
@@ -463,7 +464,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: focusNode.hasFocus
-                          ? const Color(0xFF4A90E2)
+                          ?  AppColors.primaryColor
                           : Colors.grey.shade300,
                       width: focusNode.hasFocus ? 2 : 1,
                     ),
@@ -530,7 +531,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
+              backgroundColor:  AppColors.primaryColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
@@ -565,7 +566,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
             return Theme(
               data: Theme.of(context).copyWith(
                 colorScheme: const ColorScheme.light(
-                  primary: Color(0xFF4A90E2),
+                  primary: AppColors.primaryColor,
                 ),
               ),
               child: child!,
@@ -719,7 +720,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                color:  AppColors.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -731,7 +732,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A90E2),
+                        color: AppColors.primaryColor,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -741,7 +742,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit,
-                            color: Color(0xFF4A90E2), size: 18),
+                            color: AppColors.primaryColor, size: 18),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         visualDensity: VisualDensity.compact,
@@ -837,19 +838,19 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF4A90E2).withOpacity(0.1),
-                    const Color(0xFF4A90E2).withOpacity(0.05),
+                     AppColors.primaryColor.withOpacity(0.1),
+                     AppColors.primaryColor.withOpacity(0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.3)),
+                border: Border.all(color:  AppColors.primaryColor.withOpacity(0.3)),
               ),
               child: Center(
                 child: Text(
                   'TOTAL PCS: ${finishDetail['totalPcs']?.toString() ?? '0'}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF4A90E2),
+                    color: AppColors.primaryColor,
                     fontSize: 14,
                   ),
                 ),
@@ -874,7 +875,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                   childrenPadding: EdgeInsets.zero,
                   title: Row(
                     children: [
-                      const Icon(Icons.inventory, size: 16, color: Color(0xFF4A90E2)),
+                      const Icon(Icons.inventory, size: 16, color: AppColors.primaryColor),
                       const SizedBox(width: 8),
                       const Text(
                         'FABRIC DETAILS',
@@ -887,7 +888,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                       const Spacer(),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4A90E2).withOpacity(0.1),
+                          color:  AppColors.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -896,7 +897,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF4A90E2),
+                            color: AppColors.primaryColor,
                           ),
                         ),
                       ),
@@ -905,7 +906,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                   trailing: IconButton(
                     icon: Icon(Icons.add_circle,
                         color: _finishDetailsList.isNotEmpty
-                            ? const Color(0xFF4A90E2)
+                            ?  AppColors.primaryColor
                             : Colors.grey,
                         size: 20),
                     padding: EdgeInsets.zero,
@@ -953,7 +954,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                                           children: [
                                             IconButton(
                                               icon: const Icon(Icons.edit,
-                                                  size: 16, color: Color(0xFF4A90E2)),
+                                                  size: 16, color: AppColors.primaryColor),
                                               padding: EdgeInsets.zero,
                                               constraints: const BoxConstraints(),
                                               visualDensity: VisualDensity.compact,
@@ -1054,10 +1055,10 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: const Color(0xFF4A90E2),
+        backgroundColor:  AppColors.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
+        shape:  RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
         ),
       ),
@@ -1092,7 +1093,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _selectedTab == 0
-                                  ? const Color(0xFF4A90E2)
+                                  ?  AppColors.primaryColor
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -1117,7 +1118,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: _selectedTab == 1
-                                  ? const Color(0xFF4A90E2)
+                                  ?  AppColors.primaryColor
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -1169,7 +1170,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4A90E2),
+                            backgroundColor:  AppColors.primaryColor,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: const RoundedRectangleBorder(
@@ -1253,7 +1254,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF4A90E2),
+                      color: AppColors.primaryColor,
                     ),
                   ),
                   const Divider(height: 16),
@@ -1384,7 +1385,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.checklist, color: Color(0xFF4A90E2), size: 20),
+                        const Icon(Icons.checklist, color: AppColors.primaryColor, size: 20),
                         const SizedBox(width: 8),
                         const Text(
                           'FINISH DETAILS',
@@ -1398,7 +1399,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4A90E2).withOpacity(0.1),
+                            color:  AppColors.primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -1406,7 +1407,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF4A90E2),
+                              color: AppColors.primaryColor,
                             ),
                           ),
                         ),
@@ -1415,12 +1416,12 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4A90E2).withOpacity(0.1),
+                        color:  AppColors.primaryColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.add,
-                        color: Color(0xFF4A90E2),
+                        color: AppColors.primaryColor,
                         size: 20,
                       ),
                     ),
@@ -1464,7 +1465,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF4A90E2),
+                      color: AppColors.primaryColor,
                     ),
                   ),
                   const Divider(height: 16),
@@ -1511,7 +1512,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFF4A90E2).withOpacity(0.3),
+                              color:  AppColors.primaryColor.withOpacity(0.3),
                             ),
                           ),
                           child: _buildTextField(
@@ -1561,7 +1562,7 @@ class _JobCardDetailScreenState extends State<JobCardDetailScreen>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF4A90E2),
+                  color: AppColors.primaryColor,
                 ),
               ),
               const Divider(height: 16),

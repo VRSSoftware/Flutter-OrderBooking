@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class FinishDetailsScreen extends StatefulWidget {
   final Map<String, dynamic>? finishDetail;
@@ -194,7 +195,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
                     BorderSide(color: Color.fromARGB(255, 221, 220, 220), width: 1),
               ),
               focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF4A90E2), width: 2),
+                borderSide: BorderSide(color:AppColors.primaryColor, width: 2),
               ),
               suffixIcon: onTap != null
                   ? Icon(
@@ -298,9 +299,9 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
                                 if (allowAdd && i == filtered.length) {
                                   return ListTile(
                                     leading:
-                                        const Icon(Icons.add, color: Colors.blue),
+                                        const Icon(Icons.add, color: AppColors.primaryColor),
                                     title: const Text('Add New…',
-                                        style: TextStyle(color: Colors.blue)),
+                                        style: TextStyle(color: AppColors.primaryColor)),
                                     onTap: () {
                                       _removeOverlay();
                                       _showAddDialog(label, items,
@@ -319,7 +320,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
                                   title: Text(item),
                                   selected: selected == item,
                                   selectedTileColor:
-                                      Colors.blue.withOpacity(0.1),
+                                      AppColors.primaryColor.withOpacity(0.1),
                                   onTap: () {
                                     _removeOverlay();
                                     setState(() {
@@ -391,7 +392,9 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) {
-        return StatefulBuilder(
+        return
+        SafeArea (
+        child:StatefulBuilder(
           builder: (context, setSheetState) {
             int currentTotal = _sizeDetails.values
                 .map((e) => e['Recd Qty'] as int)
@@ -503,7 +506,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A90E2),
+                          backgroundColor: AppColors.primaryColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -525,7 +528,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
               ),
             );
           },
-        );
+     ), );
       },
     );
   }
@@ -575,7 +578,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
             style:
                 const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          backgroundColor: const Color(0xFF4A90E2),
+          backgroundColor: AppColors.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
           actions: [
@@ -712,7 +715,7 @@ class _FinishDetailsScreenState extends State<FinishDetailsScreen>
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A90E2),
+                        backgroundColor:AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),

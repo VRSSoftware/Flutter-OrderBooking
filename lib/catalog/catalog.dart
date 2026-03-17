@@ -161,56 +161,54 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   // Add this helper function to your class
-Future<void> _showMessageDialog(String message, {bool isError = false}) async {
-  return showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? Colors.red : Colors.green,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isError ? 'Error' : 'Success',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+  Future<void> _showMessageDialog(
+    String message, {
+    bool isError = false,
+  }) async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                isError ? Icons.error_outline : Icons.check_circle_outline,
+                color: isError ? Colors.red : Colors.green,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isError ? 'Error' : 'Success',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Text(message, style: GoogleFonts.poppins(fontSize: 14)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+              ),
+              child: Text(
+                'OK',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-        ),
-        content: Text(
-          message,
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryColor,
-            ),
-            child: Text(
-              'OK',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-
+        );
+      },
+    );
+  }
 
   Future<void> _loadToggleStates() async {
     final prefs = await SharedPreferences.getInstance();
@@ -2247,214 +2245,254 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
     }
   }
 
-  Future<void> _shareSelectedItemsPDF({
-    required String shareType,
-    bool includeDesign = true,
-    bool includeShade = true,
-    bool includeRate = true,
-    bool includeWsp = true,
-    bool includeSize = true,
-    bool includeSizeMrp = true,
-    bool includeSizeWsp = true,
-    bool includeProduct = true,
-    bool includeRemark = true,
-    bool shadeWiseImage = false,
-  }) async {
-    if (selectedItems.isEmpty) {
+Future<void> _shareSelectedItemsPDF({
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  if (selectedItems.isEmpty) {
     _showMessageDialog('Please select items to share', isError: true);
-      return;
-    }
+    return;
+  }
 
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Sharing PDF .....'),
-            ],
-          ),
-          duration: Duration(seconds: 1),
+  try {
+    // Show loading indicator
+    final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Sharing PDF .....'),
+          ],
         ),
-      );
+        duration: const Duration(seconds: 2),
+      ),
+    );
 
-      final tempDir = await getTemporaryDirectory();
-      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-      List<Map<String, dynamic>> catalogItems = [];
+    final tempDir = await getTemporaryDirectory();
+    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+    List<Map<String, dynamic>> catalogItems = [];
 
-      for (var item in selectedItems) {
-        // Get all image URLs for this item
-        final allImageUrls = _getImageUrl(item);
+    for (var item in selectedItems) {
+      // Get all image URLs for this item
+      final allImageUrls = _getImageUrl(item);
 
-        // Get shade list
-        final shadeList =
-            item.shadeName.isNotEmpty
-                ? item.shadeName.split(',').map((s) => s.trim()).toList()
-                : [];
+      // Get shade list
+      final shadeList =
+          item.shadeName.isNotEmpty
+              ? item.shadeName.split(',').map((s) => s.trim()).toList()
+              : [];
 
-        print('Processing item: ${item.styleCode}');
-        print('All Image URLs: $allImageUrls');
-        print('Shade List: $shadeList');
-        print('shadeWiseImage option: $shadeWiseImage');
+      print('Processing item: ${item.styleCode}');
+      print('All Image URLs: $allImageUrls');
+      print('Shade List: $shadeList');
+      print('shadeWiseImage option: $shadeWiseImage');
 
-        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-          // ===== SHADE WISE IMAGE MODE =====
-          // Send ONLY shade images, exclude main image
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        // ===== SHADE WISE IMAGE MODE =====
+        // Send ONLY shade images, exclude main image
 
-          if (allImageUrls.length == 1) {
-            // TYPE 1: Only one image available (main image)
-            // Since no shade images exist, don't send anything for this item
-            print('No shade images available for ${item.styleCode}');
-            continue;
-          } else if (allImageUrls.length > 1) {
-            // TYPE 2: Multiple images available (main + shade images)
-            // Skip the first image (index 0) which is the main image
-            // Only add shade images starting from index 1
+        if (allImageUrls.length == 1) {
+          // TYPE 1: Only one image available (main image)
+          // Since no shade images exist, don't send anything for this item
+          print('No shade images available for ${item.styleCode}');
+          continue;
+        } else if (allImageUrls.length > 1) {
+          // TYPE 2: Multiple images available (main + shade images)
+          // Skip the first image (index 0) which is the main image
+          // Only add shade images starting from index 1
 
-            if (shadeList.isNotEmpty) {
-              // Add shade images with their corresponding shades
-              int shadeImagesCount =
-                  allImageUrls.length - 1; // Number of shade images
+          if (shadeList.isNotEmpty) {
+            // Add shade images with their corresponding shades
+            int shadeImagesCount =
+                allImageUrls.length - 1; // Number of shade images
 
-              for (int i = 0; i < shadeImagesCount; i++) {
-                int imageIndex = i + 1; // Start from second image (index 1)
-                if (imageIndex < allImageUrls.length) {
-                  // Determine which shade this image belongs to
-                  String imageSpecificShade = '';
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1; // Start from second image (index 1)
+              if (imageIndex < allImageUrls.length) {
+                // Determine which shade this image belongs to
+                String imageSpecificShade = '';
 
-                  if (i < shadeList.length) {
-                    // We have a matching shade for this image
-                    imageSpecificShade = shadeList[i];
-                  } else {
-                    // More images than shades, use empty or first shade for remaining images
-                    imageSpecificShade =
-                        shadeList.isNotEmpty ? shadeList[0] : '';
-                  }
-
-                  Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
-                    item,
-                    allImageUrls[imageIndex],
-                    imageSpecificShade, // Specific shade for this image
-                    includeDesign,
-                    includeShade,
-                    includeRate,
-                    includeWsp,
-                    includeSize,
-                    includeSizeMrp,
-                    includeSizeWsp,
-                    includeProduct,
-                    includeRemark,
-                  );
-                  catalogItems.add(shadeCatalogItem);
+                if (i < shadeList.length) {
+                  // We have a matching shade for this image
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  // More images than shades, use empty or first shade for remaining images
+                  imageSpecificShade =
+                      shadeList.isNotEmpty ? shadeList[0] : '';
                 }
+
+                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[imageIndex],
+                  imageSpecificShade, // Specific shade for this image
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(shadeCatalogItem);
               }
-            } else {
-              // No shades available, add remaining images with empty shade
-              for (int i = 1; i < allImageUrls.length; i++) {
-                if (allImageUrls[i].isNotEmpty) {
-                  Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
-                    item,
-                    allImageUrls[i],
-                    '', // Empty shade
-                    includeDesign,
-                    includeShade,
-                    includeRate,
-                    includeWsp,
-                    includeSize,
-                    includeSizeMrp,
-                    includeSizeWsp,
-                    includeProduct,
-                    includeRemark,
-                  );
-                  catalogItems.add(extraCatalogItem);
-                }
+            }
+          } else {
+            // No shades available, add remaining images with empty shade
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                  item,
+                  allImageUrls[i],
+                  '', // Empty shade
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(extraCatalogItem);
               }
             }
           }
-        } else {
-          // ===== NORMAL MODE (not shade wise) =====
-          // Send ONLY the first/main image for each item
-          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-            Map<String, dynamic> catalogItem = _buildCatalogItem(
-              item,
-              allImageUrls.first,
-              includeShade ? item.shadeName : '', // Include shade if enabled
-              includeDesign,
-              includeShade,
-              includeRate,
-              includeWsp,
-              includeSize,
-              includeSizeMrp,
-              includeSizeWsp,
-              includeProduct,
-              includeRemark,
-            );
-            catalogItems.add(catalogItem);
-          }
+        }
+      } else {
+        // ===== NORMAL MODE (not shade wise) =====
+        // Send ONLY the first/main image for each item
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, dynamic> catalogItem = _buildCatalogItem(
+            item,
+            allImageUrls.first,
+            includeShade ? item.shadeName : '', // Include shade if enabled
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
+          catalogItems.add(catalogItem);
         }
       }
+    }
 
-      // If no catalog items after filtering, show message
-      if (catalogItems.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No images to share based on selection'),
-          ),
-        );
-        return;
-      }
+    // If no catalog items after filtering, show message
+    if (catalogItems.isEmpty) {
+      // Clear loading snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No images to share based on selection'),
+        ),
+      );
+      return;
+    }
 
-      // Prepare request body
-      final requestBody = {
-        "company": UserSession.coBrName,
-        "createdBy": "admin",
-        "mobile": "",
-        "catalogItems": catalogItems,
-      };
+    // Prepare request body
+    final requestBody = {
+      "company": UserSession.coBrName,
+      "createdBy": "admin",
+      "mobile": "",
+      "catalogItems": catalogItems,
+    };
 
-      print('Sending to PDF API: ${jsonEncode(requestBody)}');
+    print('Sending to PDF API: ${jsonEncode(requestBody)}');
 
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+    // Clear loading snackbar
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200) {
+      final file = File(
+        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(response.bodyBytes);
+
+      // Use shareXFiles which returns a Future<ShareResult>
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Please find the Catalog as an attachment.',
       );
 
-      if (response.statusCode == 200) {
-        final file = File(
-          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
-        await file.writeAsBytes(response.bodyBytes);
-
-        await Share.shareXFiles([
-          XFile(file.path),
-        ], text: 'Please find the Catalog as an attachment.');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              shadeWiseImage
-                  ? 'PDF with ${catalogItems.length} shade images generated successfully'
-                  : 'PDF generated successfully',
+      // Check if sharing was completed or cancelled
+      if (result.status == ShareResultStatus.success) {
+        // Only show success message if sharing was actually completed
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                shadeWiseImage
+                    ? 'PDF with ${catalogItems.length} shade images generated successfully'
+                    : 'PDF generated successfully',
+              ),
+              duration: const Duration(seconds: 2),
             ),
-          ),
-        );
-      } else {
+          );
+        }
+        
+        // Optionally clear selected items after successful share
+        setState(() {
+          selectedItems = [];
+        });
+      } else if (result.status == ShareResultStatus.dismissed) {
+        // User cancelled the share - show subtle message or nothing
+        print('PDF share was cancelled by user');
+        
+        // Optionally show a subtle message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Share cancelled'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } else {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate PDF: ${response.statusCode}'),
           ),
         );
       }
-    } catch (e) {
+    }
+  } catch (e) {
+    // Clear any loading snackbars
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
-      print('Error in _shareSelectedItemsPDF: $e');
     }
+    print('Error in _shareSelectedItemsPDF: $e');
   }
-
+}
   Map<String, dynamic> _buildCatalogItem(
     Catalog item,
     String imageUrl,
@@ -2492,194 +2530,183 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
     return catalogItem;
   }
 
-  Future<void> _sendViaUnifiedWhatsAppAPI({
-    required String mobileNo,
-    required String shareType,
-    bool includeDesign = true,
-    bool includeShade = true,
-    bool includeRate = true,
-    bool includeWsp = true,
-    bool includeSize = true,
-    bool includeSizeMrp = true,
-    bool includeSizeWsp = true,
-    bool includeProduct = true,
-    bool includeRemark = true,
-    bool shadeWiseImage = false,
-  }) async {
-    try {
-      List<Map<String, dynamic>> catalogItems = [];
+ Future<void> _sendViaUnifiedWhatsAppAPI({
+  required String mobileNo,
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  // Store reference to mounted state at the beginning
+  final bool isMounted = mounted;
+  
+  try {
+    List<Map<String, dynamic>> catalogItems = [];
 
-      for (var item in selectedItems) {
-        final allImageUrls = _getImageUrl(item);
-        final shadeList =
-            item.shadeName.isNotEmpty
-                ? item.shadeName.split(',').map((s) => s.trim()).toList()
-                : [];
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList =
+          item.shadeName.isNotEmpty
+              ? item.shadeName.split(',').map((s) => s.trim()).toList()
+              : [];
 
-        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-          if (allImageUrls.length == 1) {
-            continue;
-          } else if (allImageUrls.length > 1) {
-            if (shadeList.isNotEmpty) {
-              int shadeImagesCount = allImageUrls.length - 1;
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
 
-              for (int i = 0; i < shadeImagesCount; i++) {
-                int imageIndex = i + 1;
-                if (imageIndex < allImageUrls.length) {
-                  String imageSpecificShade = '';
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
 
-                  if (i < shadeList.length) {
-                    imageSpecificShade = shadeList[i];
-                  } else {
-                    imageSpecificShade =
-                        shadeList.isNotEmpty ? shadeList[0] : '';
-                  }
-
-                  Map<String, dynamic> shadeCatalogItem =
-                      _buildCatalogItemForWhatsApp(
-                        item,
-                        includeDesign,
-                        includeShade,
-                        includeRate,
-                        includeWsp,
-                        includeSize,
-                        includeSizeMrp,
-                        includeSizeWsp,
-                        includeProduct,
-                        includeRemark,
-                      );
-
-                  if (shareType == "pdf") {
-                    shadeCatalogItem['fullImagePath'] =
-                        allImageUrls[imageIndex];
-                    if (includeShade)
-                      shadeCatalogItem['shade'] = imageSpecificShade;
-                  } else {
-                    shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
-                    if (includeShade)
-                      shadeCatalogItem['shade'] = imageSpecificShade;
-                  }
-
-                  catalogItems.add(shadeCatalogItem);
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade =
+                      shadeList.isNotEmpty ? shadeList[0] : '';
                 }
-              }
-            } else {
-              for (int i = 1; i < allImageUrls.length; i++) {
-                if (allImageUrls[i].isNotEmpty) {
-                  Map<String, dynamic> extraCatalogItem =
-                      _buildCatalogItemForWhatsApp(
-                        item,
-                        includeDesign,
-                        includeShade,
-                        includeRate,
-                        includeWsp,
-                        includeSize,
-                        includeSizeMrp,
-                        includeSizeWsp,
-                        includeProduct,
-                        includeRemark,
-                      );
 
-                  if (shareType == "pdf") {
-                    extraCatalogItem['fullImagePath'] = allImageUrls[i];
-                    if (includeShade) extraCatalogItem['shade'] = '';
-                  } else {
-                    extraCatalogItem['imageUrl'] = allImageUrls[i];
-                    if (includeShade) extraCatalogItem['shade'] = '';
-                  }
+                Map<String, dynamic> shadeCatalogItem =
+                    _buildCatalogItemForWhatsApp(
+                      item,
+                      includeDesign,
+                      includeShade,
+                      includeRate,
+                      includeWsp,
+                      includeSize,
+                      includeSizeMrp,
+                      includeSizeWsp,
+                      includeProduct,
+                      includeRemark,
+                    );
 
-                  catalogItems.add(extraCatalogItem);
+                if (shareType == "pdf") {
+                  shadeCatalogItem['fullImagePath'] =
+                      allImageUrls[imageIndex];
+                  if (includeShade)
+                    shadeCatalogItem['shade'] = imageSpecificShade;
+                } else {
+                  shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
+                  if (includeShade)
+                    shadeCatalogItem['shade'] = imageSpecificShade;
                 }
+
+                catalogItems.add(shadeCatalogItem);
               }
             }
-          }
-        } else {
-          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-            Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
-              item,
-              includeDesign,
-              includeShade,
-              includeRate,
-              includeWsp,
-              includeSize,
-              includeSizeMrp,
-              includeSizeWsp,
-              includeProduct,
-              includeRemark,
-            );
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, dynamic> extraCatalogItem =
+                    _buildCatalogItemForWhatsApp(
+                      item,
+                      includeDesign,
+                      includeShade,
+                      includeRate,
+                      includeWsp,
+                      includeSize,
+                      includeSizeMrp,
+                      includeSizeWsp,
+                      includeProduct,
+                      includeRemark,
+                    );
 
-            if (shareType == "pdf") {
-              catalogItem['fullImagePath'] = allImageUrls.first;
-              if (includeShade) catalogItem['shade'] = item.shadeName;
-            } else {
-              catalogItem['imageUrl'] = allImageUrls.first;
-              if (includeShade) catalogItem['shade'] = item.shadeName;
+                if (shareType == "pdf") {
+                  extraCatalogItem['fullImagePath'] = allImageUrls[i];
+                  if (includeShade) extraCatalogItem['shade'] = '';
+                } else {
+                  extraCatalogItem['imageUrl'] = allImageUrls[i];
+                  if (includeShade) extraCatalogItem['shade'] = '';
+                }
+
+                catalogItems.add(extraCatalogItem);
+              }
             }
-
-            catalogItems.add(catalogItem);
           }
         }
-      }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
+            item,
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
 
-      if (catalogItems.isEmpty) {
+          if (shareType == "pdf") {
+            catalogItem['fullImagePath'] = allImageUrls.first;
+            if (includeShade) catalogItem['shade'] = item.shadeName;
+          } else {
+            catalogItem['imageUrl'] = allImageUrls.first;
+            if (includeShade) catalogItem['shade'] = item.shadeName;
+          }
+
+          catalogItems.add(catalogItem);
+        }
+      }
+    }
+
+    if (catalogItems.isEmpty) {
+      if (isMounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No items to share based on selection')),
         );
-        return;
       }
-
-      final requestBody = {
-        "catalogItems": catalogItems,
-        "includeDesign": includeDesign,
-        "includeShade": includeShade,
-        "includeRate": includeRate,
-        "includeWsp": includeWsp,
-        "includeSize": includeSize,
-        "includeProduct": includeProduct,
-        "includeRemark": includeRemark,
-        "mobile": "91$mobileNo",
-      };
-
-      String apiUrl;
-      if (shareType == "pdf") {
-        apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
-      } else {
-        apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
-      }
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'WhatsApp ${shareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
-            ),
-          ),
-        );
-        setState(() {
-          selectedItems = [];
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to send via WhatsApp: ${response.statusCode}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      return;
     }
-  }
 
+    final requestBody = {
+      "catalogItems": catalogItems,
+      "includeDesign": includeDesign,
+      "includeShade": includeShade,
+      "includeRate": includeRate,
+      "includeWsp": includeWsp,
+      "includeSize": includeSize,
+      "includeProduct": includeProduct,
+      "includeRemark": includeRemark,
+      "mobile": "91$mobileNo",
+    };
+
+    String apiUrl;
+    if (shareType == "pdf") {
+      apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
+    } else {
+      apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
+    }
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200 && isMounted) {
+      // Success - will be handled by parent method
+      print('WhatsApp API call successful');
+    } else {
+      throw Exception('API call failed with status: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error in _sendViaUnifiedWhatsAppAPI: $e');
+    rethrow; // Rethrow to be caught by parent
+  }
+}
   Map<String, dynamic> _buildCatalogItemForWhatsApp(
     Catalog item,
     bool includeDesign,
@@ -3017,12 +3044,12 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
 
         int count = item.shadeName.split(',').length;
 
-        
-
         String caption = '';
-        if (includeDesign) caption += '*Design*\t\t: ${item.styleCode} (${count} Colors)\n';
+        if (includeDesign)
+          caption += '*Design*\t\t: ${item.styleCode} (${count} Colors)\n';
         if (includeShade) caption += '*Shade*\t\t: $shadeValue\n';
-        if (includeRate) caption += '*MRP*\t\t\t: ${item.mrp.toStringAsFixed(0)}\n';
+        if (includeRate)
+          caption += '*MRP*\t\t\t: ${item.mrp.toStringAsFixed(0)}\n';
         if (includeSize) {
           String sizeValue = '';
           if (includeSizeMrp && includeSizeWsp) {
@@ -3222,34 +3249,59 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
     }
   }
 
-  Future<void> _shareSelectedWhatsApp({
-    required String shareType,
-    bool includeDesign = true,
-    bool includeShade = true,
-    bool includeRate = true,
-    bool includeSize = true,
-    bool includeProduct = true,
-    bool includeRemark = true,
-    bool includeLabel = false,
-    bool shadeWiseImage = false,
-  }) async {
-    if (selectedItems.isEmpty) {
+Future<void> _shareSelectedWhatsApp({
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeSize = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool includeLabel = false,
+  bool shadeWiseImage = false,
+}) async {
+  if (!mounted) return;
+  
+  if (selectedItems.isEmpty) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select items to share')),
       );
-      return;
     }
+    return;
+  }
+
+  try {
+    final result = await _showMobileNumberDialog();
+
+    if (result == null || !mounted) return; // User cancelled or widget disposed
+
+    String mobileNo = result['mobileNo'] ?? '';
+    String selectedShareType = result['shareType'] ?? 'image';
+
+    // Store mounted state for use in callbacks
+    final bool mountedBeforeApiCall = mounted;
+
+    if (!mountedBeforeApiCall) return;
+
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Sending via WhatsApp...'),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    String whatsappType = AppConstants.whatsappType ?? "2";
+    bool success = false;
 
     try {
-      final result = await _showMobileNumberDialog();
-
-      if (result == null) return;
-
-      String mobileNo = result['mobileNo'] ?? '';
-      String selectedShareType = result['shareType'] ?? 'image';
-
-      String whatsappType = AppConstants.whatsappType ?? "2";
-
       if (whatsappType.toUpperCase() == "2") {
         await _sendViaUnifiedWhatsAppAPI(
           mobileNo: mobileNo,
@@ -3265,8 +3317,8 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
           includeRemark: includeRemark,
           shadeWiseImage: shadeWiseImage,
         );
+        success = true;
       } else if (whatsappType.toUpperCase() == "1") {
-        // For type U, use node API for PDF
         if (selectedShareType == "pdf") {
           await _sendPDFViaNodeAPI(
             mobileNo: mobileNo,
@@ -3281,6 +3333,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
             includeRemark: includeRemark,
             shadeWiseImage: shadeWiseImage,
           );
+          success = true;
         } else {
           await _sendImagesViaOldWhatsAppAPI(
             mobileNo: mobileNo,
@@ -3295,6 +3348,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
             includeRemark: includeRemark,
             shadeWiseImage: shadeWiseImage,
           );
+          success = true;
         }
       } else {
         if (selectedShareType == "pdf") {
@@ -3311,6 +3365,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
             includeRemark: includeRemark,
             shadeWiseImage: shadeWiseImage,
           );
+          success = true;
         } else {
           await _sendImagesViaOldWhatsAppAPI(
             mobileNo: mobileNo,
@@ -3325,257 +3380,327 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
             includeRemark: includeRemark,
             shadeWiseImage: shadeWiseImage,
           );
+          success = true;
         }
       }
-    } catch (e) {
+    } catch (apiError) {
+      print('API Error: $apiError');
+      success = false;
+    }
+
+    // Clear loading snackbar
+    if (mountedBeforeApiCall && mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+    }
+
+    // Only proceed if widget is still mounted
+    if (mounted && mountedBeforeApiCall) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'WhatsApp ${selectedShareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Clear selected items after successful share
+        setState(() {
+          selectedItems = [];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to send via WhatsApp'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    print('Error in _shareSelectedWhatsApp: $e');
+    
+    // Check if mounted before using context
+    if (mounted) {
+      // Clear loading snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
+        SnackBar(
+          content: Text('Failed to share items: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
-
+}
   Future<Map<String, String>?> _showMobileNumberDialog() async {
-    TextEditingController mobileController = TextEditingController();
-    String selectedType = 'image'; // default selection
+  TextEditingController mobileController = TextEditingController();
+  String selectedType = 'image'; // default selection
+  bool hasError = false;
 
-    return showDialog<Map<String, String>?>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 4,
-          backgroundColor: Colors.white,
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 340),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with title and close
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.share_rounded,
-                            color: AppColors.primaryColor,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Share Order',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: Colors.grey.shade500,
-                        size: 20,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Mobile Number Input
-                TextField(
-                  controller: mobileController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  style: GoogleFonts.poppins(fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Mobile Number',
-                    labelStyle: GoogleFonts.poppins(fontSize: 13),
-                    hintText: 'Enter 10-digit number',
-                    hintStyle: GoogleFonts.poppins(fontSize: 13),
-                    prefixIcon: Icon(
-                      Icons.phone_android_rounded,
-                      color: AppColors.primaryColor,
-                      size: 18,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.primaryColor,
-                        width: 2,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    counterText: '',
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Options without radio buttons
-                StatefulBuilder(
-                  builder: (context, setState) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildSelectionOption(
-                            title: 'Image',
-                            isSelected: selectedType == 'image',
-                            icon: Icons.image_rounded,
-                            iconColor: Colors.blue[700]!,
-                            onTap: () {
-                              setState(() {
-                                selectedType = 'image';
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSelectionOption(
-                            title: 'PDF',
-                            isSelected: selectedType == 'pdf',
-                            icon: Icons.picture_as_pdf_rounded,
-                            iconColor: Colors.red[700]!,
-                            onTap: () {
-                              setState(() {
-                                selectedType = 'pdf';
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Action Buttons with icons
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.grey.shade700,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: Colors.grey.shade700,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Cancel',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final mobileNo = mobileController.text.trim();
-                          if (mobileNo.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Enter mobile number'),
-                                behavior: SnackBarBehavior.floating,
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                            return;
-                          }
-                          if (mobileNo.length != 10) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Enter 10-digit number'),
-                                behavior: SnackBarBehavior.floating,
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.pop(context, {
-                            'mobileNo': mobileNo,
-                            'shareType': selectedType,
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Send',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.send_rounded, size: 16),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+  return showDialog<Map<String, String>?>(
+    context: context,
+    barrierDismissible: false, // Prevent dialog from closing when tapping outside
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-        );
-      },
-    );
-  }
+            elevation: 4,
+            backgroundColor: Colors.white,
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 340),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header with title and close
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.share_rounded,
+                              color: AppColors.primaryColor,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Share Order',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: Colors.grey.shade500,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
 
+                  const SizedBox(height: 16),
+
+                  // Mobile Number Input with red border when error
+                  TextField(
+                    controller: mobileController,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    style: GoogleFonts.poppins(fontSize: 14),
+                    onChanged: (value) {
+                      // Clear error when user starts typing
+                      if (hasError) {
+                        setState(() {
+                          hasError = false;
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Mobile Number',
+                      labelStyle: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: hasError ? Colors.red : Colors.grey.shade700,
+                      ),
+                      hintText: 'Enter 10-digit number',
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.phone_android_rounded,
+                        color: hasError ? Colors.red : AppColors.primaryColor,
+                        size: 18,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: hasError ? Colors.red : Colors.grey.shade300,
+                          width: hasError ? 2 : 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: hasError ? Colors.red : Colors.grey.shade300,
+                          width: hasError ? 2 : 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: hasError ? Colors.red : AppColors.primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      counterText: '',
+                      errorText: hasError ? 'Please enter a valid 10-digit number' : null,
+                      errorStyle: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Options without radio buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSelectionOption(
+                          title: 'Image',
+                          isSelected: selectedType == 'image',
+                          icon: Icons.image_rounded,
+                          iconColor: Colors.blue[700]!,
+                          onTap: () {
+                            setState(() {
+                              selectedType = 'image';
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSelectionOption(
+                          title: 'PDF',
+                          isSelected: selectedType == 'pdf',
+                          icon: Icons.picture_as_pdf_rounded,
+                          iconColor: Colors.red[700]!,
+                          onTap: () {
+                            setState(() {
+                              selectedType = 'pdf';
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: Colors.grey.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Cancel',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final mobileNo = mobileController.text.trim();
+                            
+                            // Validate mobile number
+                            if (mobileNo.isEmpty) {
+                              setState(() {
+                                hasError = true;
+                              });
+                              return;
+                            }
+                            
+                            if (mobileNo.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                              setState(() {
+                                hasError = true;
+                              });
+                              return;
+                            }
+                            
+                            // If validation passes, return the data
+                            Navigator.pop(context, {
+                              'mobileNo': mobileNo,
+                              'shareType': selectedType,
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Send',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.send_rounded, size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
   // New helper widget for selection option without radio button
   Widget _buildSelectionOption({
     required String title,
@@ -3669,232 +3794,239 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
     }
   }
 
-  Future<void> _shareSelectedItems({
-    required String shareType,
-    bool includeDesign = true,
-    bool includeShade = true,
-    bool includeRate = true,
-    bool includeWsp = true,
-    bool includeSize = true,
-    bool includeSizeMrp = true,
-    bool includeSizeWsp = true,
-    bool includeProduct = true,
-    bool includeRemark = true,
-    bool shadeWiseImage = false,
-  }) async {
-    if (selectedItems.isEmpty) {
+ Future<void> _shareSelectedItems({
+  required String shareType,
+  bool includeDesign = true,
+  bool includeShade = true,
+  bool includeRate = true,
+  bool includeWsp = true,
+  bool includeSize = true,
+  bool includeSizeMrp = true,
+  bool includeSizeWsp = true,
+  bool includeProduct = true,
+  bool includeRemark = true,
+  bool shadeWiseImage = false,
+}) async {
+  if (selectedItems.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select items to share')),
+    );
+    return;
+  }
+
+  try {
+    // Show loading indicator
+    final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Preparing items for sharing...'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final List<Map<String, String>> catalogItems = [];
+
+    for (var item in selectedItems) {
+      final allImageUrls = _getImageUrl(item);
+      final shadeList =
+          item.shadeName.isNotEmpty
+              ? item.shadeName.split(',').map((s) => s.trim()).toList()
+              : [];
+
+      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+        if (allImageUrls.length == 1) {
+          continue;
+        } else if (allImageUrls.length > 1) {
+          if (shadeList.isNotEmpty) {
+            int shadeImagesCount = allImageUrls.length - 1;
+
+            for (int i = 0; i < shadeImagesCount; i++) {
+              int imageIndex = i + 1;
+              if (imageIndex < allImageUrls.length) {
+                String imageSpecificShade = '';
+
+                if (i < shadeList.length) {
+                  imageSpecificShade = shadeList[i];
+                } else {
+                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
+                }
+
+                Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
+                  item,
+                  allImageUrls[imageIndex],
+                  imageSpecificShade,
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(shadeCatalogItem);
+              }
+            }
+          } else {
+            for (int i = 1; i < allImageUrls.length; i++) {
+              if (allImageUrls[i].isNotEmpty) {
+                Map<String, String> extraCatalogItem = _buildImageCatalogItem(
+                  item,
+                  allImageUrls[i],
+                  '',
+                  includeDesign,
+                  includeShade,
+                  includeRate,
+                  includeWsp,
+                  includeSize,
+                  includeSizeMrp,
+                  includeSizeWsp,
+                  includeProduct,
+                  includeRemark,
+                );
+                catalogItems.add(extraCatalogItem);
+              }
+            }
+          }
+        }
+      } else {
+        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+          Map<String, String> catalogItem = _buildImageCatalogItem(
+            item,
+            allImageUrls.first,
+            includeShade ? item.shadeName : '',
+            includeDesign,
+            includeShade,
+            includeRate,
+            includeWsp,
+            includeSize,
+            includeSizeMrp,
+            includeSizeWsp,
+            includeProduct,
+            includeRemark,
+          );
+          catalogItems.add(catalogItem);
+        }
+      }
+    }
+
+    if (catalogItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select items to share')),
+        const SnackBar(
+          content: Text('No images to share based on selection'),
+        ),
       );
       return;
     }
 
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Preparing items for sharing...'),
-            ],
-          ),
-          duration: Duration(seconds: 1),
-        ),
-      );
+    // Clear loading snackbar
+    ScaffoldMessenger.of(context).clearSnackBars();
 
-      final List<Map<String, String>> catalogItems = [];
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'catalogItems': catalogItems,
+        'includeDesign': includeDesign,
+        'includeShade': includeShade,
+        'includeRate': includeRate,
+        'includeWsp': includeWsp,
+        'includeSize': includeSize,
+        'includeProduct': includeProduct,
+        'includeRemark': includeRemark,
+      }),
+    );
 
-      for (var item in selectedItems) {
-        // Get all image URLs for this item
-        final allImageUrls = _getImageUrl(item);
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body) as List;
+      final tempDir = await getTemporaryDirectory();
+      List<String> filePaths = [];
 
-        // Get shade list
-        final shadeList =
-            item.shadeName.isNotEmpty
-                ? item.shadeName.split(',').map((s) => s.trim()).toList()
-                : [];
-
-        print('Processing item: ${item.styleCode} for image sharing');
-        print('All Image URLs: $allImageUrls');
-        print('Shade List: $shadeList');
-        print('shadeWiseImage option: $shadeWiseImage');
-
-        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-          // ===== SHADE WISE IMAGE MODE =====
-          // Send ONLY shade images, exclude main image
-
-          if (allImageUrls.length == 1) {
-            // TYPE 1: Only one image available (main image)
-            // Since no shade images exist, don't send anything for this item
-            print('No shade images available for ${item.styleCode}');
-            continue;
-          } else if (allImageUrls.length > 1) {
-            // TYPE 2: Multiple images available (main + shade images)
-            // Skip the first image (index 0) which is the main image
-            // Only add shade images starting from index 1
-
-            if (shadeList.isNotEmpty) {
-              // Add shade images with their corresponding shades
-              int shadeImagesCount =
-                  allImageUrls.length - 1; // Number of shade images
-
-              for (int i = 0; i < shadeImagesCount; i++) {
-                int imageIndex = i + 1; // Start from second image (index 1)
-                if (imageIndex < allImageUrls.length) {
-                  // Determine which shade this image belongs to
-                  String imageSpecificShade = '';
-
-                  if (i < shadeList.length) {
-                    // We have a matching shade for this image
-                    imageSpecificShade = shadeList[i];
-                  } else {
-                    // More images than shades, use empty or first shade for remaining images
-                    imageSpecificShade =
-                        shadeList.isNotEmpty ? shadeList[0] : '';
-                  }
-
-                  Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
-                    item,
-                    allImageUrls[imageIndex],
-                    imageSpecificShade, // Specific shade for this image
-                    includeDesign,
-                    includeShade,
-                    includeRate,
-                    includeWsp,
-                    includeSize,
-                    includeSizeMrp,
-                    includeSizeWsp,
-                    includeProduct,
-                    includeRemark,
-                  );
-                  catalogItems.add(shadeCatalogItem);
-                }
-              }
-            } else {
-              // No shades available, add remaining images with empty shade
-              for (int i = 1; i < allImageUrls.length; i++) {
-                if (allImageUrls[i].isNotEmpty) {
-                  Map<String, String> extraCatalogItem = _buildImageCatalogItem(
-                    item,
-                    allImageUrls[i],
-                    '', // Empty shade
-                    includeDesign,
-                    includeShade,
-                    includeRate,
-                    includeWsp,
-                    includeSize,
-                    includeSizeMrp,
-                    includeSizeWsp,
-                    includeProduct,
-                    includeRemark,
-                  );
-                  catalogItems.add(extraCatalogItem);
-                }
-              }
-            }
-          }
-        } else {
-          // ===== NORMAL MODE (not shade wise) =====
-          // Send ONLY the first/main image for each item
-          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-            Map<String, String> catalogItem = _buildImageCatalogItem(
-              item,
-              allImageUrls.first,
-              includeShade ? item.shadeName : '', // Include shade if enabled
-              includeDesign,
-              includeShade,
-              includeRate,
-              includeWsp,
-              includeSize,
-              includeSizeMrp,
-              includeSizeWsp,
-              includeProduct,
-              includeRemark,
-            );
-            catalogItems.add(catalogItem);
-          }
-        }
-      }
-
-      // If no catalog items after filtering, show message
-      if (catalogItems.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No images to share based on selection'),
-          ),
-        );
-        return;
-      }
-
-      print(
-        'Sending to Image API: ${jsonEncode({'catalogItems': catalogItems, 'includeDesign': includeDesign, 'includeShade': includeShade, 'includeRate': includeRate, 'includeWsp': includeWsp, 'includeSize': includeSize, 'includeProduct': includeProduct, 'includeRemark': includeRemark})}',
-      );
-
-      final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'catalogItems': catalogItems,
-          'includeDesign': includeDesign,
-          'includeShade': includeShade,
-          'includeRate': includeRate,
-          'includeWsp': includeWsp,
-          'includeSize': includeSize,
-          'includeProduct': includeProduct,
-          'includeRemark': includeRemark,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as List;
-        final tempDir = await getTemporaryDirectory();
-        List<String> filePaths = [];
-
-        for (var imageData in responseData) {
-          try {
-            final imageBytes = base64Decode(imageData['image']);
-            final file = File(
-              '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
-            );
-            await file.writeAsBytes(imageBytes);
-            filePaths.add(file.path);
-          } catch (e) {
-            print('Error saving image: $e');
-          }
-        }
-
-        if (filePaths.isNotEmpty) {
-          await Share.shareFiles(filePaths);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                shadeWiseImage
-                    ? '${filePaths.length} shade images shared successfully'
-                    : 'Images shared successfully',
-              ),
-            ),
+      for (var imageData in responseData) {
+        try {
+          final imageBytes = base64Decode(imageData['image']);
+          final file = File(
+            '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
           );
-        } else {
+          await file.writeAsBytes(imageBytes);
+          filePaths.add(file.path);
+        } catch (e) {
+          print('Error saving image: $e');
+        }
+      }
+
+      if (filePaths.isNotEmpty) {
+        // Convert to XFile list for Share.shareXFiles
+        final xFiles = filePaths.map((path) => XFile(path)).toList();
+        
+        // Use shareXFiles which returns a Future<ShareResult>
+        final result = await Share.shareXFiles(xFiles);
+        
+        // Check if sharing was completed or cancelled
+        if (result.status == ShareResultStatus.success) {
+          // Only show success message if sharing was actually completed
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  shadeWiseImage
+                      ? '${filePaths.length} shade images shared successfully'
+                      : 'Images shared successfully',
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          
+          // Optionally clear selected items after successful share
+          setState(() {
+            selectedItems = [];
+          });
+        } else if (result.status == ShareResultStatus.dismissed) {
+          // User cancelled the share - don't show any message
+          print('Share was cancelled by user');
+          
+          // Optionally show a subtle message that share was cancelled
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Share cancelled'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+        }
+      } else {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No valid images to share')),
           );
         }
-      } else {
+      }
+    } else {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate images: ${response.statusCode}'),
           ),
         );
       }
-    } catch (e) {
+    }
+  } catch (e) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share items: ${e.toString()}')),
       );
-      print('Error in _shareSelectedItems: $e');
     }
+    print('Error in _shareSelectedItems: $e');
   }
-
+}
   Map<String, String> _buildImageCatalogItem(
     Catalog item,
     String imageUrl,
@@ -3949,77 +4081,278 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
       );
       return;
     }
-    void _shareAsLink() {
-      try {
-        // Concatenate styleKey values with commas
-        final styleKeys = selectedItems.map((item) => item.styleKey).join(',');
-        // Encode in Base64
-        final encodedStyleKeys = base64Encode(utf8.encode(styleKeys));
-        // Construct the shareable URL
-        final shareUrl = '${AppConstants.BASE_URL}/share/$encodedStyleKeys';
 
-        // Show dialog with share link and QR code
+    void _shareAsLink() async {
+      try {
+        if (selectedItems.isEmpty) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select items to share')),
+            );
+          }
+          return;
+        }
+
+        // Show loading indicator
+        if (!context.mounted) return;
+
         showDialog(
           context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              title: const Text('Share as Link'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Share this link or scan the QR code:',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 10),
-                    SelectableText(
-                      shareUrl,
-                      style: const TextStyle(fontSize: 14, color: Colors.blue),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // ScaffoldMessenger.of(context).showSnackBar(
-                    //   const SnackBar(content: Text('Link copied to clipboard')),
-                    // );
-                    Clipboard.setData(ClipboardData(text: shareUrl));
-                    // Navigator.pop(context); // Optional: close dialog after copy
-                  },
-                  child: const Text('Copy Link'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await Share.share(shareUrl, subject: 'Catalog Share Link');
-                    Navigator.pop(
-                      context,
-                    ); // Optional: close dialog after share
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link shared successfully')),
-                    );
-                  },
-                  child: const Text('Share Link'),
-                ),
-              ],
-            );
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return const Center(child: CircularProgressIndicator());
           },
         );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to share link: ${e.toString()}')),
+
+        // Extract style keys from selected items
+        final styleKeys = selectedItems.map((item) => item.styleKey).toList();
+
+        // Prepare request body
+        final requestBody = {"createdBy": "1", "styleKeys": styleKeys};
+
+        print('Creating link with styleKeys: $styleKeys');
+        print('Request body: ${jsonEncode(requestBody)}');
+
+        // Make API call to create link
+        final response = await http.post(
+          Uri.parse('${AppConstants.BASE_URL}/orderBooking/create-link'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(requestBody),
         );
+
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
+        // Close loading dialog
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          final linkCode = responseData['link'];
+          final shareUrl = '${AppConstants.BASE_URL}/link/$linkCode';
+
+          print('Share URL: $shareUrl');
+
+          // Show dialog with share link and QR code - FIXED VERSION
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                return Dialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    width: MediaQuery.of(dialogContext).size.width * 0.9,
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.link_rounded,
+                                color: AppColors.primaryColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Share as Link',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey.shade500,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Instructions
+                        Text(
+                          'Share this link or scan the QR code:',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Link Container
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: SelectableText(
+                            shareUrl,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Colors.blue,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // QR Code
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: QrImageView(
+                            data: shareUrl,
+                            version: QrVersions.auto,
+                            size: 200,
+                            backgroundColor: Colors.white,
+                            errorCorrectionLevel: QrErrorCorrectLevel.H,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: shareUrl),
+                                  );
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Link copied to clipboard'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryColor,
+                                  side: BorderSide(
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Copy',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  await Share.share(
+                                    shareUrl,
+                                    subject: 'Catalog Share Link',
+                                  );
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Link shared successfully'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.share, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Share',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to create link: ${response.statusCode}'),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('Error in _shareAsLink: $e');
+        // Close loading dialog if it's open
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to share link: ${e.toString()}')),
+          );
+        }
       }
     }
 
@@ -4036,7 +4369,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
           includeSizeWsp: includeSizeWsp,
           includeProduct: includeProduct,
           includeRemark: includeRemark,
-          shadeWiseImage: false, // Default value
+          shadeWiseImage: false,
           onWhatsAppShare: ({
             bool includeDesign = true,
             bool includeShade = true,
@@ -4059,7 +4392,7 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
             );
           },
           onLinkShare: () {
-            _shareAsLink();
+            _shareAsLink(); // This now calls the new API-based function
           },
           onImageShare: ({
             bool includeDesign = true,
@@ -4833,6 +5166,4 @@ Future<void> _showMessageDialog(String message, {bool isError = false}) async {
       ),
     );
   }
-
-  
 }

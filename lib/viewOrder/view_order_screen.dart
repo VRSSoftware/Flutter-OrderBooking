@@ -548,6 +548,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        
       ),
       body: SafeArea(
         child: Column(
@@ -598,8 +599,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildTabBar() {
-   
-
     return Container(
       color: Colors.white,
       child: Row(
@@ -799,6 +798,21 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             Expanded(
               child: TextButton(
                 onPressed: () {
+                  // 👇 Check if items exist first
+                  if (_styleManager.groupedItems.isEmpty) {
+                    // Show message when no items
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Please add items'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+
+                  // 👇 Only proceed if items exist
                   if (_activeTab == ActiveTab.transaction) {
                     if (!_formKey.currentState!.validate()) return;
 
@@ -809,12 +823,30 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                     });
                   }
                 },
-                child: const Text(
+                // 👇 Style the button with background color changes
+                style: TextButton.styleFrom(
+                  backgroundColor:
+                      _styleManager.groupedItems.isEmpty
+                          ? Colors
+                              .grey[300] // Light grey background when disabled
+                          : AppColors
+                              .primaryColor, // Primary color when enabled
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                ),
+                child: Text(
                   "Confirm",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: AppColors.white,
+                    // 👇 Text color changes based on item presence
+                    color:
+                        _styleManager.groupedItems.isEmpty
+                            ? Colors
+                                .grey[600] // Darker grey text when disabled for better contrast
+                            : AppColors.white, // White text when enabled
                   ),
                 ),
               ),
@@ -992,7 +1024,12 @@ class _DropdownData {
     final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/users/getLedger'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"ledCat": ledCat, "coBrId": UserSession.coBrId ?? '',"ledKey":UserSession.userLedKey ?? '',"userType":UserSession.userType ?? ''}),
+      body: jsonEncode({
+        "ledCat": ledCat,
+        "coBrId": UserSession.coBrId ?? '',
+        "ledKey": UserSession.userLedKey ?? '',
+        "userType": UserSession.userType ?? '',
+      }),
     );
     return response.statusCode == 200
         ? (jsonDecode(response.body) as List)
@@ -1635,7 +1672,6 @@ Widget buildTextField(
   VoidCallback? onTap,
   bool isText = false,
 }) {
-  
   final Color slateBorder = const Color(0xFFCBD5E1);
 
   return Padding(
@@ -1786,8 +1822,6 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
-  
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       insetPadding: const EdgeInsets.symmetric(
@@ -2076,5 +2110,3 @@ class _AddMoreInfoDialogState extends State<AddMoreInfoDialog> {
     Navigator.pop(context, newInfo);
   }
 }
-
-

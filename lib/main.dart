@@ -11,7 +11,7 @@ import 'package:vrs_erp/dashboard/dashboard.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
 import 'package:vrs_erp/privacypolicy/privacypolicy.dart';
-import 'package:vrs_erp/production/jobCardListScreen.dart';
+import 'package:vrs_erp/production/JobCard_cutting/jobCardListScreen.dart';
 import 'package:vrs_erp/production/production_home_screen.dart';
 import 'package:vrs_erp/register/packingRegisterScreen.dart';
 import 'package:vrs_erp/register/register.dart';

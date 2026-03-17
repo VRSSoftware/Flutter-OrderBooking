@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/production/jobCardDetailScreen.dart';
+import 'package:vrs_erp/production/JobCard_cutting/jobCardDetailScreen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 
 class JobCardListScreen extends StatefulWidget {
@@ -109,7 +109,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'In Progress':
-        return Colors.blue;
+        return AppColors.primaryColor;
       case 'Planned':
         return Colors.orange;
       case 'Completed':
@@ -124,7 +124,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
   Color _getStatusBackgroundColor(String status) {
     switch (status) {
       case 'In Progress':
-        return Colors.blue.shade50;
+        return AppColors.primaryColor.shade50;
       case 'Planned':
         return Colors.orange.shade50;
       case 'Completed':
@@ -213,7 +213,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
           'Job Cards',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        backgroundColor: const Color(0xFF4A90E2),
+        backgroundColor: AppColors.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: Builder(
@@ -384,7 +384,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
                           ),
                           child: const Icon(
                             Icons.keyboard_arrow_down,
-                            color: Color(0xFF4A90E2),
+                            color: AppColors.primaryColor,
                             size: 18,
                           ),
                         ),
@@ -474,9 +474,9 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF4A90E2).withOpacity(0.05),
+                                    color:  AppColors.primaryColor.withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xFF4A90E2).withOpacity(0.2)),
+                                    border: Border.all(color:  AppColors.primaryColor.withOpacity(0.2)),
                                   ),
                                   child: Column(
                                     children: [
@@ -601,8 +601,8 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
                                         icon: const Icon(Icons.visibility, size: 16),
                                         label: const Text('VIEW DETAILS', style: TextStyle(fontSize: 12)),
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: const Color(0xFF4A90E2),
-                                          side: const BorderSide(color: Color(0xFF4A90E2)),
+                                          foregroundColor:  AppColors.primaryColor,
+                                          side: const BorderSide(color: AppColors.primaryColor),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(6),
                                           ),
@@ -627,7 +627,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToJobCardDetail(null),
-        backgroundColor: const Color(0xFF4A90E2),
+        backgroundColor:  AppColors.primaryColor,
         icon: const Icon(Icons.add, color: Colors.white, size: 18),
         label: const Text(
           'JOB CARD SHEET',
@@ -719,12 +719,12 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: highlight ? const Color(0xFF4A90E2).withOpacity(0.1) : Colors.transparent,
+        color: highlight ?  AppColors.primaryColor.withOpacity(0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 12, color: highlight ? const Color(0xFF4A90E2) : Colors.grey.shade600),
+          Icon(icon, size: 12, color: highlight ?  AppColors.primaryColor : Colors.grey.shade600),
           const SizedBox(width: 4),
           Expanded(
             child: Column(
@@ -743,7 +743,7 @@ class _JobCardListScreenState extends State<JobCardListScreen> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: highlight ? FontWeight.bold : FontWeight.w500,
-                    color: highlight ? const Color(0xFF4A90E2) : Color(0xFF2C3E50),
+                    color: highlight ?  AppColors.primaryColor : Color(0xFF2C3E50),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

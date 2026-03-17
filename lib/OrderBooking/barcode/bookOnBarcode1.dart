@@ -1772,210 +1772,317 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
     super.dispose();
   }
 
-  Future<void> _loadOrderDetails() async {
+
+Future<void> _loadOrderDetails() async {
+  setState(() {
+    isLoading = true;
+  });
+
+  final catalogItems = await fetchCatalogData();
+  final List<CatalogOrderData> tempList = [];
+
+  // 🔴 Check if catalogItems is null (already added case)
+  if (catalogItems == null) {
+    // Already added case - dialog already shown, just return
     setState(() {
-      isLoading = true;
-    });
-
-    final catalogItems = await fetchCatalogData();
-    final List<CatalogOrderData> tempList = [];
-
-    if (catalogItems.isNotEmpty) {
-      setState(() {
-        hasData = true;
-      });
-
-      final styleGroups = <String, List<CatalogItem>>{};
-      for (var item in catalogItems) {
-        styleGroups.putIfAbsent(item.styleCode, () => []).add(item);
-      }
-
-      for (var styleCode in styleGroups.keys) {
-        final items = styleGroups[styleCode]!;
-        final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
-        final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
-
-        // Build size MRP and WSP maps
-        Map<String, double> tempSizeMrpMap = {};
-        Map<String, double> tempSizeWspMap = {};
-        for (var item in items) {
-          tempSizeMrpMap[item.sizeName] = item.mrp;
-          tempSizeWspMap[item.sizeName] = item.wsp;
-        }
-        sizeMrpMap[styleCode] = tempSizeMrpMap;
-        sizeWspMap[styleCode] = tempSizeWspMap;
-
-        // Get first item for common data
-        final firstItem = items.first;
-
-        final catalog = Catalog(
-          itemSubGrpKey: '',
-          itemSubGrpName: '',
-          itemKey: '',
-          itemName: firstItem.itemName,
-          brandKey: '',
-          brandName: firstItem.brandName,
-          styleKey: styleCode,
-          styleCode: styleCode,
-          shadeKey: '',
-          shadeName: uniqueShades.join(','),
-          styleSizeId: '',
-          sizeName: uniqueSizes.join(','),
-          mrp: firstItem.mrp,
-          wsp: firstItem.wsp,
-          onlyMRP: firstItem.mrp,
-          clqty: firstItem.clQty,
-          total: items.fold(0, (sum, item) => sum + item.clQty),
-          upcoming_Stk: firstItem.upcoming_Stk,
-          
-         fullImagePath: items.first.fullImagePath,
-          remark: firstItem.remark,
-          imageId: '',
-          sizeDetails: uniqueSizes
-              .map(
-                (size) =>
-                    '$size (${items.firstWhere((i) => i.sizeName == size).mrp},${items.firstWhere((i) => i.sizeName == size).wsp})',
-              )
-              .join(', '),
-          sizeDetailsWithoutWSp: uniqueSizes
-              .map(
-                (size) =>
-                    '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
-              )
-              .join(', '),
-          sizeWithMrp: uniqueSizes
-              .map(
-                (size) =>
-                    '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
-              )
-              .join(', '),
-          styleCodeWithcount: styleCode,
-          onlySizes: uniqueSizes.join(','),
-          sizeWithWsp: uniqueSizes
-              .map(
-                (size) =>
-                    '$size (${items.firstWhere((i) => i.sizeName == size).wsp})',
-              )
-              .join(', '),
-          createdDate: '',
-          shadeImages: '',
-          barcode: firstItem.barcode,
-        );
-
-        final matrix = <List<String>>[];
-        for (var shade in uniqueShades) {
-          final row = <String>[];
-          for (var size in uniqueSizes) {
-            final item = items.firstWhere(
-              (i) => i.shadeName == shade && i.sizeName == size,
-              orElse:
-                  () => CatalogItem(
-                    styleCode: styleCode,
-                    shadeName: shade,
-                    sizeName: size,
-                    clQty: firstItem.clQty,
-                    mrp: firstItem.mrp,
-                    wsp: firstItem.wsp,
-                    upcoming_Stk: firstItem.upcoming_Stk,
-                    stkQty: firstItem.stkQty,
-                    barcode: firstItem.barcode,
-                    remark: firstItem.remark,
-                    itemName: firstItem.itemName,
-                    brandName: firstItem.brandName,
-                    fullImagePath: items.first.fullImagePath,
-                  ),
-            );
-            row.add('${item.mrp},${item.wsp},${item.clQty},${item.stkQty}');
-          }
-          matrix.add(row);
-        }
-
-        final orderMatrix = OrderMatrix(
-          shades: uniqueShades,
-          sizes: uniqueSizes,
-          matrix: matrix,
-        );
-
-        tempList.add(
-          CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
-        );
-
-        selectedColors2[styleCode] = uniqueShades.toSet();
-        quantities[styleCode] = {};
-        copiedRowsMap[styleCode] = [];
-
-       for (var shade in uniqueShades) {
-  quantities[styleCode]![shade] = {};
-  for (var size in uniqueSizes) {
-    // Initialize with 1 or 0 as needed
-    quantities[styleCode]![shade]![size] = 1; // or 0 based on your requirement
-    
-    final controllerKey = '$styleCode-$shade-$size';
-    final controller = TextEditingController(text: '1'); // or '0'
-    controller.addListener(() => setState(() {}));
-    _controllers[controllerKey] = controller;
-  }
-}
-      }
-    } else {
-      setState(() {
-        hasData = false;
-      });
-    }
-
-    setState(() {
-      catalogOrderList = tempList;
       isLoading = false;
     });
-
-    if (!hasData && mounted) {
-      Navigator.pop(context, false);
-    }
+    return;
   }
 
-  Future<List<CatalogItem>> fetchCatalogData() async {
-    String apiUrl = '';
-    if (widget.edit) {
-      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
-    } else {
-      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
-    }
-    final Map<String, dynamic> requestBody = {
-      "coBrId": UserSession.coBrId ?? '',
-      "userId": UserSession.userName ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "barcode": widget.barcode.trim(),
-    };
+  if (catalogItems.isNotEmpty) {
+    setState(() {
+      hasData = true;
+    });
 
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+    final styleGroups = <String, List<CatalogItem>>{};
+    for (var item in catalogItems) {
+      styleGroups.putIfAbsent(item.styleCode, () => []).add(item);
+    }
+
+    for (var styleCode in styleGroups.keys) {
+      final items = styleGroups[styleCode]!;
+      final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
+      final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
+
+      // Build size MRP and WSP maps
+      Map<String, double> tempSizeMrpMap = {};
+      Map<String, double> tempSizeWspMap = {};
+      for (var item in items) {
+        tempSizeMrpMap[item.sizeName] = item.mrp;
+        tempSizeWspMap[item.sizeName] = item.wsp;
+      }
+      sizeMrpMap[styleCode] = tempSizeMrpMap;
+      sizeWspMap[styleCode] = tempSizeWspMap;
+
+      // Get first item for common data
+      final firstItem = items.first;
+
+      final catalog = Catalog(
+        itemSubGrpKey: '',
+        itemSubGrpName: '',
+        itemKey: '',
+        itemName: firstItem.itemName,
+        brandKey: '',
+        brandName: firstItem.brandName,
+        styleKey: styleCode,
+        styleCode: styleCode,
+        shadeKey: '',
+        shadeName: uniqueShades.join(','),
+        styleSizeId: '',
+        sizeName: uniqueSizes.join(','),
+        mrp: firstItem.mrp,
+        wsp: firstItem.wsp,
+        onlyMRP: firstItem.mrp,
+        clqty: firstItem.clQty,
+        total: items.fold(0, (sum, item) => sum + item.clQty),
+        upcoming_Stk: firstItem.upcoming_Stk,
+        
+        fullImagePath: items.first.fullImagePath,
+        remark: firstItem.remark,
+        imageId: '',
+        sizeDetails: uniqueSizes
+            .map(
+              (size) =>
+                  '$size (${items.firstWhere((i) => i.sizeName == size).mrp},${items.firstWhere((i) => i.sizeName == size).wsp})',
+            )
+            .join(', '),
+        sizeDetailsWithoutWSp: uniqueSizes
+            .map(
+              (size) =>
+                  '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
+            )
+            .join(', '),
+        sizeWithMrp: uniqueSizes
+            .map(
+              (size) =>
+                  '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
+            )
+            .join(', '),
+        styleCodeWithcount: styleCode,
+        onlySizes: uniqueSizes.join(','),
+        sizeWithWsp: uniqueSizes
+            .map(
+              (size) =>
+                  '$size (${items.firstWhere((i) => i.sizeName == size).wsp})',
+            )
+            .join(', '),
+        createdDate: '',
+        shadeImages: '',
+        barcode: firstItem.barcode,
       );
 
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        if (data.isNotEmpty) {
-          return data.map((e) => CatalogItem.fromJson(e)).toList();
+      final matrix = <List<String>>[];
+      for (var shade in uniqueShades) {
+        final row = <String>[];
+        for (var size in uniqueSizes) {
+          final item = items.firstWhere(
+            (i) => i.shadeName == shade && i.sizeName == size,
+            orElse:
+                () => CatalogItem(
+                  styleCode: styleCode,
+                  shadeName: shade,
+                  sizeName: size,
+                  clQty: firstItem.clQty,
+                  mrp: firstItem.mrp,
+                  wsp: firstItem.wsp,
+                  upcoming_Stk: firstItem.upcoming_Stk,
+                  stkQty: firstItem.stkQty,
+                  barcode: firstItem.barcode,
+                  remark: firstItem.remark,
+                  itemName: firstItem.itemName,
+                  brandName: firstItem.brandName,
+                  fullImagePath: items.first.fullImagePath,
+                ),
+          );
+          row.add('${item.mrp},${item.wsp},${item.clQty},${item.stkQty}');
         }
-      } else if (response.statusCode == 500 &&
-          response.body == 'Barcode already added') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('This barcode is already added in the cart.'),
-            backgroundColor: AppColors.primaryColor,
-          ),
-        );
-      } else {
-        debugPrint('Failed to fetch catalog data: ${response.statusCode}');
+        matrix.add(row);
       }
-    } catch (e) {
-      debugPrint('Error fetching catalog data: $e');
+
+      final orderMatrix = OrderMatrix(
+        shades: uniqueShades,
+        sizes: uniqueSizes,
+        matrix: matrix,
+      );
+
+      tempList.add(
+        CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
+      );
+
+      selectedColors2[styleCode] = uniqueShades.toSet();
+      quantities[styleCode] = {};
+      copiedRowsMap[styleCode] = [];
+
+      for (var shade in uniqueShades) {
+        quantities[styleCode]![shade] = {};
+        for (var size in uniqueSizes) {
+          // Initialize with 1 or 0 as needed
+          quantities[styleCode]![shade]![size] = 1; // or 0 based on your requirement
+          
+          final controllerKey = '$styleCode-$shade-$size';
+          final controller = TextEditingController(text: '1'); // or '0'
+          controller.addListener(() => setState(() {}));
+          _controllers[controllerKey] = controller;
+        }
+      }
     }
-    return [];
+  } else {
+    setState(() {
+      hasData = false;
+    });
   }
 
+  setState(() {
+    catalogOrderList = tempList;
+    isLoading = false;
+  });
+
+  // Only pop if no data AND it's not the already added case
+  if (!hasData && mounted && catalogItems != null && catalogItems.isEmpty) {
+    // Small delay to ensure any dialog is shown first
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (mounted) {
+        Navigator.pop(context, false);
+      }
+    });
+  }
+}
+  // Future<List<CatalogItem>> fetchCatalogData() async {
+  //   String apiUrl = '';
+  //   if (widget.edit) {
+  //     apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
+  //   } else {
+  //     apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
+  //   }
+  //   final Map<String, dynamic> requestBody = {
+  //     "coBrId": UserSession.coBrId ?? '',
+  //     "userId": UserSession.userName ?? '',
+  //     "fcYrId": UserSession.userFcYr ?? '',
+  //     "barcode": widget.barcode.trim(),
+  //   };
+
+  //   try {
+  //     final response = await http.post(
+  //       Uri.parse(apiUrl),
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode(requestBody),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final List data = jsonDecode(response.body);
+  //       if (data.isNotEmpty) {
+  //         return data.map((e) => CatalogItem.fromJson(e)).toList();
+  //       }
+  //     } else if (response.statusCode == 500 &&
+  //         response.body == 'Barcode already added') {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('This barcode is already added in the cart.'),
+  //           backgroundColor: AppColors.primaryColor,
+  //         ),
+  //       );
+  //     } else {
+  //       debugPrint('Failed to fetch catalog data: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error fetching catalog data: $e');
+  //   }
+  //   return [];
+  // }
+
+
+  // Add this new method
+Future<void> _showAlertDialogAndPop(BuildContext context, String title, String message) async {
+  return showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent dismissing by tapping outside
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryColor,
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      );
+    },
+  );
+}
+
+Future<List<CatalogItem>?> fetchCatalogData() async {
+  String apiUrl = '';
+  if (widget.edit) {
+    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
+  } else {
+    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
+  }
+  final Map<String, dynamic> requestBody = {
+    "coBrId": UserSession.coBrId ?? '',
+    "userId": UserSession.userName ?? '',
+    "fcYrId": UserSession.userFcYr ?? '',
+    "barcode": widget.barcode.trim(),
+  };
+
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      if (data.isNotEmpty) {
+        return data.map((e) => CatalogItem.fromJson(e)).toList();
+      } else {
+        // Empty response - No data found
+        return []; // Return empty list for no data
+      }
+    } else if (response.statusCode == 500) {
+      // Check if the response body contains "Barcode already added"
+      if (response.body.contains('Barcode already added')) {
+        // ✅ Show dialog for already added barcode
+        if (mounted) {
+          await _showAlertDialogAndPop(
+            context,
+            'Already Added',
+            'This barcode is already added in the cart.',
+          );
+        }
+        return null; // 🔴 Return null for already added case
+      } else {
+        // Other 500 errors
+        debugPrint('Server error: ${response.body}');
+      }
+    } else {
+      debugPrint('Failed to fetch catalog data: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error fetching catalog data: $e');
+  }
+  return []; // Return empty list for other errors
+}
   int _getQuantity(String styleKey, String shade, String size) {
     return quantities[styleKey]?[shade]?[size] ?? 1;
   }

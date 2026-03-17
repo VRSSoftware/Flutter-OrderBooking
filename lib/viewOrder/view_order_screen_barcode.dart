@@ -629,6 +629,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(
             49.0,
@@ -983,34 +984,65 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
                 ),
               ),
             ),
-            Expanded(
-              child: TextButton.icon(
-                onPressed: () {
-                  if (_activeTab == ActiveTab.transaction) {
-                    if (!_formKey.currentState!.validate()) return;
+        Expanded(
+  child: TextButton.icon(
+    onPressed: () {
+      // 👇 Check if items exist first
+      if (_styleManager.groupedItems.isEmpty) {
+        // Show message when no items
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please add items'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      
+      // 👇 Only proceed if items exist
+      if (_activeTab == ActiveTab.transaction) {
+        if (!_formKey.currentState!.validate()) return;
 
-                    setState(() {
-                      isCustomerTabEnabled = true;
-                      _activeTab = ActiveTab.customerDetails;
-                      _showForm = true;
-                    });
-                  }
-                },
-                icon: Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: AppColors.primaryColor,
-                ),
-                label: const Text(
-                  "Confirm",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-            ),
+        setState(() {
+          isCustomerTabEnabled = true;
+          _activeTab = ActiveTab.customerDetails;
+          _showForm = true;
+        });
+      }
+    },
+    icon: Icon(
+      Icons.chevron_right,
+      size: 18,
+      // 👇 Icon color changes based on item presence
+      color: _styleManager.groupedItems.isEmpty 
+          ? Colors.grey[600]  // Grey icon when no items
+          : AppColors.white,   // White icon when items exist
+    ),
+    label: Text(
+      "Confirm",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+        // 👇 Text color changes based on item presence
+        color: _styleManager.groupedItems.isEmpty 
+            ? Colors.grey[600]  // Grey text when no items
+            : AppColors.white,   // White text when items exist
+      ),
+    ),
+    // 👇 Style the button with background color changes
+    style: TextButton.styleFrom(
+      backgroundColor: _styleManager.groupedItems.isEmpty
+          ? Colors.grey[300]  // Light grey background when no items
+          : AppColors.primaryColor,  // Primary color when items exist
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(0),
+      ),
+    ),
+  ),
+),
           ],
         ),
       ),

@@ -3751,6 +3751,97 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
     });
   }
 
+  void _showDeleteConfirmationDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Delete Orders'),
+        content: const Text('Do you want to delete Orders?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close first dialog
+              _showSecondConfirmationDialog();
+            },
+            child: const Text('Yes'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showSecondConfirmationDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              _deleteAllItemsAndNavigate();
+            },
+            child: const Text('Yes, Delete'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _deleteAllItemsAndNavigate() {
+  // Clear all items from style manager
+  setState(() {
+    _styleManager.removedStyles.clear();
+    _styleManager.controllers.clear();
+    _styleManager._orderItems.clear();
+    
+    // Clear quantities and selected colors
+    quantities.clear();
+    selectedColors.clear();
+    
+    // Reset form fields
+    _orderControllers.totalItem.text = '0';
+    _orderControllers.totalQty.text = '0';
+    _orderControllers.totalAmt.text = '0';
+    
+    // Reset any other relevant state
+    _additionalInfo = {};
+    isCustomerTabEnabled = false;
+    isTransactionSaved = false;
+    _activeTab = ActiveTab.transaction;
+    _showForm = false;
+    _isSaving = false;
+  });
+  
+  // Show success message
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('All orders deleted successfully'),
+      backgroundColor: Colors.green,
+    ),
+  );
+  
+  // Navigate to OrderBookingScreen with barcode parameter
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => OrderBookingScreen(startWithBarcode: true),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -3771,6 +3862,12 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+          actions: [
+        IconButton(
+          icon: const Icon(Icons.exit_to_app, color: Colors.white),
+          onPressed: _showDeleteConfirmationDialog,
+        ),
+      ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(
@@ -4109,12 +4206,27 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
             Expanded(
               child: TextButton.icon(
                 onPressed: () {
+                  // 👇 Check if items exist first
+                  if (_styleManager.groupedItems.isEmpty) {
+                    // Show message when no items
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Please add items'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+
+                  // 👇 Only proceed if items exist
                   if (_activeTab == ActiveTab.transaction) {
                     if (!_formKey.currentState!.validate()) return;
 
                     setState(() {
                       isCustomerTabEnabled = true;
-                      isTransactionSaved = true;
+                      isTransactionSaved = true; // Keep your existing flag
                       _activeTab = ActiveTab.customerDetails;
                       _showForm = true;
                     });
@@ -4123,14 +4235,36 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
                 icon: Icon(
                   Icons.chevron_right,
                   size: 18,
-                  color: AppColors.primaryColor,
+                  // 👇 Icon color changes based on item presence
+                  color:
+                      _styleManager.groupedItems.isEmpty
+                          ? Colors.grey[400] // Grey icon when no items
+                          : AppColors
+                              .primaryColor, // Original primary color when items exist
                 ),
-                label: const Text(
+                label: Text(
                   "Confirm",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: AppColors.white,
+                    // 👇 Text color changes based on item presence
+                    color:
+                        _styleManager.groupedItems.isEmpty
+                            ? Colors.grey[600] // Grey text when no items
+                            : AppColors.white, // White text when items exist
+                  ),
+                ),
+                // 👇 Style the button with background color changes
+                style: TextButton.styleFrom(
+                  backgroundColor:
+                      _styleManager.groupedItems.isEmpty
+                          ? Colors
+                              .grey[300] // Light grey background when no items
+                          : AppColors
+                              .primaryColor, // Primary color when items exist
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
                   ),
                 ),
               ),

@@ -651,6 +651,7 @@ Future<void> _saveOrderLocally() async {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(
@@ -980,30 +981,59 @@ Widget _buildBottomButtons() {
               ),
             ),
           ),
-          Expanded(
-            child: TextButton.icon(
-              onPressed: () {
-                if (_activeTab == ActiveTab.transaction) {
-                  if (!_formKey.currentState!.validate()) return;
-
-                  setState(() {
-                    isCustomerTabEnabled = true;
-                    _activeTab = ActiveTab.customerDetails;
-                    _showForm = true;
-                  });
-                }
-              },
-              icon: Icon(Icons.chevron_right, size: 18, color: AppColors.white),
-              label: const Text(
-                "Confirm",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.white,
-                ),
-              ),
-            ),
+        Expanded(
+  child: TextButton.icon(
+    onPressed: () {
+      if (_styleManager.groupedItems.isEmpty) {
+        // Show message when no items
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please add items'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
           ),
+        );
+        return;
+      }
+      
+      if (_activeTab == ActiveTab.transaction) {
+        if (!_formKey.currentState!.validate()) return;
+
+        setState(() {
+          isCustomerTabEnabled = true;
+          _activeTab = ActiveTab.customerDetails;
+          _showForm = true;
+        });
+      }
+    },
+    icon: Icon(
+      Icons.chevron_right, 
+      size: 18, 
+      color: _styleManager.groupedItems.isEmpty 
+          ? Colors.grey[400] 
+          : AppColors.white,
+    ),
+    label: Text(
+      "Confirm",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+        color: _styleManager.groupedItems.isEmpty 
+            ? Colors.grey[400] 
+            : AppColors.white,
+      ),
+    ),
+    style: TextButton.styleFrom(
+      backgroundColor: _styleManager.groupedItems.isEmpty
+          ? Colors.grey[300]
+          : AppColors.primaryColor,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(0),
+      ),
+    ),
+  ),
+),
         ],
       ),
     ),

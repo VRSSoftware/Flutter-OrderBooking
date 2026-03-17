@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/production/jobCardListScreen.dart';
+import 'package:vrs_erp/production/JobCard_cutting/jobCardListScreen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
 // Adjust import path as needed
@@ -34,8 +34,8 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
       case 'Job Card / Cutting Report':
         return IconStyle(
           Icons.assignment_turned_in,
-          Colors.blue[500]!,
-          Colors.blue[100]!,
+          AppColors.primaryColor[500]!,
+          AppColors.primaryColor[100]!,
         );
       case 'Process Issue (Job Card)':
         return IconStyle(
@@ -43,6 +43,12 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
           Colors.orange[500]!,
           Colors.orange[100]!,
         );
+      case 'Process Receipt (Finish)':
+        return IconStyle(
+          Icons.precision_manufacturing,
+          Colors.pink[500]!,
+          Colors.pink[100]!,
+        );  
       default:
         return IconStyle(Icons.production_quantity_limits, Colors.grey[500]!, Colors.grey[100]!);
     }
@@ -129,6 +135,22 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
           _buildFeatureButton(
             context,
             'Process Issue (Job Card)',
+            () {
+              // Add navigation for Process Issue screen when available
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => ProcessIssueScreen()),
+              // );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Process Issue screen coming soon!')),
+              );
+            },
+            buttonWidth,
+          ),
+
+           _buildFeatureButton(
+            context,
+            'Process Receipt (Finish)',
             () {
               // Add navigation for Process Issue screen when available
               // Navigator.push(

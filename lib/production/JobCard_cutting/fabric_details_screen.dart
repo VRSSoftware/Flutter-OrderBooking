@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vrs_erp/constants/app_constants.dart';
 
 class FabricDetailsScreen extends StatefulWidget {
   final String? initialReqQty;
@@ -157,7 +158,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
                     BorderSide(color: Color.fromARGB(255, 221, 220, 220), width: 1),
               ),
               focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF4A90E2), width: 2),
+                borderSide: BorderSide(color:AppColors.primaryColor, width: 2),
               ),
               suffixIcon: onTap != null
                   ? Icon(
@@ -261,9 +262,9 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
                                 if (allowAdd && i == filtered.length) {
                                   return ListTile(
                                     leading:
-                                        const Icon(Icons.add, color: Colors.blue),
+                                        const Icon(Icons.add, color: AppColors.primaryColor),
                                     title: const Text('Add New…',
-                                        style: TextStyle(color: Colors.blue)),
+                                        style: TextStyle(color: AppColors.primaryColor)),
                                     onTap: () {
                                       _removeOverlay();
                                       _showAddDialog(label, items,
@@ -282,7 +283,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
                                   title: Text(item),
                                   selected: selected == item,
                                   selectedTileColor:
-                                      Colors.blue.withOpacity(0.1),
+                                      AppColors.primaryColor.withOpacity(0.1),
                                   onTap: () {
                                     _removeOverlay();
                                     setState(() {
@@ -341,7 +342,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
         child: Text(
           text,
           style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+              fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
         ),
       );
 
@@ -357,7 +358,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
             widget.fabricDetail != null ? 'Edit Fabric' : 'Add Fabric',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          backgroundColor: const Color(0xFF4A90E2),
+          backgroundColor: AppColors.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
         ),
@@ -517,7 +518,7 @@ class _FabricDetailsScreenState extends State<FabricDetailsScreen>
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A90E2),
+                        backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
