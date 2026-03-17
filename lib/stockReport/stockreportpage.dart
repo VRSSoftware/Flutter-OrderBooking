@@ -166,6 +166,28 @@ class _StockReportPageState extends State<StockReportPage> {
     return null;
   }
 
+  Map<String, Map<String, List<StockReportItem>>>
+  _groupItemsByItemAndStyleFromList(List<StockReportItem> data) {
+    Map<String, Map<String, List<StockReportItem>>> groupedItems = {};
+
+    for (var item in data) {
+      final itemName = item.itemName ?? 'Unknown Item';
+      final styleCode = item.styleCode ?? 'Unknown';
+
+      if (!groupedItems.containsKey(itemName)) {
+        groupedItems[itemName] = {};
+      }
+
+      if (!groupedItems[itemName]!.containsKey(styleCode)) {
+        groupedItems[itemName]![styleCode] = [];
+      }
+
+      groupedItems[itemName]![styleCode]!.add(item);
+    }
+
+    return groupedItems;
+  }
+
   String _getImageUrl(StockReportItem item) {
     if (UserSession.onlineImage == '0') {
       final imageName =
@@ -181,279 +203,288 @@ class _StockReportPageState extends State<StockReportPage> {
     return '${AppConstants.BASE_URL}/images/NoImage.jpg';
   }
 
-Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
-  final pdf = pw.Document();
+  Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
+    final pdf = pw.Document();
 
-  // First, group items the same way as bottom sheet
-  final groupedByItemAndStyle = _groupItemsByItemAndStyle();
-  
-  List<pw.Widget> content = [];
-  int grandTotal = 0;
+    // First, group items the same way as bottom sheet
+    final groupedByItemAndStyle = _groupItemsByItemAndStyleFromList(stockData);
 
-  for (var itemEntry in groupedByItemAndStyle.entries) {
-    String uniqueItemKey = itemEntry.key;
-    Map<String, List<StockReportItem>> styleGroups = itemEntry.value;
-    
-    // Extract actual item name
-    String itemName = uniqueItemKey.split('|')[0];
-    int itemTotal = 0;
+    List<pw.Widget> content = [];
+    int grandTotal = 0;
 
-    for (var styleEntry in styleGroups.entries) {
-      String styleCode = styleEntry.key;
-      List<StockReportItem> items = styleEntry.value;
+    for (var itemEntry in groupedByItemAndStyle.entries) {
+      String uniqueItemKey = itemEntry.key;
+      Map<String, List<StockReportItem>> styleGroups = itemEntry.value;
 
-      // Collect all sizes for this style
-      List<String> allSizes = [];
-      for (var item in items) {
-        if (item.details != null) {
-          for (var pair in item.details!.split(',')) {
-            final parts = pair.split(':');
-            if (parts.length == 2) {
-              String size = parts[0].trim();
-              if (!allSizes.contains(size)) {
-                allSizes.add(size);
+      // Extract actual item name
+      String itemName = uniqueItemKey.split('|')[0];
+      int itemTotal = 0;
+
+      for (var styleEntry in styleGroups.entries) {
+        String styleCode = styleEntry.key;
+        List<StockReportItem> items = styleEntry.value;
+
+        // Collect all sizes for this style
+        List<String> allSizes = [];
+        for (var item in items) {
+          if (item.details != null) {
+            for (var pair in item.details!.split(',')) {
+              final parts = pair.split(':');
+              if (parts.length == 2) {
+                String size = parts[0].trim();
+                if (!allSizes.contains(size)) {
+                  allSizes.add(size);
+                }
               }
             }
           }
         }
-      }
-      
-      // Sort sizes numerically
-      allSizes.sort((a, b) {
-        int? aNum = int.tryParse(a);
-        int? bNum = int.tryParse(b);
-        if (aNum != null && bNum != null) {
-          return aNum.compareTo(bNum);
+
+        // Sort sizes numerically
+        allSizes.sort((a, b) {
+          int? aNum = int.tryParse(a);
+          int? bNum = int.tryParse(b);
+          if (aNum != null && bNum != null) {
+            return aNum.compareTo(bNum);
+          }
+          return a.compareTo(b);
+        });
+
+        // Build shade data for this style
+        Map<String, Map<String, int>> shadeData = {};
+        Map<String, int> sizeTotals = {};
+
+        for (var size in allSizes) {
+          sizeTotals[size] = 0;
         }
-        return a.compareTo(b);
-      });
 
-      // Build shade data for this style
-      Map<String, Map<String, int>> shadeData = {};
-      Map<String, int> sizeTotals = {};
+        for (var item in items) {
+          String shade = item.shadeName ?? "Unknown";
+          shadeData.putIfAbsent(shade, () => {});
 
-      for (var size in allSizes) {
-        sizeTotals[size] = 0;
-      }
-
-      for (var item in items) {
-        String shade = item.shadeName ?? "Unknown";
-        shadeData.putIfAbsent(shade, () => {});
-
-        if (item.details != null) {
-          for (var pair in item.details!.split(',')) {
-            var parts = pair.split(':');
-            if (parts.length == 2) {
-              String size = parts[0].trim();
-              int qty = int.tryParse(parts[1]) ?? 0;
-              shadeData[shade]![size] = qty;
-              sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
+          if (item.details != null) {
+            for (var pair in item.details!.split(',')) {
+              var parts = pair.split(':');
+              if (parts.length == 2) {
+                String size = parts[0].trim();
+                int qty = int.tryParse(parts[1]) ?? 0;
+                shadeData[shade]![size] = qty;
+                sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
+              }
             }
           }
         }
-      }
 
-      // Calculate style total
-      int styleTotal = items.fold(0, (sum, item) => sum + (item.total ?? 0));
-      itemTotal += styleTotal;
+        // Calculate style total
+        int styleTotal = items.fold(0, (sum, item) => sum + (item.total ?? 0));
+        itemTotal += styleTotal;
 
-      // Build PDF table for this style
-      List<pw.TableRow> rows = [];
+        // Build PDF table for this style
+        List<pw.TableRow> rows = [];
 
-      // Header
-      rows.add(
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          children: [
-            _cell("Shade", 70),
-            if (withImage) _cell("Img", 35),
-            ...allSizes.map((s) => _cell(s, 40)),
-            _cell("Total", 50),
-          ],
-        ),
-      );
-
-      // Data rows
-      for (var shadeEntry in shadeData.entries) {
-        String shade = shadeEntry.key;
-        Map<String, int> sizeMap = shadeEntry.value;
-        int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
-
-        pw.MemoryImage? image;
-        if (withImage) {
-          final url = _getImageUrl(items.first);
-          image = await _loadPdfImage(url);
-        }
-
+        // Header
         rows.add(
           pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey300),
             children: [
-              _cell(shade, 70),
-              if (withImage)
-                pw.Container(
-                  width: 25,
-                  height: 25,
-                  alignment: pw.Alignment.center,
-                  child: image != null
-                      ? pw.Image(
-                          image,
-                          width: 16,
-                          height: 16,
-                          fit: pw.BoxFit.contain,
-                        )
-                      : pw.SizedBox(),
-                ),
-              ...allSizes.map((size) {
-                int qty = sizeMap[size] ?? 0;
-                return _cell(qty.toString(), 40);
-              }),
-              _cell(shadeTotal.toString(), 50),
+              _cell("Shade", 70),
+              if (withImage) _cell("Img", 35),
+              ...allSizes.map((s) => _cell(s, 40)),
+              _cell("Total", 50),
             ],
+          ),
+        );
+
+        // Data rows
+        for (var shadeEntry in shadeData.entries) {
+          String shade = shadeEntry.key;
+          Map<String, int> sizeMap = shadeEntry.value;
+          int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
+
+          pw.MemoryImage? image;
+          if (withImage) {
+            final url = _getImageUrl(items.first);
+            image = await _loadPdfImage(url);
+          }
+
+          rows.add(
+            pw.TableRow(
+              children: [
+                _cell(shade, 70),
+                if (withImage)
+                  pw.Container(
+                    width: 25,
+                    height: 25,
+                    alignment: pw.Alignment.center,
+                    child:
+                        image != null
+                            ? pw.Image(
+                              image,
+                              width: 16,
+                              height: 16,
+                              fit: pw.BoxFit.contain,
+                            )
+                            : pw.SizedBox(),
+                  ),
+                ...allSizes.map((size) {
+                  int qty = sizeMap[size] ?? 0;
+                  return _cell(qty.toString(), 40);
+                }),
+                _cell(shadeTotal.toString(), 50),
+              ],
+            ),
+          );
+        }
+
+        // Total row
+        rows.add(
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            children: [
+              _cell("Total", 70),
+              if (withImage) _cell("", 35),
+              ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
+              _cell(styleTotal.toString(), 50),
+            ],
+          ),
+        );
+
+        // Add style section to PDF
+        content.add(
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 8),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Style header
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(6),
+                  color: PdfColors.grey100,
+                  child: pw.Row(
+                    children: [
+                      pw.Expanded(
+                        child: pw.Text(
+                          "Style: $styleCode",
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      pw.Text(
+                        "Brand: ${items.first.brandName ?? ''}",
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+
+                // Table
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  defaultVerticalAlignment:
+                      pw.TableCellVerticalAlignment.middle,
+                  children: rows,
+                ),
+                pw.SizedBox(height: 4),
+              ],
+            ),
           ),
         );
       }
 
-      // Total row
-      rows.add(
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          children: [
-            _cell("Total", 70),
-            if (withImage) _cell("", 35),
-            ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
-            _cell(styleTotal.toString(), 50),
-          ],
-        ),
-      );
+      grandTotal += itemTotal;
 
-      // Add style section to PDF
+      // Add item total after all styles for this item
       content.add(
         pw.Container(
-          margin: const pw.EdgeInsets.only(top: 8),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Style header
-              pw.Container(
-                padding: const pw.EdgeInsets.all(6),
-                color: PdfColors.grey100,
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(
-                      child: pw.Text(
-                        "Style: $styleCode",
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    pw.Text(
-                      "Brand: ${items.first.brandName ?? ''}",
-                      style: const pw.TextStyle(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 4),
-              
-              // Table
-              pw.Table(
-                border: pw.TableBorder.all(),
-                defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
-                children: rows,
-              ),
-              pw.SizedBox(height: 4),
-            ],
+          alignment: pw.Alignment.centerRight,
+          padding: const pw.EdgeInsets.only(right: 8, bottom: 12),
+          child: pw.Text(
+            "$itemName Total: $itemTotal",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           ),
         ),
       );
     }
 
-    grandTotal += itemTotal;
-
-    // Add item total after all styles for this item
+    // Add grand total
     content.add(
       pw.Container(
-        alignment: pw.Alignment.centerRight,
-        padding: const pw.EdgeInsets.only(right: 8, bottom: 12),
-        child: pw.Text(
-          "$itemName Total: $itemTotal",
-          style: pw.TextStyle(
-            fontWeight: pw.FontWeight.bold,
-            fontSize: 11,
-          ),
+        margin: const pw.EdgeInsets.only(top: 16),
+        padding: const pw.EdgeInsets.all(8),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(),
+          color: PdfColors.grey100,
+        ),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              "GRAND TOTAL",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
+            ),
+            pw.Text(
+              grandTotal.toString(),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
+        header: (pw.Context context) {
+          if (context.pageNumber == 1) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      "VRS SOFTWARE",
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Text(
+                      "Date: ${DateTime.now().toString().substring(0, 10)}",
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+                pw.Text(
+                  "Item Wise Stock Report",
+                  style: pw.TextStyle(fontSize: 14),
+                ),
+                pw.Text(
+                  "Category: ${selectedCategoryName ?? ''}",
+                  style: const pw.TextStyle(fontSize: 11),
+                ),
+                pw.SizedBox(height: 5),
+                pw.Divider(),
+              ],
+            );
+          }
+          return pw.SizedBox(height: 10);
+        },
+        build: (context) => content,
+      ),
+    );
+
+    final bytes = await pdf.save();
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File("${directory.path}/stock_report.pdf");
+    await file.writeAsBytes(bytes);
+    await OpenFile.open(file.path);
   }
 
-  // Add grand total
-  content.add(
-    pw.Container(
-      margin: const pw.EdgeInsets.only(top: 16),
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(),
-        color: PdfColors.grey100,
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            "GRAND TOTAL",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
-          ),
-          pw.Text(
-            grandTotal.toString(),
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  pdf.addPage(
-    pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
-      header: (pw.Context context) {
-        if (context.pageNumber == 1) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                "VRS SOFTWARE",
-                style: pw.TextStyle(
-                  fontSize: 18,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.Text(
-                "Item Wise Stock Report",
-                style: pw.TextStyle(fontSize: 14),
-              ),
-              pw.Text(
-                "Category: ${selectedCategoryName ?? ''}",
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-              pw.SizedBox(height: 5),
-              pw.Divider(),
-            ],
-          );
-        }
-        return pw.SizedBox(height: 10);
-      },
-      build: (context) => content,
-    ),
-  );
-
-  final bytes = await pdf.save();
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File("${directory.path}/stock_report.pdf");
-  await file.writeAsBytes(bytes);
-  await OpenFile.open(file.path);
-}
   pw.Widget _cell(String text, double width) {
     return pw.Container(
       width: width,
@@ -2028,11 +2059,12 @@ Future<void> _generateAndOpenPDF(List<StockReportItem> stockData) async {
                                   ? "All"
                                   : (i.itemName ?? ''),
                       selectedItems: selectedItems,
-onChanged: (List<Item> value) {
-  setState(() {
-    selectedItems = value;
-  });
-},                   dropdownDecoratorProps: DropDownDecoratorProps(
+                      onChanged: (List<Item> value) {
+                        setState(() {
+                          selectedItems = value;
+                        });
+                      },
+                      dropdownDecoratorProps: DropDownDecoratorProps(
                         dropdownSearchDecoration: InputDecoration(
                           hintText: "Choose items",
                           hintStyle: GoogleFonts.poppins(fontSize: 13),
@@ -2061,6 +2093,13 @@ onChanged: (List<Item> value) {
                       ),
                       popupProps: PopupPropsMultiSelection.menu(
                         showSearchBox: true,
+                        showSelectedItems: true,
+
+                        // ⭐ THIS HIDES THE DEFAULT CHECKBOX
+                        selectionWidget: (context, item, isSelected) {
+                          return const SizedBox();
+                        },
+
                         searchFieldProps: TextFieldProps(
                           decoration: InputDecoration(
                             hintText: "Search Item",
@@ -2070,6 +2109,42 @@ onChanged: (List<Item> value) {
                             ),
                           ),
                         ),
+
+                        itemBuilder: (context, item, isSelected) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            color:
+                                isSelected
+                                    ? AppColors.primaryColor.withOpacity(0.1)
+                                    : Colors.transparent,
+                            child: ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                item.itemName ?? '',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight:
+                                      isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                  color:
+                                      isSelected
+                                          ? AppColors.primaryColor
+                                          : Colors.black87,
+                                ),
+                              ),
+                              trailing:
+                                  isSelected
+                                      ? Icon(
+                                        Icons.check,
+                                        color: AppColors.primaryColor,
+                                        size: 18,
+                                      )
+                                      : null,
+                            ),
+                          );
+                        },
+
                         loadingBuilder:
                             isLoadingItems
                                 ? (context, searchEntry) => Center(
@@ -2120,7 +2195,9 @@ onChanged: (List<Item> value) {
                       label: "WhatsApp",
                       color: Colors.green,
                       isFaIcon: true,
-                      onTap: _shareViaWhatsApp,
+                      onTap: () async {
+                        await _shareViaWhatsApp();
+                      },
                     ),
                   ],
                 ),
@@ -2671,273 +2748,282 @@ Generated from VRS ERP App
   }
 
   // Extract PDF generation to a reusable method
-Future<pw.Document> _generateStockReportPDF(List<StockReportItem> stockData) async {
-  final pdf = pw.Document();
+  Future<pw.Document> _generateStockReportPDF(
+    List<StockReportItem> stockData,
+  ) async {
+    final pdf = pw.Document();
 
-  // Use the same grouping logic as bottom sheet
-  final groupedByItemAndStyle = _groupItemsByItemAndStyle();
-  
-  List<pw.Widget> content = [];
-  int grandTotal = 0;
+    // Use the same grouping logic as bottom sheet
+    final groupedByItemAndStyle = _groupItemsByItemAndStyle();
 
-  for (var itemEntry in groupedByItemAndStyle.entries) {
-    String uniqueItemKey = itemEntry.key;
-    Map<String, List<StockReportItem>> styleGroups = itemEntry.value;
-    
-    // Extract actual item name
-    String itemName = uniqueItemKey.split('|')[0];
-    int itemTotal = 0;
+    List<pw.Widget> content = [];
+    int grandTotal = 0;
 
-    for (var styleEntry in styleGroups.entries) {
-      String styleCode = styleEntry.key;
-      List<StockReportItem> items = styleEntry.value;
+    for (var itemEntry in groupedByItemAndStyle.entries) {
+      String uniqueItemKey = itemEntry.key;
+      Map<String, List<StockReportItem>> styleGroups = itemEntry.value;
 
-      // Collect all sizes for this style
-      List<String> allSizes = [];
-      for (var item in items) {
-        if (item.details != null) {
-          for (var pair in item.details!.split(',')) {
-            final parts = pair.split(':');
-            if (parts.length == 2) {
-              String size = parts[0].trim();
-              if (!allSizes.contains(size)) {
-                allSizes.add(size);
+      // Extract actual item name
+      String itemName = uniqueItemKey.split('|')[0];
+      int itemTotal = 0;
+
+      for (var styleEntry in styleGroups.entries) {
+        String styleCode = styleEntry.key;
+        List<StockReportItem> items = styleEntry.value;
+
+        // Collect all sizes for this style
+        List<String> allSizes = [];
+        for (var item in items) {
+          if (item.details != null) {
+            for (var pair in item.details!.split(',')) {
+              final parts = pair.split(':');
+              if (parts.length == 2) {
+                String size = parts[0].trim();
+                if (!allSizes.contains(size)) {
+                  allSizes.add(size);
+                }
               }
             }
           }
         }
-      }
-      
-      // Sort sizes numerically
-      allSizes.sort((a, b) {
-        int? aNum = int.tryParse(a);
-        int? bNum = int.tryParse(b);
-        if (aNum != null && bNum != null) {
-          return aNum.compareTo(bNum);
+
+        // Sort sizes numerically
+        allSizes.sort((a, b) {
+          int? aNum = int.tryParse(a);
+          int? bNum = int.tryParse(b);
+          if (aNum != null && bNum != null) {
+            return aNum.compareTo(bNum);
+          }
+          return a.compareTo(b);
+        });
+
+        // Build shade data for this style
+        Map<String, Map<String, int>> shadeData = {};
+        Map<String, int> sizeTotals = {};
+
+        for (var size in allSizes) {
+          sizeTotals[size] = 0;
         }
-        return a.compareTo(b);
-      });
 
-      // Build shade data for this style
-      Map<String, Map<String, int>> shadeData = {};
-      Map<String, int> sizeTotals = {};
+        for (var item in items) {
+          String shade = item.shadeName ?? "Unknown";
+          shadeData.putIfAbsent(shade, () => {});
 
-      for (var size in allSizes) {
-        sizeTotals[size] = 0;
-      }
-
-      for (var item in items) {
-        String shade = item.shadeName ?? "Unknown";
-        shadeData.putIfAbsent(shade, () => {});
-
-        if (item.details != null) {
-          for (var pair in item.details!.split(',')) {
-            var parts = pair.split(':');
-            if (parts.length == 2) {
-              String size = parts[0].trim();
-              int qty = int.tryParse(parts[1]) ?? 0;
-              shadeData[shade]![size] = qty;
-              sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
+          if (item.details != null) {
+            for (var pair in item.details!.split(',')) {
+              var parts = pair.split(':');
+              if (parts.length == 2) {
+                String size = parts[0].trim();
+                int qty = int.tryParse(parts[1]) ?? 0;
+                shadeData[shade]![size] = qty;
+                sizeTotals[size] = (sizeTotals[size] ?? 0) + qty;
+              }
             }
           }
         }
-      }
 
-      // Calculate style total
-      int styleTotal = items.fold(0, (sum, item) => sum + (item.total ?? 0));
-      itemTotal += styleTotal;
+        // Calculate style total
+        int styleTotal = items.fold(0, (sum, item) => sum + (item.total ?? 0));
+        itemTotal += styleTotal;
 
-      // Build PDF table for this style
-      List<pw.TableRow> rows = [];
+        // Build PDF table for this style
+        List<pw.TableRow> rows = [];
 
-      // Header
-      rows.add(
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          children: [
-            _cell("Shade", 70),
-            if (withImage) _cell("Img", 35),
-            ...allSizes.map((s) => _cell(s, 40)),
-            _cell("Total", 50),
-          ],
-        ),
-      );
-
-      // Data rows
-      for (var shadeEntry in shadeData.entries) {
-        String shade = shadeEntry.key;
-        Map<String, int> sizeMap = shadeEntry.value;
-        int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
-
-        pw.MemoryImage? image;
-        if (withImage) {
-          final url = _getImageUrl(items.first);
-          image = await _loadPdfImage(url);
-        }
-
+        // Header
         rows.add(
           pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey300),
             children: [
-              _cell(shade, 70),
-              if (withImage)
-                pw.Container(
-                  width: 25,
-                  height: 25,
-                  alignment: pw.Alignment.center,
-                  child: image != null
-                      ? pw.Image(
-                          image,
-                          width: 16,
-                          height: 16,
-                          fit: pw.BoxFit.contain,
-                        )
-                      : pw.SizedBox(),
-                ),
-              ...allSizes.map((size) {
-                int qty = sizeMap[size] ?? 0;
-                return _cell(qty.toString(), 40);
-              }),
-              _cell(shadeTotal.toString(), 50),
+              _cell("Shade", 70),
+              if (withImage) _cell("Img", 35),
+              ...allSizes.map((s) => _cell(s, 40)),
+              _cell("Total", 50),
             ],
+          ),
+        );
+
+        // Data rows
+        for (var shadeEntry in shadeData.entries) {
+          String shade = shadeEntry.key;
+          Map<String, int> sizeMap = shadeEntry.value;
+          int shadeTotal = sizeMap.values.fold(0, (a, b) => a + b);
+
+          pw.MemoryImage? image;
+          if (withImage) {
+            final url = _getImageUrl(items.first);
+            image = await _loadPdfImage(url);
+          }
+
+          rows.add(
+            pw.TableRow(
+              children: [
+                _cell(shade, 70),
+                if (withImage)
+                  pw.Container(
+                    width: 25,
+                    height: 25,
+                    alignment: pw.Alignment.center,
+                    child:
+                        image != null
+                            ? pw.Image(
+                              image,
+                              width: 16,
+                              height: 16,
+                              fit: pw.BoxFit.contain,
+                            )
+                            : pw.SizedBox(),
+                  ),
+                ...allSizes.map((size) {
+                  int qty = sizeMap[size] ?? 0;
+                  return _cell(qty.toString(), 40);
+                }),
+                _cell(shadeTotal.toString(), 50),
+              ],
+            ),
+          );
+        }
+
+        // Total row
+        rows.add(
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            children: [
+              _cell("Total", 70),
+              if (withImage) _cell("", 35),
+              ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
+              _cell(styleTotal.toString(), 50),
+            ],
+          ),
+        );
+
+        // Add style section to PDF
+        content.add(
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 8),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Style header
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(6),
+                  color: PdfColors.grey100,
+                  child: pw.Row(
+                    children: [
+                      pw.Expanded(
+                        child: pw.Text(
+                          "Style: $styleCode",
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      pw.Text(
+                        "Brand: ${items.first.brandName ?? ''}",
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+
+                // Table
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  defaultVerticalAlignment:
+                      pw.TableCellVerticalAlignment.middle,
+                  children: rows,
+                ),
+                pw.SizedBox(height: 4),
+              ],
+            ),
           ),
         );
       }
 
-      // Total row
-      rows.add(
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          children: [
-            _cell("Total", 70),
-            if (withImage) _cell("", 35),
-            ...allSizes.map((s) => _cell(sizeTotals[s].toString(), 40)),
-            _cell(styleTotal.toString(), 50),
-          ],
-        ),
-      );
+      grandTotal += itemTotal;
 
-      // Add style section to PDF
+      // Add item total after all styles for this item
       content.add(
         pw.Container(
-          margin: const pw.EdgeInsets.only(top: 8),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Style header
-              pw.Container(
-                padding: const pw.EdgeInsets.all(6),
-                color: PdfColors.grey100,
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(
-                      child: pw.Text(
-                        "Style: $styleCode",
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    pw.Text(
-                      "Brand: ${items.first.brandName ?? ''}",
-                      style: const pw.TextStyle(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 4),
-              
-              // Table
-              pw.Table(
-                border: pw.TableBorder.all(),
-                defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
-                children: rows,
-              ),
-              pw.SizedBox(height: 4),
-            ],
+          alignment: pw.Alignment.centerRight,
+          padding: const pw.EdgeInsets.only(right: 8, bottom: 12),
+          child: pw.Text(
+            "$itemName Total: $itemTotal",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           ),
         ),
       );
     }
 
-    grandTotal += itemTotal;
-
-    // Add item total after all styles for this item
+    // Add grand total
     content.add(
       pw.Container(
-        alignment: pw.Alignment.centerRight,
-        padding: const pw.EdgeInsets.only(right: 8, bottom: 12),
-        child: pw.Text(
-          "$itemName Total: $itemTotal",
-          style: pw.TextStyle(
-            fontWeight: pw.FontWeight.bold,
-            fontSize: 11,
-          ),
+        margin: const pw.EdgeInsets.only(top: 16),
+        padding: const pw.EdgeInsets.all(8),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(),
+          color: PdfColors.grey100,
+        ),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              "GRAND TOTAL",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
+            ),
+            pw.Text(
+              grandTotal.toString(),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
-  }
 
-  // Add grand total
-  content.add(
-    pw.Container(
-      margin: const pw.EdgeInsets.only(top: 16),
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(),
-        color: PdfColors.grey100,
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            "GRAND TOTAL",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
-          ),
-          pw.Text(
-            grandTotal.toString(),
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  pdf.addPage(
-    pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
-      header: (pw.Context context) {
-        if (context.pageNumber == 1) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                "VRS SOFTWARE",
-                style: pw.TextStyle(
-                  fontSize: 18,
-                  fontWeight: pw.FontWeight.bold,
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(12, 12, 12, 12),
+        header: (pw.Context context) {
+          if (context.pageNumber == 1) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      "VRS SOFTWARE",
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Text(
+                      "Date: ${DateTime.now().toString().substring(0, 10)}",
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                  ],
                 ),
-              ),
-              pw.Text(
-                "Item Wise Stock Report",
-                style: pw.TextStyle(fontSize: 14),
-              ),
-              pw.Text(
-                "Category: ${selectedCategoryName ?? ''}",
-                style: const pw.TextStyle(fontSize: 11),
-              ),
-              pw.SizedBox(height: 5),
-              pw.Divider(),
-            ],
-          );
-        }
-        return pw.SizedBox(height: 10);
-      },
-      build: (context) => content,
-    ),
-  );
-
-  return pdf;
-}
+                pw.Text(
+                  "Item Wise Stock Report",
+                  style: pw.TextStyle(fontSize: 14),
+                ),
+                pw.Text(
+                  "Category: ${selectedCategoryName ?? ''}",
+                  style: const pw.TextStyle(fontSize: 11),
+                ),
+                pw.SizedBox(height: 5),
+                pw.Divider(),
+              ],
+            );
+          }
+          return pw.SizedBox(height: 10);
+        },
+        build: (context) => content,
+      ),
+    );
+    return pdf;
+  }
 }

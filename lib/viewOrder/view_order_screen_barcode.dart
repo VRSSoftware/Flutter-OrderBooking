@@ -555,7 +555,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => HomeScreen()),
+                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
                       );
                     },
                     child: Text('Done'),
