@@ -23,9 +23,30 @@ import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/widget/booknowwidget.dart';
 
 class OrderPage extends StatefulWidget {
-  final String? name;
+  final String? itemKey;
+  final String? itemSubGrpKey;
+  final String? itemName;
+  final String? coBr;
+  final String? fcYrId;
+  final PartyWithSpclMarkDwn? selectedParty;
+  final String? type;
+  final String? transactionType;
+  final bool isMultiSelect;
+  final bool isEdit;
 
-  const OrderPage({Key? key, this.name}) : super(key: key);
+  const OrderPage({
+    Key? key,
+    this.itemKey,
+    this.itemSubGrpKey,
+    this.itemName,
+    this.coBr,
+    this.fcYrId,
+    this.selectedParty,
+    this.type,
+    this.transactionType,
+    this.isMultiSelect = false,
+    this.isEdit = false,
+  }) : super(key: key);
 
   @override
   _OrderPageState createState() => _OrderPageState();
@@ -75,50 +96,87 @@ class _OrderPageState extends State<OrderPage> {
   String? stockFilter;
   String? imageFilter;
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _scrollController.addListener(_scrollListener);
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final args =
+  //         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+  //     if (args != null) {
+  //       setState(() {
+  //         itemKey = args['itemKey']?.toString();
+  //         itemSubGrpKey = args['itemSubGrpKey']?.toString();
+  //         coBr = UserSession.coBrId;
+  //         fcYrId = UserSession.userFcYr;
+  //         itemNamee = args['itemName']?.toString() ?? '';
+  //         isEdit = args['edit'] ?? false;
+  //         selectedParty = args['selectedParty'];
+  //         type = args['type'];
+  //         transactionType = args[Constants.TRANSACTION_TYPE];
+  //       });
+
+  //       if (coBr != null && fcYrId != null) {
+  //         if (!isEdit) {
+  //           _fetchCartCount();
+  //         }
+  //       }
+
+  //       if (itemSubGrpKey != null && coBr != null) {
+  //         _fetchCatalogItems();
+  //       }
+
+  //       if (itemKey != null) {
+  //         _fetchStylesByItemKey(itemKey!);
+  //         _fetchShadesByItemKey(itemKey!);
+  //         _fetchStylesSizeByItemKey(itemKey!);
+  //         _fetchBrands();
+  //       } else if (itemSubGrpKey != null) {
+  //         _fetchStylesByItemGrpKey(itemSubGrpKey!);
+  //         _fetchShadesByItemGrpKey(itemSubGrpKey!);
+  //         _fetchStylesSizeByItemGrpKey(itemSubGrpKey!);
+  //         _fetchBrands();
+  //       }
+  //     }
+  //   });
+  // }
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-      if (args != null) {
-        setState(() {
-          itemKey = args['itemKey']?.toString();
-          itemSubGrpKey = args['itemSubGrpKey']?.toString();
-          coBr = UserSession.coBrId;
-          fcYrId = UserSession.userFcYr;
-          itemNamee = args['itemName']?.toString() ?? '';
-          isEdit = args['edit'] ?? false;
-          selectedParty = args['selectedParty'];
-          type = args['type'];
-          transactionType = args[Constants.TRANSACTION_TYPE];
-        });
+    itemKey = widget.itemKey;
+    itemSubGrpKey = widget.itemSubGrpKey;
+    coBr = widget.coBr ?? UserSession.coBrId;
+    fcYrId = widget.fcYrId ?? UserSession.userFcYr;
+    itemNamee = widget.itemName ?? '';
+    isEdit = widget.isEdit;
+    selectedParty = widget.selectedParty;
+    type = widget.type;
+    transactionType = widget.transactionType;
 
-        if (coBr != null && fcYrId != null) {
-          if (!isEdit) {
-            _fetchCartCount();
-          }
-        }
-
-        if (itemSubGrpKey != null && coBr != null) {
-          _fetchCatalogItems();
-        }
-
-        if (itemKey != null) {
-          _fetchStylesByItemKey(itemKey!);
-          _fetchShadesByItemKey(itemKey!);
-          _fetchStylesSizeByItemKey(itemKey!);
-          _fetchBrands();
-        } else if (itemSubGrpKey != null) {
-          _fetchStylesByItemGrpKey(itemSubGrpKey!);
-          _fetchShadesByItemGrpKey(itemSubGrpKey!);
-          _fetchStylesSizeByItemGrpKey(itemSubGrpKey!);
-          _fetchBrands();
-        }
+    if (coBr != null && fcYrId != null) {
+      if (!isEdit) {
+        _fetchCartCount();
       }
-    });
+    }
+
+    if (itemSubGrpKey != null && coBr != null) {
+      _fetchCatalogItems();
+    }
+
+    if (itemKey != null) {
+      _fetchStylesByItemKey(itemKey!);
+      _fetchShadesByItemKey(itemKey!);
+      _fetchStylesSizeByItemKey(itemKey!);
+      _fetchBrands();
+    } else if (itemSubGrpKey != null) {
+      _fetchStylesByItemGrpKey(itemSubGrpKey!);
+      _fetchShadesByItemGrpKey(itemSubGrpKey!);
+      _fetchStylesSizeByItemGrpKey(itemSubGrpKey!);
+      _fetchBrands();
+    }
   }
 
   void _openImageZoom(List<String> imageUrls) {
@@ -452,30 +510,31 @@ class _OrderPageState extends State<OrderPage> {
                       CupertinoIcons.cart_badge_plus,
                       color: Colors.white,
                     ),
-if (cartModel.count > 0)
-  Positioned(
-    right: 0,
-    top: 0,
-    child: Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.red,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      constraints: const BoxConstraints(
-        minWidth: 14,
-        minHeight: 14,
-      ),
-      child: Text(
-        '${cartModel.count}',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    ),
-  ),               ],
+                    if (cartModel.count > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                          child: Text(
+                            '${cartModel.count}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 onPressed: () {
                   String viewOrderRoute;
@@ -1810,6 +1869,7 @@ if (cartModel.count > 0)
               Widget screen;
 
               if (AppConstants.bookingType == "1") {
+                print('nav to typ 1');
                 screen = MultiCatalogBookingPage(
                   catalogs: selectedItems,
                   routeArguments: currentArgs as Map<String, dynamic>?,
@@ -1825,6 +1885,7 @@ if (cartModel.count > 0)
                   },
                 );
               } else if (AppConstants.bookingType == "2") {
+                print("nav to typ 2");
                 screen = CreateOrderScreen(
                   catalogs: selectedItems,
                   routeArguments: currentArgs as Map<String, dynamic>?,
@@ -1840,6 +1901,7 @@ if (cartModel.count > 0)
                   },
                 );
               } else {
+                print("nav to typ default");
                 screen = CreateOrderScreen3(
                   catalogs: selectedItems,
                   onSuccess: () {
@@ -1854,7 +1916,9 @@ if (cartModel.count > 0)
                   },
                 );
               }
-
+              print("navigating");
+            print("Navigating to CreateOrderScreen from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}");
+            
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => screen),
@@ -2067,7 +2131,7 @@ if (cartModel.count > 0)
     debugPrint(typee);
     final currentArgs = ModalRoute.of(context)?.settings.arguments;
     // Close any existing dialogs first
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
 
     // Determine which screen to show based on bookingType
     Widget screen;

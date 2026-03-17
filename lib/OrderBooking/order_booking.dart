@@ -738,8 +738,6 @@
 //   }
 // }
 
-
-
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -747,6 +745,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 
 import 'package:vrs_erp/OrderBooking/orderbooking_drawer.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -842,10 +841,10 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
       // Just trigger a rebuild to show updated count
     });
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-   
   }
 
   // Add this method to refresh cart count from barcode
@@ -855,7 +854,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
 
   @override
   void dispose() {
-      final cartModel = Provider.of<CartModel>(context, listen: false);
+    final cartModel = Provider.of<CartModel>(context, listen: false);
     cartModel.removeListener(_onCartChanged);
     _searchController.dispose();
     _arrowController.dispose();
@@ -881,140 +880,143 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
     });
   }
 
-void _showMessageDialog(String title, String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                title.contains('Error') ? Icons.error_outline : Icons.info_outline,
-                size: 50,
-                color: title.contains('Error') ? Colors.red : AppColors.primaryColor,
-              ),
-              const SizedBox(height: 15),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+  void _showMessageDialog(String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  title.contains('Error')
+                      ? Icons.error_outline
+                      : Icons.info_outline,
+                  size: 50,
+                  color:
+                      title.contains('Error')
+                          ? Colors.red
+                          : AppColors.primaryColor,
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  minimumSize: const Size(100, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 15),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  "OK",
-                  style: TextStyle(fontSize: 16),
+                const SizedBox(height: 10),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14),
                 ),
-              )
-            ],
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    minimumSize: const Size(100, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK", style: TextStyle(fontSize: 16)),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
-  // Replace the existing _fetchCartCount method
- Future<void> _fetchCartCount() async {
-  if (_isFetchingCart) return;
-
-  _isFetchingCart = true;
-
-  try {
-    final data = await ApiService.getSalesOrderData(
-      coBrId: UserSession.coBrId ?? '',
-      userId: UserSession.userName ?? '',
-      fcYrId: UserSession.userFcYr ?? '',
-      barcode: showBarcodeWidget ? 'true' : 'false',
+        );
+      },
     );
-
-    final cartModel = Provider.of<CartModel>(context, listen: false);
-
-    if (mounted) {
-      cartModel.updateCount(data['cartItemCount'] ?? 0);
-    }
-  } catch (e) {
-    print('Error fetching cart count: $e');
-  } finally {
-    _isFetchingCart = false;
   }
-}
 
- Future<void> _fetchCategories() async {
-  try {
-    setState(() {
-      _isLoadingCategories = true;
-      _categoryError = null;
-    });
+  // Replace the existing _fetchCartCount method
+  Future<void> _fetchCartCount() async {
+    if (_isFetchingCart) return;
 
-    final categories = await ApiService.fetchCategories();
+    _isFetchingCart = true;
 
-    if (categories.isEmpty) {
-      _showMessageDialog("No Data", "No categories found.");
+    try {
+      final data = await ApiService.getSalesOrderData(
+        coBrId: UserSession.coBrId ?? '',
+        userId: UserSession.userName ?? '',
+        fcYrId: UserSession.userFcYr ?? '',
+        barcode: showBarcodeWidget ? 'true' : 'false',
+      );
+
+      final cartModel = Provider.of<CartModel>(context, listen: false);
+
+      if (mounted) {
+        cartModel.updateCount(data['cartItemCount'] ?? 0);
+      }
+    } catch (e) {
+      print('Error fetching cart count: $e');
+    } finally {
+      _isFetchingCart = false;
     }
-
-    setState(() {
-      _categories = [...categories];
-      _isLoadingCategories = false;
-    });
-
-  } catch (e) {
-    setState(() {
-      _isLoadingCategories = false;
-    });
-
-    _showMessageDialog("Error", "Failed to load categories");
   }
-}
- Future<void> _fetchAllItems() async {
-  try {
-    setState(() {
-      _isLoadingItems = true;
-      _itemsError = null;
-    });
 
-    final items = await ApiService.fetchAllItems();
+  Future<void> _fetchCategories() async {
+    try {
+      setState(() {
+        _isLoadingCategories = true;
+        _categoryError = null;
+      });
 
-    if (items.isEmpty) {
-      _showMessageDialog("No Data", "No items found.");
+      final categories = await ApiService.fetchCategories();
+
+      if (categories.isEmpty) {
+        _showMessageDialog("No Data", "No categories found.");
+      }
+
+      setState(() {
+        _categories = [...categories];
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCategories = false;
+      });
+
+      _showMessageDialog("Error", "Failed to load categories");
     }
-
-    setState(() {
-      _items = items;
-      _allItems = items;
-      _isLoadingItems = false;
-    });
-
-  } catch (e) {
-    setState(() {
-      _isLoadingItems = false;
-    });
-
-    _showMessageDialog("Error", "Failed to load items");
   }
-}
+
+  Future<void> _fetchAllItems() async {
+    try {
+      setState(() {
+        _isLoadingItems = true;
+        _itemsError = null;
+      });
+
+      final items = await ApiService.fetchAllItems();
+
+      if (items.isEmpty) {
+        _showMessageDialog("No Data", "No items found.");
+      }
+
+      setState(() {
+        _items = items;
+        _allItems = items;
+        _isLoadingItems = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingItems = false;
+      });
+
+      _showMessageDialog("Error", "Failed to load items");
+    }
+  }
+
   void _filterItems() {
     if (_selectedCategoryKeys.isEmpty) {
       _items = _allItems;
@@ -1176,66 +1178,91 @@ void _showMessageDialog(String title, String message) {
       ),
 
       // ✅ FLOATING ACTION BUTTON - ONLY APPEARS WHEN ITEMS SELECTED
-   floatingActionButton:
-    (_selectedCategoryKeys.isNotEmpty || _selectedItemKeys.isNotEmpty) &&
-            !showBarcodeWidget
-        ? ScaleTransition(
-          scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
-          child: SizedBox(
-            height: 56,
-            child: FloatingActionButton.extended(
-              backgroundColor: AppColors.primaryColor,
-              icon: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 20,
-              ),
-              label: const Text(
-                'View',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+      floatingActionButton:
+          (_selectedCategoryKeys.isNotEmpty || _selectedItemKeys.isNotEmpty) &&
+                  !showBarcodeWidget
+              ? ScaleTransition(
+                scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
+                child: SizedBox(
+                  height: 56,
+                  child: FloatingActionButton.extended(
+                    backgroundColor: AppColors.primaryColor,
+                    icon: const Icon(
+                      Icons.arrow_forward,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'View',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    onPressed: () {
+                      String? categoryKeys;
+                      String? itemKeys;
+
+                      if (_selectedCategoryKeys.isNotEmpty) {
+                        categoryKeys = _selectedCategoryKeys.join(',');
+                      }
+
+                      if (_selectedItemKeys.isNotEmpty) {
+                        itemKeys = _selectedItemKeys.join(',');
+                      }
+                      print("Navigating to 1st from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}");
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => OrderPage(
+                                itemKey: itemKeys,
+                                itemSubGrpKey: categoryKeys,
+                                itemName: null,
+                                coBr: coBr,
+                                fcYrId: fcYrId,
+                                selectedParty: selectedParty,
+                                type: Constants.SALE_BILL,
+                                isMultiSelect: true,
+                              ),
+                        ),
+                      ).then((_) {
+                        setState(() {
+                          _selectedCategoryKeys.clear();
+                          _selectedItemKeys.clear();
+                          _isMultiSelectMode = false;
+                          _filterItems();
+                        });
+                      });
+
+                      // Navigator.pushNamed(
+                      //   context,
+                      //   '/orderpage',
+                      //   arguments: {
+                      //     'itemKey': itemKeys,
+                      //     'itemSubGrpKey': categoryKeys,
+                      //     'itemName': null,
+                      //     'coBr': coBr,
+                      //     'fcYrId': fcYrId,
+                      //     'selectedParty': selectedParty,
+                      //     'type': Constants.SALE_BILL,
+                      //     'isMultiSelect': true,
+                      //   },
+                      // ).then((_) {
+                      //   setState(() {
+                      //     _selectedCategoryKeys.clear();
+                      //     _selectedItemKeys.clear();
+                      //     _isMultiSelectMode = false;
+                      //     _filterItems();
+                      //   });
+                      // });
+                    },
+                  ),
                 ),
-              ),
-              onPressed: () {
-                String? categoryKeys;
-                String? itemKeys;
-
-                if (_selectedCategoryKeys.isNotEmpty) {
-                  categoryKeys = _selectedCategoryKeys.join(',');
-                }
-
-                if (_selectedItemKeys.isNotEmpty) {
-                  itemKeys = _selectedItemKeys.join(',');
-                }
-
-                Navigator.pushNamed(
-                  context,
-                  '/orderpage',
-                  arguments: {
-                    'itemKey': itemKeys,
-                    'itemSubGrpKey': categoryKeys,
-                    'itemName': null,
-                    'coBr': coBr,
-                    'fcYrId': fcYrId,
-                    'selectedParty': selectedParty,
-                    'type': Constants.SALE_BILL,
-                    'isMultiSelect': true,
-                  },
-                ).then((_) {
-                  setState(() {
-                    _selectedCategoryKeys.clear();
-                    _selectedItemKeys.clear();
-                    _isMultiSelectMode = false;
-                    _filterItems();
-                  });
-                });
-              },
-            ),
-          ),
-        )
-        : null,
+              )
+              : null,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: LayoutBuilder(
@@ -1255,59 +1282,62 @@ void _showMessageDialog(String title, String message) {
 
                       // Barcode Checkbox with improved styling
                       // Barcode Checkbox with improved styling
-Container(
-  margin: const EdgeInsets.symmetric(horizontal: 8),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: Colors.grey[300]!),
-  ),
-  child: Row(
-    children: [
-      Checkbox(
-        value: showBarcodeWidget,
-        activeColor: AppColors.primaryColor,
-        onChanged: (value) {
-          setState(() {
-            showBarcodeWidget = value ?? false;
-            // Refresh cart count when toggling barcode mode
-            Future.delayed(const Duration(milliseconds: 100), () {
-              _fetchCartCount();
-            });
-          });
-        },
-      ),
-      const Text(
-        "Order Booking Barcode Wise",
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
-      ),
-    ],
-  ),
-),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: showBarcodeWidget,
+                              activeColor: AppColors.primaryColor,
+                              onChanged: (value) {
+                                setState(() {
+                                  showBarcodeWidget = value ?? false;
+                                  // Refresh cart count when toggling barcode mode
+                                  Future.delayed(
+                                    const Duration(milliseconds: 100),
+                                    () {
+                                      _fetchCartCount();
+                                    },
+                                  );
+                                });
+                              },
+                            ),
+                            const Text(
+                              "Order Booking Barcode Wise",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                       const SizedBox(height: 12),
 
                       // In OrderBookingScreen build method, update the BarcodeWiseWidget section
-if (showBarcodeWidget)
-  SizedBox(
-    width: double.infinity,
-    child: BarcodeWiseWidget(
-      onFilterPressed: (barcode) {
-        print("Barcode: $barcode");
-        setState(() {
-          hasFiltered = true;
-        });
-      },
-      onOrderConfirmed: () {
-        // Refresh cart count when order is confirmed from barcode
-        _fetchCartCount();
-      },
-      edit: false, // or appropriate value
-    ),
-  ),
+                      if (showBarcodeWidget)
+                        SizedBox(
+                          width: double.infinity,
+                          child: BarcodeWiseWidget(
+                            onFilterPressed: (barcode) {
+                              print("Barcode: $barcode");
+                              setState(() {
+                                hasFiltered = true;
+                              });
+                            },
+                            onOrderConfirmed: () {
+                              // Refresh cart count when order is confirmed from barcode
+                              _fetchCartCount();
+                            },
+                            edit: false, // or appropriate value
+                          ),
+                        ),
 
                       if (!showBarcodeWidget) ...[
                         const SizedBox(height: 20),
@@ -1451,13 +1481,13 @@ if (showBarcodeWidget)
                                   ),
                                   const Spacer(),
                                   //if (!_isLoadingItems && _items.isNotEmpty)
-                                    // Text(
-                                    //   '${_filteredItems.length} of ${_items.length}',
-                                    //   style: TextStyle(
-                                    //     fontSize: 12,
-                                    //     color: Colors.grey[600],
-                                    //   ),
-                                    // ),
+                                  // Text(
+                                  //   '${_filteredItems.length} of ${_items.length}',
+                                  //   style: TextStyle(
+                                  //     fontSize: 12,
+                                  //     color: Colors.grey[600],
+                                  //   ),
+                                  // ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -1652,33 +1682,33 @@ if (showBarcodeWidget)
           ),
         )
         : _filteredItems.isEmpty
-    ? Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30),
-        child: Column(
-          children: [
-            Icon(
-              _searchQuery.isEmpty ? Icons.inbox : Icons.search_off,
-              size: 50,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _searchQuery.isEmpty ? 'No items found' : 'No matching items',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-            if (_searchQuery.isNotEmpty)
-              TextButton(
-                onPressed: () => _searchController.clear(),
-                child: Text(
-                  'Clear search',
-                  style: TextStyle(color: AppColors.primaryColor),
+        ? Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 30),
+            child: Column(
+              children: [
+                Icon(
+                  _searchQuery.isEmpty ? Icons.inbox : Icons.search_off,
+                  size: 50,
+                  color: Colors.grey[400],
                 ),
-              ),
-          ],
-        ),
-      ),
-    )
+                const SizedBox(height: 8),
+                Text(
+                  _searchQuery.isEmpty ? 'No items found' : 'No matching items',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  TextButton(
+                    onPressed: () => _searchController.clear(),
+                    child: Text(
+                      'Clear search',
+                      style: TextStyle(color: AppColors.primaryColor),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        )
         : Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Wrap(
