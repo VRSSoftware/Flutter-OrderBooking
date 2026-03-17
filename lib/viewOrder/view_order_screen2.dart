@@ -547,7 +547,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => OrderBookingScreen(),
+                        ),
                       );
                     },
                     child: Text('Done'),
@@ -1753,7 +1755,6 @@ class _StyleCard2State extends State<StyleCard2> {
     );
   }
 
-  // ADD THIS METHOD
   List<String> _getAvailableShades() {
     final allShades = widget.catalogOrder.orderMatrix.shades;
     // Get shades that are already in selectedColors (regardless of quantity)
@@ -1843,6 +1844,136 @@ class _StyleCard2State extends State<StyleCard2> {
     });
 
     print('Multiple shades added successfully');
+  }
+
+  Future<void> _removeShadeLocally(String shadeToRemove) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Remove Shade"),
+          content: Text(
+            "Are you sure you want to remove shade '$shadeToRemove'?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Remove", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Extract base style code (without barcode suffix if any)
+      String styleCode = widget.styleCode;
+      if (styleCode.contains('---')) {
+        styleCode = styleCode.split('---')[0];
+      }
+
+      // Prepare API payload
+      final Map<String, dynamic> payload = {
+        "userName": UserSession.userName ?? '',
+        "styleCode": styleCode,
+        "shade": shadeToRemove,
+      };
+
+      print('Deleting shade with payload: $payload');
+
+      // Call API
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteShade'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      print('Delete shade response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Success - update local state
+        setState(() {
+          // Set all quantities for this shade to 0
+          if (widget.quantities.containsKey(shadeToRemove)) {
+            for (var size in widget.quantities[shadeToRemove]!.keys) {
+              widget.quantities[shadeToRemove]![size] = 0;
+
+              // Also update controller text to 0
+              if (widget.controllers.containsKey(shadeToRemove) &&
+                  widget.controllers[shadeToRemove]!.containsKey(size)) {
+                widget.controllers[shadeToRemove]![size]!.text = '0';
+              }
+            }
+          }
+
+          // Remove from selectedColors (this will hide it from UI)
+          widget.selectedColors.remove(shadeToRemove);
+
+          _hasQuantityChanged = true;
+          _isLoading = false;
+        });
+
+        // Update parent
+        widget.onUpdate();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Shade removed successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // API error
+        setState(() {
+          _isLoading = false;
+        });
+
+        String errorMessage = 'Failed to remove shade';
+        try {
+          final responseData = jsonDecode(response.body);
+          if (responseData is Map && responseData.containsKey('message')) {
+            errorMessage = responseData['message'];
+          }
+        } catch (_) {}
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Network or other error
+      setState(() {
+        _isLoading = false;
+      });
+
+      print('Error removing shade: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
@@ -2059,7 +2190,7 @@ class _StyleCard2State extends State<StyleCard2> {
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
+                                    horizontal: 7,
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
@@ -2086,6 +2217,26 @@ class _StyleCard2State extends State<StyleCard2> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap:
+                                () => _submitDelete(
+                                  context,
+                                ), // Calls the existing method for full style deletion
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
@@ -2306,7 +2457,7 @@ class _StyleCard2State extends State<StyleCard2> {
                   Expanded(
                     child: TextButton.icon(
                       onPressed:
-                          _isLoading ? null : () => _submitDelete(context),
+                          _isLoading ? null : () => _removeShadeLocally(color),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
