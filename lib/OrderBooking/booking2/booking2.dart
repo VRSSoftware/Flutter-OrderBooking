@@ -50,7 +50,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _controllers.forEach((_, controller) => controller.dispose());
     _searchController.removeListener(_filterSearchResults); // ADD THIS LINE
     _searchController.dispose();
-     _searchFocusNode.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -601,7 +601,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                     child: TextField(
                       controller: _searchController,
-                        focusNode: _searchFocusNode,
+                      focusNode: _searchFocusNode,
                       style: const TextStyle(fontSize: 14, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: "Search by Style Code...",
@@ -637,14 +637,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             IconButton(
               icon: const Icon(Icons.search, color: Colors.white),
               onPressed: () {
-  setState(() {
-    _isSearching = true;
-  });
+                setState(() {
+                  _isSearching = true;
+                });
 
-  Future.delayed(const Duration(milliseconds: 200), () {
-    _searchFocusNode.requestFocus();
-  });
-},
+                Future.delayed(const Duration(milliseconds: 200), () {
+                  _searchFocusNode.requestFocus();
+                });
+              },
             ),
         ],
         bottom: PreferredSize(
@@ -750,24 +750,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                   ],
                 )
-                : SingleChildScrollView(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      ...filteredCatalogOrderList.map(
-                        // CHANGED THIS LINE
-                        (catalogOrder) => Column(
-                          children: [
-                            buildOrderItem(catalogOrder),
-                            const Divider(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                : CustomScrollView(
+                  slivers: [
+                    ...filteredCatalogOrderList.map(
+                      (catalogOrder) => _buildStickySection(catalogOrder),
+                    ),
+                  ],
                 ),
+        // : SingleChildScrollView(
+        //   padding: const EdgeInsets.all(12.0),
+        //   child: Column(
+        //     crossAxisAlignment: CrossAxisAlignment.start,
+        //     children: [
+        //       const SizedBox(height: 10),
+        //       ...filteredCatalogOrderList.map(
+        //         // CHANGED THIS LINE
+        //         (catalogOrder) => Column(
+        //           children: [
+        //             buildOrderItem(catalogOrder),
+        //             const Divider(),
+        //           ],
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ),
       bottomNavigationBar: SafeArea(
         child: SizedBox(
@@ -862,6 +869,389 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
     }
     return total;
+  }
+
+  Widget _buildStickySection(CatalogOrderData catalogOrder) {
+    final catalog = catalogOrder.catalog;
+    final selectedColors = selectedColors2[catalog.styleKey] ?? {};
+
+    return SliverMainAxisGroup(
+      slivers: [
+        /// 🔥 THIS IS YOUR STICKY CARD
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _CardHeaderDelegate(
+            child: buildOrderCardOnly(catalogOrder),
+            height: 140, // adjust based on your card height
+          ),
+        ),
+
+        /// 👇 SCROLLABLE COLOR ITEMS
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final color = selectedColors.elementAt(index);
+            return Column(
+              children: [
+                _buildColorSection(catalogOrder, color),
+                const SizedBox(height: 12),
+              ],
+            );
+          }, childCount: selectedColors.length),
+        ),
+      ],
+    );
+  }
+
+  Widget buildOrderCardOnly(CatalogOrderData catalogOrder) {
+    final catalog = catalogOrder.catalog;
+    final Set<String> selectedColors = selectedColors2[catalog.styleKey] ?? {};
+
+    final imageUrl =
+        catalog.fullImagePath.contains("http")
+            ? catalog.fullImagePath
+            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+
+    return Container(
+      color: Colors.white, // IMPORTANT for sticky
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Card(
+        elevation: 3,
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                AppColors.primaryColor.withOpacity(0.03),
+                AppColors.primaryColor.withOpacity(0.06),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: const [0.0, 0.7, 1.0],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// 🔹 Product Image
+                Material(
+                  borderRadius: BorderRadius.circular(8),
+                  elevation: 2,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ImageZoomScreen(
+                                imageUrls: [imageUrl],
+                                initialIndex: 0,
+                              ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 70,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        gradient: LinearGradient(
+                          colors: [Colors.grey.shade50, Colors.grey.shade100],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(7),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                color: Colors.grey.shade100,
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey.shade400,
+                                  size: 30,
+                                ),
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                /// 🔹 Details Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// Style Code + Actions
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          /// Style Code
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primaryColor.withOpacity(0.15),
+                                  AppColors.primaryColor.withOpacity(0.08),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.primaryColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              catalog.styleCode,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+
+                          /// Actions
+                          Row(
+                            children: [
+                              /// Copy
+                              Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () async {
+                                    final result = await showDialog<
+                                      Set<String>
+                                    >(
+                                      context: context,
+                                      builder:
+                                          (context) => CopyToStylesDialog(
+                                            styleKeys:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleKey,
+                                                    )
+                                                    .where(
+                                                      (key) =>
+                                                          key !=
+                                                          catalog.styleKey,
+                                                    )
+                                                    .toList(),
+                                            styleCodes:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleCode,
+                                                    )
+                                                    .toList(),
+                                            sourceStyleKey: catalog.styleKey,
+                                            sourceStyleCode: catalog.styleCode,
+                                          ),
+                                    );
+
+                                    if (result != null && result.isNotEmpty) {
+                                      _copyStyleQuantities(
+                                        catalog.styleKey,
+                                        result,
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppColors.primaryColor.withOpacity(
+                                            0.15,
+                                          ),
+                                          AppColors.primaryColor.withOpacity(
+                                            0.05,
+                                          ),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.copy,
+                                      size: 16,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              /// Delete
+                              Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    _confirmDeleteStyle(
+                                      catalog.styleKey,
+                                      catalog.styleCode,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.red.withOpacity(0.15),
+                                          Colors.red.withOpacity(0.05),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.red.withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.delete,
+                                      size: 16,
+                                      color: Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Qty / Pending / WIP
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            /// Qty
+                            Expanded(
+                              child: _buildStatItem(
+                                icon: Icons.shopping_bag,
+                                label: 'Qty',
+                                value:
+                                    '${_calculateCatalogQuantity(catalog.styleKey)}',
+                                color: Colors.green,
+                              ),
+                            ),
+
+                            _divider(),
+
+                            /// Pending
+                            Expanded(
+                              child: _buildStatItem(
+                                icon: Icons.pending,
+                                label: 'Pending',
+                                value: '0',
+                                color: Colors.orange,
+                              ),
+                            ),
+
+                            _divider(),
+
+                            /// WIP
+                            Expanded(
+                              child: _buildStatItem(
+                                icon: Icons.inventory,
+                                label: 'WIP',
+                                value: '0',
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 12, color: color),
+        ),
+        const SizedBox(width: 4),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: TextStyle(fontSize: 9, color: Colors.grey)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _divider() {
+    return Container(width: 1, height: 30, color: Colors.grey.shade300);
   }
 
   Widget buildOrderItem(CatalogOrderData catalogOrder) {
@@ -2047,5 +2437,35 @@ class _CopyToStylesDialogState extends State<CopyToStylesDialog> {
         ),
       ],
     );
+  }
+}
+
+class _CardHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _CardHeaderDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white, // 🔥 REQUIRED (prevents transparency bug)
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _CardHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
   }
 }
