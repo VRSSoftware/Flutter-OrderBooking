@@ -232,16 +232,16 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   void _initializeQuantitiesAndColors() {
     quantities.clear();
     selectedColors.clear();
+
     for (var entry in _styleManager.groupedItems.entries) {
       final styleKey = entry.key;
       final items = entry.value;
-      final shades = _getSortedUniqueValues(items, 'shadeName');
+      final allShades = _getSortedUniqueValues(items, 'shadeName');
       final sizes = _getSortedUniqueValues(items, 'sizeName');
 
-      selectedColors[styleKey] = shades.toSet();
+      // Initialize quantities for all shades first
       quantities[styleKey] = {};
-
-      for (var shade in shades) {
+      for (var shade in allShades) {
         quantities[styleKey]![shade] = {};
         for (var size in sizes) {
           final item = items.firstWhere(
@@ -252,6 +252,21 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
           );
           quantities[styleKey]![shade]![size] =
               int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+        }
+      }
+
+      // FIX: Only add shades to selectedColors if they have quantity > 0
+      selectedColors[styleKey] = {};
+      for (var shade in allShades) {
+        bool hasQuantity = false;
+        for (var size in sizes) {
+          if ((quantities[styleKey]![shade]?[size] ?? 0) > 0) {
+            hasQuantity = true;
+            break;
+          }
+        }
+        if (hasQuantity) {
+          selectedColors[styleKey]!.add(shade);
         }
       }
     }
@@ -630,6 +645,58 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
     });
   }
 
+  void _updateQuantitiesFromRefreshedItems() {
+    for (var entry in _styleManager.groupedItems.entries) {
+      final styleKey = entry.key;
+      final items = entry.value;
+      final sizes = _getSortedUniqueValues(items, 'sizeName');
+      final allShades = _getSortedUniqueValues(items, 'shadeName');
+
+      // Ensure quantities map exists
+      if (!quantities.containsKey(styleKey)) {
+        quantities[styleKey] = {};
+      }
+
+      // Update quantities for all shades (including newly added ones)
+      for (var shade in allShades) {
+        if (!quantities[styleKey]!.containsKey(shade)) {
+          quantities[styleKey]![shade] = {};
+        }
+
+        for (var size in sizes) {
+          final item = items.firstWhere(
+            (i) =>
+                (i['shadeName']?.toString() ?? '') == shade &&
+                (i['sizeName']?.toString() ?? '') == size,
+            orElse: () => {'clqty': '0'},
+          );
+          quantities[styleKey]![shade]![size] =
+              int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+        }
+      }
+
+      // Ensure selectedColors has all shades with quantity > 0
+      // But PRESERVE any manually added shades (even with 0 quantity)
+      if (!selectedColors.containsKey(styleKey)) {
+        selectedColors[styleKey] = {};
+      }
+
+      // Add shades with quantity > 0
+      for (var shade in allShades) {
+        bool hasQuantity = false;
+        for (var size in sizes) {
+          if ((quantities[styleKey]![shade]?[size] ?? 0) > 0) {
+            hasQuantity = true;
+            break;
+          }
+        }
+        if (hasQuantity) {
+          selectedColors[styleKey]!.add(shade);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -733,11 +800,19 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                             updateTotals: _updateTotals,
                             getColor: _getColorCode,
                             onUpdate: () async {
+                              // Don't re-initialize everything, just refresh the order items
                               await _styleManager.refreshOrderItems(
                                 barcode: barcodeMode,
                               );
-                              _initializeQuantitiesAndColors();
+
+                              // Instead of re-initializing everything, just update quantities
+                              // from the refreshed items while preserving selectedColors
+                              _updateQuantitiesFromRefreshedItems();
+
                               _updateTotals();
+
+                              // Force a rebuild
+                              setState(() {});
                             },
                             quantities: quantities,
                             selectedColors: selectedColors,
@@ -1390,6 +1465,22 @@ class _StyleCardsView2 extends StatelessWidget {
     required this.selectedColors,
   });
 
+  List<String> _getAllShadesForStyle(String styleKey) {
+    final items = styleManager.groupedItems[styleKey] ?? [];
+    return items
+        .map((item) => item['shadeName']?.toString() ?? '')
+        .toSet()
+        .toList();
+  }
+
+  List<String> _getAllSizesForStyle(String styleKey) {
+    final items = styleManager.groupedItems[styleKey] ?? [];
+    return items
+        .map((item) => item['sizeName']?.toString() ?? '')
+        .toSet()
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!styleManager.isOrderItemsLoaded) {
@@ -1409,16 +1500,31 @@ class _StyleCardsView2 extends StatelessWidget {
                 entry.key,
                 entry.value,
               );
+
+              // Get the actual Set reference, don't create a new one
+              final styleSelectedColors = selectedColors[entry.key];
+              if (styleSelectedColors == null) {
+                // This shouldn't happen, but if it does, initialize it
+                selectedColors[entry.key] = {};
+              }
+
               return StyleCard2(
                 styleCode: entry.key,
                 items: entry.value,
                 catalogOrder: catalogOrder,
                 quantities: quantities[entry.key] ?? {},
-                selectedColors: selectedColors[entry.key] ?? {},
+                selectedColors:
+                    selectedColors[entry.key]!, // Use ! since we know it exists
                 getColor: getColor,
                 onUpdate: onUpdate,
                 styleManager: styleManager,
                 controllers: styleManager.controllers[entry.key]!,
+                allShades: _getAllShadesForStyle(entry.key),
+                allSizes: _getAllSizesForStyle(entry.key),
+                onShadeAdded: (shade) {
+                  // Just call onUpdate which will refresh the parent
+                  onUpdate();
+                },
               );
             }).toList(),
       );
@@ -1504,6 +1610,9 @@ class StyleCard2 extends StatefulWidget {
   final VoidCallback onUpdate;
   final _StyleManager2 styleManager;
   final Map<String, Map<String, TextEditingController>> controllers;
+  final List<String> allShades;
+  final List<String> allSizes;
+  final Function(String)? onShadeAdded;
 
   const StyleCard2({
     Key? key,
@@ -1516,6 +1625,9 @@ class StyleCard2 extends StatefulWidget {
     required this.onUpdate,
     required this.styleManager,
     required this.controllers,
+    required this.allShades,
+    required this.allSizes,
+    this.onShadeAdded,
   }) : super(key: key);
 
   @override
@@ -1535,8 +1647,107 @@ class _StyleCard2State extends State<StyleCard2> {
     );
   }
 
+  // ADD THIS METHOD
+  List<String> _getAvailableShades() {
+    final allShades = widget.catalogOrder.orderMatrix.shades;
+    // Get shades that are already in selectedColors (regardless of quantity)
+    final existingShades = widget.selectedColors;
+
+    return allShades.where((shade) => !existingShades.contains(shade)).toList();
+  }
+
+  // ADD THIS METHOD
+  Future<void> _showAddShadeDialog() async {
+    final allShades = widget.catalogOrder.orderMatrix.shades;
+
+    // Create a map to track which shades have quantity
+    final Map<String, bool> shadeHasQuantity = {};
+    for (var shade in allShades) {
+      // Check if shade has any quantity > 0
+      final hasQty =
+          widget.quantities[shade]?.values.any((qty) => qty > 0) ?? false;
+      shadeHasQuantity[shade] = hasQty;
+    }
+
+    final selectedShades = await showDialog<List<String>>(
+      context: context,
+      builder:
+          (context) => AddShadeDialog2(
+            styleCode: widget.styleCode,
+            allShades: allShades,
+            shadeHasQuantity: shadeHasQuantity,
+          ),
+    );
+
+    if (selectedShades != null && selectedShades.isNotEmpty) {
+      // Use batch update for better performance
+      _addMultipleShades(selectedShades);
+    }
+  }
+
+  void _addMultipleShades(List<String> shades) {
+    print('Adding multiple shades: $shades');
+
+    // Call parent callback for each shade
+    if (widget.onShadeAdded != null) {
+      for (var shade in shades) {
+        widget.onShadeAdded!(shade);
+      }
+    }
+
+    // Batch update local state
+    setState(() {
+      for (var shade in shades) {
+        // Add to selectedColors
+        widget.selectedColors.add(shade);
+
+        // Initialize quantities for all sizes to 0
+        widget.quantities[shade] = {};
+
+        // Initialize controllers for all sizes
+        if (!widget.controllers.containsKey(shade)) {
+          widget.controllers[shade] = {};
+        }
+
+        for (var size in widget.catalogOrder.orderMatrix.sizes) {
+          // Set quantity to 0
+          widget.quantities[shade]![size] = 0;
+
+          // Create or update controller
+          if (widget.controllers[shade]![size] == null) {
+            widget.controllers[shade]![size] = TextEditingController(text: '0')
+              ..addListener(() {
+                // Update quantity when text changes
+                final value =
+                    int.tryParse(widget.controllers[shade]![size]!.text) ?? 0;
+                if (widget.quantities[shade]?[size] != value) {
+                  setState(() {
+                    widget.quantities[shade]![size] = value;
+                    _hasQuantityChanged = true;
+                  });
+                }
+              });
+          } else {
+            widget.controllers[shade]![size]!.text = '0';
+          }
+        }
+      }
+
+      _hasQuantityChanged = true;
+    });
+
+    print('Multiple shades added successfully');
+  }
+
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
     final catalog = catalogOrder.catalog;
+
+    // Show ALL shades in selectedColors (including newly added ones with 0 quantity)
+    final activeShades = widget.selectedColors.toList();
+
+    print(
+      'Building order item with shades: $activeShades',
+    ); // Add this debug line
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1977,7 +2188,8 @@ class _StyleCard2State extends State<StyleCard2> {
         ),
         const SizedBox(height: 15),
 
-        ...widget.selectedColors.map(
+        // Show all shades in selectedColors
+        ...activeShades.map(
           (color) => Column(
             children: [
               _buildColorSection(widget.catalogOrder, color),
@@ -2360,7 +2572,11 @@ class _StyleCard2State extends State<StyleCard2> {
 
               // Size rows
               for (var size in sizes) ...[
-                _buildSizeRow(catalogOrder, shade, size),
+                _buildSizeRow(
+                  catalogOrder,
+                  shade,
+                  size,
+                ), // This should use widget.controllers and widget.quantities
                 if (size != sizes.last)
                   Divider(height: 1, color: Colors.grey.shade300),
               ],
@@ -2412,7 +2628,12 @@ class _StyleCard2State extends State<StyleCard2> {
       rate = matrixData[0];
       wsp = matrixData.length > 1 ? matrixData[1] : '0';
       stock = matrixData.length > 2 ? matrixData[2] : '0';
-      controller = widget.controllers[shade]?[size];
+
+      // Get controller from widget.controllers
+      if (widget.controllers.containsKey(shade) &&
+          widget.controllers[shade]!.containsKey(size)) {
+        controller = widget.controllers[shade]![size];
+      }
     }
 
     final quantity = widget.quantities[shade]?[size] ?? 0;
@@ -2429,7 +2650,6 @@ class _StyleCard2State extends State<StyleCard2> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Minus button - more compact
                 InkWell(
                   onTap: () {
                     final newQuantity = (quantity - 1).clamp(0, 9999);
@@ -2444,12 +2664,9 @@ class _StyleCard2State extends State<StyleCard2> {
                   child: Container(
                     width: 24,
                     height: 24,
-
                     child: const Icon(Icons.remove, size: 16),
                   ),
                 ),
-
-                // Text field - more compact
                 SizedBox(
                   width: 35,
                   child: TextField(
@@ -2483,8 +2700,6 @@ class _StyleCard2State extends State<StyleCard2> {
                     },
                   ),
                 ),
-
-                // Plus button - more compact
                 InkWell(
                   onTap: () {
                     final newQuantity = (quantity + 1).clamp(0, 9999);
@@ -2838,8 +3053,34 @@ class _StyleCard2State extends State<StyleCard2> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        buildOrderItem(widget.catalogOrder, context),
+        Column(
+          children: [
+            // Add a key that changes when selectedColors changes
+            buildOrderItem(
+              widget.catalogOrder,
+              context,
+            ), // This already includes all shades
+            const SizedBox(height: 15),
 
+            // Add Shade Button - only show if there are available shades
+            if (_getAvailableShades().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton.icon(
+                  onPressed: _showAddShadeDialog,
+                  icon: const Icon(Icons.add),
+                  label: Text('Add Shade'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 40),
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        // Loading overlay
         if (_isLoading)
           ModalBarrier(
             dismissible: false,
@@ -2883,6 +3124,410 @@ class _StyleCard2State extends State<StyleCard2> {
           ),
       ],
     );
+  }
+}
+
+class AddShadeDialog extends StatelessWidget {
+  final String styleCode;
+  final List<String> availableShades;
+
+  const AddShadeDialog({
+    Key? key,
+    required this.styleCode,
+    required this.availableShades,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Add Shade - $styleCode'),
+      content: Container(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: availableShades.length,
+          itemBuilder: (context, index) {
+            final shade = availableShades[index];
+            return ListTile(
+              title: Text(shade),
+              onTap: () => Navigator.pop(context, shade),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
+class AddShadeDialog2 extends StatefulWidget {
+  final String styleCode;
+  final List<String> allShades;
+  final Map<String, bool> shadeHasQuantity;
+
+  const AddShadeDialog2({
+    Key? key,
+    required this.styleCode,
+    required this.allShades,
+    required this.shadeHasQuantity,
+  }) : super(key: key);
+
+  @override
+  _AddShadeDialog2State createState() => _AddShadeDialog2State();
+}
+
+class _AddShadeDialog2State extends State<AddShadeDialog2> {
+  final Set<String> _selectedShades = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 8,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.85,
+        constraints: const BoxConstraints(maxWidth: 380, maxHeight: 480),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.color_lens,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Shades',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          widget.styleCode,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Subheader
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Select shades to add',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Shades List
+            Flexible(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: widget.allShades.length,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  separatorBuilder:
+                      (context, index) => Divider(
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                        color: Colors.grey.shade100,
+                      ),
+                  itemBuilder: (context, index) {
+                    final shade = widget.allShades[index];
+                    final hasQuantity = widget.shadeHasQuantity[shade] ?? false;
+                    final isSelected = _selectedShades.contains(shade);
+
+                    return Opacity(
+                      opacity: hasQuantity ? 0.6 : 1.0,
+                      child: AbsorbPointer(
+                        absorbing: hasQuantity, // Disable if has quantity
+                        child: Material(
+                          color:
+                              isSelected && !hasQuantity
+                                  ? AppColors.primaryColor.withOpacity(0.05)
+                                  : Colors.transparent,
+                          child: InkWell(
+                            onTap:
+                                hasQuantity
+                                    ? null
+                                    : () {
+                                      setState(() {
+                                        if (isSelected) {
+                                          _selectedShades.remove(shade);
+                                        } else {
+                                          _selectedShades.add(shade);
+                                        }
+                                      });
+                                    },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                children: [
+                                  // Checkbox or disabled indicator
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          hasQuantity
+                                              ? Colors.green.withOpacity(0.1)
+                                              : (isSelected
+                                                  ? AppColors.primaryColor
+                                                  : Colors.transparent),
+                                      border: Border.all(
+                                        color:
+                                            hasQuantity
+                                                ? Colors.green.shade300
+                                                : (isSelected
+                                                    ? Colors.transparent
+                                                    : Colors.grey.shade400),
+                                        width: hasQuantity ? 1.5 : 1.5,
+                                      ),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child:
+                                        hasQuantity
+                                            ? Icon(
+                                              Icons.check,
+                                              color: Colors.green.shade600,
+                                              size: 14,
+                                            )
+                                            : (isSelected
+                                                ? const Icon(
+                                                  Icons.check,
+                                                  color: Colors.white,
+                                                  size: 14,
+                                                )
+                                                : null),
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Shade name with color
+                                  Expanded(
+                                    child: Text(
+                                      shade,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight:
+                                            isSelected && !hasQuantity
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                        color:
+                                            hasQuantity
+                                                ? Colors.grey.shade500
+                                                : _getColorCode(
+                                                  shade,
+                                                ), // Color directly applied to text
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Already added label
+                                  if (hasQuantity)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Added',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed:
+                          _selectedShades.isEmpty
+                              ? null
+                              : () {
+                                Navigator.pop(
+                                  context,
+                                  _selectedShades.toList(),
+                                );
+                              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ).copyWith(
+                        backgroundColor:
+                            MaterialStateProperty.resolveWith<Color?>((states) {
+                              if (states.contains(MaterialState.disabled)) {
+                                return Colors.grey.shade300;
+                              }
+                              return AppColors.primaryColor;
+                            }),
+                      ),
+                      child: Text(
+                        _selectedShades.isEmpty ? 'Add Shades' : 'Add',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color:
+                              _selectedShades.isEmpty
+                                  ? Colors.grey.shade600
+                                  : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to get color for the shade name
+  Color _getColorCode(String color) {
+    switch (color.toLowerCase()) {
+      case 'red':
+        return Colors.red.shade700;
+      case 'green':
+        return Colors.green.shade700;
+      case 'blue':
+        return Colors.blue.shade700;
+      case 'yellow':
+        return Colors.amber.shade800;
+      case 'black':
+        return Colors.black;
+      case 'white':
+        return Colors.grey.shade700;
+      case 'purple':
+        return Colors.purple.shade700;
+      case 'orange':
+        return Colors.orange.shade700;
+      case 'pink':
+        return Colors.pink.shade700;
+      case 'brown':
+        return Colors.brown.shade700;
+      default:
+        return AppColors.primaryColor;
+    }
   }
 }
 
