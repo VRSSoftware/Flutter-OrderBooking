@@ -490,45 +490,65 @@ class _OrderPageState extends State<OrderPage> {
                 ? 'Booking Items'
                 : itemNamee,
           ),
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: AppColors.primaryColor,
-        elevation: 1,
+        elevation: 2,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
           onPressed: () {
             Navigator.pop(context);
           },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         ),
         actions: [
-          isEdit
-              ? Container()
-              : IconButton(
+          // Cart Icon with badge
+          if (!isEdit) ...[
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
                 icon: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     const Icon(
                       CupertinoIcons.cart_badge_plus,
                       color: Colors.white,
+                      size: 20,
                     ),
                     if (cartModel.count > 0)
                       Positioned(
-                        right: 0,
-                        top: 0,
+                        right: -4,
+                        top: -4,
                         child: Container(
                           padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.red,
-                            borderRadius: BorderRadius.circular(6),
+                            shape: BoxShape.circle,
                           ),
                           constraints: const BoxConstraints(
-                            minWidth: 14,
-                            minHeight: 14,
+                            minWidth: 16,
+                            minHeight: 16,
                           ),
                           child: Text(
                             '${cartModel.count}',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 8,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -554,181 +574,309 @@ class _OrderPageState extends State<OrderPage> {
                   );
                   _fetchCartCount();
                 },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'View Cart',
               ),
-
-          IconButton(
-            icon: Icon(
-              viewOption == 0
-                  ? Icons.grid_on
-                  : viewOption == 1
-                  ? Icons.view_list
-                  : Icons.expand,
-              color: Colors.white,
             ),
-            onPressed: () {
-              setState(() {
-                viewOption = (viewOption + 1) % 3;
-              });
-            },
+          ],
+
+          // View toggle button
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                viewOption == 0
+                    ? Icons.grid_on_rounded
+                    : viewOption == 1
+                    ? Icons.view_list_rounded
+                    : Icons.expand_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  viewOption = (viewOption + 1) % 3;
+                });
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Change view',
+            ),
           ),
-          Builder(
-            builder:
-                (context) => IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.white),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return Dialog(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(
+
+    
+       // More options button
+Container(
+  margin: const EdgeInsets.only(left: 4, right: 8),
+  width: 40,
+  height: 40,
+  decoration: BoxDecoration(
+    color: Colors.white.withOpacity(0.15),
+    shape: BoxShape.circle,
+  ),
+  child: IconButton(
+    icon: const Icon(
+      Icons.more_vert_rounded,
+      color: Colors.white,
+      size: 20,
+    ),
+    onPressed: () {
+      // Create temporary variables with current values
+      bool tempShowProduct = showProduct;
+      bool tempShowSizes = showSizes;
+      
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width > 600
+                      ? 24.0
+                      : 20.0,
+                ),
+                child: StatefulBuilder(
+                  builder: (context, setStateDialog) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth:
                               MediaQuery.of(context).size.width > 600
-                                  ? 24.0
-                                  : 16.0,
-                            ),
-                            child: StatefulBuilder(
-                              builder: (context, setStateDialog) {
-                                return SingleChildScrollView(
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width >
-                                                  600
-                                              ? 600
-                                              : 440,
-                                      minWidth: 320,
+                                  ? 600
+                                  : 440,
+                          minWidth: 320,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            // Header with icon and title
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor
+                                        .withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.tune_rounded,
+                                    color: AppColors.primaryColor,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Options",
+                                  style: TextStyle(
+                                    fontSize:
+                                        MediaQuery.of(context).size.width >
+                                                600
+                                            ? 22
+                                            : 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const Spacer(),
+                                // Close button
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: Colors.grey.shade700,
+                                      size: 18,
                                     ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Options",
-                                          style: TextStyle(
-                                            fontSize:
-                                                MediaQuery.of(
-                                                          context,
-                                                        ).size.width >
-                                                        600
-                                                    ? 22
-                                                    : 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        LayoutBuilder(
-                                          builder: (context, constraints) {
-                                            final isWide =
-                                                constraints.maxWidth > 400;
-                                            return isWide
-                                                ? Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Column(
-                                                        children: [
-                                                          _buildToggleRow(
-                                                            "Show Product",
-                                                            showProduct,
-                                                            (val) {
-                                                              showProduct = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 16),
-                                                    Expanded(
-                                                      child: Column(
-                                                        children: [
-                                                          _buildToggleRow(
-                                                            "Show Size",
-                                                            showSizes,
-                                                            (val) {
-                                                              showSizes = val;
-                                                              setStateDialog(
-                                                                () {},
-                                                              );
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                                : Column(
-                                                  children: [
-                                                    _buildToggleRow(
-                                                      "Show Size",
-                                                      showSizes,
-                                                      (val) {
-                                                        showSizes = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                    _buildToggleRow(
-                                                      "Show Product",
-                                                      showProduct,
-                                                      (val) {
-                                                        showProduct = val;
-                                                        setStateDialog(() {});
-                                                      },
-                                                    ),
-                                                  ],
-                                                );
-                                          },
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: TextButton(
-                                            onPressed:
-                                                () =>
-                                                    Navigator.of(context).pop(),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16.0,
-                                                  ),
-                                              child: Text(
-                                                "Close",
-                                                style: TextStyle(
-                                                  fontSize:
-                                                      MediaQuery.of(
-                                                                context,
-                                                              ).size.width >
-                                                              600
-                                                          ? 18
-                                                          : 16,
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    padding: const EdgeInsets.all(6),
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Options
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isWide =
+                                    constraints.maxWidth > 400;
+                                return isWide
+                                    ? Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              children: [
+                                                _buildToggleRow(
+                                                  "Show Product",
+                                                  tempShowProduct,
+                                                  (val) {
+                                                    setStateDialog(() {
+                                                      tempShowProduct = val;
+                                                    });
+                                                  },
                                                 ),
-                                              ),
+                                              ],
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              children: [
+                                                _buildToggleRow(
+                                                  "Show Size",
+                                                  tempShowSizes,
+                                                  (val) {
+                                                    setStateDialog(() {
+                                                      tempShowSizes = val;
+                                                    });
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Column(
+                                        children: [
+                                          _buildToggleRow(
+                                            "Show Size",
+                                            tempShowSizes,
+                                            (val) {
+                                              setStateDialog(() {
+                                                tempShowSizes = val;
+                                              });
+                                            },
+                                          ),
+                                          const SizedBox(height: 8),
+                                          _buildToggleRow(
+                                            "Show Product",
+                                            tempShowProduct,
+                                            (val) {
+                                              setStateDialog(() {
+                                                tempShowProduct = val;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      );
                               },
                             ),
-                          ),
-                        );
-                      },
+
+                            const SizedBox(height: 24),
+
+                            // Action Buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.grey.shade700,
+                                      side: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      // Apply the changes when button is pressed
+                                      setState(() {
+                                        showProduct = tempShowProduct;
+                                        showSizes = tempShowSizes;
+                                      });
+                                      Navigator.of(context).pop();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Apply',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
-          ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+    padding: EdgeInsets.zero,
+    constraints: const BoxConstraints(),
+    tooltip: 'More options',
+  ),
+),
+     
         ],
       ),
       body: SafeArea(
@@ -813,7 +961,7 @@ class _OrderPageState extends State<OrderPage> {
               backgroundColor:
                   _getActiveFilterCount() > 0
                       ? Colors.pink
-                      : AppColors.primaryColor,
+                      : AppColors.primaryBlue,
               child: Icon(Icons.filter_alt, color: Colors.white),
               tooltip: 'Filter',
             ),
@@ -1917,8 +2065,10 @@ class _OrderPageState extends State<OrderPage> {
                 );
               }
               print("navigating");
-            print("Navigating to CreateOrderScreen from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}");
-            
+              print(
+                "Navigating to CreateOrderScreen from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}",
+              );
+
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => screen),
@@ -2213,12 +2363,20 @@ class _OrderPageState extends State<OrderPage> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
-  Widget _buildToggleRow(String title, bool value, Function(bool) onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [Text(title), Switch(value: value, onChanged: onChanged)],
-    );
-  }
+Widget _buildToggleRow(String title, bool value, Function(bool) onChanged) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(title), 
+      Switch(
+        value: value, 
+        onChanged: onChanged,
+        activeColor: AppColors.primaryColor,
+        activeTrackColor: AppColors.primaryColor.withOpacity(0.5),
+      ),
+    ],
+  );
+}
 
   Widget _buildSingleImage(String imageUrl, double maxHeight) {
     return SizedBox(

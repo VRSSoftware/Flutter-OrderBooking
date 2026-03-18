@@ -520,27 +520,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       Navigator.pushNamed(context, '/registerOrders');
     }, buttonWidth));
     
-    // _buildFeatureButton(context, 'Packing', () {
-    //   Navigator.pushNamed(context, '/packingBooking');
-    // }, buttonWidth),
-    // _buildFeatureButton(context, 'Sale Bill', () {
-    //   Navigator.pushNamed(context, '/SaleBillBookingScreen');
-    // }, buttonWidth),
-    // _buildFeatureButton(context, 'Packing Register', () {
-    //   Navigator.pushNamed(context, '/packingOrders');
-    // }, buttonWidth),
-    // _buildFeatureButton(context, 'Sale Bill Register', () {
-    //   Navigator.pushNamed(context, '/saleBillRegister');
-    // }, buttonWidth),
-    // _buildFeatureButton(context, 'Production', () {
-    //   Navigator.pushNamed(context, '/production');
-    // }, buttonWidth),
-    // _buildFeatureButton(context, 'Web', () {
-    //   Navigator.push(
-    //     context,
-    //     MaterialPageRoute(builder: (context) =>  UniversalWebView()),
-    //   );
-    // }, buttonWidth),
+  //    buttons.add(_buildFeatureButton(context, 'Packing', () {
+  //     Navigator.pushNamed(context, '/packingBooking');
+  //   }, buttonWidth));
+  //   _buildFeatureButton(context, 'Sale Bill', () {
+  //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
+  //   }, buttonWidth);
+  //  buttons.add(_buildFeatureButton(context, 'Packing Register', () {
+  //     Navigator.pushNamed(context, '/packingOrders');
+  //   }, buttonWidth));
+  //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
+  //     Navigator.pushNamed(context, '/saleBillRegister');
+  //   }, buttonWidth));
+  //    buttons.add(_buildFeatureButton(context, 'Production', () {
+  //     Navigator.pushNamed(context, '/production');
+  //   }, buttonWidth));
+  //   buttons.add (_buildFeatureButton(context, 'Web', () {
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(builder: (context) =>  UniversalWebView()),
+  //     );
+  //   }, buttonWidth));
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {

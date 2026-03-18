@@ -470,391 +470,463 @@ class _CatalogPageState extends State<CatalogPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          toTitleCase(itemNamee ?? ''),
-          style: TextStyle(color: Colors.white),
+          toTitleCase(itemNamee ?? 'Catalog Items'),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            letterSpacing: 0.3,
+          ),
         ),
         backgroundColor: AppColors.primaryColor,
-        elevation: 1,
+        elevation: 2,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         ),
         actions: [
-          if (selectedItems.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.download, color: Colors.white),
-              onPressed: _showDownloadOptions,
+          if (selectedItems.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.file_download_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: _showDownloadOptions,
+                tooltip: 'Download',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ),
-          if (selectedItems.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.share, color: Colors.white),
-              onPressed: _showShareOptions,
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.share_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: _showShareOptions,
+                tooltip: 'Share',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ),
-          IconButton(
-            icon: Icon(
-              viewOption == 0
-                  ? CupertinoIcons.list_bullet_below_rectangle
-                  : viewOption == 1
-                  ? CupertinoIcons.rectangle_expand_vertical
-                  : CupertinoIcons.square_grid_2x2_fill,
-              color: Colors.white,
+          ],
+
+          // View toggle button with dynamic icon
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
             ),
-            onPressed: () {
-              setState(() {
-                viewOption = (viewOption + 1) % 3;
-              });
-            },
+            child: IconButton(
+              icon: Icon(
+                viewOption == 0
+                    ? Icons.view_list_rounded
+                    : viewOption == 1
+                    ? Icons.view_agenda_rounded
+                    : Icons.grid_view_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  viewOption = (viewOption + 1) % 3;
+                });
+              },
+              tooltip: 'Change view',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ),
-          Builder(
-            builder:
-                (context) => IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.white),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return Dialog(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
+
+          // More options button
+          Container(
+            margin: const EdgeInsets.only(left: 4, right: 8),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.more_vert_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
-                            child: Padding(
-                              padding: EdgeInsets.all(
-                                MediaQuery.of(context).size.width > 600
-                                    ? 24.0
-                                    : 20.0,
-                              ),
-                              child: StatefulBuilder(
-                                builder: (context, setStateDialog) {
-                                  return SingleChildScrollView(
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.of(context).size.width >
-                                                    600
-                                                ? 600
-                                                : 440,
-                                        minWidth: 320,
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                          ],
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(
+                            MediaQuery.of(context).size.width > 600
+                                ? 24.0
+                                : 20.0,
+                          ),
+                          child: StatefulBuilder(
+                            builder: (context, setStateDialog) {
+                              return SingleChildScrollView(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width > 600
+                                            ? 600
+                                            : 440,
+                                    minWidth: 320,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header with icon and title
+                                      Row(
                                         children: [
-                                          // Header with icon and title
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(
-                                                  8,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primaryColor
-                                                      .withOpacity(0.1),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.tune_rounded,
-                                                  color: AppColors.primaryColor,
-                                                  size: 20,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                "Options",
-                                                style: TextStyle(
-                                                  fontSize:
-                                                      MediaQuery.of(
-                                                                context,
-                                                              ).size.width >
-                                                              600
-                                                          ? 22
-                                                          : 18,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(
-                                                    0xFF1E293B,
-                                                  ),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              // Close button
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey.shade100,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: IconButton(
-                                                  icon: Icon(
-                                                    Icons.close_rounded,
-                                                    color: Colors.grey.shade700,
-                                                    size: 18,
-                                                  ),
-                                                  onPressed:
-                                                      () =>
-                                                          Navigator.of(
-                                                            context,
-                                                          ).pop(),
-                                                  padding: const EdgeInsets.all(
-                                                    6,
-                                                  ),
-                                                  constraints:
-                                                      const BoxConstraints(),
-                                                ),
-                                              ),
-                                            ],
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryColor
+                                                  .withOpacity(0.1),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.tune_rounded,
+                                              color: AppColors.primaryColor,
+                                              size: 20,
+                                            ),
                                           ),
-
-                                          const SizedBox(height: 20),
-
-                                          // Options
-                                          LayoutBuilder(
-                                            builder: (context, constraints) {
-                                              final isWide =
-                                                  constraints.maxWidth > 400;
-                                              return isWide
-                                                  ? Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Expanded(
-                                                        child: Column(
-                                                          children: [
-                                                            _buildToggleRow(
-                                                              "Show MRP",
-                                                              showMRP,
-                                                              (val) {
-                                                                showMRP = val;
-                                                                setStateDialog(
-                                                                  () {},
-                                                                );
-                                                              },
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            _buildToggleRow(
-                                                              "Show WSP",
-                                                              showWSP,
-                                                              (val) {
-                                                                showWSP = val;
-                                                                setStateDialog(
-                                                                  () {},
-                                                                );
-                                                              },
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            _buildToggleRow(
-                                                              "Show Product",
-                                                              showProduct,
-                                                              (val) {
-                                                                showProduct =
-                                                                    val;
-                                                                setStateDialog(
-                                                                  () {},
-                                                                );
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 16),
-                                                      Expanded(
-                                                        child: Column(
-                                                          children: [
-                                                            _buildSizeToggleRow(
-                                                              setState,
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            _buildToggleRow(
-                                                              "Show Shades",
-                                                              showShades,
-                                                              (val) {
-                                                                showShades =
-                                                                    val;
-                                                                setStateDialog(
-                                                                  () {},
-                                                                );
-                                                              },
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            _buildToggleRow(
-                                                              "Show Remark",
-                                                              showRemark,
-                                                              (val) {
-                                                                showRemark =
-                                                                    val;
-                                                                setStateDialog(
-                                                                  () {},
-                                                                );
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                  : Column(
-                                                    children: [
-                                                      _buildToggleRow(
-                                                        "Show MRP",
-                                                        showMRP,
-                                                        (val) {
-                                                          showMRP = val;
-                                                          setStateDialog(() {});
-                                                        },
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      _buildToggleRow(
-                                                        "Show WSP",
-                                                        showWSP,
-                                                        (val) {
-                                                          showWSP = val;
-                                                          setStateDialog(() {});
-                                                        },
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      _buildSizeToggleRow(
-                                                        setState,
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      _buildToggleRow(
-                                                        "Show Shades",
-                                                        showShades,
-                                                        (val) {
-                                                          showShades = val;
-                                                          setStateDialog(() {});
-                                                        },
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      _buildToggleRow(
-                                                        "Show Product",
-                                                        showProduct,
-                                                        (val) {
-                                                          showProduct = val;
-                                                          setStateDialog(() {});
-                                                        },
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      _buildToggleRow(
-                                                        "Show Remark",
-                                                        showRemark,
-                                                        (val) {
-                                                          showRemark = val;
-                                                          setStateDialog(() {});
-                                                        },
-                                                      ),
-                                                    ],
-                                                  );
-                                            },
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            "Options",
+                                            style: TextStyle(
+                                              fontSize:
+                                                  MediaQuery.of(
+                                                            context,
+                                                          ).size.width >
+                                                          600
+                                                      ? 22
+                                                      : 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF1E293B),
+                                            ),
                                           ),
-
-                                          const SizedBox(height: 24),
-
-                                          // Action Buttons
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: OutlinedButton(
-                                                  onPressed:
-                                                      () =>
-                                                          Navigator.of(
-                                                            context,
-                                                          ).pop(),
-                                                  style: OutlinedButton.styleFrom(
-                                                    foregroundColor:
-                                                        Colors.grey.shade700,
-                                                    side: BorderSide(
-                                                      color:
-                                                          Colors.grey.shade300,
-                                                    ),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 12,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    'Cancel',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
+                                          const Spacer(),
+                                          // Close button
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(
+                                                Icons.close_rounded,
+                                                color: Colors.grey.shade700,
+                                                size: 18,
                                               ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: ElevatedButton(
-                                                  onPressed:
-                                                      () =>
-                                                          Navigator.of(
-                                                            context,
-                                                          ).pop(),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        AppColors.primaryColor,
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    elevation: 0,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 12,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    'Apply',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                              onPressed:
+                                                  () =>
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop(),
+                                              padding: const EdgeInsets.all(6),
+                                              constraints:
+                                                  const BoxConstraints(),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+
+                                      const SizedBox(height: 20),
+
+                                      // Options
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final isWide =
+                                              constraints.maxWidth > 400;
+                                          return isWide
+                                              ? Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      children: [
+                                                        _buildToggleRow(
+                                                          "Show MRP",
+                                                          showMRP,
+                                                          (val) {
+                                                            showMRP = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        _buildToggleRow(
+                                                          "Show WSP",
+                                                          showWSP,
+                                                          (val) {
+                                                            showWSP = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        _buildToggleRow(
+                                                          "Show Product",
+                                                          showProduct,
+                                                          (val) {
+                                                            showProduct = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Column(
+                                                      children: [
+                                                        _buildToggleRow(
+                                                          "Show Sizes",
+                                                          showSizes,
+                                                          (val) {
+                                                            if (!val)
+                                                              showFullSizeDetails =
+                                                                  false;
+                                                            showSizes = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        _buildToggleRow(
+                                                          "Show Shades",
+                                                          showShades,
+                                                          (val) {
+                                                            showShades = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        _buildToggleRow(
+                                                          "Show Remark",
+                                                          showRemark,
+                                                          (val) {
+                                                            showRemark = val;
+                                                            setStateDialog(
+                                                              () {},
+                                                            );
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                              : Column(
+                                                children: [
+                                                  _buildToggleRow(
+                                                    "Show MRP",
+                                                    showMRP,
+                                                    (val) {
+                                                      showMRP = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildToggleRow(
+                                                    "Show WSP",
+                                                    showWSP,
+                                                    (val) {
+                                                      showWSP = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildToggleRow(
+                                                    "Show Sizes",
+                                                    showSizes,
+                                                    (val) {
+                                                      if (!val)
+                                                        showFullSizeDetails =
+                                                            false;
+                                                      showSizes = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildToggleRow(
+                                                    "Show Shades",
+                                                    showShades,
+                                                    (val) {
+                                                      showShades = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildToggleRow(
+                                                    "Show Product",
+                                                    showProduct,
+                                                    (val) {
+                                                      showProduct = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  _buildToggleRow(
+                                                    "Show Remark",
+                                                    showRemark,
+                                                    (val) {
+                                                      showRemark = val;
+                                                      setStateDialog(() {});
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                        },
+                                      ),
+
+                                      const SizedBox(height: 24),
+
+                                      // Action Buttons
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed:
+                                                  () =>
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop(),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    Colors.grey.shade700,
+                                                side: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                    ),
+                                              ),
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed:
+                                                  () =>
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop(),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColors.primaryColor,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                    ),
+                                              ),
+                                              child: Text(
+                                                'Apply',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     );
                   },
-                ),
+                );
+              },
+              tooltip: 'More options',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ],
       ),
@@ -2245,254 +2317,254 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
-Future<void> _shareSelectedItemsPDF({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  if (selectedItems.isEmpty) {
-    _showMessageDialog('Please select items to share', isError: true);
-    return;
-  }
-
-  try {
-    // Show loading indicator
-    final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Sharing PDF .....'),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    final tempDir = await getTemporaryDirectory();
-    final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
-    List<Map<String, dynamic>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      // Get all image URLs for this item
-      final allImageUrls = _getImageUrl(item);
-
-      // Get shade list
-      final shadeList =
-          item.shadeName.isNotEmpty
-              ? item.shadeName.split(',').map((s) => s.trim()).toList()
-              : [];
-
-      print('Processing item: ${item.styleCode}');
-      print('All Image URLs: $allImageUrls');
-      print('Shade List: $shadeList');
-      print('shadeWiseImage option: $shadeWiseImage');
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        // ===== SHADE WISE IMAGE MODE =====
-        // Send ONLY shade images, exclude main image
-
-        if (allImageUrls.length == 1) {
-          // TYPE 1: Only one image available (main image)
-          // Since no shade images exist, don't send anything for this item
-          print('No shade images available for ${item.styleCode}');
-          continue;
-        } else if (allImageUrls.length > 1) {
-          // TYPE 2: Multiple images available (main + shade images)
-          // Skip the first image (index 0) which is the main image
-          // Only add shade images starting from index 1
-
-          if (shadeList.isNotEmpty) {
-            // Add shade images with their corresponding shades
-            int shadeImagesCount =
-                allImageUrls.length - 1; // Number of shade images
-
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1; // Start from second image (index 1)
-              if (imageIndex < allImageUrls.length) {
-                // Determine which shade this image belongs to
-                String imageSpecificShade = '';
-
-                if (i < shadeList.length) {
-                  // We have a matching shade for this image
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  // More images than shades, use empty or first shade for remaining images
-                  imageSpecificShade =
-                      shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-
-                Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade, // Specific shade for this image
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
-          } else {
-            // No shades available, add remaining images with empty shade
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '', // Empty shade
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
-              }
-            }
-          }
-        }
-      } else {
-        // ===== NORMAL MODE (not shade wise) =====
-        // Send ONLY the first/main image for each item
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '', // Include shade if enabled
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          catalogItems.add(catalogItem);
-        }
-      }
-    }
-
-    // If no catalog items after filtering, show message
-    if (catalogItems.isEmpty) {
-      // Clear loading snackbar
-      ScaffoldMessenger.of(context).clearSnackBars();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No images to share based on selection'),
-        ),
-      );
+  Future<void> _shareSelectedItemsPDF({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    if (selectedItems.isEmpty) {
+      _showMessageDialog('Please select items to share', isError: true);
       return;
     }
 
-    // Prepare request body
-    final requestBody = {
-      "company": UserSession.coBrName,
-      "createdBy": "admin",
-      "mobile": "",
-      "catalogItems": catalogItems,
-    };
-
-    print('Sending to PDF API: ${jsonEncode(requestBody)}');
-
-    // Clear loading snackbar
-    ScaffoldMessenger.of(context).clearSnackBars();
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final file = File(
-        '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await file.writeAsBytes(response.bodyBytes);
-
-      // Use shareXFiles which returns a Future<ShareResult>
-      final result = await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Please find the Catalog as an attachment.',
+    try {
+      // Show loading indicator
+      final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Sharing PDF .....'),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
 
-      // Check if sharing was completed or cancelled
-      if (result.status == ShareResultStatus.success) {
-        // Only show success message if sharing was actually completed
+      final tempDir = await getTemporaryDirectory();
+      final apiUrl = '${AppConstants.BASE_URL}/pdf/generate';
+      List<Map<String, dynamic>> catalogItems = [];
+
+      for (var item in selectedItems) {
+        // Get all image URLs for this item
+        final allImageUrls = _getImageUrl(item);
+
+        // Get shade list
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        print('Processing item: ${item.styleCode}');
+        print('All Image URLs: $allImageUrls');
+        print('Shade List: $shadeList');
+        print('shadeWiseImage option: $shadeWiseImage');
+
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          // ===== SHADE WISE IMAGE MODE =====
+          // Send ONLY shade images, exclude main image
+
+          if (allImageUrls.length == 1) {
+            // TYPE 1: Only one image available (main image)
+            // Since no shade images exist, don't send anything for this item
+            print('No shade images available for ${item.styleCode}');
+            continue;
+          } else if (allImageUrls.length > 1) {
+            // TYPE 2: Multiple images available (main + shade images)
+            // Skip the first image (index 0) which is the main image
+            // Only add shade images starting from index 1
+
+            if (shadeList.isNotEmpty) {
+              // Add shade images with their corresponding shades
+              int shadeImagesCount =
+                  allImageUrls.length - 1; // Number of shade images
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1; // Start from second image (index 1)
+                if (imageIndex < allImageUrls.length) {
+                  // Determine which shade this image belongs to
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    // We have a matching shade for this image
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    // More images than shades, use empty or first shade for remaining images
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade, // Specific shade for this image
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              // No shades available, add remaining images with empty shade
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem = _buildCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '', // Empty shade
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
+                }
+              }
+            }
+          }
+        } else {
+          // ===== NORMAL MODE (not shade wise) =====
+          // Send ONLY the first/main image for each item
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '', // Include shade if enabled
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
+        }
+      }
+
+      // If no catalog items after filtering, show message
+      if (catalogItems.isEmpty) {
+        // Clear loading snackbar
+        ScaffoldMessenger.of(context).clearSnackBars();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No images to share based on selection'),
+          ),
+        );
+        return;
+      }
+
+      // Prepare request body
+      final requestBody = {
+        "company": UserSession.coBrName,
+        "createdBy": "admin",
+        "mobile": "",
+        "catalogItems": catalogItems,
+      };
+
+      print('Sending to PDF API: ${jsonEncode(requestBody)}');
+
+      // Clear loading snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final file = File(
+          '${tempDir.path}/catalog_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Use shareXFiles which returns a Future<ShareResult>
+        final result = await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'Please find the Catalog as an attachment.');
+
+        // Check if sharing was completed or cancelled
+        if (result.status == ShareResultStatus.success) {
+          // Only show success message if sharing was actually completed
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  shadeWiseImage
+                      ? 'PDF with ${catalogItems.length} shade images generated successfully'
+                      : 'PDF generated successfully',
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+
+          // Optionally clear selected items after successful share
+          setState(() {
+            selectedItems = [];
+          });
+        } else if (result.status == ShareResultStatus.dismissed) {
+          // User cancelled the share - show subtle message or nothing
+          print('PDF share was cancelled by user');
+
+          // Optionally show a subtle message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Share cancelled'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+        }
+      } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                shadeWiseImage
-                    ? 'PDF with ${catalogItems.length} shade images generated successfully'
-                    : 'PDF generated successfully',
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-        
-        // Optionally clear selected items after successful share
-        setState(() {
-          selectedItems = [];
-        });
-      } else if (result.status == ShareResultStatus.dismissed) {
-        // User cancelled the share - show subtle message or nothing
-        print('PDF share was cancelled by user');
-        
-        // Optionally show a subtle message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Share cancelled'),
-              duration: Duration(seconds: 1),
+              content: Text('Failed to generate PDF: ${response.statusCode}'),
             ),
           );
         }
       }
-    } else {
+    } catch (e) {
+      // Clear any loading snackbars
+      ScaffoldMessenger.of(context).clearSnackBars();
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate PDF: ${response.statusCode}'),
-          ),
+          SnackBar(content: Text('Failed to share items: ${e.toString()}')),
         );
       }
+      print('Error in _shareSelectedItemsPDF: $e');
     }
-  } catch (e) {
-    // Clear any loading snackbars
-    ScaffoldMessenger.of(context).clearSnackBars();
-    
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-      );
-    }
-    print('Error in _shareSelectedItemsPDF: $e');
   }
-}
+
   Map<String, dynamic> _buildCatalogItem(
     Catalog item,
     String imageUrl,
@@ -2530,183 +2602,186 @@ Future<void> _shareSelectedItemsPDF({
     return catalogItem;
   }
 
- Future<void> _sendViaUnifiedWhatsAppAPI({
-  required String mobileNo,
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  // Store reference to mounted state at the beginning
-  final bool isMounted = mounted;
-  
-  try {
-    List<Map<String, dynamic>> catalogItems = [];
+  Future<void> _sendViaUnifiedWhatsAppAPI({
+    required String mobileNo,
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    // Store reference to mounted state at the beginning
+    final bool isMounted = mounted;
 
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList =
-          item.shadeName.isNotEmpty
-              ? item.shadeName.split(',').map((s) => s.trim()).toList()
-              : [];
+    try {
+      List<Map<String, dynamic>> catalogItems = [];
 
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
 
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
 
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade =
-                      shadeList.isNotEmpty ? shadeList[0] : '';
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, dynamic> shadeCatalogItem =
+                      _buildCatalogItemForWhatsApp(
+                        item,
+                        includeDesign,
+                        includeShade,
+                        includeRate,
+                        includeWsp,
+                        includeSize,
+                        includeSizeMrp,
+                        includeSizeWsp,
+                        includeProduct,
+                        includeRemark,
+                      );
+
+                  if (shareType == "pdf") {
+                    shadeCatalogItem['fullImagePath'] =
+                        allImageUrls[imageIndex];
+                    if (includeShade)
+                      shadeCatalogItem['shade'] = imageSpecificShade;
+                  } else {
+                    shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
+                    if (includeShade)
+                      shadeCatalogItem['shade'] = imageSpecificShade;
+                  }
+
+                  catalogItems.add(shadeCatalogItem);
                 }
-
-                Map<String, dynamic> shadeCatalogItem =
-                    _buildCatalogItemForWhatsApp(
-                      item,
-                      includeDesign,
-                      includeShade,
-                      includeRate,
-                      includeWsp,
-                      includeSize,
-                      includeSizeMrp,
-                      includeSizeWsp,
-                      includeProduct,
-                      includeRemark,
-                    );
-
-                if (shareType == "pdf") {
-                  shadeCatalogItem['fullImagePath'] =
-                      allImageUrls[imageIndex];
-                  if (includeShade)
-                    shadeCatalogItem['shade'] = imageSpecificShade;
-                } else {
-                  shadeCatalogItem['imageUrl'] = allImageUrls[imageIndex];
-                  if (includeShade)
-                    shadeCatalogItem['shade'] = imageSpecificShade;
-                }
-
-                catalogItems.add(shadeCatalogItem);
               }
-            }
-          } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, dynamic> extraCatalogItem =
-                    _buildCatalogItemForWhatsApp(
-                      item,
-                      includeDesign,
-                      includeShade,
-                      includeRate,
-                      includeWsp,
-                      includeSize,
-                      includeSizeMrp,
-                      includeSizeWsp,
-                      includeProduct,
-                      includeRemark,
-                    );
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, dynamic> extraCatalogItem =
+                      _buildCatalogItemForWhatsApp(
+                        item,
+                        includeDesign,
+                        includeShade,
+                        includeRate,
+                        includeWsp,
+                        includeSize,
+                        includeSizeMrp,
+                        includeSizeWsp,
+                        includeProduct,
+                        includeRemark,
+                      );
 
-                if (shareType == "pdf") {
-                  extraCatalogItem['fullImagePath'] = allImageUrls[i];
-                  if (includeShade) extraCatalogItem['shade'] = '';
-                } else {
-                  extraCatalogItem['imageUrl'] = allImageUrls[i];
-                  if (includeShade) extraCatalogItem['shade'] = '';
+                  if (shareType == "pdf") {
+                    extraCatalogItem['fullImagePath'] = allImageUrls[i];
+                    if (includeShade) extraCatalogItem['shade'] = '';
+                  } else {
+                    extraCatalogItem['imageUrl'] = allImageUrls[i];
+                    if (includeShade) extraCatalogItem['shade'] = '';
+                  }
+
+                  catalogItems.add(extraCatalogItem);
                 }
-
-                catalogItems.add(extraCatalogItem);
               }
             }
           }
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
+              item,
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+
+            if (shareType == "pdf") {
+              catalogItem['fullImagePath'] = allImageUrls.first;
+              if (includeShade) catalogItem['shade'] = item.shadeName;
+            } else {
+              catalogItem['imageUrl'] = allImageUrls.first;
+              if (includeShade) catalogItem['shade'] = item.shadeName;
+            }
+
+            catalogItems.add(catalogItem);
+          }
         }
-      } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, dynamic> catalogItem = _buildCatalogItemForWhatsApp(
-            item,
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
+      }
+
+      if (catalogItems.isEmpty) {
+        if (isMounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No items to share based on selection'),
+            ),
           );
-
-          if (shareType == "pdf") {
-            catalogItem['fullImagePath'] = allImageUrls.first;
-            if (includeShade) catalogItem['shade'] = item.shadeName;
-          } else {
-            catalogItem['imageUrl'] = allImageUrls.first;
-            if (includeShade) catalogItem['shade'] = item.shadeName;
-          }
-
-          catalogItems.add(catalogItem);
         }
+        return;
       }
-    }
 
-    if (catalogItems.isEmpty) {
-      if (isMounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No items to share based on selection')),
-        );
+      final requestBody = {
+        "catalogItems": catalogItems,
+        "includeDesign": includeDesign,
+        "includeShade": includeShade,
+        "includeRate": includeRate,
+        "includeWsp": includeWsp,
+        "includeSize": includeSize,
+        "includeProduct": includeProduct,
+        "includeRemark": includeRemark,
+        "mobile": "91$mobileNo",
+      };
+
+      String apiUrl;
+      if (shareType == "pdf") {
+        apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
+      } else {
+        apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
       }
-      return;
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200 && isMounted) {
+        // Success - will be handled by parent method
+        print('WhatsApp API call successful');
+      } else {
+        throw Exception('API call failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error in _sendViaUnifiedWhatsAppAPI: $e');
+      rethrow; // Rethrow to be caught by parent
     }
-
-    final requestBody = {
-      "catalogItems": catalogItems,
-      "includeDesign": includeDesign,
-      "includeShade": includeShade,
-      "includeRate": includeRate,
-      "includeWsp": includeWsp,
-      "includeSize": includeSize,
-      "includeProduct": includeProduct,
-      "includeRemark": includeRemark,
-      "mobile": "91$mobileNo",
-    };
-
-    String apiUrl;
-    if (shareType == "pdf") {
-      apiUrl = '${AppConstants.BASE_URL}/pdf/generate-and-send-whatsapp';
-    } else {
-      apiUrl = '${AppConstants.BASE_URL}/images/generate-and-send-whatsapp';
-    }
-
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200 && isMounted) {
-      // Success - will be handled by parent method
-      print('WhatsApp API call successful');
-    } else {
-      throw Exception('API call failed with status: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Error in _sendViaUnifiedWhatsAppAPI: $e');
-    rethrow; // Rethrow to be caught by parent
   }
-}
+
   Map<String, dynamic> _buildCatalogItemForWhatsApp(
     Catalog item,
     bool includeDesign,
@@ -3249,79 +3324,64 @@ Future<void> _shareSelectedItemsPDF({
     }
   }
 
-Future<void> _shareSelectedWhatsApp({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeSize = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool includeLabel = false,
-  bool shadeWiseImage = false,
-}) async {
-  if (!mounted) return;
-  
-  if (selectedItems.isEmpty) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select items to share')),
-      );
+  Future<void> _shareSelectedWhatsApp({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeSize = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool includeLabel = false,
+    bool shadeWiseImage = false,
+  }) async {
+    if (!mounted) return;
+
+    if (selectedItems.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select items to share')),
+        );
+      }
+      return;
     }
-    return;
-  }
-
-  try {
-    final result = await _showMobileNumberDialog();
-
-    if (result == null || !mounted) return; // User cancelled or widget disposed
-
-    String mobileNo = result['mobileNo'] ?? '';
-    String selectedShareType = result['shareType'] ?? 'image';
-
-    // Store mounted state for use in callbacks
-    final bool mountedBeforeApiCall = mounted;
-
-    if (!mountedBeforeApiCall) return;
-
-    // Show loading indicator
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Sending via WhatsApp...'),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    String whatsappType = AppConstants.whatsappType ?? "2";
-    bool success = false;
 
     try {
-      if (whatsappType.toUpperCase() == "2") {
-        await _sendViaUnifiedWhatsAppAPI(
-          mobileNo: mobileNo,
-          shareType: selectedShareType,
-          includeDesign: includeDesign,
-          includeShade: includeShade,
-          includeRate: includeRate,
-          includeWsp: true,
-          includeSize: includeSize,
-          includeSizeMrp: true,
-          includeSizeWsp: false,
-          includeProduct: includeProduct,
-          includeRemark: includeRemark,
-          shadeWiseImage: shadeWiseImage,
-        );
-        success = true;
-      } else if (whatsappType.toUpperCase() == "1") {
-        if (selectedShareType == "pdf") {
-          await _sendPDFViaNodeAPI(
+      final result = await _showMobileNumberDialog();
+
+      if (result == null || !mounted)
+        return; // User cancelled or widget disposed
+
+      String mobileNo = result['mobileNo'] ?? '';
+      String selectedShareType = result['shareType'] ?? 'image';
+
+      // Store mounted state for use in callbacks
+      final bool mountedBeforeApiCall = mounted;
+
+      if (!mountedBeforeApiCall) return;
+
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Sending via WhatsApp...'),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      String whatsappType = AppConstants.whatsappType ?? "2";
+      bool success = false;
+
+      try {
+        if (whatsappType.toUpperCase() == "2") {
+          await _sendViaUnifiedWhatsAppAPI(
             mobileNo: mobileNo,
+            shareType: selectedShareType,
             includeDesign: includeDesign,
             includeShade: includeShade,
             includeRate: includeRate,
@@ -3334,373 +3394,397 @@ Future<void> _shareSelectedWhatsApp({
             shadeWiseImage: shadeWiseImage,
           );
           success = true;
+        } else if (whatsappType.toUpperCase() == "1") {
+          if (selectedShareType == "pdf") {
+            await _sendPDFViaNodeAPI(
+              mobileNo: mobileNo,
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: true,
+              includeSize: includeSize,
+              includeSizeMrp: true,
+              includeSizeWsp: false,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+            success = true;
+          } else {
+            await _sendImagesViaOldWhatsAppAPI(
+              mobileNo: mobileNo,
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: true,
+              includeSize: includeSize,
+              includeSizeMrp: true,
+              includeSizeWsp: false,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+            success = true;
+          }
         } else {
-          await _sendImagesViaOldWhatsAppAPI(
-            mobileNo: mobileNo,
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeWsp: true,
-            includeSize: includeSize,
-            includeSizeMrp: true,
-            includeSizeWsp: false,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
-          );
-          success = true;
+          if (selectedShareType == "pdf") {
+            await _sendPDFViaOldWhatsAppAPI(
+              mobileNo: mobileNo,
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: true,
+              includeSize: includeSize,
+              includeSizeMrp: true,
+              includeSizeWsp: false,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+            success = true;
+          } else {
+            await _sendImagesViaOldWhatsAppAPI(
+              mobileNo: mobileNo,
+              includeDesign: includeDesign,
+              includeShade: includeShade,
+              includeRate: includeRate,
+              includeWsp: true,
+              includeSize: includeSize,
+              includeSizeMrp: true,
+              includeSizeWsp: false,
+              includeProduct: includeProduct,
+              includeRemark: includeRemark,
+              shadeWiseImage: shadeWiseImage,
+            );
+            success = true;
+          }
         }
-      } else {
-        if (selectedShareType == "pdf") {
-          await _sendPDFViaOldWhatsAppAPI(
-            mobileNo: mobileNo,
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeWsp: true,
-            includeSize: includeSize,
-            includeSizeMrp: true,
-            includeSizeWsp: false,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
+      } catch (apiError) {
+        print('API Error: $apiError');
+        success = false;
+      }
+
+      // Clear loading snackbar
+      if (mountedBeforeApiCall && mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+      }
+
+      // Only proceed if widget is still mounted
+      if (mounted && mountedBeforeApiCall) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'WhatsApp ${selectedShareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
+              ),
+              duration: const Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
           );
-          success = true;
+
+          // Clear selected items after successful share
+          setState(() {
+            selectedItems = [];
+          });
         } else {
-          await _sendImagesViaOldWhatsAppAPI(
-            mobileNo: mobileNo,
-            includeDesign: includeDesign,
-            includeShade: includeShade,
-            includeRate: includeRate,
-            includeWsp: true,
-            includeSize: includeSize,
-            includeSizeMrp: true,
-            includeSizeWsp: false,
-            includeProduct: includeProduct,
-            includeRemark: includeRemark,
-            shadeWiseImage: shadeWiseImage,
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to send via WhatsApp'),
+              backgroundColor: Colors.red,
+            ),
           );
-          success = true;
         }
       }
-    } catch (apiError) {
-      print('API Error: $apiError');
-      success = false;
-    }
+    } catch (e) {
+      print('Error in _shareSelectedWhatsApp: $e');
 
-    // Clear loading snackbar
-    if (mountedBeforeApiCall && mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-    }
+      // Check if mounted before using context
+      if (mounted) {
+        // Clear loading snackbar
+        ScaffoldMessenger.of(context).clearSnackBars();
 
-    // Only proceed if widget is still mounted
-    if (mounted && mountedBeforeApiCall) {
-      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'WhatsApp ${selectedShareType == "pdf" ? "PDF" : "images"} sent successfully to $mobileNo',
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Clear selected items after successful share
-        setState(() {
-          selectedItems = [];
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to send via WhatsApp'),
+            content: Text('Failed to share items: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
-  } catch (e) {
-    print('Error in _shareSelectedWhatsApp: $e');
-    
-    // Check if mounted before using context
-    if (mounted) {
-      // Clear loading snackbar
-      ScaffoldMessenger.of(context).clearSnackBars();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to share items: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
-}
+
   Future<Map<String, String>?> _showMobileNumberDialog() async {
-  TextEditingController mobileController = TextEditingController();
-  String selectedType = 'image'; // default selection
-  bool hasError = false;
+    TextEditingController mobileController = TextEditingController();
+    String selectedType = 'image'; // default selection
+    bool hasError = false;
 
-  return showDialog<Map<String, String>?>(
-    context: context,
-    barrierDismissible: false, // Prevent dialog from closing when tapping outside
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 4,
-            backgroundColor: Colors.white,
-            child: Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 340),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header with title and close
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
+    return showDialog<Map<String, String>?>(
+      context: context,
+      barrierDismissible:
+          false, // Prevent dialog from closing when tapping outside
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 4,
+              backgroundColor: Colors.white,
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 340),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with title and close
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.share_rounded,
+                                color: AppColors.primaryColor,
+                                size: 18,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.share_rounded,
-                              color: AppColors.primaryColor,
-                              size: 18,
+                            const SizedBox(width: 12),
+                            Text(
+                              'Share Order',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B),
+                              ),
                             ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: Colors.grey.shade500,
+                            size: 20,
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Share Order',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Colors.grey.shade500,
-                          size: 20,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Mobile Number Input with red border when error
-                  TextField(
-                    controller: mobileController,
-                    keyboardType: TextInputType.phone,
-                    maxLength: 10,
-                    style: GoogleFonts.poppins(fontSize: 14),
-                    onChanged: (value) {
-                      // Clear error when user starts typing
-                      if (hasError) {
-                        setState(() {
-                          hasError = false;
-                        });
-                      }
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Mobile Number',
-                      labelStyle: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: hasError ? Colors.red : Colors.grey.shade700,
-                      ),
-                      hintText: 'Enter 10-digit number',
-                      hintStyle: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.grey.shade400,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.phone_android_rounded,
-                        color: hasError ? Colors.red : AppColors.primaryColor,
-                        size: 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: hasError ? Colors.red : Colors.grey.shade300,
-                          width: hasError ? 2 : 1,
+                    // Mobile Number Input with red border when error
+                    TextField(
+                      controller: mobileController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      style: GoogleFonts.poppins(fontSize: 14),
+                      onChanged: (value) {
+                        // Clear error when user starts typing
+                        if (hasError) {
+                          setState(() {
+                            hasError = false;
+                          });
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Mobile Number',
+                        labelStyle: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: hasError ? Colors.red : Colors.grey.shade700,
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: hasError ? Colors.red : Colors.grey.shade300,
-                          width: hasError ? 2 : 1,
+                        hintText: 'Enter 10-digit number',
+                        hintStyle: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey.shade400,
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
+                        prefixIcon: Icon(
+                          Icons.phone_android_rounded,
                           color: hasError ? Colors.red : AppColors.primaryColor,
-                          width: 2,
+                          size: 18,
                         ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      counterText: '',
-                      errorText: hasError ? 'Please enter a valid 10-digit number' : null,
-                      errorStyle: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.red,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: hasError ? Colors.red : Colors.grey.shade300,
+                            width: hasError ? 2 : 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: hasError ? Colors.red : Colors.grey.shade300,
+                            width: hasError ? 2 : 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color:
+                                hasError ? Colors.red : AppColors.primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        counterText: '',
+                        errorText:
+                            hasError
+                                ? 'Please enter a valid 10-digit number'
+                                : null,
+                        errorStyle: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.red,
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Options without radio buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSelectionOption(
-                          title: 'Image',
-                          isSelected: selectedType == 'image',
-                          icon: Icons.image_rounded,
-                          iconColor: Colors.blue[700]!,
-                          onTap: () {
-                            setState(() {
-                              selectedType = 'image';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSelectionOption(
-                          title: 'PDF',
-                          isSelected: selectedType == 'pdf',
-                          icon: Icons.picture_as_pdf_rounded,
-                          iconColor: Colors.red[700]!,
-                          onTap: () {
-                            setState(() {
-                              selectedType = 'pdf';
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey.shade700,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.close_rounded,
-                                size: 18,
-                                color: Colors.grey.shade700,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Cancel',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final mobileNo = mobileController.text.trim();
-                            
-                            // Validate mobile number
-                            if (mobileNo.isEmpty) {
+                    // Options without radio buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSelectionOption(
+                            title: 'Image',
+                            isSelected: selectedType == 'image',
+                            icon: Icons.image_rounded,
+                            iconColor: Colors.blue[700]!,
+                            onTap: () {
                               setState(() {
-                                hasError = true;
+                                selectedType = 'image';
                               });
-                              return;
-                            }
-                            
-                            if (mobileNo.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
-                              setState(() {
-                                hasError = true;
-                              });
-                              return;
-                            }
-                            
-                            // If validation passes, return the data
-                            Navigator.pop(context, {
-                              'mobileNo': mobileNo,
-                              'shareType': selectedType,
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Send',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.send_rounded, size: 16),
-                            ],
+                            },
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSelectionOption(
+                            title: 'PDF',
+                            isSelected: selectedType == 'pdf',
+                            icon: Icons.picture_as_pdf_rounded,
+                            iconColor: Colors.red[700]!,
+                            onTap: () {
+                              setState(() {
+                                selectedType = 'pdf';
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade700,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.close_rounded,
+                                  size: 18,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Cancel',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final mobileNo = mobileController.text.trim();
+
+                              // Validate mobile number
+                              if (mobileNo.isEmpty) {
+                                setState(() {
+                                  hasError = true;
+                                });
+                                return;
+                              }
+
+                              if (mobileNo.length != 10 ||
+                                  !RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                                setState(() {
+                                  hasError = true;
+                                });
+                                return;
+                              }
+
+                              // If validation passes, return the data
+                              Navigator.pop(context, {
+                                'mobileNo': mobileNo,
+                                'shareType': selectedType,
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Send',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.send_rounded, size: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+            );
+          },
+        );
+      },
+    );
+  }
+
   // New helper widget for selection option without radio button
   Widget _buildSelectionOption({
     required String title,
@@ -3794,239 +3878,243 @@ Future<void> _shareSelectedWhatsApp({
     }
   }
 
- Future<void> _shareSelectedItems({
-  required String shareType,
-  bool includeDesign = true,
-  bool includeShade = true,
-  bool includeRate = true,
-  bool includeWsp = true,
-  bool includeSize = true,
-  bool includeSizeMrp = true,
-  bool includeSizeWsp = true,
-  bool includeProduct = true,
-  bool includeRemark = true,
-  bool shadeWiseImage = false,
-}) async {
-  if (selectedItems.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select items to share')),
-    );
-    return;
-  }
-
-  try {
-    // Show loading indicator
-    final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Preparing items for sharing...'),
-          ],
-        ),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    final List<Map<String, String>> catalogItems = [];
-
-    for (var item in selectedItems) {
-      final allImageUrls = _getImageUrl(item);
-      final shadeList =
-          item.shadeName.isNotEmpty
-              ? item.shadeName.split(',').map((s) => s.trim()).toList()
-              : [];
-
-      if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
-        if (allImageUrls.length == 1) {
-          continue;
-        } else if (allImageUrls.length > 1) {
-          if (shadeList.isNotEmpty) {
-            int shadeImagesCount = allImageUrls.length - 1;
-
-            for (int i = 0; i < shadeImagesCount; i++) {
-              int imageIndex = i + 1;
-              if (imageIndex < allImageUrls.length) {
-                String imageSpecificShade = '';
-
-                if (i < shadeList.length) {
-                  imageSpecificShade = shadeList[i];
-                } else {
-                  imageSpecificShade = shadeList.isNotEmpty ? shadeList[0] : '';
-                }
-
-                Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
-                  item,
-                  allImageUrls[imageIndex],
-                  imageSpecificShade,
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(shadeCatalogItem);
-              }
-            }
-          } else {
-            for (int i = 1; i < allImageUrls.length; i++) {
-              if (allImageUrls[i].isNotEmpty) {
-                Map<String, String> extraCatalogItem = _buildImageCatalogItem(
-                  item,
-                  allImageUrls[i],
-                  '',
-                  includeDesign,
-                  includeShade,
-                  includeRate,
-                  includeWsp,
-                  includeSize,
-                  includeSizeMrp,
-                  includeSizeWsp,
-                  includeProduct,
-                  includeRemark,
-                );
-                catalogItems.add(extraCatalogItem);
-              }
-            }
-          }
-        }
-      } else {
-        if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
-          Map<String, String> catalogItem = _buildImageCatalogItem(
-            item,
-            allImageUrls.first,
-            includeShade ? item.shadeName : '',
-            includeDesign,
-            includeShade,
-            includeRate,
-            includeWsp,
-            includeSize,
-            includeSizeMrp,
-            includeSizeWsp,
-            includeProduct,
-            includeRemark,
-          );
-          catalogItems.add(catalogItem);
-        }
-      }
-    }
-
-    if (catalogItems.isEmpty) {
+  Future<void> _shareSelectedItems({
+    required String shareType,
+    bool includeDesign = true,
+    bool includeShade = true,
+    bool includeRate = true,
+    bool includeWsp = true,
+    bool includeSize = true,
+    bool includeSizeMrp = true,
+    bool includeSizeWsp = true,
+    bool includeProduct = true,
+    bool includeRemark = true,
+    bool shadeWiseImage = false,
+  }) async {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No images to share based on selection'),
-        ),
+        const SnackBar(content: Text('Please select items to share')),
       );
       return;
     }
 
-    // Clear loading snackbar
-    ScaffoldMessenger.of(context).clearSnackBars();
+    try {
+      // Show loading indicator
+      final loadingSnackBar = ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Preparing items for sharing...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'catalogItems': catalogItems,
-        'includeDesign': includeDesign,
-        'includeShade': includeShade,
-        'includeRate': includeRate,
-        'includeWsp': includeWsp,
-        'includeSize': includeSize,
-        'includeProduct': includeProduct,
-        'includeRemark': includeRemark,
-      }),
-    );
+      final List<Map<String, String>> catalogItems = [];
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body) as List;
-      final tempDir = await getTemporaryDirectory();
-      List<String> filePaths = [];
+      for (var item in selectedItems) {
+        final allImageUrls = _getImageUrl(item);
+        final shadeList =
+            item.shadeName.isNotEmpty
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
 
-      for (var imageData in responseData) {
-        try {
-          final imageBytes = base64Decode(imageData['image']);
-          final file = File(
-            '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
-          await file.writeAsBytes(imageBytes);
-          filePaths.add(file.path);
-        } catch (e) {
-          print('Error saving image: $e');
+        if (shadeWiseImage && UserSession.imageDependsOn == 'S') {
+          if (allImageUrls.length == 1) {
+            continue;
+          } else if (allImageUrls.length > 1) {
+            if (shadeList.isNotEmpty) {
+              int shadeImagesCount = allImageUrls.length - 1;
+
+              for (int i = 0; i < shadeImagesCount; i++) {
+                int imageIndex = i + 1;
+                if (imageIndex < allImageUrls.length) {
+                  String imageSpecificShade = '';
+
+                  if (i < shadeList.length) {
+                    imageSpecificShade = shadeList[i];
+                  } else {
+                    imageSpecificShade =
+                        shadeList.isNotEmpty ? shadeList[0] : '';
+                  }
+
+                  Map<String, String> shadeCatalogItem = _buildImageCatalogItem(
+                    item,
+                    allImageUrls[imageIndex],
+                    imageSpecificShade,
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(shadeCatalogItem);
+                }
+              }
+            } else {
+              for (int i = 1; i < allImageUrls.length; i++) {
+                if (allImageUrls[i].isNotEmpty) {
+                  Map<String, String> extraCatalogItem = _buildImageCatalogItem(
+                    item,
+                    allImageUrls[i],
+                    '',
+                    includeDesign,
+                    includeShade,
+                    includeRate,
+                    includeWsp,
+                    includeSize,
+                    includeSizeMrp,
+                    includeSizeWsp,
+                    includeProduct,
+                    includeRemark,
+                  );
+                  catalogItems.add(extraCatalogItem);
+                }
+              }
+            }
+          }
+        } else {
+          if (allImageUrls.isNotEmpty && allImageUrls.first.isNotEmpty) {
+            Map<String, String> catalogItem = _buildImageCatalogItem(
+              item,
+              allImageUrls.first,
+              includeShade ? item.shadeName : '',
+              includeDesign,
+              includeShade,
+              includeRate,
+              includeWsp,
+              includeSize,
+              includeSizeMrp,
+              includeSizeWsp,
+              includeProduct,
+              includeRemark,
+            );
+            catalogItems.add(catalogItem);
+          }
         }
       }
 
-      if (filePaths.isNotEmpty) {
-        // Convert to XFile list for Share.shareXFiles
-        final xFiles = filePaths.map((path) => XFile(path)).toList();
-        
-        // Use shareXFiles which returns a Future<ShareResult>
-        final result = await Share.shareXFiles(xFiles);
-        
-        // Check if sharing was completed or cancelled
-        if (result.status == ShareResultStatus.success) {
-          // Only show success message if sharing was actually completed
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  shadeWiseImage
-                      ? '${filePaths.length} shade images shared successfully'
-                      : 'Images shared successfully',
-                ),
-                duration: const Duration(seconds: 2),
-              ),
+      if (catalogItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No images to share based on selection'),
+          ),
+        );
+        return;
+      }
+
+      // Clear loading snackbar
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/image/generate-and-share'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'catalogItems': catalogItems,
+          'includeDesign': includeDesign,
+          'includeShade': includeShade,
+          'includeRate': includeRate,
+          'includeWsp': includeWsp,
+          'includeSize': includeSize,
+          'includeProduct': includeProduct,
+          'includeRemark': includeRemark,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body) as List;
+        final tempDir = await getTemporaryDirectory();
+        List<String> filePaths = [];
+
+        for (var imageData in responseData) {
+          try {
+            final imageBytes = base64Decode(imageData['image']);
+            final file = File(
+              '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
             );
+            await file.writeAsBytes(imageBytes);
+            filePaths.add(file.path);
+          } catch (e) {
+            print('Error saving image: $e');
           }
-          
-          // Optionally clear selected items after successful share
-          setState(() {
-            selectedItems = [];
-          });
-        } else if (result.status == ShareResultStatus.dismissed) {
-          // User cancelled the share - don't show any message
-          print('Share was cancelled by user');
-          
-          // Optionally show a subtle message that share was cancelled
+        }
+
+        if (filePaths.isNotEmpty) {
+          // Convert to XFile list for Share.shareXFiles
+          final xFiles = filePaths.map((path) => XFile(path)).toList();
+
+          // Use shareXFiles which returns a Future<ShareResult>
+          final result = await Share.shareXFiles(xFiles);
+
+          // Check if sharing was completed or cancelled
+          if (result.status == ShareResultStatus.success) {
+            // Only show success message if sharing was actually completed
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    shadeWiseImage
+                        ? '${filePaths.length} shade images shared successfully'
+                        : 'Images shared successfully',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+
+            // Optionally clear selected items after successful share
+            setState(() {
+              selectedItems = [];
+            });
+          } else if (result.status == ShareResultStatus.dismissed) {
+            // User cancelled the share - don't show any message
+            print('Share was cancelled by user');
+
+            // Optionally show a subtle message that share was cancelled
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Share cancelled'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            }
+          }
+        } else {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Share cancelled'),
-                duration: Duration(seconds: 1),
-              ),
+              const SnackBar(content: Text('No valid images to share')),
             );
           }
         }
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No valid images to share')),
+            SnackBar(
+              content: Text(
+                'Failed to generate images: ${response.statusCode}',
+              ),
+            ),
           );
         }
       }
-    } else {
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate images: ${response.statusCode}'),
-          ),
+          SnackBar(content: Text('Failed to share items: ${e.toString()}')),
         );
       }
+      print('Error in _shareSelectedItems: $e');
     }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share items: ${e.toString()}')),
-      );
-    }
-    print('Error in _shareSelectedItems: $e');
   }
-}
+
   Map<String, String> _buildImageCatalogItem(
     Catalog item,
     String imageUrl,
