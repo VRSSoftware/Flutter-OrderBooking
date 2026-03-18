@@ -153,9 +153,9 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                               setState(() => selectedTransporter = val);
                             }),
                             
-                            buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
+                            UserSession.userType == 'S' ? buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
                               setState(() => selectedSalesPerson = val);
-                            }),
+                            }) : Container(),
                             
                             buildDropdown("Payment Terms", paymentTerms, selectedPaymentTerms, (val) {
                               setState(() => selectedPaymentTerms = val);
@@ -340,7 +340,7 @@ Future<void> onSave() async {
       "stationDDL": selectedStation?.key ?? '',
       "brokerDDL": selectedBroker?.key ?? '',
       "transportDDL": selectedTransporter?.key ?? '',
-      "salespersonDDL": selectedSalesPerson?.key ?? '',
+      "salespersonDDL": UserSession.userType == 'S' ? UserSession.userLedKey: selectedSalesPerson?.key ?? '',
       "paymenttermsDDL": selectedPaymentTerms?.key ?? '',
       "creditdays": creditDaysController.text,
       "createddate": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
