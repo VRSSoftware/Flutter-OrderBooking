@@ -1085,7 +1085,17 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                                 });
                               },
                               isSalesmanDropdownEnabled:
-                                  UserSession.userType != 'S',
+                                  UserSession.userType == 'A',
+                              isPaymentTermEnable:
+                                  UserSession.userType !=
+                                  'C', // Admin & Salesman
+                              isConsigneeEnabled:
+                                  UserSession.userType !=
+                                  'C', // Admin & Salesman
+                              isBookingTypeEnabled:
+                                  UserSession.userType == 'A' ||
+                                  UserSession.userType ==
+                                      'S', // Admin & Salesman
                             ),
                       );
 
@@ -4277,16 +4287,14 @@ class _OrderForm2State extends State<_OrderForm2> {
               horizontal: 16,
               vertical: 16,
             ),
+             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(6),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(
-                color: AppColors.primaryColor,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: const Color(0xFF2196F3), width: 2),
+              borderRadius: BorderRadius.circular(6),
             ),
             labelStyle: const TextStyle(
               color: Color(0xFF64748B),
@@ -4453,6 +4461,9 @@ class AddMoreInfoDialog2 extends StatefulWidget {
   final List<Item> bookingTypes;
   final Function(Map<String, dynamic>) onValueChanged;
   final bool isSalesmanDropdownEnabled;
+  final bool isPaymentTermEnable;
+  final bool isConsigneeEnabled; // Add this
+  final bool isBookingTypeEnabled;
 
   const AddMoreInfoDialog2({
     required this.salesPersonList,
@@ -4468,6 +4479,9 @@ class AddMoreInfoDialog2 extends StatefulWidget {
     required this.bookingTypes,
     required this.onValueChanged,
     required this.isSalesmanDropdownEnabled,
+    required this.isPaymentTermEnable,
+    required this.isConsigneeEnabled,
+    required this.isBookingTypeEnabled,
   });
 
   @override
@@ -4480,10 +4494,12 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
   late TextEditingController _paymentDaysController;
   String? _selectedSalesman;
   String? _selectedSalesmanKey;
-  String? _selectedConsignee;
-  String? _selectedPaymentTerm;
-  String? _selectedBookingType;
-
+  String? _selectedConsigneeKey; // Store consignee key
+  String? _selectedConsigneeName; // Display consignee name
+  String? _selectedPaymentTermKey; // Store payment term key
+  String? _selectedPaymentTermName; // Display payment term name
+  String? _selectedBookingTypeKey; // Store booking type key
+  String? _selectedBookingTypeName;
   @override
   void initState() {
     super.initState();
@@ -4499,6 +4515,8 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
           widget.creditPeriod?.toString() ??
           '',
     );
+
+    // Initialize Salesman
     _selectedSalesman =
         widget.salesPersonList.firstWhere(
           (e) =>
@@ -4508,10 +4526,143 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
         )['ledName'];
     _selectedSalesmanKey =
         widget.additionalInfo['salesman'] ?? widget.salesPersonKey;
-    _selectedConsignee = widget.additionalInfo['consignee'];
-    _selectedPaymentTerm =
+
+    // Initialize Consignee - store key but get name for display
+    _selectedConsigneeKey = widget.additionalInfo['consignee'];
+    if (_selectedConsigneeKey != null) {
+      final consignee = widget.consignees.firstWhere(
+        (e) => e.ledKey == _selectedConsigneeKey,
+        orElse:
+            () => Consignee(
+              ledKey: '',
+              ledName: '',
+              stnKey: '',
+              stnName: '',
+              paymentTermsKey: '',
+              paymentTermsName: '',
+              pytTermDiscdays: '',
+            ),
+      );
+      _selectedConsigneeName =
+          consignee.ledName.isNotEmpty ? consignee.ledName : null;
+    }
+
+    // Initialize Payment Term - store key but get name for display
+    _selectedPaymentTermKey =
         widget.additionalInfo['paymentterms'] ?? widget.pytTermDiscKey;
-    _selectedBookingType = widget.additionalInfo['bookingtype'];
+    if (_selectedPaymentTermKey != null) {
+      final term = widget.paymentTerms.firstWhere(
+        (e) => e.key == _selectedPaymentTermKey,
+        orElse: () => PytTermDisc(key: '', name: ''),
+      );
+      _selectedPaymentTermName = term.name.isNotEmpty ? term.name : null;
+    }
+
+    // Initialize Booking Type - store key but get name for display
+    _selectedBookingTypeKey = widget.additionalInfo['bookingtype'];
+    if (_selectedBookingTypeKey != null) {
+      final bookingType = widget.bookingTypes.firstWhere(
+        (e) => e.itemKey == _selectedBookingTypeKey,
+        orElse: () => Item(itemKey: '', itemName: '', itemSubGrpKey: ''),
+      );
+      _selectedBookingTypeName =
+          bookingType.itemName.isNotEmpty ? bookingType.itemName : null;
+    }
+  }
+
+  // Helper method to get consignee name from key
+  String? _getConsigneeName() {
+    if (_selectedConsigneeKey != null) {
+      final consignee = widget.consignees.firstWhere(
+        (e) => e.ledKey == _selectedConsigneeKey,
+        orElse:
+            () => Consignee(
+              ledKey: '',
+              ledName: '',
+              stnKey: '',
+              stnName: '',
+              paymentTermsKey: '',
+              paymentTermsName: '',
+              pytTermDiscdays: '',
+            ),
+      );
+      if (consignee.ledName.isNotEmpty) return consignee.ledName;
+    }
+    return null;
+  }
+
+  // Helper method to get consignee key from name
+  String? _getConsigneeKey(String? selectedName) {
+    if (selectedName == null) return null;
+
+    final consignee = widget.consignees.firstWhere(
+      (e) => e.ledName == selectedName,
+      orElse:
+          () => Consignee(
+            ledKey: '',
+            ledName: '',
+            stnKey: '',
+            stnName: '',
+            paymentTermsKey: '',
+            paymentTermsName: '',
+            pytTermDiscdays: '',
+          ),
+    );
+
+    _selectedConsigneeKey =
+        consignee.ledKey.isNotEmpty ? consignee.ledKey : null;
+    return _selectedConsigneeKey;
+  }
+
+  // Helper method to get payment term name from key
+  String? _getPaymentTermName() {
+    if (_selectedPaymentTermKey != null) {
+      final term = widget.paymentTerms.firstWhere(
+        (e) => e.key == _selectedPaymentTermKey,
+        orElse: () => PytTermDisc(key: '', name: ''),
+      );
+      if (term.name.isNotEmpty) return term.name;
+    }
+    return null;
+  }
+
+  // Helper method to get payment term key from name
+  String? _getPaymentTermKey(String? selectedName) {
+    if (selectedName == null) return null;
+
+    final term = widget.paymentTerms.firstWhere(
+      (e) => e.name == selectedName,
+      orElse: () => PytTermDisc(key: '', name: ''),
+    );
+
+    _selectedPaymentTermKey = term.key.isNotEmpty ? term.key : null;
+    return _selectedPaymentTermKey;
+  }
+
+  // Helper method to get booking type name from key
+  String? _getBookingTypeName() {
+    if (_selectedBookingTypeKey != null) {
+      final bookingType = widget.bookingTypes.firstWhere(
+        (e) => e.itemKey == _selectedBookingTypeKey,
+        orElse: () => Item(itemKey: '', itemName: '', itemSubGrpKey: ''),
+      );
+      if (bookingType.itemName.isNotEmpty) return bookingType.itemName;
+    }
+    return null;
+  }
+
+  // Helper method to get booking type key from name
+  String? _getBookingTypeKey(String? selectedName) {
+    if (selectedName == null) return null;
+
+    final bookingType = widget.bookingTypes.firstWhere(
+      (e) => e.itemName == selectedName,
+      orElse: () => Item(itemKey: '', itemName: '', itemSubGrpKey: ''),
+    );
+
+    _selectedBookingTypeKey =
+        bookingType.itemKey.isNotEmpty ? bookingType.itemKey : null;
+    return _selectedBookingTypeKey;
   }
 
   @override
@@ -4558,7 +4709,6 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
               ),
             ),
 
-            // Content
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -4583,31 +4733,47 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
                       },
                     ),
 
-                    // Consignee Dropdown
+                    // Consignee Dropdown - Updated to use key/name pattern
                     _buildDropdown(
                       "Consignee",
                       widget.consignees.map((e) => e.ledName).toList(),
-                      _selectedConsignee,
-                      true,
-                      (val) => setState(() => _selectedConsignee = val),
+                      _getConsigneeName(), // Get name from key
+                      widget.isConsigneeEnabled,
+                      (val) {
+                        setState(() {
+                          _getConsigneeKey(val); // Store key from selected name
+                        });
+                      },
                     ),
 
-                    // Payment Terms Dropdown
+                    // Payment Terms Dropdown - Already updated
                     _buildDropdown(
                       "Payment Terms",
                       widget.paymentTerms.map((e) => e.name).toList(),
-                      _selectedPaymentTerm,
-                      true,
-                      (val) => setState(() => _selectedPaymentTerm = val),
+                      _getPaymentTermName(), // Get name from key
+                      widget.isPaymentTermEnable,
+                      (val) {
+                        setState(() {
+                          _getPaymentTermKey(
+                            val,
+                          ); // Store key from selected name
+                        });
+                      },
                     ),
 
-                    // Booking Type Dropdown
+                    // Booking Type Dropdown - Updated to use key/name pattern
                     _buildDropdown(
                       "Booking Type",
                       widget.bookingTypes.map((e) => e.itemName).toList(),
-                      _selectedBookingType,
-                      true,
-                      (val) => setState(() => _selectedBookingType = val),
+                      _getBookingTypeName(), // Get name from key
+                      widget.isBookingTypeEnabled,
+                      (val) {
+                        setState(() {
+                          _getBookingTypeKey(
+                            val,
+                          ); // Store key from selected name
+                        });
+                      },
                     ),
 
                     // Reference No TextField
@@ -4759,6 +4925,7 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
               horizontal: 12,
               vertical: 10,
             ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(6),
@@ -4801,9 +4968,9 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
   void _onSave() {
     final newInfo = {
       'salesman': _selectedSalesmanKey,
-      'consignee': _selectedConsignee,
-      'paymentterms': _selectedPaymentTerm,
-      'bookingtype': _selectedBookingType,
+      'consignee': _selectedConsigneeKey, // Save the key
+      'paymentterms': _selectedPaymentTermKey, // Save the key
+      'bookingtype': _selectedBookingTypeKey,
       'refno': _refNoController.text,
       'station': _stationController.text,
       'paymentdays': _paymentDaysController.text,
