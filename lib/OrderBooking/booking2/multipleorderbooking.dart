@@ -3314,6 +3314,7 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
+                        Navigator.pop(context);
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
