@@ -326,75 +326,88 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
     );
   }
 
-  Future<void> onSave() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+Future<void> onSave() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
 
-      final data = {
-        "partyname": partyNameController.text,
-        "contactperson": contactPersonController.text,
-        "whatsappno": whatsappController.text,
-        "salestypeDDL": selectedSalesType?.key ?? '',
-        "gstno": gstController.text,
-        "address": addressController.text,
-        "stationDDL": selectedStation?.key ?? '',
-        "brokerDDL": selectedBroker?.key ?? '',
-        "transportDDL": selectedTransporter?.key ?? '',
-        "salespersonDDL": selectedSalesPerson?.key ?? '',
-        "paymenttermsDDL": selectedPaymentTerms?.key ?? '',
-        "creditdays": creditDaysController.text,
-        "createddate": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
-      };
+    final data = {
+      "partyname": partyNameController.text,
+      "contactperson": contactPersonController.text,
+      "whatsappno": whatsappController.text,
+      "salestypeDDL": selectedSalesType?.key ?? '',
+      "gstno": gstController.text,
+      "address": addressController.text,
+      "stationDDL": selectedStation?.key ?? '',
+      "brokerDDL": selectedBroker?.key ?? '',
+      "transportDDL": selectedTransporter?.key ?? '',
+      "salespersonDDL": selectedSalesPerson?.key ?? '',
+      "paymenttermsDDL": selectedPaymentTerms?.key ?? '',
+      "creditdays": creditDaysController.text,
+      "createddate": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
+    };
 
-      try {
-        final dataJson = jsonEncode(data);
-        final requestBody = {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/InsertCust'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
           "coBrId": UserSession.coBrId ?? '',
           "userId": UserSession.userName ?? '',
           "fcYrId": UserSession.userFcYr ?? '',
-          "data2": dataJson,
-        };
+          "data2": jsonEncode(data),
+        }),
+      );
 
-        final response = await http.post(
-          Uri.parse('${AppConstants.BASE_URL}/orderBooking/InsertCust'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(requestBody),
-        );
+      if (mounted) {
+        setState(() => _isLoading = false);
 
-        if (mounted) {
-          setState(() => _isLoading = false);
-
-          if (response.statusCode == 200) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text("Success"),
-                content: const Text("Customer added successfully!"),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop(true);
-                    },
-                    child: const Text("OK", style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to create customer: ${response.body}'), backgroundColor: Colors.red),
-            );
+        if (response.statusCode == 200) {
+          // Try to parse the response to get the new customer key
+          String? newCustomerKey;
+          try {
+            final responseData = jsonDecode(response.body);
+            if (responseData is Map) {
+              newCustomerKey = responseData['ledKey']?.toString() ?? 
+                              responseData['key']?.toString();
+            } else if (responseData is String) {
+              newCustomerKey = responseData;
+            }
+          } catch (e) {
+            print('Error parsing response: $e');
           }
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
+
+          // Return both success status and customer data
+          Navigator.of(context).pop({
+            'success': true,
+            'customerKey': newCustomerKey,
+            'customerName': partyNameController.text,
+          });
+          
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Customer added successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          Navigator.of(context).pop({'success': false});
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed: ${response.body}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.of(context).pop({'success': false});
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
+}
 }

@@ -4200,42 +4200,80 @@ class _OrderForm2State extends State<_OrderForm2> {
     );
   }
 
-  Widget _buildPartyDropdownRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildDropdown(
-            "Party Name",
-            "w",
-            widget.controllers.selectedParty,
-            widget.onPartySelected,
-            isEnabled: UserSession.userType != 'C',
-            isRequired: true,
-          ),
+ Widget _buildPartyDropdownRow(BuildContext context) {
+  return Row(
+    children: [
+      Expanded(
+        child: _buildDropdown(
+          "Party Name",
+          "w",
+          widget.controllers.selectedParty,
+          widget.onPartySelected,
+          isEnabled: UserSession.userType != 'C',
+          isRequired: true,
         ),
-        const SizedBox(width: 8),
-        Container(
-          height: 54,
-          width: 54,
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed:
-                UserSession.userType == 'C'
-                    ? null
-                    : () => showDialog(
-                      context: context,
-                      builder: (_) => CustomerMasterDialog(),
-                    ),
-          ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        height: 54,
+        width: 54,
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor,
+          borderRadius: BorderRadius.circular(8),
         ),
-      ],
-    );
-  }
+        child: IconButton(
+          icon: const Icon(Icons.add, color: Colors.white),
+          onPressed: UserSession.userType == 'C'
+              ? null
+              : () async {
+                  // Show dialog and wait for result
+                  final result = await showDialog(
+                    context: context,
+                    builder: (_) => CustomerMasterDialog(),
+                  );
 
+                  // Handle the result
+                  if (result != null && result is Map) {
+                    if (result['success'] == true) {
+                      // Show loading indicator
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Refreshing party list...'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+
+                      // Refresh the dropdown data
+                      await widget.dropdownData.loadAllDropdownData();
+
+                      // Auto-select the new customer if we have the key
+                      if (result['customerKey'] != null) {
+                        widget.onPartySelected(
+                          result['customerName'],
+                          result['customerKey'],
+                        );
+                      }
+
+                      // Update UI
+                      setState(() {});
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Customer "${result['customerName']}" added and selected',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+        ),
+      ),
+    ],
+  );
+}
   Widget _buildDropdown(
     String label,
     String ledCat,
@@ -4779,8 +4817,8 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
                     // Reference No TextField
                     _buildTextField("Reference No", _refNoController),
 
-                    // Station TextField
-                    _buildTextField("Station", _stationController),
+                    // // Station TextField
+                    // _buildTextField("Station", _stationController),
 
                     // Payment Days TextField
                     _buildTextField(
