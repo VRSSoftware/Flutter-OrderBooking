@@ -769,6 +769,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
 
         // Optional: Refresh UI
         // _refreshCart();
+        Provider.of<CartModel>(context, listen: false).clearAddedItems();
         _initializeData();
       } else {
         _initializeData();
@@ -1846,8 +1847,138 @@ class _StyleCard2State extends State<StyleCard2> {
     print('Multiple shades added successfully');
   }
 
+  // Future<void> _removeShadeLocally(String shadeToRemove) async {
+  //   // Show confirmation dialog
+  //   final confirmed = await showDialog<bool>(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: const Text("Remove Shade"),
+  //         content: Text(
+  //           "Are you sure you want to remove shade '$shadeToRemove'?",
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context, false),
+  //             child: const Text("Cancel"),
+  //           ),
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context, true),
+  //             child: const Text("Remove", style: TextStyle(color: Colors.red)),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+
+  //   if (confirmed != true) return;
+
+  //   // Show loading indicator
+  //   setState(() {
+  //     _isLoading = true;
+  //   });
+
+  //   try {
+  //     // Extract base style code (without barcode suffix if any)
+  //     String styleCode = widget.styleCode;
+  //     if (styleCode.contains('---')) {
+  //       styleCode = styleCode.split('---')[0];
+  //     }
+
+  //     // Prepare API payload
+  //     final Map<String, dynamic> payload = {
+  //       "userName": UserSession.userName ?? '',
+  //       "styleCode": styleCode,
+  //       "shade": shadeToRemove,
+  //     };
+
+  //     print('Deleting shade with payload: $payload');
+
+  //     // Call API
+  //     final response = await http.post(
+  //       Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteShade'),
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode(payload),
+  //     );
+
+  //     print('Delete shade response: ${response.statusCode} - ${response.body}');
+
+  //     if (response.statusCode == 200) {
+  //       // Success - update local state
+  //       setState(() {
+  //         // Set all quantities for this shade to 0
+  //         if (widget.quantities.containsKey(shadeToRemove)) {
+  //           for (var size in widget.quantities[shadeToRemove]!.keys) {
+  //             widget.quantities[shadeToRemove]![size] = 0;
+
+  //             // Also update controller text to 0
+  //             if (widget.controllers.containsKey(shadeToRemove) &&
+  //                 widget.controllers[shadeToRemove]!.containsKey(size)) {
+  //               widget.controllers[shadeToRemove]![size]!.text = '0';
+  //             }
+  //           }
+  //         }
+  //         // final cartModel = Provider.of<CartModel>(context, listen: false);
+  //         //         cartModel.removeItem(widget.styleCode);
+  //         // Remove from selectedColors (this will hide it from UI)
+  //         widget.selectedColors.remove(shadeToRemove);
+
+  //         _hasQuantityChanged = true;
+  //         _isLoading = false;
+  //       });
+
+  //       // Update parent
+  //       widget.onUpdate();
+
+  //       // Show success message
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Shade removed successfully'),
+  //           backgroundColor: Colors.green,
+  //           duration: Duration(seconds: 2),
+  //         ),
+  //       );
+  //     } else {
+  //       // API error
+  //       setState(() {
+  //         _isLoading = false;
+  //       });
+
+  //       String errorMessage = 'Failed to remove shade';
+  //       try {
+  //         final responseData = jsonDecode(response.body);
+  //         if (responseData is Map && responseData.containsKey('message')) {
+  //           errorMessage = responseData['message'];
+  //         }
+  //       } catch (_) {}
+
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(errorMessage),
+  //           backgroundColor: Colors.red,
+  //           duration: Duration(seconds: 3),
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     // Network or other error
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+
+  //     print('Error removing shade: $e');
+
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Error: ${e.toString()}'),
+  //         backgroundColor: Colors.red,
+  //         duration: Duration(seconds: 3),
+  //       ),
+  //     );
+  //   }
+  // }
+
   Future<void> _removeShadeLocally(String shadeToRemove) async {
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -1872,108 +2003,95 @@ class _StyleCard2State extends State<StyleCard2> {
 
     if (confirmed != true) return;
 
-    // Show loading indicator
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Extract base style code (without barcode suffix if any)
-      String styleCode = widget.styleCode;
-      if (styleCode.contains('---')) {
-        styleCode = styleCode.split('---')[0];
-      }
-
-      // Prepare API payload
-      final Map<String, dynamic> payload = {
+      // ─── API call to remove shade ────────────────────────────────
+      String styleCode = widget.styleCode.split('---')[0];
+      final payload = {
         "userName": UserSession.userName ?? '',
         "styleCode": styleCode,
         "shade": shadeToRemove,
       };
 
-      print('Deleting shade with payload: $payload');
-
-      // Call API
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteShade'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
 
-      print('Delete shade response: ${response.statusCode} - ${response.body}');
-
-      if (response.statusCode == 200) {
-        // Success - update local state
-        setState(() {
-          // Set all quantities for this shade to 0
-          if (widget.quantities.containsKey(shadeToRemove)) {
-            for (var size in widget.quantities[shadeToRemove]!.keys) {
-              widget.quantities[shadeToRemove]![size] = 0;
-
-              // Also update controller text to 0
-              if (widget.controllers.containsKey(shadeToRemove) &&
-                  widget.controllers[shadeToRemove]!.containsKey(size)) {
-                widget.controllers[shadeToRemove]![size]!.text = '0';
-              }
-            }
-          }
-
-          // Remove from selectedColors (this will hide it from UI)
-          widget.selectedColors.remove(shadeToRemove);
-
-          _hasQuantityChanged = true;
-          _isLoading = false;
-        });
-
-        // Update parent
-        widget.onUpdate();
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Shade removed successfully'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        // API error
-        setState(() {
-          _isLoading = false;
-        });
-
-        String errorMessage = 'Failed to remove shade';
-        try {
-          final responseData = jsonDecode(response.body);
-          if (responseData is Map && responseData.containsKey('message')) {
-            errorMessage = responseData['message'];
-          }
-        } catch (_) {}
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+      if (response.statusCode != 200) {
+        // handle error
+        setState(() => _isLoading = false);
+        return;
       }
-    } catch (e) {
-      // Network or other error
+
+      // ─── Update local state ──────────────────────────────────────
       setState(() {
+        // Zero out this shade
+        final shadeMap = widget.quantities[shadeToRemove];
+        if (shadeMap != null) {
+          for (final size in shadeMap.keys.toList()) {
+            shadeMap[size] = 0;
+            widget.controllers[shadeToRemove]?[size]?.text = '0';
+          }
+        }
+
+        // Remove from visible shades
+        widget.selectedColors.remove(shadeToRemove);
+
+        _hasQuantityChanged = true;
         _isLoading = false;
       });
 
-      print('Error removing shade: $e');
+      // ─── Decide whether to remove whole style ─────────────────────
+      final cart = Provider.of<CartModel>(context, listen: false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      if (_isStyleCompletelyEmpty()) {
+        // Style is now completely empty → safe to remove from cart & manager
+        cart.removeItem(widget.styleCode);
+        widget.styleManager.removeStyle(widget.styleCode);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Style ${widget.styleCode} removed (all quantities zero)',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // Still has some quantity somewhere → just notify / refresh
+        cart.notifyListeners(); // if your cart shows totals
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Shade $shadeToRemove removed'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      widget.onUpdate();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      // error snackbar...
     }
+  }
+
+  bool _isStyleCompletelyEmpty() {
+    // Use the quantities map that was passed via widget
+    final styleQuantities = widget.quantities;
+
+    if (styleQuantities.isEmpty) return true;
+
+    for (final shadeMap in styleQuantities.values) {
+      for (final qty in shadeMap.values) {
+        if (qty > 0) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {

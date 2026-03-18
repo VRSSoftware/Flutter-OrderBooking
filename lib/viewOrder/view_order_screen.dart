@@ -598,6 +598,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
         // Optional: Refresh UI
         // _refreshCart();
+        Provider.of<CartModel>(context, listen: false).clearAddedItems();
         _initializeData();
       } else {
         _initializeData();
