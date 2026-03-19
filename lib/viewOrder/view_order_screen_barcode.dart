@@ -5,10 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/register/OrderReportViewPage%20.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/screens/home_screen.dart';
@@ -681,6 +683,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
 
         // Optional: Refresh UI
         // _refreshCart();
+        Provider.of<CartModel>(context, listen: false).clearAddedItems();
         _initializeData();
       } else {
         _initializeData();
@@ -694,7 +697,6 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -715,7 +717,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
+            actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {

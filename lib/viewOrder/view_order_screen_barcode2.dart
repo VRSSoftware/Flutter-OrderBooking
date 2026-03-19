@@ -3152,10 +3152,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/constants/constants.dart';
+import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/register/OrderReportViewPage%20.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/screens/home_screen.dart';
@@ -3844,6 +3846,8 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
     );
   }
 
+
+
   void _showClearCartDialog() {
     showDialog(
       context: context,
@@ -3914,6 +3918,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
 
         // Optional: Refresh UI
         // _refreshCart();
+        Provider.of<CartModel>(context, listen: false).clearAddedItems();
         _initializeData();
       } else {
         _initializeData();
@@ -3927,7 +3932,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -3949,10 +3954,27 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.white),
-            onPressed: _showDeleteConfirmationDialog,
+         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'clear_cart') {
+                _showClearCartDialog();
+              }
+            },
+            itemBuilder:
+                (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'clear_cart',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Clear Cart'),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
         bottom: PreferredSize(

@@ -419,6 +419,8 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     }
   }
 
+
+
  void _handleKeyEvent(RawKeyEvent event) {
   if (event is RawKeyDownEvent &&
       event.logicalKey == LogicalKeyboardKey.enter) {
@@ -496,6 +498,7 @@ void _validateAndNavigate(String barcode) async {
 
   String upperBarcode = barcode.toUpperCase();
   print("Checking barcode: $upperBarcode, addedItems: $addedItems");
+  await _refreshAddedItems();
   
   // First check if already added in current session
   if (addedItems.contains(upperBarcode)) {
@@ -706,6 +709,43 @@ void _showAlertDialog(BuildContext context, String title, String message) {
       );
     },
   );
+}
+
+Future<void> _refreshAddedItems() async {
+  try {
+    // Fetch current cart items from the server
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        "coBrId": UserSession.coBrId ?? '',
+        "userId": UserSession.userName ?? '',
+        "fcYrId": UserSession.userFcYr ?? '',
+        "barcode": "true",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final List cartItems = json.decode(response.body);
+      
+      // Extract barcodes from cart items
+      Set<String> currentBarcodes = {};
+      for (var item in cartItems) {
+        // Check if item has barcode field
+        if (item['barcode'] != null && item['barcode'].toString().isNotEmpty) {
+          currentBarcodes.add(item['barcode'].toString().toUpperCase());
+        }
+      }
+      
+      setState(() {
+        addedItems = currentBarcodes.toList();
+      });
+      
+      print("Refreshed added items: $addedItems");
+    }
+  } catch (e) {
+    print('Error refreshing added items: $e');
+  }
 }
   @override
   Widget build(BuildContext context) {
