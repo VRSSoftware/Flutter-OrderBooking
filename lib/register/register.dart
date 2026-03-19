@@ -1175,6 +1175,7 @@ class _RegisterPageState extends State<RegisterPage>
                   orderData: registerOrder,
                   showOnlyWithImage:
                       checkedOrders[registerOrder.orderNo] ?? false,
+                       fromRegisterPage: true,
                 ),
           ),
         );

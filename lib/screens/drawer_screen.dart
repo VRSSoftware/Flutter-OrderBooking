@@ -588,85 +588,83 @@ class _DrawerScreenState extends State<DrawerScreen> {
     }
   }
 
-  Widget _buildProfileContent() {
-    return Row(
-      children: [
-        // Profile Image
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-          ),
-          child: const CircleAvatar(
-            radius: 28,
-            backgroundImage: AssetImage('assets/images/logo.png'),
-            backgroundColor: Colors.white,
-          ),
+Widget _buildProfileContent() {
+  return Row(
+    children: [
+      // Profile Image
+      Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                UserSession.name ?? 'Guest User',
-                style: const TextStyle(
-                  fontSize: 15,
+        child: const CircleAvatar(
+          radius: 28,
+          backgroundImage: AssetImage('assets/images/logo.png'),
+          backgroundColor: Colors.white,
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Company Name at the top
+            Text(
+              UserSession.coBrName?.toUpperCase() ?? '',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.lightBlue,
+                letterSpacing: 0.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            // User Name
+            Text(
+              UserSession.name ?? 'Guest User',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            // User Type
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: UserSession.userType == 'A' 
+                    ? Colors.amber.withOpacity(0.2)
+                    : Colors.blue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                UserSession.userType == 'C' 
+                    ? 'CUSTOMER' 
+                    : UserSession.userType == 'A' 
+                        ? 'ADMIN' 
+                        : 'USER',
+                style: TextStyle(
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: UserSession.userType == 'A' 
+                      ? Colors.amber 
+                      : Colors.blue.shade300,
+                  letterSpacing: 0.5,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: UserSession.userType == 'A' 
-                          ? Colors.amber.withOpacity(0.2)
-                          : Colors.blue.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      UserSession.userType == 'C' 
-                          ? 'CUSTOMER' 
-                          : UserSession.userType == 'A' 
-                              ? 'ADMIN' 
-                              : 'USER',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: UserSession.userType == 'A' 
-                            ? Colors.amber 
-                            : Colors.blue.shade300,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      UserSession.coBrName ?? '',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
   Widget _buildDrawerItem(String title, String route) {
     final isSelected = selectedSection == title;
     final isHovered = hoveredSection == title;

@@ -17,12 +17,14 @@ class OrderReportViewPage extends StatefulWidget {
   final String orderNo;
   final dynamic orderData;
   final bool showOnlyWithImage; // Controls whether to show image column
+  final bool fromRegisterPage;
 
   const OrderReportViewPage({
     Key? key,
     required this.orderNo,
     this.orderData,
-    this.showOnlyWithImage = false, // Default to false
+    this.showOnlyWithImage = false,
+    this.fromRegisterPage = false,
   }) : super(key: key);
 
   @override
@@ -1042,9 +1044,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text("Created By: Admin", style: const pw.TextStyle(fontSize: 12)),
+          // pw.Text("Created By: Admin", style: const pw.TextStyle(fontSize: 12)),
           pw.Text(
-            "For ${headerData['Co_Name']?.toString() ?? ''}",
+            "${headerData['Co_Name']?.toString() ?? ''}",
             style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
           ),
           pw.Text(
@@ -1059,77 +1061,86 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-  canPop: false,
-  onPopInvoked: (didPop) {
-    if (!didPop) {
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _handleBackNavigation(); // Use the same method here
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryColor,
+          title: Text(
+            "Order Form",
+            style: const TextStyle(color: Colors.white),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
+            onPressed: _handleBackNavigation, // Use the same method
+          ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.25),
+                    Colors.white.withOpacity(0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.share, color: Colors.white, size: 20),
+                onPressed: isLoading ? null : _sharePDF,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
+            ),
+          ],
+        ),
+        body:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : pdfError
+                ? const Center(child: Text("Error loading PDF"))
+                : PdfPreview(
+                  build: (format) => _generatePDF(),
+                  allowSharing: false,
+                  allowPrinting: false,
+                  pdfFileName: 'Order_${widget.orderNo}.pdf',
+                  initialPageFormat: PdfPageFormat.a4,
+                  canChangePageFormat: false,
+                  canChangeOrientation: false,
+                  canDebug: false,
+                  onError: (context, error) {
+                    return Center(child: Text("PDF Error: $error"));
+                  },
+                ),
+      ),
+    );
+  }
+
+  void _handleBackNavigation() {
+    if (widget.fromRegisterPage) {
+      // If from RegisterPage, go back to previous screen (RegisterPage)
+      Navigator.pop(context);
+    } else {
+      // If from anywhere else, go to OrderBookingScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => OrderBookingScreen()),
       );
     }
-  },
-  child: Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor,
-        title: Text("Order Form", style: const TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => OrderBookingScreen()),
-            );
-          },
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.25),
-                  Colors.white.withOpacity(0.15),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.share, color: Colors.white, size: 20),
-              onPressed: isLoading ? null : _sharePDF,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            ),
-          ),
-        ],
-      ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : pdfError
-              ? const Center(child: Text("Error loading PDF"))
-              : PdfPreview(
-                build: (format) => _generatePDF(),
-                allowSharing: false,
-                allowPrinting: false,
-                pdfFileName: 'Order_${widget.orderNo}.pdf',
-                initialPageFormat: PdfPageFormat.a4,
-                canChangePageFormat: false,
-                canChangeOrientation: false,
-                canDebug: false,
-                onError: (context, error) {
-                  return Center(child: Text("PDF Error: $error"));
-                },
-              ),
-      )  );
   }
 }
