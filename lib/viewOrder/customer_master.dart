@@ -153,9 +153,9 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                               setState(() => selectedTransporter = val);
                             }),
                             
-                            UserSession.userType == 'S' ? buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
+                            UserSession.userType == 'S' ? Container() :  buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
                               setState(() => selectedSalesPerson = val);
-                            }) : Container(),
+                            }),
                             
                             buildDropdown("Payment Terms", paymentTerms, selectedPaymentTerms, (val) {
                               setState(() => selectedPaymentTerms = val);
