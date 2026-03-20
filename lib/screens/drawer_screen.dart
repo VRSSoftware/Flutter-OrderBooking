@@ -623,8 +623,8 @@ Widget _buildProfileContent() {
             ),
             const SizedBox(height: 4),
             // User Name
-            Text(
-              UserSession.name ?? 'Guest User',
+             Text(
+              UserSession.userName ?? 'Guest User',
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -648,7 +648,7 @@ Widget _buildProfileContent() {
                     ? 'CUSTOMER' 
                     : UserSession.userType == 'A' 
                         ? 'ADMIN' 
-                        : 'USER',
+                        : 'SALESMAN',
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w600,

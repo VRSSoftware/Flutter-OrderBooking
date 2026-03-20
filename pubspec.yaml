@@ -143,6 +143,7 @@ flutter:
     - assets/images/cloths/img3.jpg
     - assets/images/cloths/img4.png
     - assets/images/cloths/img5.jpg
+    - assets/icons/clean.png
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

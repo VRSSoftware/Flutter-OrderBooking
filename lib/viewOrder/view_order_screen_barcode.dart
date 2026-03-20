@@ -717,29 +717,38 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-            actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'clear_cart') {
-                _showClearCartDialog();
-              }
-            },
-            itemBuilder:
-                (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'clear_cart',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear Cart'),
-                      ],
-                    ),
-                  ),
-                ],
-          ),
-        ],
+actions: [
+  // Clear Cart icon - Circular design
+  Container(
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+    width: 40,
+    height: 40,
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.15),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: IconButton(
+      icon: ImageIcon(
+        const AssetImage('assets/icons/clean.png'),
+        color: Colors.white,
+        size: 20,
+      ),
+      onPressed: () {
+        _showClearCartDialog();
+      },
+      tooltip: 'Clear Cart',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    ),
+  ),
+],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(49.0),
           child: Column(

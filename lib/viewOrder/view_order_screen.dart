@@ -477,7 +477,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                       // );
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => OrderBookingScreen(),
+                        ),
                         (Route<dynamic> route) => false,
                       );
                     },
@@ -634,29 +636,38 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             fontSize: 20,
           ),
         ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'clear_cart') {
-                _showClearCartDialog();
-              }
-            },
-            itemBuilder:
-                (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'clear_cart',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear Cart'),
-                      ],
-                    ),
-                  ),
-                ],
-          ),
-        ],
+    actions: [
+  // Clear Cart icon - Circular design
+  Container(
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+    width: 40,
+    height: 40,
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.15),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: IconButton(
+      icon: ImageIcon(
+        const AssetImage('assets/icons/clean.png'),
+        color: Colors.white,
+        size: 20,
+      ),
+      onPressed: () {
+        _showClearCartDialog();
+      },
+      tooltip: 'Clear Cart',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    ),
+  ),
+],
         backgroundColor: AppColors.primaryColor,
         elevation: 4,
         leading: IconButton(
@@ -1612,80 +1623,82 @@ class _OrderFormState extends State<_OrderForm> {
     );
   }
 
-Widget _buildPartyDropdownRow(BuildContext context) {
-  return Row(
-    children: [
-      Expanded(
-        child: _buildDropdown(
-          "Party Name",
-          "w",
-          widget.controllers.selectedParty,
-          widget.onPartySelected,
-          isEnabled: UserSession.userType != 'C',
-          isRequired: true,
+  Widget _buildPartyDropdownRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildDropdown(
+            "Party Name",
+            "w",
+            widget.controllers.selectedParty,
+            widget.onPartySelected,
+            isEnabled: UserSession.userType != 'C',
+            isRequired: true,
+          ),
         ),
-      ),
-      const SizedBox(width: 8),
-      Container(
-        height: 54,
-        width: 54,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: IconButton(
-          icon: const Icon(Icons.add, color: Colors.white),
-          onPressed: UserSession.userType == 'C'
-              ? null
-              : () async {
-                  // Show dialog and wait for result
-                  final result = await showDialog(
-                    context: context,
-                    builder: (_) => CustomerMasterDialog(),
-                  );
-
-                  // Handle the result
-                  if (result != null && result is Map) {
-                    if (result['success'] == true) {
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Refreshing party list...'),
-                          duration: Duration(seconds: 1),
-                        ),
+        const SizedBox(width: 8),
+        Container(
+          height: 54,
+          width: 54,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed:
+                UserSession.userType == 'C'
+                    ? null
+                    : () async {
+                      // Show dialog and wait for result
+                      final result = await showDialog(
+                        context: context,
+                        builder: (_) => CustomerMasterDialog(),
                       );
 
-                      // Refresh the dropdown data
-                      await widget.dropdownData.loadAllDropdownData();
+                      // Handle the result
+                      if (result != null && result is Map) {
+                        if (result['success'] == true) {
+                          // Show loading indicator
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Refreshing party list...'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
 
-                      // Auto-select the new customer if we have the key
-                      if (result['customerKey'] != null) {
-                        widget.onPartySelected(
-                          result['customerName'],
-                          result['customerKey'],
-                        );
+                          // Refresh the dropdown data
+                          await widget.dropdownData.loadAllDropdownData();
+
+                          // Auto-select the new customer if we have the key
+                          if (result['customerKey'] != null) {
+                            widget.onPartySelected(
+                              result['customerName'],
+                              result['customerKey'],
+                            );
+                          }
+
+                          // Update UI
+                          setState(() {});
+
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Customer "${result['customerName']}" added and selected',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       }
-
-                      // Update UI
-                      setState(() {});
-
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Customer "${result['customerName']}" added and selected',
-                          ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  }
-                },
+                    },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   Widget _buildDropdown(
     String label,
     String ledCat,
@@ -1736,7 +1749,7 @@ Widget _buildPartyDropdownRow(BuildContext context) {
               horizontal: 16,
               vertical: 16,
             ),
-         border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(6),
