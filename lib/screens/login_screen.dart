@@ -281,13 +281,14 @@ class _LoginPageState extends State<LoginScreen> {
               AppConstants.whatsappKey = await fetchAppSetting('541');
               AppConstants.bookingType = await fetchAppSetting('731');
               AppConstants.whatsappType = await fetchAppSetting('732');
-            //  AppConstants.bookingType = await fetchAppSetting('633');
+              //  AppConstants.bookingType = await fetchAppSetting('633');
               await fetchDatabaseCredentials();
               // print("Whatsapp Key: ${AppConstants.whatsappKey}");
               // print("RPT Path: ${UserSession.rptPath}");
-              Navigator.pushReplacement(
+              Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => HomeScreen()),
+                (Route<dynamic> route) => false,
               );
             } else {
               _showPopupMessage(context, "Invalid Username or Password");
@@ -467,7 +468,7 @@ class _LoginPageState extends State<LoginScreen> {
   //     ),
   //   );
   // }
- // @override
+  // @override
   // Widget build(BuildContext context) {
   //   return Scaffold(
   //     backgroundColor: Colors.white,
@@ -716,511 +717,586 @@ class _LoginPageState extends State<LoginScreen> {
   //   );
   // }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.grey[300],
-    resizeToAvoidBottomInset: true,
-    appBar: AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      actions: [
-        IconButton(
-          icon: Icon(Icons.settings, color: Colors.black),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => BaseUrlSettingsScreen()),
-            );
-          },
-        ),
-      ],
-    ),
-    body: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          final screenHeight = MediaQuery.of(context).size.height;
-          final isMobile = screenWidth < 600;
-          final isTablet = screenWidth >= 600 && screenWidth < 900;
-          final isDesktop = screenWidth >= 900;
-          
-          // Responsive container width
-          double containerWidth = isMobile 
-              ? double.infinity 
-              : (isTablet ? 500 : 450);
-          
-          // Responsive spacing
-          double horizontalMargin = isMobile ? 16 : (isTablet ? 40 : 0);
-          double verticalMargin = isMobile ? 8 : 20;
-          
-          return Center(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Container(
-                width: containerWidth,
-                margin: EdgeInsets.symmetric(
-                  horizontal: horizontalMargin,
-                  vertical: verticalMargin,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(isMobile ? 20 : 24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isMobile ? 0.08 : 0.1),
-                      spreadRadius: isMobile ? 1 : 2,
-                      blurRadius: isMobile ? 20 : 30,
-                      offset: Offset(0, isMobile ? 10 : 15),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(isMobile ? 20 : 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Responsive top decorative section
-                      Container(
-                        height: isMobile ? 60 : (isTablet ? 80 : 100),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.primaryColor,
-                              AppColors.Prime,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[300],
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => BaseUrlSettingsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final screenHeight = MediaQuery.of(context).size.height;
+            final isMobile = screenWidth < 600;
+            final isTablet = screenWidth >= 600 && screenWidth < 900;
+            final isDesktop = screenWidth >= 900;
+
+            // Responsive container width
+            double containerWidth =
+                isMobile ? double.infinity : (isTablet ? 500 : 450);
+
+            // Responsive spacing
+            double horizontalMargin = isMobile ? 16 : (isTablet ? 40 : 0);
+            double verticalMargin = isMobile ? 8 : 20;
+
+            return Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Container(
+                  width: containerWidth,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: horizontalMargin,
+                    vertical: verticalMargin,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isMobile ? 20 : 24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isMobile ? 0.08 : 0.1),
+                        spreadRadius: isMobile ? 1 : 2,
+                        blurRadius: isMobile ? 20 : 30,
+                        offset: Offset(0, isMobile ? 10 : 15),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(isMobile ? 20 : 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Responsive top decorative section
+                        Container(
+                          height: isMobile ? 60 : (isTablet ? 80 : 100),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.primaryColor, AppColors.Prime],
+                            ),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(isMobile ? 16 : 30),
+                              bottomRight: Radius.circular(isMobile ? 16 : 30),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Responsive decorative circles
+                              Positioned(
+                                top: -15,
+                                right: -15,
+                                child: Container(
+                                  width: isMobile ? 60 : (isTablet ? 80 : 100),
+                                  height: isMobile ? 40 : (isTablet ? 60 : 80),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: -20,
+                                left: -20,
+                                child: Container(
+                                  width: isMobile ? 70 : (isTablet ? 90 : 120),
+                                  height: isMobile ? 70 : (isTablet ? 90 : 120),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              Center(
+                                child: Text(
+                                  "VRS SOFTWARE",
+                                  style: TextStyle(
+                                    fontSize:
+                                        isMobile ? 20 : (isTablet ? 24 : 28),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(isMobile ? 16 : 30),
-                            bottomRight: Radius.circular(isMobile ? 16 : 30),
-                          ),
                         ),
-                        child: Stack(
-                          children: [
-                            // Responsive decorative circles
-                            Positioned(
-                              top: -15,
-                              right: -15,
-                              child: Container(
-                                width: isMobile ? 60 : (isTablet ? 80 : 100),
-                                height: isMobile ? 40 : (isTablet ? 60 : 80),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: -20,
-                              left: -20,
-                              child: Container(
-                                width: isMobile ? 70 : (isTablet ? 90 : 120),
-                                height: isMobile ? 70 : (isTablet ? 90 : 120),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                            Center(
-                              child: Text(
-                                "VRS SOFTWARE",
-                                style: TextStyle(
-                                  fontSize: isMobile ? 20 : (isTablet ? 24 : 28),
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      // Form content with responsive padding
-                      Form(
-                        key: _formKey,
-                        child: Container(
-                          padding: EdgeInsets.all(isMobile ? 16 : (isTablet ? 20 : 24)),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Login header
-                              // Text(
-                              //   isMobile ? "LOGIN" : "LOGIN TO CONTINUE",
-                              //   style: TextStyle(
-                              //     fontSize: isMobile ? 16 : (isTablet ? 17 : 18),
-                              //     fontWeight: FontWeight.w600,
-                              //     color: Colors.grey.shade800,
-                              //     letterSpacing: 1,
-                              //   ),
-                              // ),
-                              
-                              SizedBox(height: isMobile ? 4 : (isTablet ? 6 : 8)),
-                              
-                              // Subtitle - hide on mobile to save space
-                              if (!isMobile)
-                                Text(
-                                  "Please enter your credentials",
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 13 : 14,
-                                    color: Colors.grey.shade600,
+                        // Form content with responsive padding
+                        Form(
+                          key: _formKey,
+                          child: Container(
+                            padding: EdgeInsets.all(
+                              isMobile ? 16 : (isTablet ? 20 : 24),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Login header
+                                // Text(
+                                //   isMobile ? "LOGIN" : "LOGIN TO CONTINUE",
+                                //   style: TextStyle(
+                                //     fontSize: isMobile ? 16 : (isTablet ? 17 : 18),
+                                //     fontWeight: FontWeight.w600,
+                                //     color: Colors.grey.shade800,
+                                //     letterSpacing: 1,
+                                //   ),
+                                // ),
+                                SizedBox(
+                                  height: isMobile ? 4 : (isTablet ? 6 : 8),
+                                ),
+
+                                // Subtitle - hide on mobile to save space
+                                if (!isMobile)
+                                  Text(
+                                    "Please enter your credentials",
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 13 : 14,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
+
+                                SizedBox(
+                                  height: isMobile ? 12 : (isTablet ? 16 : 24),
                                 ),
-                              
-                              SizedBox(height: isMobile ? 12 : (isTablet ? 16 : 24)),
 
-                              // Form fields with responsive spacing
-                              _buildResponsiveTextField(
-                                "Username",
-                                isMobile ? "Username" : "Enter your username",
-                                controller: _usernameController,
-                                focusNode: _usernameFocus,
-                                nextFocus: _passwordFocus,
-                                prefixIcon: Icons.person_outline,
-                                validator: (value) => 
-                                    value == null || value.isEmpty ? 'Required' : null,
-                                isMobile: isMobile,
-                                isTablet: isTablet,
-                              ),
+                                // Form fields with responsive spacing
+                                _buildResponsiveTextField(
+                                  "Username",
+                                  isMobile ? "Username" : "Enter your username",
+                                  controller: _usernameController,
+                                  focusNode: _usernameFocus,
+                                  nextFocus: _passwordFocus,
+                                  prefixIcon: Icons.person_outline,
+                                  validator:
+                                      (value) =>
+                                          value == null || value.isEmpty
+                                              ? 'Required'
+                                              : null,
+                                  isMobile: isMobile,
+                                  isTablet: isTablet,
+                                ),
 
-                              _buildResponsiveTextField(
-                                "Password",
-                                isMobile ? "Password" : "Enter your password",
-                                obscureText: true,
-                                controller: _passwordController,
-                                focusNode: _passwordFocus,
-                                nextFocus: _companyFocus,
-                                prefixIcon: Icons.lock_outline,
-                                validator: (value) => 
-                                    value == null || value.isEmpty ? 'Required' : null,
-                                isMobile: isMobile,
-                                isTablet: isTablet,
-                              ),
+                                _buildResponsiveTextField(
+                                  "Password",
+                                  isMobile ? "Password" : "Enter your password",
+                                  obscureText: true,
+                                  controller: _passwordController,
+                                  focusNode: _passwordFocus,
+                                  nextFocus: _companyFocus,
+                                  prefixIcon: Icons.lock_outline,
+                                  validator:
+                                      (value) =>
+                                          value == null || value.isEmpty
+                                              ? 'Required'
+                                              : null,
+                                  isMobile: isMobile,
+                                  isTablet: isTablet,
+                                ),
 
-                              _buildResponsiveDropdown(
-                                "Company",
-                                isMobile ? "Select" : "Select your Company",
-                                items: _companies,
-                                value: _selectedCompany,
-                                focusNode: _companyFocus,
-                                nextFocus: _yearFocus,
-                                prefixIcon: Icons.business_center_outlined,
-                                onChanged: (val) => setState(() => _selectedCompany = val),
-                                validator: (value) => value == null ? 'Required' : null,
-                                isMobile: isMobile,
-                                isTablet: isTablet,
-                              ),
+                                _buildResponsiveDropdown(
+                                  "Company",
+                                  isMobile ? "Select" : "Select your Company",
+                                  items: _companies,
+                                  value: _selectedCompany,
+                                  focusNode: _companyFocus,
+                                  nextFocus: _yearFocus,
+                                  prefixIcon: Icons.business_center_outlined,
+                                  onChanged:
+                                      (val) => setState(
+                                        () => _selectedCompany = val,
+                                      ),
+                                  validator:
+                                      (value) =>
+                                          value == null ? 'Required' : null,
+                                  isMobile: isMobile,
+                                  isTablet: isTablet,
+                                ),
 
-                              _buildResponsiveDropdown(
-                                "Financial Year",
-                                isMobile ? "Select" : "Select Year",
-                                items: _years,
-                                value: _selectedYear,
-                                focusNode: _yearFocus,
-                                prefixIcon: Icons.calendar_today_outlined,
-                                onChanged: (val) => setState(() => _selectedYear = val),
-                                validator: (value) => value == null ? 'Required' : null,
-                                isMobile: isMobile,
-                                isTablet: isTablet,
-                              ),
+                                _buildResponsiveDropdown(
+                                  "Financial Year",
+                                  isMobile ? "Select" : "Select Year",
+                                  items: _years,
+                                  value: _selectedYear,
+                                  focusNode: _yearFocus,
+                                  prefixIcon: Icons.calendar_today_outlined,
+                                  onChanged:
+                                      (val) =>
+                                          setState(() => _selectedYear = val),
+                                  validator:
+                                      (value) =>
+                                          value == null ? 'Required' : null,
+                                  isMobile: isMobile,
+                                  isTablet: isTablet,
+                                ),
 
-                              SizedBox(height: isMobile ? 12 : (isTablet ? 14 : 16)),
+                                SizedBox(
+                                  height: isMobile ? 12 : (isTablet ? 14 : 16),
+                                ),
 
-                              // Responsive login button
-                              Container(
-                                width: double.infinity,
-                                height: isMobile ? 44 : (isTablet ? 48 : 52),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(isMobile ? 10 : 16),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primaryColor,
-                                      AppColors.Prime,
+                                // Responsive login button
+                                Container(
+                                  width: double.infinity,
+                                  height: isMobile ? 44 : (isTablet ? 48 : 52),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      isMobile ? 10 : 16,
+                                    ),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.primaryColor,
+                                        AppColors.Prime,
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(isMobile ? 0.2 : 0.3),
+                                        blurRadius: isMobile ? 6 : 10,
+                                        offset: Offset(0, isMobile ? 3 : 5),
+                                      ),
                                     ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primaryColor.withOpacity(isMobile ? 0.2 : 0.3),
-                                      blurRadius: isMobile ? 6 : 10,
-                                      offset: Offset(0, isMobile ? 3 : 5),
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        _isLoading
+                                            ? null
+                                            : () => login(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          isMobile ? 10 : 16,
+                                        ),
+                                      ),
+                                      padding: EdgeInsets.zero,
                                     ),
-                                  ],
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: _isLoading ? null : () => login(context),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(isMobile ? 10 : 16),
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: _isLoading
-                                      ? Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              isMobile ? 'LOGIN...' : 'LOGGING IN...',
+                                    child:
+                                        _isLoading
+                                            ? Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  isMobile
+                                                      ? 'LOGIN...'
+                                                      : 'LOGGING IN...',
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        isMobile
+                                                            ? 14
+                                                            : (isTablet
+                                                                ? 15
+                                                                : 16),
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: isMobile ? 6 : 8,
+                                                ),
+                                                SizedBox(
+                                                  width: isMobile ? 16 : 18,
+                                                  height: isMobile ? 16 : 18,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth:
+                                                            isMobile ? 2 : 2.5,
+                                                        color: Colors.white,
+                                                      ),
+                                                ),
+                                              ],
+                                            )
+                                            : Text(
+                                              isMobile ? "LOGIN" : "LOG IN",
                                               style: TextStyle(
-                                                fontSize: isMobile ? 14 : (isTablet ? 15 : 16),
+                                                fontSize:
+                                                    isMobile
+                                                        ? 15
+                                                        : (isTablet ? 15 : 16),
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            SizedBox(width: isMobile ? 6 : 8),
-                                            SizedBox(
-                                              width: isMobile ? 16 : 18,
-                                              height: isMobile ? 16 : 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: isMobile ? 2 : 2.5,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Text(
-                                          isMobile ? "LOGIN" : "LOG IN",
-                                          style: TextStyle(
-                                            fontSize: isMobile ? 15 : (isTablet ? 15 : 16),
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
+                                  ),
+                                ),
+
+                                SizedBox(
+                                  height: isMobile ? 8 : (isTablet ? 10 : 12),
+                                ),
+
+                                // Register link
+                                if (isRegistered != '1')
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => RegisterScreen(),
                                           ),
                                         ),
-                                ),
-                              ),
-
-                              SizedBox(height: isMobile ? 8 : (isTablet ? 10 : 12)),
-
-                              // Register link
-                              if (isRegistered != '1')
-                                TextButton(
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => RegisterScreen()),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: isMobile ? 4 : 6,
-                                      horizontal: 12,
-                                    ),
-                                    minimumSize: Size(0, isMobile ? 28 : 32),
-                                  ),
-                                  child: RichText(
-                                    text: TextSpan(
-                                      text: isMobile ? "New user? " : "New user? ",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: isMobile ? 12 : (isTablet ? 13 : 14),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isMobile ? 4 : 6,
+                                        horizontal: 12,
                                       ),
-                                      children: [
-                                        TextSpan(
-                                          text: isMobile ? "Register" : "Register here",
-                                          style: TextStyle(
-                                            color: AppColors.primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: isMobile ? 12 : (isTablet ? 13 : 14),
-                                          ),
+                                      minimumSize: Size(0, isMobile ? 28 : 32),
+                                    ),
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text:
+                                            isMobile
+                                                ? "New user? "
+                                                : "New user? ",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize:
+                                              isMobile
+                                                  ? 12
+                                                  : (isTablet ? 13 : 14),
                                         ),
-                                      ],
+                                        children: [
+                                          TextSpan(
+                                            text:
+                                                isMobile
+                                                    ? "Register"
+                                                    : "Register here",
+                                            style: TextStyle(
+                                              color: AppColors.primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize:
+                                                  isMobile
+                                                      ? 12
+                                                      : (isTablet ? 13 : 14),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    ),
-  );
-}
-
-// Responsive TextField
-Widget _buildResponsiveTextField(
-  String label,
-  String hint, {
-  bool obscureText = false,
-  TextEditingController? controller,
-  String? Function(String?)? validator,
-  FocusNode? focusNode,
-  FocusNode? nextFocus,
-  IconData? prefixIcon,
-  required bool isMobile,
-  required bool isTablet,
-}) {
-  double verticalPadding = isMobile ? 10 : (isTablet ? 12 : 14);
-  double fontSize = isMobile ? 13 : (isTablet ? 13 : 14);
-  double iconSize = isMobile ? 18 : 20;
-  double bottomPadding = isMobile ? 10 : (isTablet ? 12 : 16);
-  
-  return Padding(
-    padding: EdgeInsets.only(bottom: bottomPadding),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: fontSize,
-            color: Colors.grey.shade800,
-          ),
-        ),
-        SizedBox(height: isMobile ? 4 : (isTablet ? 5 : 6)),
-        TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          obscureText: obscureText,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (value) => nextFocus?.requestFocus(),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: fontSize,
-            ),
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(
-              vertical: verticalPadding,
-              horizontal: 12,
-            ),
-            prefixIcon: prefixIcon != null 
-                ? Icon(prefixIcon, color: AppColors.primaryColor, size: iconSize)
-                : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: AppColors.primaryColor, width: isMobile ? 1.5 : 2),
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            errorStyle: TextStyle(height: 1, fontSize: fontSize - 2),
-          ),
-          validator: validator,
-        ),
-      ],
-    ),
-  );
-}
-
-// Responsive Dropdown
-Widget _buildResponsiveDropdown(
-  String label,
-  String hint, {
-  required List<Map<String, dynamic>> items,
-  required Map<String, dynamic>? value,
-  required Function(Map<String, dynamic>?) onChanged,
-  String? Function(Map<String, dynamic>?)? validator,
-  FocusNode? focusNode,
-  FocusNode? nextFocus,
-  IconData? prefixIcon,
-  required bool isMobile,
-  required bool isTablet,
-}) {
-  double verticalPadding = isMobile ? 10 : (isTablet ? 12 : 14);
-  double fontSize = isMobile ? 13 : (isTablet ? 13 : 14);
-  double iconSize = isMobile ? 18 : 20;
-  double bottomPadding = isMobile ? 10 : (isTablet ? 12 : 16);
-  
-  return Padding(
-    padding: EdgeInsets.only(bottom: bottomPadding),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: fontSize,
-            color: Colors.grey.shade800,
-          ),
-        ),
-        SizedBox(height: isMobile ? 4 : (isTablet ? 5 : 6)),
-        DropdownButtonFormField<Map<String, dynamic>>(
-          value: value,
-          focusNode: focusNode,
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: fontSize,
-            ),
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(
-              vertical: verticalPadding,
-              horizontal: 12,
-            ),
-            prefixIcon: prefixIcon != null 
-                ? Icon(prefixIcon, color: AppColors.primaryColor, size: iconSize)
-                : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-              borderSide: BorderSide(color: AppColors.primaryColor, width: isMobile ? 1.5 : 2),
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-          ),
-          icon: Icon(
-            Icons.arrow_drop_down, 
-            color: AppColors.primaryColor, 
-            size: iconSize + 2
-          ),
-          dropdownColor: Colors.white,
-          style: TextStyle(
-            color: Colors.grey.shade800,
-            fontSize: fontSize,
-          ),
-          items: items.map((item) {
-            return DropdownMenuItem<Map<String, dynamic>>(
-              value: item,
-              child: Text(
-                item.containsKey('coBr_name')
-                    ? item['coBr_name']
-                    : item['fcYrName'],
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: fontSize),
-              ),
             );
-          }).toList(),
-          onChanged: (val) {
-            onChanged(val);
-            if (nextFocus != null) nextFocus.requestFocus();
           },
-          validator: validator,
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
+
+  // Responsive TextField
+  Widget _buildResponsiveTextField(
+    String label,
+    String hint, {
+    bool obscureText = false,
+    TextEditingController? controller,
+    String? Function(String?)? validator,
+    FocusNode? focusNode,
+    FocusNode? nextFocus,
+    IconData? prefixIcon,
+    required bool isMobile,
+    required bool isTablet,
+  }) {
+    double verticalPadding = isMobile ? 10 : (isTablet ? 12 : 14);
+    double fontSize = isMobile ? 13 : (isTablet ? 13 : 14);
+    double iconSize = isMobile ? 18 : 20;
+    double bottomPadding = isMobile ? 10 : (isTablet ? 12 : 16);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: fontSize,
+              color: Colors.grey.shade800,
+            ),
+          ),
+          SizedBox(height: isMobile ? 4 : (isTablet ? 5 : 6)),
+          TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            obscureText: obscureText,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (value) => nextFocus?.requestFocus(),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: fontSize,
+              ),
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(
+                vertical: verticalPadding,
+                horizontal: 12,
+              ),
+              prefixIcon:
+                  prefixIcon != null
+                      ? Icon(
+                        prefixIcon,
+                        color: AppColors.primaryColor,
+                        size: iconSize,
+                      )
+                      : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(
+                  color: AppColors.primaryColor,
+                  width: isMobile ? 1.5 : 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              errorStyle: TextStyle(height: 1, fontSize: fontSize - 2),
+            ),
+            validator: validator,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Responsive Dropdown
+  Widget _buildResponsiveDropdown(
+    String label,
+    String hint, {
+    required List<Map<String, dynamic>> items,
+    required Map<String, dynamic>? value,
+    required Function(Map<String, dynamic>?) onChanged,
+    String? Function(Map<String, dynamic>?)? validator,
+    FocusNode? focusNode,
+    FocusNode? nextFocus,
+    IconData? prefixIcon,
+    required bool isMobile,
+    required bool isTablet,
+  }) {
+    double verticalPadding = isMobile ? 10 : (isTablet ? 12 : 14);
+    double fontSize = isMobile ? 13 : (isTablet ? 13 : 14);
+    double iconSize = isMobile ? 18 : 20;
+    double bottomPadding = isMobile ? 10 : (isTablet ? 12 : 16);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: fontSize,
+              color: Colors.grey.shade800,
+            ),
+          ),
+          SizedBox(height: isMobile ? 4 : (isTablet ? 5 : 6)),
+          DropdownButtonFormField<Map<String, dynamic>>(
+            value: value,
+            focusNode: focusNode,
+            isExpanded: true,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: fontSize,
+              ),
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(
+                vertical: verticalPadding,
+                horizontal: 12,
+              ),
+              prefixIcon:
+                  prefixIcon != null
+                      ? Icon(
+                        prefixIcon,
+                        color: AppColors.primaryColor,
+                        size: iconSize,
+                      )
+                      : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+                borderSide: BorderSide(
+                  color: AppColors.primaryColor,
+                  width: isMobile ? 1.5 : 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+            ),
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: AppColors.primaryColor,
+              size: iconSize + 2,
+            ),
+            dropdownColor: Colors.white,
+            style: TextStyle(color: Colors.grey.shade800, fontSize: fontSize),
+            items:
+                items.map((item) {
+                  return DropdownMenuItem<Map<String, dynamic>>(
+                    value: item,
+                    child: Text(
+                      item.containsKey('coBr_name')
+                          ? item['coBr_name']
+                          : item['fcYrName'],
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: fontSize),
+                    ),
+                  );
+                }).toList(),
+            onChanged: (val) {
+              onChanged(val);
+              if (nextFocus != null) nextFocus.requestFocus();
+            },
+            validator: validator,
+          ),
+        ],
+      ),
+    );
+  }
 }

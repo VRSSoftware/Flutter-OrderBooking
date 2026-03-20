@@ -72,19 +72,13 @@ import 'package:vrs_erp/constants/app_constants.dart';
 class BottomNavigationWidget extends StatelessWidget {
   final String currentScreen;
 
-  const BottomNavigationWidget({
-    required this.currentScreen,
-    Key? key,
-  }) : super(key: key);
+  const BottomNavigationWidget({required this.currentScreen, Key? key})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> navItems = [
-      {
-        'label': 'Home',
-        'icon': CupertinoIcons.home,
-        'route': '/home',
-      },
+      {'label': 'Home', 'icon': CupertinoIcons.home, 'route': '/home'},
       {
         'label': 'Catalog',
         'icon': CupertinoIcons.square_list_fill,
@@ -118,8 +112,9 @@ class BottomNavigationWidget extends StatelessWidget {
     //   'route': '/packingBooking',
     // });
 
-    final int currentIndex =
-        navItems.indexWhere((item) => item['route'] == currentScreen);
+    final int currentIndex = navItems.indexWhere(
+      (item) => item['route'] == currentScreen,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -142,15 +137,11 @@ class BottomNavigationWidget extends StatelessWidget {
         ),
         child: BottomNavigationBar(
           currentIndex: currentIndex < 0 ? 0 : currentIndex,
-          backgroundColor: AppColors.primaryColor, 
-         selectedItemColor: Colors.white,
+          backgroundColor: AppColors.primaryColor,
+          selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white.withOpacity(0.7),
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w400,
-          ),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           iconSize: 24,
@@ -158,26 +149,31 @@ class BottomNavigationWidget extends StatelessWidget {
           unselectedFontSize: 11,
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          items: navItems
-              .map(
-                (item) => BottomNavigationBarItem(
-                  icon: Icon(item['icon']),
-                  activeIcon: Icon(
-                    item['icon'],
-                    color:  Colors.white,
-                  ),
-                  label: item['label'],
-                ),
-              )
-              .toList(),
+          items:
+              navItems
+                  .map(
+                    (item) => BottomNavigationBarItem(
+                      icon: Icon(item['icon']),
+                      activeIcon: Icon(item['icon'], color: Colors.white),
+                      label: item['label'],
+                    ),
+                  )
+                  .toList(),
           onTap: (index) {
             final selectedRoute = navItems[index]['route'];
             if (selectedRoute == currentScreen) return;
 
-            Navigator.pushReplacementNamed(
+            // Navigator.pushReplacementNamed(
+            //   context,
+            //   selectedRoute,
+            // );
+            Navigator.pushNamedAndRemoveUntil(
               context,
-              selectedRoute,
+              '/home', // your HomeScreen route
+              (route) => false,
             );
+
+            Navigator.pushNamed(context, selectedRoute);
           },
         ),
       ),

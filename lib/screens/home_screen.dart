@@ -284,7 +284,6 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -295,7 +294,9 @@ import 'package:vrs_erp/widget/bottom_navbar.dart';
 // --- Colors from the new design ---
 // We'll assume light mode, as your original code was light.
 const Color kPrimaryColor = Color(0xFF3B82F6);
-const Color kBackgroundLight = Color(0xFFEFEFF2); // Slightly off-white (was F8FAFC)
+const Color kBackgroundLight = Color(
+  0xFFEFEFF2,
+); // Slightly off-white (was F8FAFC)
 const Color kCardLight = Color(0xFFFFFFFF);
 const Color kTextLight = Color(0xFF334155);
 const Color kTextMutedLight = Color(0xFF64748B);
@@ -324,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Animation controllers for each button
   final List<AnimationController> _animationControllers = [];
   late AnimationController _shimmerController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -333,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: false);
   }
-  
+
   @override
   void dispose() {
     for (var controller in _animationControllers) {
@@ -369,11 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.orange[50]!,
         );
       case 'Sale Bill':
-        return IconStyle(
-          Icons.receipt_long,
-          Colors.red[700]!,
-          Colors.red[50]!,
-        );
+        return IconStyle(Icons.receipt_long, Colors.red[700]!, Colors.red[50]!);
       case 'Packing Register':
         return IconStyle(Icons.checklist, Colors.cyan[700]!, Colors.cyan[50]!);
       case 'Sale Bill Register':
@@ -397,11 +394,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.pink[50]!,
         );
       case 'Web':
-        return IconStyle(
-          Icons.public,
-          Colors.brown[700]!,
-          Colors.brown[50]!,
-        );
+        return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
 
       default:
         return IconStyle(Icons.grid_view, Colors.grey[700]!, Colors.grey[50]!);
@@ -508,49 +501,83 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     List<Widget> buttons = [];
 
     // Add buttons based on conditions
-    buttons.add(_buildFeatureButton(context, 'Order Booking', () {
-      Navigator.pushNamed(context, '/orderbooking');
+    buttons.add(
+      _buildFeatureButton(context, 'Order Booking', () {
+        // Navigator.pushNamed(context, '/orderbooking');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/orderbooking',
+          (Route<dynamic> route) => false,
+        );
+      }, buttonWidth),
+    );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Catalog', () {
+        // Navigator.pushNamed(context, '/catalog');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/catalog',
+          (Route<dynamic> route) => false,
+        );
+      }, buttonWidth),
+    );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Order Register', () {
+        // Navigator.pushNamed(context, '/registerOrders');
+        Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/registerOrders',
+            (Route<dynamic> route) => false,
+          );
+      }, buttonWidth),
+    );
+
+    //    buttons.add(_buildFeatureButton(context, 'Packing', () {
+    //     Navigator.pushNamed(context, '/packingBooking');
+    //   }, buttonWidth));
+    //   _buildFeatureButton(context, 'Sale Bill', () {
+    //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
+    //   }, buttonWidth);
+    //  buttons.add(_buildFeatureButton(context, 'Packing Register', () {
+    //     Navigator.pushNamed(context, '/packingOrders');
+    //   }, buttonWidth));
+    //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
+    //     Navigator.pushNamed(context, '/saleBillRegister');
+    //   }, buttonWidth));
+     buttons.add(_buildFeatureButton(context, 'Production', () {
+      Navigator.pushNamed(context, '/production');
     }, buttonWidth));
-    
-    buttons.add(_buildFeatureButton(context, 'Catalog', () {
-      Navigator.pushNamed(context, '/catalog');
-    }, buttonWidth));
-    
-    buttons.add(_buildFeatureButton(context, 'Order Register', () {
-      Navigator.pushNamed(context, '/registerOrders');
-    }, buttonWidth));
-    
-  //    buttons.add(_buildFeatureButton(context, 'Packing', () {
-  //     Navigator.pushNamed(context, '/packingBooking');
-  //   }, buttonWidth));
-  //   _buildFeatureButton(context, 'Sale Bill', () {
-  //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
-  //   }, buttonWidth);
-  //  buttons.add(_buildFeatureButton(context, 'Packing Register', () {
-  //     Navigator.pushNamed(context, '/packingOrders');
-  //   }, buttonWidth));
-  //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
-  //     Navigator.pushNamed(context, '/saleBillRegister');
-  //   }, buttonWidth));
-  //    buttons.add(_buildFeatureButton(context, 'Production', () {
-  //     Navigator.pushNamed(context, '/production');
-  //   }, buttonWidth));
-  //   buttons.add (_buildFeatureButton(context, 'Web', () {
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(builder: (context) =>  UniversalWebView()),
-  //     );
-  //   }, buttonWidth));
+    //   buttons.add (_buildFeatureButton(context, 'Web', () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) =>  UniversalWebView()),
+    //     );
+    //   }, buttonWidth));
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
-      buttons.add(_buildFeatureButton(context, 'Stock Report', () {
-        Navigator.pushNamed(context, '/stockReport');
-      }, buttonWidth));
-      
-      buttons.add(_buildFeatureButton(context, 'Dashboard', () {
-        Navigator.pushNamed(context, '/dashboard');
-      }, buttonWidth));
+      buttons.add(
+        _buildFeatureButton(context, 'Stock Report', () {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/stockReport',
+            (Route<dynamic> route) => false,
+          );
+        }, buttonWidth),
+      );
+
+      buttons.add(
+        _buildFeatureButton(context, 'Dashboard', () {
+          // Navigator.pushNamed(context, '/dashboard');
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/dashboard',
+            (Route<dynamic> route) => false,
+          );
+        }, buttonWidth),
+      );
     }
 
     return Center(
@@ -571,17 +598,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     double width,
   ) {
     final style = _getIconStyle(label);
-    
+
     // Create animation controller for this button
     final animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 150), // Slightly shorter duration
     );
     _animationControllers.add(animationController);
-    
+
     // Use simpler animation without CurvedAnimation to avoid issues
-    final scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(animationController);
-    
+    final scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(animationController);
+
     return StatefulBuilder(
       builder: (context, setState) {
         return GestureDetector(
@@ -600,19 +630,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             animation: animationController,
             builder: (context, child) {
               return Transform.scale(
-                scale: 1.0 - (animationController.value * 0.03), // Simple scale calculation
+                scale:
+                    1.0 -
+                    (animationController.value *
+                        0.03), // Simple scale calculation
                 child: Container(
                   width: width,
                   child: Card(
-                    elevation: 2.0 + (animationController.value * 4), // Simple elevation calculation
+                    elevation:
+                        2.0 +
+                        (animationController.value *
+                            4), // Simple elevation calculation
                     color: kCardLight,
-                    shadowColor: style.iconColor.withOpacity(0.2 + (animationController.value * 0.2)),
+                    shadowColor: style.iconColor.withOpacity(
+                      0.2 + (animationController.value * 0.2),
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20.0),
-                      side: BorderSide(
-                        color: style.backgroundColor,
-                        width: 2,
-                      ),
+                      side: BorderSide(color: style.backgroundColor, width: 2),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -646,10 +681,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   spreadRadius: 2,
                                 ),
                               ],
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
+                              border: Border.all(color: Colors.white, width: 3),
                             ),
                             child: Icon(
                               style.icon,

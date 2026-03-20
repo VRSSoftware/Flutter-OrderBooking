@@ -791,15 +791,6 @@
 //   }
 // }
 
-
-
-
-
-
-
-
-
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -997,13 +988,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       0,
       (sum, item) => sum + (item['totalamt'] as int),
     );
+    String _formatOrderType(String orderType) {
+      String type = orderType.toLowerCase().replaceAll("order", "");
+      return '${type[0].toUpperCase()}${type.substring(1)} Order';
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Order Details',
-          style: TextStyle(
+        title: Text(
+           '${_formatOrderType(widget.orderType)} Details',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 16, // Reduced from 18 to 16
@@ -1011,8 +1006,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         ),
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
-        toolbarHeight:
-            42, // ADD THIS LINE - reduces AppBar height from default ~56 to 44
+        toolbarHeight: 42, // ADD THIS LINE - reduces AppBar height from default ~56 to 44
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios,
@@ -1795,63 +1789,65 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       ).showSnackBar(SnackBar(content: Text('Error viewing PDF: $e')));
     }
   }
-void _handleWhatsAppShare() async {
-  try {
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
 
-    // Generate PDF
-    final pdf = await _generatePDF();
-    final bytes = await pdf.save();
+  void _handleWhatsAppShare() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
 
-    // Create a temporary file
-    final tempDir = await getTemporaryDirectory();
-    final fileName = 'SalesOrder_Summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final tempFile = File('${tempDir.path}/$fileName');
-    await tempFile.writeAsBytes(bytes);
+      // Generate PDF
+      final pdf = await _generatePDF();
+      final bytes = await pdf.save();
 
-    // Close loading dialog
-    Navigator.pop(context);
+      // Create a temporary file
+      final tempDir = await getTemporaryDirectory();
+      final fileName =
+          'SalesOrder_Summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(bytes);
 
-    // Share the file
-    final xFile = XFile(tempFile.path,
-        mimeType: 'application/pdf',
-        name: fileName);
-
-    await Share.shareXFiles(
-      [xFile],
-      text: 'Sales Order Summary Report',
-      sharePositionOrigin: Rect.fromLTWH(0, 0, 300, 300), // For iOS
-    ).then((result) {
-      if (result.status == ShareResultStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF shared successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    });
-  } catch (e) {
-    // Close loading dialog if open
-    if (Navigator.canPop(context)) {
+      // Close loading dialog
       Navigator.pop(context);
+
+      // Share the file
+      final xFile = XFile(
+        tempFile.path,
+        mimeType: 'application/pdf',
+        name: fileName,
+      );
+
+      await Share.shareXFiles(
+        [xFile],
+        text: 'Sales Order Summary Report',
+        sharePositionOrigin: Rect.fromLTWH(0, 0, 300, 300), // For iOS
+      ).then((result) {
+        if (result.status == ShareResultStatus.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF shared successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      // Close loading dialog if open
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sharing PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error sharing PDF: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
 }

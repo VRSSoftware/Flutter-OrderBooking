@@ -545,11 +545,16 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
+                      // Navigator.pushReplacement(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => OrderBookingScreen(),
+                      //   ),
+                      // );
+                      Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => OrderBookingScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+                        (Route<dynamic> route) => false,
                       );
                     },
                     child: Text('Done'),
@@ -3434,144 +3439,142 @@ class _StyleCard2State extends State<StyleCard2> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  return Stack(
-    children: [
-      Column(
-        children: [
-          buildOrderItem(
-            widget.catalogOrder,
-            context,
-          ),
-         
-          // Add Shade Button - only show if there are available shades
-          if (_getAvailableShades().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primaryColor.withOpacity(0.9),
-                      AppColors.primaryColor,
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryColor.withOpacity(0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _showAddShadeDialog,
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            buildOrderItem(widget.catalogOrder, context),
+
+            // Add Shade Button - only show if there are available shades
+            if (_getAvailableShades().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryColor.withOpacity(0.9),
+                        AppColors.primaryColor,
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryColor.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showAddShadeDialog,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 20,
+                            const SizedBox(width: 12),
+                            Text(
+                              'Add Shade',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Add Shade',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 16,
+                              ),
                             ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white.withOpacity(0.7),
-                              size: 16,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
-
-      // Loading overlay
-      if (_isLoading)
-        ModalBarrier(
-          dismissible: false,
-          color: Colors.black.withOpacity(0.4),
+          ],
         ),
-      if (_isLoading)
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryColor,
+
+        // Loading overlay
+        if (_isLoading)
+          ModalBarrier(
+            dismissible: false,
+            color: Colors.black.withOpacity(0.4),
+          ),
+        if (_isLoading)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryColor,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  'Updating...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+                  const SizedBox(width: 16),
+                  Text(
+                    'Updating...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-    ],
-  );
-}}
+      ],
+    );
+  }
+}
 
 class AddShadeDialog extends StatelessWidget {
   final String styleCode;
@@ -4261,80 +4264,82 @@ class _OrderForm2State extends State<_OrderForm2> {
     );
   }
 
- Widget _buildPartyDropdownRow(BuildContext context) {
-  return Row(
-    children: [
-      Expanded(
-        child: _buildDropdown(
-          "Party Name",
-          "w",
-          widget.controllers.selectedParty,
-          widget.onPartySelected,
-          isEnabled: UserSession.userType != 'C',
-          isRequired: true,
+  Widget _buildPartyDropdownRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildDropdown(
+            "Party Name",
+            "w",
+            widget.controllers.selectedParty,
+            widget.onPartySelected,
+            isEnabled: UserSession.userType != 'C',
+            isRequired: true,
+          ),
         ),
-      ),
-      const SizedBox(width: 8),
-      Container(
-        height: 54,
-        width: 54,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: IconButton(
-          icon: const Icon(Icons.add, color: Colors.white),
-          onPressed: UserSession.userType == 'C'
-              ? null
-              : () async {
-                  // Show dialog and wait for result
-                  final result = await showDialog(
-                    context: context,
-                    builder: (_) => CustomerMasterDialog(),
-                  );
-
-                  // Handle the result
-                  if (result != null && result is Map) {
-                    if (result['success'] == true) {
-                      // Show loading indicator
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Refreshing party list...'),
-                          duration: Duration(seconds: 1),
-                        ),
+        const SizedBox(width: 8),
+        Container(
+          height: 54,
+          width: 54,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed:
+                UserSession.userType == 'C'
+                    ? null
+                    : () async {
+                      // Show dialog and wait for result
+                      final result = await showDialog(
+                        context: context,
+                        builder: (_) => CustomerMasterDialog(),
                       );
 
-                      // Refresh the dropdown data
-                      await widget.dropdownData.loadAllDropdownData();
+                      // Handle the result
+                      if (result != null && result is Map) {
+                        if (result['success'] == true) {
+                          // Show loading indicator
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Refreshing party list...'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
 
-                      // Auto-select the new customer if we have the key
-                      if (result['customerKey'] != null) {
-                        widget.onPartySelected(
-                          result['customerName'],
-                          result['customerKey'],
-                        );
+                          // Refresh the dropdown data
+                          await widget.dropdownData.loadAllDropdownData();
+
+                          // Auto-select the new customer if we have the key
+                          if (result['customerKey'] != null) {
+                            widget.onPartySelected(
+                              result['customerName'],
+                              result['customerKey'],
+                            );
+                          }
+
+                          // Update UI
+                          setState(() {});
+
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Customer "${result['customerName']}" added and selected',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       }
-
-                      // Update UI
-                      setState(() {});
-
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Customer "${result['customerName']}" added and selected',
-                          ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  }
-                },
+                    },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   Widget _buildDropdown(
     String label,
     String ledCat,
@@ -4386,7 +4391,7 @@ class _OrderForm2State extends State<_OrderForm2> {
               horizontal: 16,
               vertical: 16,
             ),
-             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(6),

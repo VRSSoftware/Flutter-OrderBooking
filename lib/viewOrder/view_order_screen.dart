@@ -469,11 +469,16 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
+                      // Navigator.pushReplacement(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => OrderBookingScreen(),
+                      //   ),
+                      // );
+                      Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => OrderBookingScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
+                        (Route<dynamic> route) => false,
                       );
                     },
                     child: Text('Done'),

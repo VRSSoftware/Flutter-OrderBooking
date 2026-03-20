@@ -4302,14 +4302,19 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
                 color: const Color.fromARGB(255, 220, 239, 248),
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                OrderBookingScreen(startWithBarcode: true),
-                      ),
-                    );
+                    // Navigator.pushReplacement(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder:
+                    //         (context) =>
+                    //             OrderBookingScreen(startWithBarcode: true),
+                    //   ),
+                    // );
+                    Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => OrderBookingScreen(startWithBarcode: true)),
+                        (Route<dynamic> route) => false,
+                      );
                   },
                   child: const Text(
                     "Add More",
