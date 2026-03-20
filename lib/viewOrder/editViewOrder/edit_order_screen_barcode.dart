@@ -3166,7 +3166,7 @@ class _EditOrderScreenBarcodeState extends State<EditOrderScreenBarcode> {
   void _handlePartySelection(String? val, String? key) async {
     if (key == null) return;
     _orderControllers.selectedPartyKey = key;
-    UserSession.userLedKey = key;
+    // UserSession.userLedKey = key;
     try {
       final details = await _dropdownData.fetchLedgerDetails(key);
       _dropdownData.updateDependentFields(

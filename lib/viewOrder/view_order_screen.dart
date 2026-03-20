@@ -1008,7 +1008,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       _orderControllers.selectedPartyName = val;
     });
     _orderControllers.selectedPartyKey = key;
-    UserSession.userLedKey = key;
+    // UserSession.userLedKey = key;
     try {
       await fetchAndMapConsignees(key: key, CoBrId: UserSession.coBrId ?? '');
       final details = await _dropdownData.fetchLedgerDetails(key);

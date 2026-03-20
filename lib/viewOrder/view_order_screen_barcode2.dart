@@ -3381,18 +3381,18 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
       print("rrrrrrrrrresponse body:${response.body}");
       if (response.statusCode == 200) {
         print('Success: ${response.body}');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Order saved successfully')));
+        // ScaffoldMessenger.of(
+        //   context,
+        // ).showSnackBar(SnackBar(content: Text('Order saved successfully')));
         return response.body;
       } else {
         print('Error: ${response.statusCode}');
         print('Response Body: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save order: ${response.statusCode}'),
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Failed to save order: ${response.statusCode}'),
+        //   ),
+        // );
       }
     } catch (e) {
       print('Error: $e');
@@ -4408,7 +4408,7 @@ class _ViewOrderScreenBarcodeState extends State<ViewOrderScreenBarcode2> {
     });
 
     _orderControllers.selectedPartyKey = key;
-    UserSession.userLedKey = key;
+    // UserSession.userLedKey = key;
     try {
       await fetchAndMapConsignees(key: key, CoBrId: UserSession.coBrId ?? '');
       final details = await _dropdownData.fetchLedgerDetails(key);

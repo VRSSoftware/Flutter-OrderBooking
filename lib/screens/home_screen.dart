@@ -525,12 +525,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     buttons.add(
       _buildFeatureButton(context, 'Order Register', () {
-        // Navigator.pushNamed(context, '/registerOrders');
-        Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/registerOrders',
-            (Route<dynamic> route) => false,
-          );
+        Navigator.pushNamed(context, '/registerOrders');
+        // Navigator.pushNamed(
+        //     context,
+        //     '/registerOrders',
+        //     // (Route<dynamic> route) => false,
+        //   );
       }, buttonWidth),
     );
 
