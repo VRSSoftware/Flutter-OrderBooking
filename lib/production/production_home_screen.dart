@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/production/JobCard_cutting/jobCardListScreen.dart';
+import 'package:vrs_erp/production/Planning/Job_Work_Order/jobWorkScreen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
 // Adjust import path as needed
@@ -31,6 +32,12 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
   // Helper function to map button labels to icons and colors
   IconStyle _getIconStyle(String label) {
     switch (label) {
+         case 'Job Work Order':
+        return IconStyle(
+          Icons.precision_manufacturing,
+          Colors.orange[500]!,
+          Colors.orange[100]!,
+        );
       case 'Job Card / Cutting Report':
         return IconStyle(
           Icons.assignment_turned_in,
@@ -121,6 +128,17 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
         runSpacing: spacing,
         alignment: WrapAlignment.center,
         children: [
+                _buildFeatureButton(
+            context,
+            'Job Work Order',
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => JobWorkScreen()),
+              );
+            },
+            buttonWidth,
+          ),
           _buildFeatureButton(
             context,
             'Job Card / Cutting Report',
@@ -132,37 +150,37 @@ class _ProductionHomeScreenState extends State<ProductionHomeScreen> {
             },
             buttonWidth,
           ),
-          _buildFeatureButton(
-            context,
-            'Process Issue (Job Card)',
-            () {
-              // Add navigation for Process Issue screen when available
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => ProcessIssueScreen()),
-              // );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Process Issue screen coming soon!')),
-              );
-            },
-            buttonWidth,
-          ),
+          // _buildFeatureButton(
+          //   context,
+          //   'Process Issue (Job Card)',
+          //   () {
+          //     // Add navigation for Process Issue screen when available
+          //     // Navigator.push(
+          //     //   context,
+          //     //   MaterialPageRoute(builder: (context) => ProcessIssueScreen()),
+          //     // );
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(content: Text('Process Issue screen coming soon!')),
+          //     );
+          //   },
+          //   buttonWidth,
+          // ),
 
-           _buildFeatureButton(
-            context,
-            'Process Receipt (Finish)',
-            () {
-              // Add navigation for Process Issue screen when available
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => ProcessIssueScreen()),
-              // );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Process Issue screen coming soon!')),
-              );
-            },
-            buttonWidth,
-          ),
+          //  _buildFeatureButton(
+          //   context,
+          //   'Process Receipt (Finish)',
+          //   () {
+          //     // Add navigation for Process Issue screen when available
+          //     // Navigator.push(
+          //     //   context,
+          //     //   MaterialPageRoute(builder: (context) => ProcessIssueScreen()),
+          //     // );
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(content: Text('Process Issue screen coming soon!')),
+          //     );
+          //   },
+          //   buttonWidth,
+          // ),
         ],
       ),
     );

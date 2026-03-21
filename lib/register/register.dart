@@ -47,6 +47,10 @@ class _RegisterPageState extends State<RegisterPage>
   DateTime? deliveryToDate;
   int activeFilterCount = 0;
 
+  final ScrollController _dateRangeScrollController = ScrollController();
+bool _showCustomDatePicker = false;
+String selectedRange = 'Today';
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -75,8 +79,23 @@ class _RegisterPageState extends State<RegisterPage>
     _animationController.dispose();
     fromDateController.dispose();
     toDateController.dispose();
+     _dateRangeScrollController.dispose(); 
     super.dispose();
   }
+
+  final List<String> dateRanges = [
+  'Custom',
+  'Today',
+  'Yesterday',
+  'This Week',
+  'Previous Week',
+  'This Month',
+  'Previous Month',
+  'This Quarter',
+  'Previous Quarter',
+  'This Year',
+  'Previous Year',
+];
 
   Future<void> _loadDropdownData() async {
     setState(() {
@@ -397,68 +416,310 @@ class _RegisterPageState extends State<RegisterPage>
     );
   }
 
-  Widget _buildDateRangeSelector() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
+Widget _buildDateRangeSelector() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Horizontal Date Range Scroll
+      SizedBox(
+        height: 50,
+        child: ListView.builder(
+          controller: _dateRangeScrollController,
+          scrollDirection: Axis.horizontal,
+          itemCount: dateRanges.length,
+          itemBuilder: (context, index) {
+            final range = dateRanges[index];
+            final isSelected = selectedRange == range;
+            
+            return GestureDetector(
+              onTap: () => _updateDateRange(range),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected ? AppColors.primaryColor : Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
+                  ),
+                  boxShadow: isSelected ? [
+                    BoxShadow(
+                      color: AppColors.primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ] : null,
                 ),
-                child: Icon(
-                  Icons.date_range,
+                child: Center(
+                  child: Text(
+                    range,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      
+      const SizedBox(height: 16),
+      
+      // Custom Date Picker (only shown when Custom is selected)
+      if (_showCustomDatePicker)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildCustomDatePickerField(
+                  label: 'From',
+                  date: fromDate,
+                  onTap: () => _selectDateForCustom(true),
+                  isFromDate: true, // Pass this
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCustomDatePickerField(
+                  label: 'To',
+                  date: toDate,
+                  onTap: () => _selectDateForCustom(false),
+                  isFromDate: false, // Pass this
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+Widget _buildCustomDatePickerField({
+  required String label,
+  required DateTime? date,
+  required VoidCallback onTap,
+  required bool isFromDate, // Add this parameter
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Colors.grey.shade600,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Container(
+        height: 48,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Previous Date Button
+            SizedBox(
+              width: 40,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  Icons.chevron_left,
                   color: AppColors.primaryColor,
                   size: 20,
                 ),
+                onPressed: () => _changeCustomDate(isFromDate, -1),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'Select Date Range',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
+            ),
+            // Date Display (clickable)
+            Expanded(
+              child: GestureDetector(
+                onTap: onTap,
+                child: Container(
+                  alignment: Alignment.center,
+                  child: Text(
+                    date != null 
+                        ? '${date.day}/${date.month}/${date.year}'
+                        : 'Select Date',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF334155),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateInput(
-                  fromDateController,
-                  'From Date',
-                  fromDate,
+            ),
+            // Next Date Button
+            SizedBox(
+              width: 40,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.primaryColor,
+                  size: 20,
                 ),
+                onPressed: () => _changeCustomDate(isFromDate, 1),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDateInput(toDateController, 'To Date', toDate),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
-    );
+    ],
+  );
+}
+
+void _changeCustomDate(bool isFromDate, int days) {
+  setState(() {
+    if (isFromDate) {
+      if (fromDate != null) {
+        fromDate = fromDate!.add(Duration(days: days));
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+      }
+    } else {
+      if (toDate != null) {
+        toDate = toDate!.add(Duration(days: days));
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+      }
+    }
+    selectedRange = 'Custom';
+    _showCustomDatePicker = true;
+  });
+  fetchOrders();
+}
+
+
+void _updateDateRange(String range) {
+  final now = DateTime.now();
+  setState(() {
+    selectedRange = range;
+    _showCustomDatePicker = (range == 'Custom');
+    
+    switch (range) {
+      case 'Today':
+        fromDate = DateTime(now.year, now.month, now.day);
+        toDate = DateTime(now.year, now.month, now.day);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Yesterday':
+        final yesterday = now.subtract(const Duration(days: 1));
+        fromDate = DateTime(yesterday.year, yesterday.month, yesterday.day);
+        toDate = DateTime(yesterday.year, yesterday.month, yesterday.day);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'This Week':
+        final firstDayOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        fromDate = DateTime(firstDayOfWeek.year, firstDayOfWeek.month, firstDayOfWeek.day);
+        toDate = DateTime(now.year, now.month, now.day);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Previous Week':
+        final firstDayOfLastWeek = now.subtract(Duration(days: now.weekday + 6));
+        fromDate = DateTime(firstDayOfLastWeek.year, firstDayOfLastWeek.month, firstDayOfLastWeek.day);
+        toDate = DateTime(firstDayOfLastWeek.year, firstDayOfLastWeek.month, firstDayOfLastWeek.day + 6);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'This Month':
+        fromDate = DateTime(now.year, now.month, 1);
+        toDate = DateTime(now.year, now.month + 1, 0);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Previous Month':
+        fromDate = DateTime(now.year, now.month - 1, 1);
+        toDate = DateTime(now.year, now.month, 0);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'This Quarter':
+        final quarter = (now.month - 1) ~/ 3;
+        fromDate = DateTime(now.year, quarter * 3 + 1, 1);
+        toDate = DateTime(now.year, quarter * 3 + 4, 0);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Previous Quarter':
+        final quarter = (now.month - 1) ~/ 3;
+        final prevQuarter = quarter == 0 ? 3 : quarter - 1;
+        final prevQuarterYear = quarter == 0 ? now.year - 1 : now.year;
+        fromDate = DateTime(prevQuarterYear, prevQuarter * 3 + 1, 1);
+        toDate = DateTime(prevQuarterYear, prevQuarter * 3 + 4, 0);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'This Year':
+        fromDate = DateTime(now.year, 1, 1);
+        toDate = DateTime(now.year, 12, 31);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Previous Year':
+        fromDate = DateTime(now.year - 1, 1, 1);
+        toDate = DateTime(now.year - 1, 12, 31);
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate!);
+        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate!);
+        break;
+      case 'Custom':
+        // Keep existing dates, just show custom picker
+        break;
+    }
+  });
+  fetchOrders();
+}
+
+
+Future<void> _selectDateForCustom(bool isFromDate) async {
+  final DateTime? picked = await showDatePicker(
+    context: context,
+    initialDate: isFromDate ? (fromDate ?? DateTime.now()) : (toDate ?? DateTime.now()),
+    firstDate: DateTime(2000),
+    lastDate: DateTime.now(),
+    builder: (context, child) {
+      return Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(primary: AppColors.primaryColor),
+        ),
+        child: child!,
+      );
+    },
+  );
+  if (picked != null) {
+    setState(() {
+      if (isFromDate) {
+        fromDate = picked;
+        fromDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      } else {
+        toDate = picked;
+        toDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      }
+      selectedRange = 'Custom';
+      _showCustomDatePicker = true;
+    });
+    fetchOrders();
   }
+}
+
 
   Widget _buildDateInput(
     TextEditingController controller,

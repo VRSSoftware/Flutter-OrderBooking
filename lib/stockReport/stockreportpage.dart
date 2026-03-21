@@ -454,7 +454,7 @@ class _StockReportPageState extends State<StockReportPage> {
                       ),
                     ),
                     pw.Text(
-                      "Date: ${DateTime.now().toString().substring(0, 10)}",
+                      "Closing Stock As On: ${DateTime.now().toString().substring(0, 10)}",
                       style: const pw.TextStyle(fontSize: 11),
                     ),
                   ],

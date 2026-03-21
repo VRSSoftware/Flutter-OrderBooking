@@ -70,7 +70,6 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
     'Previous Quarter',
     'This Year',
     'Previous Year',
- 
   ];
 
   @override
@@ -157,7 +156,7 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
       selectedRange = range;
       FilterData.selectedDateRange = range;
       _showCustomDatePicker = (range == 'Custom');
-      
+
       switch (range) {
         case 'Today':
           fromDate = DateTime(now.year, now.month, now.day);
@@ -332,87 +331,93 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: DrawerScreen(),
-     appBar: AppBar(
-  title: Text(
-    'Dashboard',
-    style: GoogleFonts.poppins(
-      color: Colors.white,
-      fontWeight: FontWeight.w600,
-      fontSize: 20,
-    ),
-  ),
-  backgroundColor: AppColors.primaryColor,
-  elevation: 0,
-  leading: Builder(
-    builder:
-        (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+      appBar: AppBar(
+        title: Text(
+          'Dashboard',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
         ),
-  ),
-  actions: [
-    Container(
-      margin: const EdgeInsets.only(right: 16),
-      child: CircleAvatar(
-        backgroundColor: Colors.white.withOpacity(0.2),
-        child: IconButton(
-          icon: const Icon(Icons.filter_list, color: Colors.white, size: 20),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        DashboardFilterPage(
-                          ledgerList: ledgerList,
-                          salespersonList: salespersonList,
-                          onApplyFilters: ({
-                            KeyName? selectedLedger,
-                            KeyName? selectedSalesperson,
-                            DateTime? fromDate,
-                            DateTime? toDate,
-                            KeyName? selectedState,
-                            KeyName? selectedCity,
-                          }) {
-                            setState(() {
-                              this.selectedLedger = selectedLedger;
-                              this.selectedSalesperson = selectedSalesperson;
-                              this.fromDate = fromDate ?? this.fromDate;
-                              this.toDate = toDate ?? this.toDate;
-                              this.selectedCity =
-                                  selectedCity ??
-                                  KeyName(key: '', name: 'All Cities');
-                            });
-                            setState(() {
-                              selectedRange =
-                                  FilterData.selectedDateRange ?? 'Today';
-                              fromDate = FilterData.fromDate;
-                              toDate = FilterData.toDate;
-                              _showCustomDatePicker = (selectedRange == 'Custom');
-                            });
-
-                            _fetchOrderSummary();
-                          },
-                        ),
-                settings: RouteSettings(
-                  arguments: {
-                    'ledgerList': ledgerList,
-                    'salespersonList': salespersonList,
-                    'statesList': statesList,
-                    'citiesList': citiesList,
-                    'fromDate': fromDate,
-                    'toDate': toDate,
-                  },
-                ),
+        backgroundColor: AppColors.primaryColor,
+        elevation: 0,
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-            );
-          },
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              backgroundColor: Colors.white.withOpacity(0.2),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.filter_list,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder:
+                          (context, animation, secondaryAnimation) =>
+                              DashboardFilterPage(
+                                ledgerList: ledgerList,
+                                salespersonList: salespersonList,
+                                onApplyFilters: ({
+                                  KeyName? selectedLedger,
+                                  KeyName? selectedSalesperson,
+                                  DateTime? fromDate,
+                                  DateTime? toDate,
+                                  KeyName? selectedState,
+                                  KeyName? selectedCity,
+                                }) {
+                                  setState(() {
+                                    this.selectedLedger = selectedLedger;
+                                    this.selectedSalesperson =
+                                        selectedSalesperson;
+                                    this.fromDate = fromDate ?? this.fromDate;
+                                    this.toDate = toDate ?? this.toDate;
+                                    this.selectedCity =
+                                        selectedCity ??
+                                        KeyName(key: '', name: 'All Cities');
+                                  });
+                                  setState(() {
+                                    selectedRange =
+                                        FilterData.selectedDateRange ?? 'Today';
+                                    fromDate = FilterData.fromDate;
+                                    toDate = FilterData.toDate;
+                                    _showCustomDatePicker =
+                                        (selectedRange == 'Custom');
+                                  });
+
+                                  _fetchOrderSummary();
+                                },
+                              ),
+                      settings: RouteSettings(
+                        arguments: {
+                          'ledgerList': ledgerList,
+                          'salespersonList': salespersonList,
+                          'statesList': statesList,
+                          'citiesList': citiesList,
+                          'fromDate': fromDate,
+                          'toDate': toDate,
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-    ),
-  ],
-  iconTheme: const IconThemeData(color: Colors.white),
-),
       body: Stack(
         children: [
           isLoading
@@ -424,14 +429,14 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                   children: [
                     // Horizontal Date Range Scroll
                     _buildHorizontalDateRange(),
-                    
+
                     if (_showCustomDatePicker) ...[
                       const SizedBox(height: 16),
                       _buildCustomDatePicker(),
                     ],
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Key Metrics - Total Orders
                     _buildKeyMetricsSection(),
                     const SizedBox(height: 20),
@@ -441,7 +446,10 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                     const SizedBox(height: 20),
 
                     // Inventory Summary
-                    _buildInventorySection(),
+                    if (UserSession.userType != 'C') ...[
+                      _buildInventorySection(),
+                      const SizedBox(height: 20),
+                    ],
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -545,7 +553,7 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
         itemBuilder: (context, index) {
           final range = dateRanges[index];
           final isSelected = selectedRange == range;
-          
+
           return GestureDetector(
             onTap: () => _updateDateRange(range),
             child: Container(
@@ -555,22 +563,29 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                 color: isSelected ? AppColors.primaryColor : Colors.white,
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
+                  color:
+                      isSelected
+                          ? AppColors.primaryColor
+                          : Colors.grey.shade300,
                 ),
-                boxShadow: isSelected ? [
-                  BoxShadow(
-                    color: AppColors.primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ] : null,
+                boxShadow:
+                    isSelected
+                        ? [
+                          BoxShadow(
+                            color: AppColors.primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : null,
               ),
               child: Center(
                 child: Text(
                   range,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected ? Colors.white : Colors.grey.shade700,
                   ),
                 ),
@@ -762,7 +777,11 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                   color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.pie_chart, color: Colors.green, size: 20),
+                child: const Icon(
+                  Icons.pie_chart,
+                  color: Colors.green,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -932,7 +951,11 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                   color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.inventory, color: Colors.orange, size: 20),
+                child: const Icon(
+                  Icons.inventory,
+                  color: Colors.orange,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(

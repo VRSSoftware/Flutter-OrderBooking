@@ -284,6 +284,8 @@
 //   }
 // }
 
+
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -557,28 +559,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth));
 
     // --- Your Existing UserSession Logic ---
-    if (UserSession.userType == 'A') {
-      buttons.add(
-        _buildFeatureButton(context, 'Stock Report', () {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/stockReport',
-            (Route<dynamic> route) => false,
-          );
-        }, buttonWidth),
+  // --- Your Existing UserSession Logic ---
+if (UserSession.userType == 'A') {
+  buttons.add(
+    _buildFeatureButton(context, 'Stock Report', () {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/stockReport',
+        (Route<dynamic> route) => false,
       );
+    }, buttonWidth),
+  );
+}
 
-      buttons.add(
-        _buildFeatureButton(context, 'Dashboard', () {
-          // Navigator.pushNamed(context, '/dashboard');
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/dashboard',
-            (Route<dynamic> route) => false,
-          );
-        }, buttonWidth),
+// Show Dashboard for Admin (A) and Customer (C) only, not for Salesperson (S)
+if (UserSession.userType == 'A' || UserSession.userType == 'C') {
+  buttons.add(
+    _buildFeatureButton(context, 'Dashboard', () {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/dashboard',
+        (Route<dynamic> route) => false,
       );
-    }
+    }, buttonWidth),
+  );
+}
 
     return Center(
       child: Wrap(

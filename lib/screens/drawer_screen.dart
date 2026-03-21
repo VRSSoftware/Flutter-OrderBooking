@@ -624,7 +624,7 @@ Widget _buildProfileContent() {
             const SizedBox(height: 4),
             // User Name
              Text(
-              UserSession.userName ?? 'Guest User',
+              UserSession.userName ?? '',
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

@@ -6,7 +6,6 @@ import 'package:vrs_erp/models/keyName.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class RegisterFilterPage extends StatefulWidget {
-  
   final List<KeyName> ledgerList;
   final List<KeyName> salespersonList;
   final Function({
@@ -18,8 +17,7 @@ class RegisterFilterPage extends StatefulWidget {
     DateTime? deliveryToDate,
     String? selectedOrderStatus,
     String? selectedDateRange,
-  })
-  onApplyFilters;
+  }) onApplyFilters;
 
   const RegisterFilterPage({
     Key? key,
@@ -67,58 +65,62 @@ class _RegisterFilterPageState extends State<RegisterFilterPage> {
     'Cancelled',
   ];
 
-@override
-void didChangeDependencies() {
-  super.didChangeDependencies();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-  if (_initialized) return;
+    if (_initialized) return;
 
-  final args =
-      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-  if (args != null) {
-    ledgerList = List<KeyName>.from(args['ledgerList'] ?? widget.ledgerList);
-    salespersonList =
-        List<KeyName>.from(args['salespersonList'] ?? widget.salespersonList);
+    if (args != null) {
+      ledgerList = List<KeyName>.from(args['ledgerList'] ?? widget.ledgerList);
+      salespersonList = List<KeyName>.from(
+        args['salespersonList'] ?? widget.salespersonList,
+      );
 
-    selectedLedger = args['selectedLedger'];
-    selectedSalesperson = args['selectedSalesperson'];
-    selectedOrderStatus = args['selectedOrderStatus'];
+      selectedLedger = args['selectedLedger'];
+      selectedSalesperson = args['selectedSalesperson'];
+      selectedOrderStatus = args['selectedOrderStatus'];
 
-    fromDate = args['fromDate'];
-    toDate = args['toDate'];
+      fromDate = args['fromDate'];
+      toDate = args['toDate'];
 
-    deliveryFromDate = args['deliveryFromDate'];
-    deliveryToDate = args['deliveryToDate'];
+      deliveryFromDate = args['deliveryFromDate'];
+      deliveryToDate = args['deliveryToDate'];
 
-    if (fromDate != null || toDate != null) {
-      selectedDateRange = 'Custom';
+      if (fromDate != null || toDate != null) {
+        selectedDateRange = 'Custom';
+      }
+    } else {
+      ledgerList = widget.ledgerList;
+      salespersonList = widget.salespersonList;
     }
-  } else {
-    ledgerList = widget.ledgerList;
-    salespersonList = widget.salespersonList;
+
+    _initialized = true;
   }
 
-  _initialized = true;
-}
   Future<void> _pickDate(
     BuildContext context,
     bool isFromDate,
     bool isDeliveryDate,
   ) async {
-    final initialDate = DateTime.now();
+    final DateTime today = DateTime.now();
+    final DateTime firstDate = DateTime(2000);
+    final DateTime lastDate = DateTime(today.year, today.month, today.day);
+
+    DateTime? currentDate;
+    if (isDeliveryDate) {
+      currentDate = isFromDate ? deliveryFromDate : deliveryToDate;
+    } else {
+      currentDate = isFromDate ? fromDate : toDate;
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          isFromDate
-              ? (isDeliveryDate
-                  ? deliveryFromDate ?? initialDate
-                  : fromDate ?? initialDate)
-              : (isDeliveryDate
-                  ? deliveryToDate ?? initialDate
-                  : toDate ?? initialDate),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      initialDate: currentDate ?? today,
+      firstDate: firstDate,
+      lastDate: lastDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -139,24 +141,29 @@ void didChangeDependencies() {
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isDeliveryDate) {
           if (isFromDate) {
             deliveryFromDate = picked;
+            // Clear delivery to date if it's before the new from date
             if (deliveryToDate != null && deliveryToDate!.isBefore(picked)) {
-              deliveryToDate = picked;
+              deliveryToDate = null;
             }
           } else {
+            // Allow setting to date even if it's before from date
             deliveryToDate = picked;
           }
         } else {
           if (isFromDate) {
             fromDate = picked;
+            // Clear to date if it's before the new from date
             if (toDate != null && toDate!.isBefore(picked)) {
-              toDate = picked;
+              toDate = null;
             }
           } else {
+            // Allow setting to date even if it's before from date
             toDate = picked;
           }
         }
@@ -167,25 +174,39 @@ void didChangeDependencies() {
 
   void _setDateRange(String range) {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     DateTime start, end;
+    
     switch (range) {
       case 'Today':
-        start = end = now;
+        start = today;
+        end = today;
         break;
       case 'Yesterday':
-        start = end = now.subtract(Duration(days: 1));
+        final yesterday = today.subtract(const Duration(days: 1));
+        start = yesterday;
+        end = yesterday;
         break;
       case 'This Week':
-        start = now.subtract(Duration(days: now.weekday - 1));
-        end = start.add(Duration(days: 6));
+        final daysToSubtract = now.weekday - 1;
+        start = DateTime(now.year, now.month, now.day - daysToSubtract);
+        end = start.add(const Duration(days: 6));
+        if (end.isAfter(today)) {
+          end = today;
+        }
         break;
       case 'Last Week':
-        end = now.subtract(Duration(days: now.weekday));
-        start = end.subtract(Duration(days: 6));
+        final daysToSubtract = now.weekday + 6;
+        final lastWeekEnd = now.subtract(Duration(days: daysToSubtract));
+        end = DateTime(lastWeekEnd.year, lastWeekEnd.month, lastWeekEnd.day);
+        start = end.subtract(const Duration(days: 6));
         break;
       case 'This Month':
         start = DateTime(now.year, now.month, 1);
         end = DateTime(now.year, now.month + 1, 0);
+        if (end.isAfter(today)) {
+          end = today;
+        }
         break;
       case 'Last Month':
         start = DateTime(now.year, now.month - 1, 1);
@@ -194,6 +215,7 @@ void didChangeDependencies() {
       default:
         return;
     }
+    
     setState(() {
       fromDate = start;
       toDate = end;
@@ -209,81 +231,102 @@ void didChangeDependencies() {
     required String title,
     required List<Widget> children,
     bool initiallyExpanded = true,
-      required bool active,
+    required bool active,
     ValueChanged<bool>? onExpansionChanged,
   }) {
     return CustomExpansionTile(
       title: title,
       initiallyExpanded: initiallyExpanded,
       onExpansionChanged: onExpansionChanged,
-       active: active,
+      active: active,
       children: children,
     );
   }
 
-  Widget _buildDateInput(
-    TextEditingController controller,
-    String label,
-    DateTime? date,
-    VoidCallback onTap,
-  ) {
-    return TextField(
-      controller: controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.plusJakartaSans(color: Colors.grey.shade600),
-        floatingLabelStyle: GoogleFonts.plusJakartaSans(
-          color: AppColors.primaryColor,
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(Icons.calendar_today, color: AppColors.primaryColor),
-          onPressed: onTap,
-          padding: EdgeInsets.zero,
-          constraints: BoxConstraints(),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      style: GoogleFonts.plusJakartaSans(),
-    );
+  // Validation for Order To Date
+  String? _validateOrderToDate(DateTime? fromDate, DateTime? toDate) {
+    if (fromDate != null && toDate != null && toDate.isBefore(fromDate)) {
+      return 'cannot be before From Date';
+    }
+    return null;
   }
 
-  Widget filterWrapper({required Widget child, required bool active}) {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: active ? AppColors.primaryColor : Colors.transparent,
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: child,
-        ),
+  // Validation for Delivery To Date
+  String? _validateDeliveryToDate(DateTime? fromDate, DateTime? toDate) {
+    if (fromDate != null && toDate != null && toDate.isBefore(fromDate)) {
+      return 'cannot be before Delivery From Date';
+    }
+    return null;
+  }
 
-        if (active)
-          Positioned(
-            right: 4,
-            top: 4,
-            child: Icon(
-              Icons.check_circle,
-              color: AppColors.primaryColor,
-              size: 16,
+  Widget _buildDateInput({
+    required TextEditingController controller,
+    required String label,
+    required DateTime? date,
+    required VoidCallback onTap,
+    String? errorText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: GoogleFonts.plusJakartaSans(
+              color: errorText != null ? Colors.red : Colors.grey.shade600,
+            ),
+            floatingLabelStyle: GoogleFonts.plusJakartaSans(
+              color: errorText != null ? Colors.red : AppColors.primaryColor,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(Icons.calendar_today, 
+                color: errorText != null ? Colors.red : AppColors.primaryColor),
+              onPressed: onTap,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: errorText != null ? Colors.red : AppColors.primaryColor, 
+                width: 1.5
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: errorText != null ? Colors.red.shade200 : Colors.grey.shade300,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, size: 12, color: Colors.red),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    errorText,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
       ],
@@ -304,8 +347,34 @@ void didChangeDependencies() {
     return count;
   }
 
+  // Check if all dates are valid
+  bool _areDatesValid() {
+    // Check order dates
+    if (fromDate != null && toDate != null) {
+      if (toDate!.isBefore(fromDate!)) {
+        return false;
+      }
+    }
+    
+    // Check delivery dates
+    if (deliveryFromDate != null && deliveryToDate != null) {
+      if (deliveryToDate!.isBefore(deliveryFromDate!)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Check if Apply button should be enabled
+    bool isApplyEnabled = _areDatesValid();
+    
+    // Get validation errors for To Date fields
+    String? orderToDateError = _validateOrderToDate(fromDate, toDate);
+    String? deliveryToDateError = _validateDeliveryToDate(deliveryFromDate, deliveryToDate);
+    
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -316,10 +385,10 @@ void didChangeDependencies() {
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
         ),
       ),
@@ -334,10 +403,10 @@ void didChangeDependencies() {
                   children: [
                     _buildExpansionTile(
                       title: 'Date Range Filter',
-                       active: fromDate != null ||
-          toDate != null ||
-          deliveryFromDate != null ||
-          deliveryToDate != null,
+                      active: fromDate != null ||
+                          toDate != null ||
+                          deliveryFromDate != null ||
+                          deliveryToDate != null,
                       initiallyExpanded: true,
                       children: [
                         Padding(
@@ -347,23 +416,23 @@ void didChangeDependencies() {
                           ),
                           child: Column(
                             children: [
-                              // Searchable Date Range Dropdown
                               DropdownSearch<String>(
                                 items: dateRangeOptions,
                                 selectedItem: selectedDateRange,
                                 onChanged: (value) {
                                   setState(() {
                                     selectedDateRange = value;
-                                    if (value != 'Custom')
+                                    if (value != 'Custom') {
                                       _setDateRange(value!);
+                                    }
                                   });
                                 },
                                 popupProps: PopupProps.menu(
                                   showSearchBox: true,
-                                  searchDelay: Duration(milliseconds: 300),
-                                  menuProps: MenuProps(
+                                  searchDelay: const Duration(milliseconds: 300),
+                                  menuProps: const MenuProps(
                                     backgroundColor: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.all(Radius.circular(12)),
                                     elevation: 4,
                                   ),
                                   searchFieldProps: TextFieldProps(
@@ -382,7 +451,7 @@ void didChangeDependencies() {
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
                                       ),
-                                      contentPadding: EdgeInsets.symmetric(
+                                      contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 16,
                                         vertical: 8,
                                       ),
@@ -395,10 +464,9 @@ void didChangeDependencies() {
                                     labelStyle: GoogleFonts.plusJakartaSans(
                                       color: Colors.grey.shade600,
                                     ),
-                                    floatingLabelStyle:
-                                        GoogleFonts.plusJakartaSans(
-                                          color: AppColors.primaryColor,
-                                        ),
+                                    floatingLabelStyle: GoogleFonts.plusJakartaSans(
+                                      color: AppColors.primaryColor,
+                                    ),
                                     prefixIcon: Icon(
                                       Icons.calendar_today,
                                       color: Colors.grey.shade600,
@@ -422,7 +490,7 @@ void didChangeDependencies() {
                                         color: Colors.grey.shade300,
                                       ),
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 8,
                                     ),
@@ -441,7 +509,7 @@ void didChangeDependencies() {
                                     );
                                   }
                                   return Container(
-                                    padding: EdgeInsets.symmetric(vertical: 4),
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
                                     child: Text(
                                       selectedItem,
                                       style: GoogleFonts.plusJakartaSans(
@@ -455,54 +523,72 @@ void didChangeDependencies() {
                                   );
                                 },
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Order Date Range',
+                                textAlign: TextAlign.left,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(
-                                        text: _formatDate(fromDate),
-                                      ),
-                                      'From Date',
-                                      fromDate,
-                                      () => _pickDate(context, true, false),
+                                      controller: TextEditingController(text: _formatDate(fromDate)),
+                                      label: 'From Date',
+                                      date: fromDate,
+                                      onTap: () => _pickDate(context, true, false),
+                                      errorText: null, // No error message for From Date
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(
-                                        text: _formatDate(toDate),
-                                      ),
-                                      'To Date',
-                                      toDate,
-                                      () => _pickDate(context, false, false),
+                                      controller: TextEditingController(text: _formatDate(toDate)),
+                                      label: 'To Date',
+                                      date: toDate,
+                                      onTap: () => _pickDate(context, false, false),
+                                      errorText: orderToDateError,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Delivery Date Range',
+                                textAlign: TextAlign.left,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(
-                                        text: _formatDate(deliveryFromDate),
-                                      ),
-                                      'Delivery From Date',
-                                      deliveryFromDate,
-                                      () => _pickDate(context, true, true),
+                                      controller: TextEditingController(text: _formatDate(deliveryFromDate)),
+                                      label: 'From Date',
+                                      date: deliveryFromDate,
+                                      onTap: () => _pickDate(context, true, true),
+                                      errorText: null, // No error message for Delivery From Date
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: _buildDateInput(
-                                      TextEditingController(
-                                        text: _formatDate(deliveryToDate),
-                                      ),
-                                      'Delivery To Date',
-                                      deliveryToDate,
-                                      () => _pickDate(context, false, true),
+                                      controller: TextEditingController(text: _formatDate(deliveryToDate)),
+                                      label: 'To Date',
+                                      date: deliveryToDate,
+                                      onTap: () => _pickDate(context, false, true),
+                                      errorText: deliveryToDateError,
                                     ),
                                   ),
                                 ],
@@ -517,8 +603,8 @@ void didChangeDependencies() {
 
                     _buildExpansionTile(
                       title: 'Order Status',
-                       active: selectedOrderStatus != null &&
-          selectedOrderStatus != 'All',
+                      active: selectedOrderStatus != null &&
+                          selectedOrderStatus != 'All',
                       initiallyExpanded: true,
                       children: [
                         Padding(
@@ -535,10 +621,10 @@ void didChangeDependencies() {
                             },
                             popupProps: PopupProps.menu(
                               showSearchBox: true,
-                              searchDelay: Duration(milliseconds: 300),
-                              menuProps: MenuProps(
+                              searchDelay: const Duration(milliseconds: 300),
+                              menuProps: const MenuProps(
                                 backgroundColor: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                                 elevation: 4,
                               ),
                               searchFieldProps: TextFieldProps(
@@ -557,7 +643,7 @@ void didChangeDependencies() {
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 8,
                                   ),
@@ -596,7 +682,7 @@ void didChangeDependencies() {
                                     color: Colors.grey.shade300,
                                   ),
                                 ),
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 8,
                                 ),
@@ -615,7 +701,7 @@ void didChangeDependencies() {
                                 );
                               }
                               return Container(
-                                padding: EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Text(
                                   selectedItem,
                                   style: GoogleFonts.plusJakartaSans(
@@ -649,15 +735,13 @@ void didChangeDependencies() {
                               items: ledgerList,
                               selectedItem: selectedLedger,
                               itemAsString: (KeyName? u) => u?.name ?? '',
-                              onChanged:
-                                  (value) =>
-                                      setState(() => selectedLedger = value),
+                              onChanged: (value) => setState(() => selectedLedger = value),
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
-                                searchDelay: Duration(milliseconds: 300),
-                                menuProps: MenuProps(
+                                searchDelay: const Duration(milliseconds: 300),
+                                menuProps: const MenuProps(
                                   backgroundColor: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.all(Radius.circular(12)),
                                   elevation: 4,
                                 ),
                                 searchFieldProps: TextFieldProps(
@@ -676,7 +760,7 @@ void didChangeDependencies() {
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 8,
                                     ),
@@ -689,10 +773,9 @@ void didChangeDependencies() {
                                   labelStyle: GoogleFonts.plusJakartaSans(
                                     color: Colors.grey.shade600,
                                   ),
-                                  floatingLabelStyle:
-                                      GoogleFonts.plusJakartaSans(
-                                        color: AppColors.primaryColor,
-                                      ),
+                                  floatingLabelStyle: GoogleFonts.plusJakartaSans(
+                                    color: AppColors.primaryColor,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.search,
                                     color: Colors.grey.shade600,
@@ -716,7 +799,7 @@ void didChangeDependencies() {
                                       color: Colors.grey.shade300,
                                     ),
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 8,
                                   ),
@@ -735,7 +818,7 @@ void didChangeDependencies() {
                                   );
                                 }
                                 return Container(
-                                  padding: EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
                                   child: Text(
                                     selectedItem.name,
                                     style: GoogleFonts.plusJakartaSans(
@@ -758,7 +841,7 @@ void didChangeDependencies() {
                       const SizedBox(height: 5),
                       _buildExpansionTile(
                         title: 'Salesperson',
-                         active: selectedSalesperson != null,
+                        active: selectedSalesperson != null,
                         initiallyExpanded: true,
                         children: [
                           Padding(
@@ -770,16 +853,15 @@ void didChangeDependencies() {
                               items: salespersonList,
                               selectedItem: selectedSalesperson,
                               itemAsString: (KeyName? u) => u?.name ?? '',
-                              onChanged:
-                                  (value) => setState(
-                                    () => selectedSalesperson = value,
-                                  ),
+                              onChanged: (value) => setState(
+                                () => selectedSalesperson = value,
+                              ),
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
-                                searchDelay: Duration(milliseconds: 300),
-                                menuProps: MenuProps(
+                                searchDelay: const Duration(milliseconds: 300),
+                                menuProps: const MenuProps(
                                   backgroundColor: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.all(Radius.circular(12)),
                                   elevation: 4,
                                 ),
                                 searchFieldProps: TextFieldProps(
@@ -798,7 +880,7 @@ void didChangeDependencies() {
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 8,
                                     ),
@@ -811,10 +893,9 @@ void didChangeDependencies() {
                                   labelStyle: GoogleFonts.plusJakartaSans(
                                     color: Colors.grey.shade600,
                                   ),
-                                  floatingLabelStyle:
-                                      GoogleFonts.plusJakartaSans(
-                                        color: AppColors.primaryColor,
-                                      ),
+                                  floatingLabelStyle: GoogleFonts.plusJakartaSans(
+                                    color: AppColors.primaryColor,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.search,
                                     color: Colors.grey.shade600,
@@ -838,7 +919,7 @@ void didChangeDependencies() {
                                       color: Colors.grey.shade300,
                                     ),
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 8,
                                   ),
@@ -857,7 +938,7 @@ void didChangeDependencies() {
                                   );
                                 }
                                 return Container(
-                                  padding: EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
                                   child: Text(
                                     selectedItem.name,
                                     style: GoogleFonts.plusJakartaSans(
@@ -887,14 +968,14 @@ void didChangeDependencies() {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
+                    borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
-                        offset: Offset(0, -5),
+                        offset: const Offset(0, -5),
                       ),
                     ],
                   ),
@@ -903,54 +984,29 @@ void didChangeDependencies() {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
+                            backgroundColor: isApplyEnabled ? AppColors.primaryColor : Colors.grey,
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: () {
-                            if (fromDate != null &&
-                                toDate != null &&
-                                toDate!.isBefore(fromDate!)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'To Date cannot be before From Date',
-                                    style: GoogleFonts.plusJakartaSans(),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            if (deliveryFromDate != null &&
-                                deliveryToDate != null &&
-                                deliveryToDate!.isBefore(deliveryFromDate!)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Delivery To Date cannot be before Delivery From Date',
-                                    style: GoogleFonts.plusJakartaSans(),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
-                            widget.onApplyFilters(
-                              selectedLedger: selectedLedger,
-                              selectedSalesperson: selectedSalesperson,
-                              fromDate: fromDate,
-                              toDate: toDate,
-                              deliveryFromDate: deliveryFromDate,
-                              deliveryToDate: deliveryToDate,
-                              selectedOrderStatus: selectedOrderStatus,
-                              selectedDateRange: selectedDateRange,
-                            );
-                            Navigator.pop(context);
-                          },
+                          onPressed: isApplyEnabled
+                              ? () {
+                                  widget.onApplyFilters(
+                                    selectedLedger: selectedLedger,
+                                    selectedSalesperson: selectedSalesperson,
+                                    fromDate: fromDate,
+                                    toDate: toDate,
+                                    deliveryFromDate: deliveryFromDate,
+                                    deliveryToDate: deliveryToDate,
+                                    selectedOrderStatus: selectedOrderStatus,
+                                    selectedDateRange: selectedDateRange,
+                                  );
+                                  Navigator.pop(context);
+                                }
+                              : null,
                           child: Text(
                             'Apply Filters (${_getFilterCount()})',
                             style: GoogleFonts.plusJakartaSans(
@@ -965,7 +1021,7 @@ void didChangeDependencies() {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.black87,
-                            padding: EdgeInsets.symmetric(vertical: 10),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             side: BorderSide(color: Colors.grey.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1034,75 +1090,61 @@ class _CustomExpansionTileState extends State<CustomExpansionTile> {
 
   @override
   Widget build(BuildContext context) {
-   return Stack(
-  clipBehavior: Clip.none,
-  children: [
-    Container(
-      margin: const EdgeInsets.only(bottom: 6, top: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-
-        // thinner border
-        border: Border.all(
-          color: widget.active
-              ? AppColors.primaryColor
-              : Colors.grey.shade200,
-          width: widget.active ? 0.8 : 0.5,
-        ),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 6, top: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.active ? AppColors.primaryColor : Colors.grey.shade200,
+              width: widget.active ? 0.8 : 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-        ],
-      ),
-
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          title: Text(
-            widget.title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryColor,
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              title: Text(
+                widget.title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
+                ),
+              ),
+              initiallyExpanded: widget.initiallyExpanded,
+              onExpansionChanged: (expanded) {
+                setState(() => _isExpanded = expanded);
+                widget.onExpansionChanged?.call(expanded);
+              },
+              children: widget.children,
             ),
           ),
-          initiallyExpanded: widget.initiallyExpanded,
-          onExpansionChanged: (expanded) {
-            setState(() => _isExpanded = expanded);
-            widget.onExpansionChanged?.call(expanded);
-          },
-          children: widget.children,
         ),
-      ),
-    ),
-
-    /// CHECK BADGE
-    if (widget.active)
-      Positioned(
-        right: -4,   // push outside border
-        top: -4,
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+        if (widget.active)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 12),
+            ),
           ),
-          child: const Icon(
-            Icons.check,
-            color: Colors.white,
-            size: 12,
-          ),
-        ),
-      ),
-  ],
-);
+      ],
+    );
   }
 }
