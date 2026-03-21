@@ -822,7 +822,8 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
     if (coBr != null && fcYrId != null) {
       _fetchCartCount();
     }
-    fetchPartyList();
+    //fetchPartyList();
+   List<String> addedItems =  ApiService.fetchAddedItems(userId: UserSession.userName ?? '' ,coBrId: UserSession.coBrId ?? '', fcYrId:  UserSession.userFcYr ?? '', barcode : "" ) ;
 
     _arrowController = AnimationController(
       vsync: this,
