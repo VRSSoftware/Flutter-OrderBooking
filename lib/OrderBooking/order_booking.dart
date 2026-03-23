@@ -823,8 +823,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
       _fetchCartCount();
     }
     //fetchPartyList();
-   List<String> addedItems =  ApiService.fetchAddedItems(userId: UserSession.userName ?? '' ,coBrId: UserSession.coBrId ?? '', fcYrId:  UserSession.userFcYr ?? '', barcode : "" ) ;
-
+Future<List<String>> addedItems =  ApiService.fetchAddedItems(userId: UserSession.userName ?? '' ,coBrId: UserSession.coBrId ?? '', fcYrId:  UserSession.userFcYr ?? '', barcode : "" ) ;
     _arrowController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 700),
@@ -1120,11 +1119,11 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
 
                     if (showBarcodeWidget) {
                       if (AppConstants.bookingType == "1") {
-                        route = '/viewOrderBarcode';
+                        route = '/viewOrder';
                       } else if (AppConstants.bookingType == "2") {
-                        route = '/viewOrderBarcode2';
+                        route = '/viewOrder2';
                       } else {
-                        route = '/viewOrderBarcode';
+                        route = '/viewOrder';
                       }
                     } else {
                       if (AppConstants.bookingType == "1") {
