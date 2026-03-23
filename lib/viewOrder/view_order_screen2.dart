@@ -1088,7 +1088,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
           children: [
             _buildTabBar(),
             Expanded(
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Form(
                   key: _formKey,
@@ -1132,6 +1132,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                             },
                             quantities: quantities,
                             selectedColors: selectedColors,
+                            controllers: _styleManager.controllers,
                             filteredEntries: _filteredGroupedItems,
                             isSearchActive: _searchController.text.isNotEmpty,
                           ),
@@ -1776,7 +1777,7 @@ class _StyleManager2 {
       items.map((e) => e[field]?.toString() ?? '').toSet().toList();
 }
 
-class _StyleCardsView2 extends StatelessWidget {
+class _StyleCardsView2 extends StatefulWidget {
   final _StyleManager2 styleManager;
   final VoidCallback updateTotals;
   final Color Function(String) getColor;
@@ -1785,39 +1786,34 @@ class _StyleCardsView2 extends StatelessWidget {
   final Map<String, Set<String>> selectedColors;
   final List<MapEntry<String, List<dynamic>>>? filteredEntries;
   final bool isSearchActive;
+  final Map<String, Map<String, Map<String, TextEditingController>>>
+  controllers;
 
   const _StyleCardsView2({
+    Key? key,
     required this.styleManager,
     required this.updateTotals,
     required this.getColor,
     required this.onUpdate,
     required this.quantities,
     required this.selectedColors,
+    required this.controllers,
     this.filteredEntries,
     this.isSearchActive = false,
-  });
+  }) : super(key: key);
 
-  List<String> _getAllShadesForStyle(String styleKey) {
-    final items = styleManager.groupedItems[styleKey] ?? [];
-    return items
-        .map((item) => item['shadeName']?.toString() ?? '')
-        .toSet()
-        .toList();
-  }
+  @override
+  _StyleCardsView2State createState() => _StyleCardsView2State();
+}
 
-  List<String> _getAllSizesForStyle(String styleKey) {
-    final items = styleManager.groupedItems[styleKey] ?? [];
-    return items
-        .map((item) => item['sizeName']?.toString() ?? '')
-        .toSet()
-        .toList();
-  }
+class _StyleCardsView2State extends State<_StyleCardsView2> {
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    if (!styleManager.isOrderItemsLoaded) {
+    if (!widget.styleManager.isOrderItemsLoaded) {
       return const Center(child: CircularProgressIndicator());
-    } else if (styleManager.groupedItems.isEmpty) {
+    } else if (widget.styleManager.groupedItems.isEmpty) {
       return const Center(
         child: Text(
           'No item added',
@@ -1826,10 +1822,10 @@ class _StyleCardsView2 extends StatelessWidget {
       );
     } else {
       final entries =
-          filteredEntries ?? styleManager.groupedItems.entries.toList();
+          widget.filteredEntries ??
+          widget.styleManager.groupedItems.entries.toList();
 
-      // Show "No matching styles" only when search is active and no results
-      if (entries.isEmpty && filteredEntries != null) {
+      if (entries.isEmpty && widget.filteredEntries != null) {
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1845,384 +1841,609 @@ class _StyleCardsView2 extends StatelessWidget {
         );
       }
 
-      return Column(
-        children:
-            entries.map((entry) {
-              // ✅ USE entries instead of styleManager.groupedItems.entries
-              final catalogOrder = _convertToCatalogOrderData(
-                entry.key,
-                entry.value,
-              );
+      // Build slivers directly without wrapping in SliverList
+      final List<Widget> allSlivers = [];
 
-              // Get the actual Set reference, don't create a new one
-              final styleSelectedColors = selectedColors[entry.key];
-              if (styleSelectedColors == null) {
-                // This shouldn't happen, but if it does, initialize it
-                selectedColors[entry.key] = {};
-              }
+      for (var entry in entries) {
+        final styleKey = entry.key;
+        final items = entry.value;
+        final catalogOrder = _convertToCatalogOrderData(styleKey, items);
 
-              return StyleCard2(
-                styleCode: entry.key,
-                items: entry.value,
-                catalogOrder: catalogOrder,
-                quantities: quantities[entry.key] ?? {},
-                selectedColors:
-                    selectedColors[entry.key]!, // Use ! since we know it exists
-                getColor: getColor,
-                onUpdate: onUpdate,
-                styleManager: styleManager,
-                controllers: styleManager.controllers[entry.key]!,
-                allShades: _getAllShadesForStyle(entry.key),
-                allSizes: _getAllSizesForStyle(entry.key),
-                onShadeAdded: (shade) {
-                  // Just call onUpdate which will refresh the parent
-                  onUpdate();
-                },
-              );
-            }).toList(),
-      );
+        // Ensure selectedColors exists for this style
+        if (!widget.selectedColors.containsKey(styleKey)) {
+          widget.selectedColors[styleKey] = {};
+        }
+
+        final styleSelectedColors = widget.selectedColors[styleKey]!;
+
+        // Add sticky header for this style
+        allSlivers.add(
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _CardHeaderDelegate(
+              minHeight: 150,
+              maxHeight: 150,
+              child: _buildStickyHeader(
+                styleKey,
+                catalogOrder.catalog,
+                context,
+              ),
+            ),
+          ),
+        );
+
+        // Add spacing after header
+        allSlivers.add(SliverToBoxAdapter(child: const SizedBox(height: 8)));
+
+        // Add all shades for this style
+        for (var shade in styleSelectedColors) {
+          allSlivers.add(
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  _buildColorSection(catalogOrder, shade, styleKey, items),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed:
+                              () =>
+                                  _removeShadeLocally(context, styleKey, shade),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                              vertical: 10.0,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            side: BorderSide(color: Colors.red.shade600),
+                          ),
+                          icon: Icon(Icons.delete, color: Colors.red.shade600),
+                          label: Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.red.shade600,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12.0),
+                      Expanded(child: _buildUpdateButton(styleKey, context)),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Add Add Shade Button if available
+        if (_getAvailableShades(styleKey, catalogOrder).isNotEmpty) {
+          allSlivers.add(
+            SliverToBoxAdapter(
+              child: _buildAddShadeButton(styleKey, catalogOrder, context),
+            ),
+          );
+        }
+
+        // Add spacing between cards
+        allSlivers.add(SliverToBoxAdapter(child: const SizedBox(height: 16)));
+      }
+
+      return CustomScrollView(slivers: allSlivers);
     }
   }
 
-  CatalogOrderData _convertToCatalogOrderData(
+  Widget _buildStickyHeader(
     String styleKey,
-    List<dynamic> items,
+    Catalog catalog,
+    BuildContext context,
   ) {
-    final shades =
-        items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
-    final sizes =
-        items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
-    final firstItem = items.first;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, AppColors.primaryColor.withOpacity(0.02)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left side - Product Image
+                Container(
+                  width: 80,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: GestureDetector(
+                      onTap: () {
+                        final imageUrl =
+                            catalog.fullImagePath.contains("http")
+                                ? catalog.fullImagePath
+                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ImageZoomScreen(
+                                  imageUrls: [imageUrl],
+                                  initialIndex: 0,
+                                ),
+                          ),
+                        );
+                      },
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            catalog.fullImagePath.contains("http")
+                                ? catalog.fullImagePath
+                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 25,
+                                    height: 25,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  color: Colors.grey.shade100,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image,
+                                          size: 25,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'No Image',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                          ),
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.zoom_in,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-    final matrix = List.generate(shades.length, (shadeIndex) {
-      return List.generate(sizes.length, (sizeIndex) {
-        final item = items.firstWhere(
-          (i) =>
-              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
-              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
-          orElse: () => {},
-        );
-        final mrp = item['mrp']?.toString() ?? '0';
-        final wsp = item['wsp']?.toString() ?? '0';
-        final qty = item['clqty']?.toString() ?? '0';
-        return '$mrp,$wsp,$qty';
+                const SizedBox(width: 12),
+
+                // Right side
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // First Row - Style Code and Delete Icon
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.red.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                catalog.styleCode,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.red.shade900,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _submitDelete(context, styleKey),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Second Row - Stats Container
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStatItem(
+                              Icons.inventory,
+                              'Type',
+                              catalog.upcoming_Stk == '1'
+                                  ? 'Upcoming'
+                                  : 'Ready',
+                              Colors.blue,
+                            ),
+                            _buildDivider(),
+                            _buildStatItem(
+                              Icons.storage,
+                              'Stock',
+                              _calculateStockQuantity(styleKey).toString(),
+                              Colors.green,
+                            ),
+                            _buildDivider(),
+                            _buildStatItem(
+                              Icons.shopping_bag,
+                              'Order',
+                              _calculateCatalogQuantity(styleKey).toString(),
+                              Colors.orange,
+                            ),
+                            _buildDivider(),
+                            _buildStatItem(
+                              Icons.currency_rupee,
+                              'Amount',
+                              '₹${_calculateCatalogPrice(styleKey).toStringAsFixed(0)}',
+                              Colors.purple,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    IconData icon,
+    String label,
+    String value,
+    MaterialColor color,
+  ) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: color.shade700),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: TextStyle(fontSize: 8, color: Colors.grey.shade600),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: color.shade700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(width: 1, height: 40, color: Colors.grey.shade300);
+  }
+
+  int _calculateCatalogQuantity(String styleKey) {
+    int total = 0;
+    final styleQuantities = widget.quantities[styleKey] ?? {};
+    styleQuantities.forEach((shade, sizes) {
+      sizes.forEach((size, qty) {
+        total += qty;
       });
     });
-
-    return CatalogOrderData(
-      catalog: Catalog(
-        itemSubGrpKey: '',
-        itemSubGrpName: '',
-        itemKey: '',
-        itemName: firstItem['itemName']?.toString() ?? 'Unknown',
-        brandKey: '',
-        brandName: '',
-        styleKey: styleKey,
-        styleCode: firstItem['styleCode']?.toString() ?? styleKey,
-        shadeKey: '',
-        shadeName: shades.join(','),
-        styleSizeId: '',
-        sizeName: sizes.join(','),
-        mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-        wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
-        onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-        clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
-        total: items.fold(
-          0,
-          (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
-        ),
-        fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
-        remark: firstItem['remark']?.toString() ?? '',
-        imageId: '',
-        sizeDetails: sizes
-            .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
-            .join(','),
-        sizeDetailsWithoutWSp: sizes
-            .map((s) => '$s (${firstItem['mrp']})')
-            .join(','),
-        sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
-        styleCodeWithcount: styleKey,
-        onlySizes: sizes.join(','),
-        sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
-        createdDate: '',
-        shadeImages: '',
-        upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
-      ),
-      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
-    );
-  }
-}
-
-class StyleCard2 extends StatefulWidget {
-  final String styleCode;
-  final List<dynamic> items;
-  final CatalogOrderData catalogOrder;
-  final Map<String, Map<String, int>> quantities;
-  final Set<String> selectedColors;
-  final Color Function(String) getColor;
-  final VoidCallback onUpdate;
-  final _StyleManager2 styleManager;
-  final Map<String, Map<String, TextEditingController>> controllers;
-  final List<String> allShades;
-  final List<String> allSizes;
-  final Function(String)? onShadeAdded;
-
-  const StyleCard2({
-    Key? key,
-    required this.styleCode,
-    required this.items,
-    required this.catalogOrder,
-    required this.quantities,
-    required this.selectedColors,
-    required this.getColor,
-    required this.onUpdate,
-    required this.styleManager,
-    required this.controllers,
-    required this.allShades,
-    required this.allSizes,
-    this.onShadeAdded,
-  }) : super(key: key);
-
-  @override
-  _StyleCard2State createState() => _StyleCard2State();
-}
-
-class _StyleCard2State extends State<StyleCard2> {
-  bool _hasQuantityChanged = false;
-  bool _isLoading = false;
-  Map<String, Map<String, int>> _lastSavedQuantities = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _lastSavedQuantities = widget.quantities.map(
-      (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
-    );
+    return total;
   }
 
-  List<String> _getAvailableShades() {
-    final allShades = widget.catalogOrder.orderMatrix.shades;
-    // Get shades that are already in selectedColors (regardless of quantity)
-    final existingShades = widget.selectedColors;
+  int _calculateStockQuantity(String styleKey) {
+    int total = 0;
+    final items = widget.styleManager.groupedItems[styleKey] ?? [];
+    for (var item in items) {
+      total += int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+    }
+    return total;
+  }
 
+  double _calculateCatalogPrice(String styleKey) {
+    double total = 0;
+    final items = widget.styleManager.groupedItems[styleKey] ?? [];
+    final styleQuantities = widget.quantities[styleKey] ?? {};
+
+    for (var item in items) {
+      final shade = item['shadeName']?.toString() ?? '';
+      final size = item['sizeName']?.toString() ?? '';
+      final mrp = (item['mrp'] as num?)?.toDouble() ?? 0.0;
+      final qty = styleQuantities[shade]?[size] ?? 0;
+      total += mrp * qty;
+    }
+    return total;
+  }
+
+  List<String> _getAvailableShades(
+    String styleKey,
+    CatalogOrderData catalogOrder,
+  ) {
+    final allShades = catalogOrder.orderMatrix.shades;
+    final existingShades = widget.selectedColors[styleKey] ?? {};
     return allShades.where((shade) => !existingShades.contains(shade)).toList();
   }
 
-  // ADD THIS METHOD
-  Future<void> _showAddShadeDialog() async {
-    final allShades = widget.catalogOrder.orderMatrix.shades;
+  Widget _buildAddShadeButton(
+    String styleKey,
+    CatalogOrderData catalogOrder,
+    BuildContext context,
+  ) {
+    final availableShades = _getAvailableShades(styleKey, catalogOrder);
+    if (availableShades.isEmpty) return const SizedBox.shrink();
 
     // Create a map to track which shades have quantity
     final Map<String, bool> shadeHasQuantity = {};
-    for (var shade in allShades) {
-      // Check if shade has any quantity > 0
+    final styleQuantities = widget.quantities[styleKey] ?? {};
+
+    for (var shade in catalogOrder.orderMatrix.shades) {
       final hasQty =
-          widget.quantities[shade]?.values.any((qty) => qty > 0) ?? false;
+          styleQuantities[shade]?.values.any((qty) => qty > 0) ?? false;
       shadeHasQuantity[shade] = hasQty;
     }
 
+    return Container(
+      width: double.infinity,
+      height: 48,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryColor.withOpacity(0.9),
+            AppColors.primaryColor,
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap:
+              () => _showAddShadeDialog(
+                context,
+                styleKey,
+                catalogOrder,
+                shadeHasQuantity,
+              ),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Add Shade',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddShadeDialog(
+    BuildContext context,
+    String styleKey,
+    CatalogOrderData catalogOrder,
+    Map<String, bool> shadeHasQuantity,
+  ) async {
     final selectedShades = await showDialog<List<String>>(
       context: context,
       builder:
           (context) => AddShadeDialog2(
-            styleCode: widget.styleCode,
-            allShades: allShades,
+            styleCode: styleKey,
+            allShades: catalogOrder.orderMatrix.shades,
             shadeHasQuantity: shadeHasQuantity,
           ),
     );
 
     if (selectedShades != null && selectedShades.isNotEmpty) {
-      // Use batch update for better performance
-      _addMultipleShades(selectedShades);
+      _addMultipleShades(styleKey, selectedShades, catalogOrder);
     }
   }
 
-  void _addMultipleShades(List<String> shades) {
-    print('Adding multiple shades: $shades');
+  void _addMultipleShades(
+    String styleKey,
+    List<String> shades,
+    CatalogOrderData catalogOrder,
+  ) {
+    // Update local state
+    if (!widget.selectedColors.containsKey(styleKey)) {
+      widget.selectedColors[styleKey] = {};
+    }
 
-    // Call parent callback for each shade
-    if (widget.onShadeAdded != null) {
-      for (var shade in shades) {
-        widget.onShadeAdded!(shade);
+    for (var shade in shades) {
+      widget.selectedColors[styleKey]!.add(shade);
+
+      // Initialize quantities for all sizes to 0 if not exists
+      if (!widget.quantities.containsKey(styleKey)) {
+        widget.quantities[styleKey] = {};
+      }
+      if (!widget.quantities[styleKey]!.containsKey(shade)) {
+        widget.quantities[styleKey]![shade] = {};
+      }
+
+      for (var size in catalogOrder.orderMatrix.sizes) {
+        if (!widget.quantities[styleKey]![shade]!.containsKey(size)) {
+          widget.quantities[styleKey]![shade]![size] = 0;
+        }
+
+        // Update controller if exists
+        if (widget.controllers.containsKey(styleKey) &&
+            widget.controllers[styleKey]!.containsKey(shade) &&
+            widget.controllers[styleKey]![shade]!.containsKey(size)) {
+          widget.controllers[styleKey]![shade]![size]!.text = '0';
+        }
       }
     }
 
-    // Batch update local state
-    setState(() {
-      for (var shade in shades) {
-        // Add to selectedColors
-        widget.selectedColors.add(shade);
+    // Trigger UI update safely
+    setState(() {});
 
-        // Initialize quantities for all sizes to 0
-        widget.quantities[shade] = {};
-
-        // Initialize controllers for all sizes
-        if (!widget.controllers.containsKey(shade)) {
-          widget.controllers[shade] = {};
-        }
-
-        for (var size in widget.catalogOrder.orderMatrix.sizes) {
-          // Set quantity to 0
-          widget.quantities[shade]![size] = 0;
-
-          // Create or update controller
-          if (widget.controllers[shade]![size] == null) {
-            widget.controllers[shade]![size] = TextEditingController(text: '0')
-              ..addListener(() {
-                // Update quantity when text changes
-                final value =
-                    int.tryParse(widget.controllers[shade]![size]!.text) ?? 0;
-                if (widget.quantities[shade]?[size] != value) {
-                  setState(() {
-                    widget.quantities[shade]![size] = value;
-                    _hasQuantityChanged = true;
-                  });
-                }
-              });
-          } else {
-            widget.controllers[shade]![size]!.text = '0';
-          }
-        }
-      }
-
-      _hasQuantityChanged = true;
+    // Use addPostFrameCallback to avoid nested updates
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onUpdate();
     });
-
-    print('Multiple shades added successfully');
   }
 
-  // Future<void> _removeShadeLocally(String shadeToRemove) async {
-  //   // Show confirmation dialog
-  //   final confirmed = await showDialog<bool>(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         title: const Text("Remove Shade"),
-  //         content: Text(
-  //           "Are you sure you want to remove shade '$shadeToRemove'?",
-  //         ),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.pop(context, false),
-  //             child: const Text("Cancel"),
-  //           ),
-  //           TextButton(
-  //             onPressed: () => Navigator.pop(context, true),
-  //             child: const Text("Remove", style: TextStyle(color: Colors.red)),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-
-  //   if (confirmed != true) return;
-
-  //   // Show loading indicator
-  //   setState(() {
-  //     _isLoading = true;
-  //   });
-
-  //   try {
-  //     // Extract base style code (without barcode suffix if any)
-  //     String styleCode = widget.styleCode;
-  //     if (styleCode.contains('---')) {
-  //       styleCode = styleCode.split('---')[0];
-  //     }
-
-  //     // Prepare API payload
-  //     final Map<String, dynamic> payload = {
-  //       "userName": UserSession.userName ?? '',
-  //       "styleCode": styleCode,
-  //       "shade": shadeToRemove,
-  //     };
-
-  //     print('Deleting shade with payload: $payload');
-
-  //     // Call API
-  //     final response = await http.post(
-  //       Uri.parse('${AppConstants.BASE_URL}/orderBooking/deleteShade'),
-  //       headers: {'Content-Type': 'application/json'},
-  //       body: jsonEncode(payload),
-  //     );
-
-  //     print('Delete shade response: ${response.statusCode} - ${response.body}');
-
-  //     if (response.statusCode == 200) {
-  //       // Success - update local state
-  //       setState(() {
-  //         // Set all quantities for this shade to 0
-  //         if (widget.quantities.containsKey(shadeToRemove)) {
-  //           for (var size in widget.quantities[shadeToRemove]!.keys) {
-  //             widget.quantities[shadeToRemove]![size] = 0;
-
-  //             // Also update controller text to 0
-  //             if (widget.controllers.containsKey(shadeToRemove) &&
-  //                 widget.controllers[shadeToRemove]!.containsKey(size)) {
-  //               widget.controllers[shadeToRemove]![size]!.text = '0';
-  //             }
-  //           }
-  //         }
-  //         // final cartModel = Provider.of<CartModel>(context, listen: false);
-  //         //         cartModel.removeItem(widget.styleCode);
-  //         // Remove from selectedColors (this will hide it from UI)
-  //         widget.selectedColors.remove(shadeToRemove);
-
-  //         _hasQuantityChanged = true;
-  //         _isLoading = false;
-  //       });
-
-  //       // Update parent
-  //       widget.onUpdate();
-
-  //       // Show success message
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Shade removed successfully'),
-  //           backgroundColor: Colors.green,
-  //           duration: Duration(seconds: 2),
-  //         ),
-  //       );
-  //     } else {
-  //       // API error
-  //       setState(() {
-  //         _isLoading = false;
-  //       });
-
-  //       String errorMessage = 'Failed to remove shade';
-  //       try {
-  //         final responseData = jsonDecode(response.body);
-  //         if (responseData is Map && responseData.containsKey('message')) {
-  //           errorMessage = responseData['message'];
-  //         }
-  //       } catch (_) {}
-
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text(errorMessage),
-  //           backgroundColor: Colors.red,
-  //           duration: Duration(seconds: 3),
-  //         ),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     // Network or other error
-  //     setState(() {
-  //       _isLoading = false;
-  //     });
-
-  //     print('Error removing shade: $e');
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Error: ${e.toString()}'),
-  //         backgroundColor: Colors.red,
-  //         duration: Duration(seconds: 3),
-  //       ),
-  //     );
-  //   }
-  // }
-
-  Future<void> _removeShadeLocally(String shadeToRemove) async {
+  void _removeShadeLocally(
+    BuildContext context,
+    String styleKey,
+    String shadeToRemove,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -2247,11 +2468,13 @@ class _StyleCard2State extends State<StyleCard2> {
 
     if (confirmed != true) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      // ─── API call to remove shade ────────────────────────────────
-      String styleCode = widget.styleCode.split('---')[0];
+      // API call to remove shade
+      String styleCode = styleKey.split('---')[0];
       final payload = {
         "userName": UserSession.userName ?? '',
         "styleCode": styleCode,
@@ -2264,69 +2487,81 @@ class _StyleCard2State extends State<StyleCard2> {
         body: jsonEncode(payload),
       );
 
-      if (response.statusCode != 200) {
-        // handle error
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      // ─── Update local state ──────────────────────────────────────
-      setState(() {
-        // Zero out this shade
-        final shadeMap = widget.quantities[shadeToRemove];
-        if (shadeMap != null) {
-          for (final size in shadeMap.keys.toList()) {
-            shadeMap[size] = 0;
-            widget.controllers[shadeToRemove]?[size]?.text = '0';
+      if (response.statusCode == 200) {
+        // Update local state
+        setState(() {
+          // Zero out this shade
+          final shadeMap = widget.quantities[styleKey]?[shadeToRemove];
+          if (shadeMap != null) {
+            for (final size in shadeMap.keys.toList()) {
+              shadeMap[size] = 0;
+              if (widget.controllers.containsKey(styleKey) &&
+                  widget.controllers[styleKey]!.containsKey(shadeToRemove) &&
+                  widget.controllers[styleKey]![shadeToRemove]!.containsKey(
+                    size,
+                  )) {
+                widget.controllers[styleKey]![shadeToRemove]![size]!.text = '0';
+              }
+            }
           }
+
+          // Remove from visible shades
+          widget.selectedColors[styleKey]?.remove(shadeToRemove);
+          _isLoading = false;
+        });
+
+        // Check if style is completely empty
+        if (_isStyleCompletelyEmpty(styleKey)) {
+          final cart = Provider.of<CartModel>(context, listen: false);
+          cart.removeItem(styleKey);
+          widget.styleManager.removeStyle(styleKey);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Style $styleKey removed (all quantities zero)'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Shade $shadeToRemove removed'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
 
-        // Remove from visible shades
-        widget.selectedColors.remove(shadeToRemove);
-
-        _hasQuantityChanged = true;
-        _isLoading = false;
-      });
-
-      // ─── Decide whether to remove whole style ─────────────────────
-      final cart = Provider.of<CartModel>(context, listen: false);
-
-      if (_isStyleCompletelyEmpty()) {
-        // Style is now completely empty → safe to remove from cart & manager
-        cart.removeItem(widget.styleCode);
-        widget.styleManager.removeStyle(widget.styleCode);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Style ${widget.styleCode} removed (all quantities zero)',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // Use addPostFrameCallback to avoid nested updates
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onUpdate();
+        });
       } else {
-        // Still has some quantity somewhere → just notify / refresh
-        cart.notifyListeners(); // if your cart shows totals
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Shade $shadeToRemove removed'),
-            backgroundColor: Colors.green,
+            content: Text('Failed to remove shade'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-
-      widget.onUpdate();
     } catch (e) {
-      setState(() => _isLoading = false);
-      // error snackbar...
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  bool _isStyleCompletelyEmpty() {
-    // Use the quantities map that was passed via widget
-    final styleQuantities = widget.quantities;
-
-    if (styleQuantities.isEmpty) return true;
+  bool _isStyleCompletelyEmpty(String styleKey) {
+    final styleQuantities = widget.quantities[styleKey];
+    if (styleQuantities == null || styleQuantities.isEmpty) return true;
 
     for (final shadeMap in styleQuantities.values) {
       for (final qty in shadeMap.values) {
@@ -2338,674 +2573,346 @@ class _StyleCard2State extends State<StyleCard2> {
     return true;
   }
 
-  Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
-    final catalog = catalogOrder.catalog;
+  void _submitDelete(BuildContext context, String styleKey) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Deletion"),
+          content: const Text("Are you sure you want to delete this style?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
 
-    // Show ALL shades in selectedColors (including newly added ones with 0 quantity)
-    final activeShades = widget.selectedColors.toList();
+    if (confirmed != true) return;
 
-    print(
-      'Building order item with shades: $activeShades',
-    ); // Add this debug line
+    setState(() {
+      _isLoading = true;
+    });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 0.1, vertical: 5.0),
-          child: Container(
-            width: 800, // Ensures card takes full width
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+    String sCode = styleKey;
+    String bCode = "";
+    if (sCode.contains('---')) {
+      final parts = styleKey.split('---');
+      sCode = parts[0];
+      bCode = parts.length > 1 ? parts[1] : "";
+    }
+
+    final payload = {
+      "userId": UserSession.userName ?? '',
+      "coBrId": UserSession.coBrId ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "data": {
+        "designcode": sCode,
+        "mrp": '0',
+        "WSP": '0',
+        "size": '',
+        "TotQty": '0',
+        "Note": '',
+        "color": "",
+        "Qty": "",
+        "cobrid": UserSession.coBrId ?? '',
+        "user": "admin",
+        "barcode": bCode,
+      },
+      "typ": 2,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        // Remove from CartModel
+        final cartModel = Provider.of<CartModel>(context, listen: false);
+        cartModel.removeItem(styleKey);
+
+        // Remove from style manager
+        widget.styleManager.removeStyle(styleKey);
+
+        // Use addPostFrameCallback to avoid nested updates
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onUpdate();
+        });
+
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Success"),
+              content: const Text("Style deleted successfully"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"),
                 ),
               ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white,
-                      AppColors.primaryColor.withOpacity(0.02),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left side - Product Image with increased height
-                      Container(
-                        width: 80, // Increased width
-                        height: 110, // Increased height
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(7),
-                          child: GestureDetector(
-                            onTap: () {
-                              final imageUrl =
-                                  catalog.fullImagePath.contains("http")
-                                      ? catalog.fullImagePath
-                                      : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => ImageZoomScreen(
-                                        imageUrls: [imageUrl],
-                                        initialIndex: 0,
-                                      ),
-                                ),
-                              );
-                            },
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  catalog.fullImagePath.contains("http")
-                                      ? catalog.fullImagePath
-                                      : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                                  fit: BoxFit.contain,
-                                  loadingBuilder: (
-                                    context,
-                                    child,
-                                    loadingProgress,
-                                  ) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      color: Colors.grey.shade100,
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: 25,
-                                          height: 25,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  AppColors.primaryColor,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder:
-                                      (context, error, stackTrace) => Container(
-                                        color: Colors.grey.shade100,
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.broken_image,
-                                                size: 25,
-                                                color: Colors.grey.shade400,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                'No Image',
-                                                style: TextStyle(
-                                                  fontSize: 8,
-                                                  color: Colors.grey.shade500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                ),
-                                // Image overlay on tap hint
-                                Positioned(
-                                  bottom: 2,
-                                  right: 2,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.zoom_in,
-                                      size: 12,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+            );
+          },
+        );
+      } else {
+        _showErrorDialog(
+          context,
+          "Failed to delete style: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog(context, "Error deleting style: $e");
+    }
+  }
 
-                      const SizedBox(width: 12),
+  void _submitUpdate(BuildContext context, String styleKey) async {
+    int totalQty = _calculateCatalogQuantity(styleKey);
+    if (totalQty <= 0) {
+      _showErrorDialog(context, "Total quantity must be greater than zero.");
+      return;
+    }
 
-                      // Right side - Column with two rows
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // First Row - Style Code and Delete Icon
-                            Row(
-                              children: [
-                                // Style Code with border - Expanded
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade50.withOpacity(
-                                        0.3,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: Colors.red.shade200,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      catalog.styleCode,
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        color: Colors.red.shade900,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
+    final items = widget.styleManager.groupedItems[styleKey] ?? [];
+    if (items.isEmpty) return;
 
-                                const SizedBox(width: 8),
+    final firstItem = items.first;
+    final styleQuantities = widget.quantities[styleKey] ?? {};
 
-                                // Delete Button
-                                GestureDetector(
-                                  onTap: () => _submitDelete(context),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+    String sCode = styleKey;
+    String bCode = "";
+    if (sCode.contains('---')) {
+      final parts = styleKey.split('---');
+      sCode = parts[0];
+      bCode = parts.length > 1 ? parts[1] : "";
+    }
 
-                            const SizedBox(height: 12),
+    setState(() {
+      _isLoading = true;
+    });
 
-                            // Second Row - Stats Container (Type, Stock, Order, Amount)
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  // Stock Type
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.inventory,
-                                            size: 12,
-                                            color: Colors.blue.shade700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          'Type',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          catalog.upcoming_Stk == '1'
-                                              ? 'Upcoming'
-                                              : 'Ready',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade700,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+    final initialPayload = {
+      "userId": UserSession.userName ?? '',
+      "coBrId": UserSession.coBrId ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "data": {
+        "designcode": sCode,
+        "mrp": firstItem['mrp']?.toString() ?? '0',
+        "WSP": firstItem['wsp']?.toString() ?? '0',
+        "size": firstItem['sizeName']?.toString() ?? '',
+        "TotQty": totalQty.toString(),
+        "Note": firstItem['remark']?.toString() ?? '',
+        "color": firstItem['shadeName']?.toString() ?? '',
+        "cobrid": UserSession.coBrId ?? '',
+        "user": "admin",
+        "barcode": bCode,
+      },
+      "typ": 1,
+    };
 
-                                  // Vertical Divider
-                                  Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: Colors.grey.shade300,
-                                  ),
-
-                                  // Stock Qty
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green.withOpacity(
-                                              0.1,
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.storage,
-                                            size: 12,
-                                            color: Colors.green.shade700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          'Stock',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          _calculateStockQuantity().toString(),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green.shade700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Vertical Divider
-                                  Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: Colors.grey.shade300,
-                                  ),
-
-                                  // Order Qty
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(
-                                              0.1,
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.shopping_bag,
-                                            size: 12,
-                                            color: Colors.orange.shade700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          'Order',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          _calculateCatalogQuantity()
-                                              .toString(),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange.shade700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Vertical Divider
-                                  Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: Colors.grey.shade300,
-                                  ),
-
-                                  // Amount
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.withOpacity(
-                                              0.1,
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.currency_rupee,
-                                            size: 12,
-                                            color: Colors.purple.shade700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          'Amount',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          '₹${_calculateCatalogPrice().toStringAsFixed(0)}',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.purple.shade700,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+    try {
+      final initialResponse = await http.post(
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
         ),
-        const SizedBox(height: 15),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(initialPayload),
+      );
 
-        // Show all shades in selectedColors
-        ...activeShades.map(
-          (color) => Column(
-            children: [
-              _buildColorSection(widget.catalogOrder, color),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed:
-                          _isLoading ? null : () => _removeShadeLocally(color),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 10.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: BorderSide(color: Colors.red.shade600),
-                      ),
-                      icon: Icon(Icons.delete, color: Colors.red.shade600),
-                      label: Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.red.shade600,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12.0),
-                  Expanded(
-                    child: TextButton(
-                      onPressed:
-                          _isLoading || !_hasQuantityChanged
-                              ? null
-                              : () => _submitUpdate(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 10.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        side: BorderSide(
-                          color:
-                              _hasQuantityChanged
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade400,
-                        ),
-                        backgroundColor:
-                            _hasQuantityChanged
-                                ? AppColors.primaryColor.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
-                      ),
-                      child:
-                          _isLoading
-                              ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Updating...',
-                                    style: TextStyle(
-                                      color: AppColors.primaryColor,
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: AppColors.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              )
-                              : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.save,
-                                    color:
-                                        _hasQuantityChanged
-                                            ? AppColors.primaryColor
-                                            : Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Update',
-                                    style: TextStyle(
-                                      color:
-                                          _hasQuantityChanged
-                                              ? AppColors.primaryColor
-                                              : Colors.grey.shade400,
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                    ),
+      if (initialResponse.statusCode != 200) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog(
+          context,
+          "Failed to update style: ${initialResponse.statusCode}",
+        );
+        return;
+      }
+
+      if (styleQuantities.isNotEmpty) {
+        List<Future<http.Response>> requests = [];
+
+        for (final shade in styleQuantities.keys) {
+          final sizeMap = styleQuantities[shade]!;
+          for (final size in sizeMap.keys) {
+            final qty = sizeMap[size]!;
+            if (qty <= 0) continue;
+
+            final payload = {
+              "userId": UserSession.userName ?? '',
+              "coBrId": UserSession.coBrId ?? '',
+              "fcYrId": UserSession.userFcYr ?? '',
+              "data": {
+                "designcode": sCode,
+                "mrp": firstItem['mrp']?.toString() ?? '0',
+                "WSP": firstItem['wsp']?.toString() ?? '0',
+                "size": size,
+                "TotQty": totalQty.toString(),
+                "Note": firstItem['remark']?.toString() ?? '',
+                "color": shade,
+                "Qty": qty.toString(),
+                "cobrid": UserSession.coBrId ?? '',
+                "user": "admin",
+                "barcode": bCode,
+              },
+              "typ": 0,
+            };
+
+            requests.add(
+              http.post(
+                Uri.parse(
+                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+                ),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode(payload),
+              ),
+            );
+          }
+        }
+
+        final responses = await Future.wait(requests);
+
+        bool allSuccessful = true;
+        for (var i = 0; i < responses.length; i++) {
+          final response = responses[i];
+          if (response.statusCode != 200) {
+            allSuccessful = false;
+            print(
+              'Failed to update shade/size, status: ${response.statusCode}',
+            );
+          }
+        }
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (allSuccessful) {
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Success"),
+                content: const Text("Style updated successfully"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("OK"),
                   ),
                 ],
-              ),
-              const SizedBox(height: 15),
-            ],
-          ),
-        ),
-      ],
-    );
+              );
+            },
+          );
+
+          // Use addPostFrameCallback to avoid nested updates
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.onUpdate();
+          });
+        } else {
+          _showErrorDialog(
+            context,
+            "Some shade/size updates failed. Check logs for details.",
+          );
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog(context, "No quantities found for style: $styleKey");
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error updating style: $e');
+      _showErrorDialog(context, "Error updating style: $e");
+    }
   }
 
-  TableRow _buildTableRow(String label, String value, {Color? valueColor}) {
-    return TableRow(
-      children: [
-        Align(
-          alignment: Alignment.topLeft,
-          child: Text(label, style: GoogleFonts.roboto(fontSize: 14)),
-        ),
-        Align(
-          alignment: Alignment.center,
-          child: const Text(":", style: TextStyle(fontSize: 14)),
-        ),
-        Align(
-          alignment: Alignment.topLeft,
-          child: Text(
-            value,
-            style: GoogleFonts.roboto(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.black,
+  Widget _buildUpdateButton(String styleKey, BuildContext context) {
+    return TextButton(
+      onPressed: () => _submitUpdate(context, styleKey),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        side: BorderSide(color: AppColors.primaryColor),
+        backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.save, color: AppColors.primaryColor),
+          const SizedBox(width: 8),
+          Text(
+            'Update',
+            style: TextStyle(
+              color: AppColors.primaryColor,
+              fontSize: 16.0,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  int _calculateCatalogQuantity() {
-    int total = 0;
-    widget.quantities.forEach((shade, sizes) {
-      sizes.forEach((size, qty) {
-        total += qty;
-      });
-    });
-    return total;
-  }
-
-  int _calculateStockQuantity() {
-    int total = 0;
-    final matrix = widget.catalogOrder.orderMatrix;
-    for (var shadeIndex = 0; shadeIndex < matrix.shades.length; shadeIndex++) {
-      for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
-        final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
-        final stock =
-            int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
-        total += stock;
-      }
-    }
-    return total;
-  }
-
-  double _calculateCatalogPrice() {
-    double total = 0;
-    final matrix = widget.catalogOrder.orderMatrix;
-    for (var shade in widget.quantities.keys) {
-      final shadeIndex = matrix.shades.indexOf(shade.trim());
-      if (shadeIndex == -1) continue;
-      for (var size in widget.quantities[shade]!.keys) {
-        final sizeIndex = matrix.sizes.indexOf(size.trim());
-        if (sizeIndex == -1) continue;
-        final rate =
-            double.tryParse(
-              matrix.matrix[shadeIndex][sizeIndex].split(',')[0],
-            ) ??
-            0;
-        final quantity = widget.quantities[shade]![size]!;
-        total += rate * quantity;
-      }
-    }
-    return total;
-  }
-
-  int _calculateShadeQuantity(String shade) {
-    int total = 0;
-    for (var size in widget.quantities[shade]?.keys ?? []) {
-      total += widget.quantities[shade]![size]!;
-    }
-    return total;
-  }
-
-  double _calculateShadePrice(CatalogOrderData catalogOrder, String shade) {
-    double total = 0;
-    final matrix = catalogOrder.orderMatrix;
-    final shadeIndex = matrix.shades.indexOf(shade.trim());
-    if (shadeIndex == -1) return total;
-
-    for (var size in widget.quantities[shade]?.keys ?? []) {
-      final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
-      if (sizeIndex == -1) continue;
-      final rate =
-          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
-          0;
-      final quantity = widget.quantities[shade]![size]!;
-      total += rate * quantity;
-    }
-    return total;
-  }
-
-  Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
+  Widget _buildColorSection(
+    CatalogOrderData catalogOrder,
+    String shade,
+    String styleKey,
+    List<dynamic> items,
+  ) {
     final sizes = catalogOrder.orderMatrix.sizes;
     final Color shadeColor = widget.getColor(shade);
-    final styleKey = catalogOrder.catalog.styleKey;
 
     // Calculate total quantity and price for this shade
-    int shadeTotalQty = _calculateShadeQuantity(shade);
-    double shadeTotalPrice = _calculateShadePrice(catalogOrder, shade);
+    int shadeTotalQty = 0;
+    double shadeTotalPrice = 0;
+    final styleQuantities = widget.quantities[styleKey] ?? {};
+    final shadeQuantities = styleQuantities[shade] ?? {};
+
+    for (var size in sizes) {
+      final qty = shadeQuantities[size] ?? 0;
+      shadeTotalQty += qty;
+
+      // Find MRP for this size
+      final sizeIndex = sizes.indexOf(size);
+      if (sizeIndex != -1) {
+        final shadeIndex = catalogOrder.orderMatrix.shades.indexOf(shade);
+        if (shadeIndex != -1) {
+          final matrixData = catalogOrder
+              .orderMatrix
+              .matrix[shadeIndex][sizeIndex]
+              .split(',');
+          final mrp = double.tryParse(matrixData[0]) ?? 0;
+          shadeTotalPrice += mrp * qty;
+        }
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -3160,11 +3067,7 @@ class _StyleCard2State extends State<StyleCard2> {
 
               // Size rows
               for (var size in sizes) ...[
-                _buildSizeRow(
-                  catalogOrder,
-                  shade,
-                  size,
-                ), // This should use widget.controllers and widget.quantities
+                _buildSizeRow(catalogOrder, shade, size, styleKey),
                 if (size != sizes.last)
                   Divider(height: 1, color: Colors.grey.shade300),
               ],
@@ -3201,6 +3104,7 @@ class _StyleCard2State extends State<StyleCard2> {
     CatalogOrderData catalogOrder,
     String shade,
     String size,
+    String styleKey,
   ) {
     final matrix = catalogOrder.orderMatrix;
     final shadeIndex = matrix.shades.indexOf(shade.trim());
@@ -3217,14 +3121,15 @@ class _StyleCard2State extends State<StyleCard2> {
       wsp = matrixData.length > 1 ? matrixData[1] : '0';
       stock = matrixData.length > 2 ? matrixData[2] : '0';
 
-      // Get controller from widget.controllers
-      if (widget.controllers.containsKey(shade) &&
-          widget.controllers[shade]!.containsKey(size)) {
-        controller = widget.controllers[shade]![size];
+      // Get controller from controllers map
+      if (widget.controllers.containsKey(styleKey) &&
+          widget.controllers[styleKey]!.containsKey(shade) &&
+          widget.controllers[styleKey]![shade]!.containsKey(size)) {
+        controller = widget.controllers[styleKey]![shade]![size];
       }
     }
 
-    final quantity = widget.quantities[shade]?[size] ?? 0;
+    final quantity = widget.quantities[styleKey]?[shade]?[size] ?? 0;
 
     return Row(
       children: [
@@ -3241,12 +3146,14 @@ class _StyleCard2State extends State<StyleCard2> {
                 InkWell(
                   onTap: () {
                     final newQuantity = (quantity - 1).clamp(0, 9999);
-                    if (widget.quantities[shade] != null) {
+                    if (widget.quantities[styleKey] != null &&
+                        widget.quantities[styleKey]![shade] != null) {
                       setState(() {
-                        widget.quantities[shade]![size] = newQuantity;
+                        widget.quantities[styleKey]![shade]![size] =
+                            newQuantity;
                         controller?.text = newQuantity.toString();
-                        _hasQuantityChanged = _checkQuantityChanged();
                       });
+                      widget.updateTotals();
                     }
                   },
                   child: Container(
@@ -3276,14 +3183,13 @@ class _StyleCard2State extends State<StyleCard2> {
                     onChanged: (value) {
                       final newQuantity =
                           int.tryParse(value.isEmpty ? '0' : value) ?? 0;
-                      if (widget.quantities[shade] != null) {
+                      if (widget.quantities[styleKey] != null &&
+                          widget.quantities[styleKey]![shade] != null) {
                         setState(() {
-                          widget.quantities[shade]![size] = newQuantity.clamp(
-                            0,
-                            999,
-                          );
-                          _hasQuantityChanged = _checkQuantityChanged();
+                          widget.quantities[styleKey]![shade]![size] =
+                              newQuantity.clamp(0, 999);
                         });
+                        widget.updateTotals();
                       }
                     },
                   ),
@@ -3291,12 +3197,14 @@ class _StyleCard2State extends State<StyleCard2> {
                 InkWell(
                   onTap: () {
                     final newQuantity = (quantity + 1).clamp(0, 9999);
-                    if (widget.quantities[shade] != null) {
+                    if (widget.quantities[styleKey] != null &&
+                        widget.quantities[styleKey]![shade] != null) {
                       setState(() {
-                        widget.quantities[shade]![size] = newQuantity;
+                        widget.quantities[styleKey]![shade]![size] =
+                            newQuantity;
                         controller?.text = newQuantity.toString();
-                        _hasQuantityChanged = _checkQuantityChanged();
                       });
+                      widget.updateTotals();
                     }
                   },
                   child: Container(
@@ -3333,19 +3241,6 @@ class _StyleCard2State extends State<StyleCard2> {
     );
   }
 
-  bool _checkQuantityChanged() {
-    for (var shade in widget.quantities.keys) {
-      for (var size in widget.quantities[shade]!.keys) {
-        final currentQty = widget.quantities[shade]![size]!;
-        final lastQty = _lastSavedQuantities[shade]?[size] ?? 0;
-        if (currentQty != lastQty) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -3364,412 +3259,71 @@ class _StyleCard2State extends State<StyleCard2> {
     );
   }
 
-  Future<void> _submitDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm Deletion"),
-          content: const Text("Are you sure you want to delete this style?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.red)),
-            ),
-          ],
+  CatalogOrderData _convertToCatalogOrderData(
+    String styleKey,
+    List<dynamic> items,
+  ) {
+    final shades =
+        items.map((i) => i['shadeName']?.toString() ?? '').toSet().toList();
+    final sizes =
+        items.map((i) => i['sizeName']?.toString() ?? '').toSet().toList();
+    final firstItem = items.first;
+
+    final matrix = List.generate(shades.length, (shadeIndex) {
+      return List.generate(sizes.length, (sizeIndex) {
+        final item = items.firstWhere(
+          (i) =>
+              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+          orElse: () => {},
         );
-      },
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true;
+        final mrp = item['mrp']?.toString() ?? '0';
+        final wsp = item['wsp']?.toString() ?? '0';
+        final qty = item['clqty']?.toString() ?? '0';
+        return '$mrp,$wsp,$qty';
+      });
     });
 
-    String sCode = widget.styleCode;
-    String bCode = "";
-    if (sCode.contains('---')) {
-      final parts = widget.styleCode.split('---');
-      sCode = parts[0];
-      bCode = parts.length > 1 ? parts[1] : "";
-    }
-
-    final payload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "data": {
-        "designcode": sCode,
-        "mrp": '0',
-        "WSP": '0',
-        "size": '',
-        "TotQty": '0',
-        "Note": '',
-        "color": "",
-        "Qty": "",
-        "cobrid": UserSession.coBrId ?? '',
-        "user": "admin",
-        "barcode": bCode,
-      },
-      "typ": 2,
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+    return CatalogOrderData(
+      catalog: Catalog(
+        itemSubGrpKey: '',
+        itemSubGrpName: '',
+        itemKey: '',
+        itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+        brandKey: '',
+        brandName: '',
+        styleKey: styleKey,
+        styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+        shadeKey: '',
+        shadeName: shades.join(','),
+        styleSizeId: '',
+        sizeName: sizes.join(','),
+        mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+        onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+        clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+        total: items.fold(
+          0,
+          (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
         ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (response.statusCode == 200) {
-        // Remove from CartModel
-        if (!mounted) return;
-
-        // Get the cart model and remove this item
-        final cartModel = Provider.of<CartModel>(context, listen: false);
-        cartModel.removeItem(widget.styleCode);
-
-        // Also remove from style manager
-        widget.styleManager.removeStyle(widget.styleCode);
-        widget.onUpdate();
-
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Success"),
-              content: const Text("Style deleted successfully"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("OK"),
-                ),
-              ],
-            );
-          },
-        );
-      } else {
-        _showErrorDialog(
-          context,
-          "Failed to delete style: ${response.statusCode}",
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorDialog(context, "Error deleting style: $e");
-    }
-  }
-
-  Future<void> _submitUpdate(BuildContext context) async {
-    int totalQty = _calculateCatalogQuantity();
-    if (totalQty <= 0) {
-      _showErrorDialog(context, "Total quantity must be greater than zero.");
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    String sCode = widget.styleCode;
-    String bCode = "";
-    if (sCode.contains('---')) {
-      final parts = widget.styleCode.split('---');
-      sCode = parts[0];
-      bCode = parts.length > 1 ? parts[1] : "";
-    }
-
-    final initialPayload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "data": {
-        "designcode": sCode,
-        "mrp": widget.catalogOrder.catalog.mrp.toString(),
-        "WSP": widget.catalogOrder.catalog.wsp.toString(),
-        "size": widget.catalogOrder.catalog.sizeName,
-        "TotQty": totalQty.toString(),
-        "Note": widget.catalogOrder.catalog.remark,
-        "color": widget.catalogOrder.catalog.shadeName,
-        "cobrid": UserSession.coBrId ?? '',
-        "user": "admin",
-        "barcode": bCode,
-      },
-      "typ": 1,
-    };
-
-    try {
-      final initialResponse = await http.post(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(initialPayload),
-      );
-
-      if (initialResponse.statusCode != 200) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(
-          context,
-          "Failed to update style (initial request): ${initialResponse.statusCode} - ${initialResponse.body}",
-        );
-        return;
-      }
-
-      if (widget.quantities.isNotEmpty) {
-        final shadeMap = widget.quantities;
-        List<Future<http.Response>> requests = [];
-
-        for (final shade in shadeMap.keys) {
-          final sizeMap = shadeMap[shade]!;
-          for (final size in sizeMap.keys) {
-            final qty = sizeMap[size]!;
-            if (qty <= 0) continue;
-
-            final payload = {
-              "userId": UserSession.userName ?? '',
-              "coBrId": UserSession.coBrId ?? '',
-              "fcYrId": UserSession.userFcYr ?? '',
-              "data": {
-                "designcode": sCode,
-                "mrp": widget.catalogOrder.catalog.mrp.toString(),
-                "WSP": widget.catalogOrder.catalog.wsp.toString(),
-                "size": size,
-                "TotQty": totalQty.toString(),
-                "Note": widget.catalogOrder.catalog.remark,
-                "color": shade,
-                "Qty": qty.toString(),
-                "cobrid": UserSession.coBrId ?? '',
-                "user": "admin",
-                "barcode": bCode,
-              },
-              "typ": 0,
-            };
-
-            requests.add(
-              http.post(
-                Uri.parse(
-                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-                ),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode(payload),
-              ),
-            );
-          }
-        }
-
-        final responses = await Future.wait(requests);
-
-        bool allSuccessful = true;
-        for (var i = 0; i < responses.length; i++) {
-          final response = responses[i];
-          if (response.statusCode != 200) {
-            allSuccessful = false;
-            print(
-              'Failed to update shade/size, status: ${response.statusCode}, body: ${response.body}',
-            );
-          }
-        }
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (allSuccessful) {
-          setState(() {
-            _hasQuantityChanged = false;
-            _lastSavedQuantities = widget.quantities.map(
-              (shade, sizes) => MapEntry(shade, Map<String, int>.from(sizes)),
-            );
-          });
-          widget.onUpdate();
-          await showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Success"),
-                content: const Text("Style updated successfully"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          _showErrorDialog(
-            context,
-            "Some shade/size updates failed. Check logs for details.",
-          );
-        }
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(
-          context,
-          "No quantities found for style: ${widget.styleCode}",
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print('Error updating style: $e');
-      _showErrorDialog(context, "Error updating style: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
-          children: [
-            buildOrderItem(widget.catalogOrder, context),
-
-            // Add Shade Button - only show if there are available shades
-            if (_getAvailableShades().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primaryColor.withOpacity(0.9),
-                        AppColors.primaryColor,
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryColor.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _showAddShadeDialog,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Add Shade',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.white.withOpacity(0.7),
-                                size: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-
-        // Loading overlay
-        if (_isLoading)
-          ModalBarrier(
-            dismissible: false,
-            color: Colors.black.withOpacity(0.4),
-          ),
-        if (_isLoading)
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Updating...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
+        fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+        remark: firstItem['remark']?.toString() ?? '',
+        imageId: '',
+        sizeDetails: sizes
+            .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+            .join(','),
+        sizeDetailsWithoutWSp: sizes
+            .map((s) => '$s (${firstItem['mrp']})')
+            .join(','),
+        sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+        styleCodeWithcount: styleKey,
+        onlySizes: sizes.join(','),
+        sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+        createdDate: '',
+        shadeImages: '',
+        upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '',
+      ),
+      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
     );
   }
 }
@@ -5282,5 +4836,38 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
     };
     widget.onValueChanged(newInfo);
     Navigator.pop(context, newInfo);
+  }
+}
+
+class _CardHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
+
+  _CardHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => minHeight;
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_CardHeaderDelegate oldDelegate) {
+    return oldDelegate.minHeight != minHeight ||
+        oldDelegate.maxHeight != maxHeight ||
+        oldDelegate.child != child;
   }
 }
