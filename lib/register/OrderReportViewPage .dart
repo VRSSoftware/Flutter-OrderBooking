@@ -1080,15 +1080,13 @@ pw.Widget _buildPDFHeader() {
   }
 
 pw.Widget _buildPDFFooter() {
-  // Determine the creator text based on Doc_From
-  String createdByText = "Created By: Admin";
-  String docFrom = headerData['Doc_From']?.toString() ?? '';
+  // Get Ledger_Name from backend data
+  String ledgerName = headerData['Ledger_Name']?.toString() ?? '';
   
-  if (docFrom == 'S') {
-    createdByText = "Created By: Salesman";
-  } else if (docFrom == 'A' || docFrom == 'C') {
-    createdByText = "Created By: Admin";
-  }
+  // Determine the creator text based on ledger name
+  String createdByText = ledgerName.isNotEmpty 
+      ? "Created By: $ledgerName" 
+      : "Created By: ";
   
   return pw.Container(
     width: double.infinity,
@@ -1112,7 +1110,7 @@ pw.Widget _buildPDFFooter() {
     ),
   );
 }
-
+ 
   @override
   Widget build(BuildContext context) {
     return PopScope(
