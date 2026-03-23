@@ -328,7 +328,18 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+
+     return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (Route<dynamic> route) => false,
+        );
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: DrawerScreen(),
       appBar: AppBar(
@@ -540,7 +551,7 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
       //   ),
       // ),
       bottomNavigationBar: BottomNavigationWidget(currentScreen: '/dashboard'),
-    );
+     ));
   }
 
   Widget _buildHorizontalDateRange() {

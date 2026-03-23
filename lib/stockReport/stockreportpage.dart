@@ -1749,586 +1749,619 @@ class _StockReportPageState extends State<StockReportPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Text(
-          'Stock Report',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (Route<dynamic> route) => false,
+        );
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        drawer: DrawerScreen(),
+        appBar: AppBar(
+          title: Text(
+            'Stock Report',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
           ),
-        ),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          // Clear button - circular
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.1),
+          backgroundColor: AppColors.primaryColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+              size: 20,
+            ),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              }
+            },
+          ),
+          actions: [
+            // Clear button - circular
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              child: IconButton(
+                onPressed: clearFilters,
+                icon: const Icon(Icons.clear, color: Colors.white, size: 18),
+                tooltip: "Clear All",
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
             ),
-            child: IconButton(
-              onPressed: clearFilters,
-              icon: const Icon(Icons.clear, color: Colors.white, size: 18),
-              tooltip: "Clear All",
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Filter button with badge - circular
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.1),
+            // Filter button with badge - circular
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: _showFilterDialog,
-                  icon: const Icon(
-                    Icons.filter_list,
-                    color: Colors.white,
-                    size: 18,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: _showFilterDialog,
+                    icon: const Icon(
+                      Icons.filter_list,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    tooltip: "Filter",
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
-                  tooltip: "Filter",
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                ),
-                if (_getActiveFilterCount() > 0)
-                  Positioned(
-                    right: 2,
-                    top: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: Text(
-                        '${_getActiveFilterCount()}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                  if (_getActiveFilterCount() > 0)
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          '${_getActiveFilterCount()}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Category Card with border only
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryColor.shade200,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.category,
-                            color: AppColors.primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Select Category',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownSearch<String>(
-                      items:
-                          categories
-                              .map((category) => category.itemSubGrpName)
-                              .toList(),
-                      selectedItem: selectedCategoryName,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCategoryName = value;
-                          selectedItem = null;
-                          if (value != null) {
-                            Category? selectedCategory;
-                            try {
-                              for (var cat in categories) {
-                                if (cat.itemSubGrpName == value) {
-                                  selectedCategory = cat;
-                                  break;
-                                }
-                              }
-                              if (selectedCategory != null) {
-                                selectedCategoryKey =
-                                    selectedCategory.itemSubGrpKey;
-                                _fetchItemsByCategory(selectedCategoryKey!);
-                              } else {
-                                selectedCategoryKey = null;
-                                _fetchAllItems();
-                              }
-                            } catch (e) {
-                              selectedCategoryKey = null;
-                              _fetchAllItems();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error selecting category: $e'),
-                                ),
-                              );
-                            }
-                          } else {
-                            selectedCategoryKey = null;
-                            _fetchAllItems();
-                          }
-                        });
-                      },
-                      dropdownDecoratorProps: DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          hintText: "Choose category",
-                          hintStyle: GoogleFonts.poppins(fontSize: 13),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.primaryColor,
-                              width: 2,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                      popupProps: PopupProps.menu(
-                        showSearchBox: true,
-                        fit: FlexFit.loose,
-                        searchFieldProps: TextFieldProps(
-                          decoration: InputDecoration(
-                            hintText: "Search Category",
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        containerBuilder:
-                            (context, popupWidget) => Container(
-                              color: Colors.white,
-                              child: popupWidget,
-                            ),
-                        loadingBuilder:
-                            isLoadingCategories
-                                ? (context, searchEntry) => Center(
-                                  child: LoadingAnimationWidget.waveDots(
-                                    color: AppColors.primaryColor,
-                                    size: 40,
-                                  ),
-                                )
-                                : null,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Items Card with border only
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryColor.shade200,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.inventory,
-                            color: AppColors.primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Select Items',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownSearch<Item>.multiSelection(
-                      items: items,
-                      compareFn: (Item a, Item b) => a.itemKey == b.itemKey,
-                      itemAsString:
-                          (Item i) =>
-                              i.itemName == "All Items"
-                                  ? "All"
-                                  : (i.itemName ?? ''),
-                      selectedItems: selectedItems,
-                      onChanged: (List<Item> value) {
-                        setState(() {
-                          selectedItems = value;
-                        });
-                      },
-                      dropdownDecoratorProps: DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          hintText: "Choose items",
-                          hintStyle: GoogleFonts.poppins(fontSize: 13),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppColors.primaryColor,
-                              width: 2,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                      popupProps: PopupPropsMultiSelection.menu(
-                        showSearchBox: true,
-                        showSelectedItems: true,
-
-                        // ⭐ THIS HIDES THE DEFAULT CHECKBOX
-                        selectionWidget: (context, item, isSelected) {
-                          return const SizedBox();
-                        },
-
-                        searchFieldProps: TextFieldProps(
-                          decoration: InputDecoration(
-                            hintText: "Search Item",
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-
-                        itemBuilder: (context, item, isSelected) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            color:
-                                isSelected
-                                    ? AppColors.primaryColor.withOpacity(0.1)
-                                    : Colors.transparent,
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                item.itemName ?? '',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight:
-                                      isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                  color:
-                                      isSelected
-                                          ? AppColors.primaryColor
-                                          : Colors.black87,
-                                ),
-                              ),
-                              trailing:
-                                  isSelected
-                                      ? Icon(
-                                        Icons.check,
-                                        color: AppColors.primaryColor,
-                                        size: 18,
-                                      )
-                                      : null,
-                            ),
-                          );
-                        },
-
-                        loadingBuilder:
-                            isLoadingItems
-                                ? (context, searchEntry) => Center(
-                                  child: LoadingAnimationWidget.waveDots(
-                                    color: AppColors.primaryColor,
-                                    size: 40,
-                                  ),
-                                )
-                                : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Action Buttons with border only
-            // Action Buttons with icon and label in same line
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildHorizontalButton(
-                      icon: Icons.visibility,
-                      label: "View",
-                      color: AppColors.primaryColor,
-                      onTap: _fetchStockReport,
-                    ),
-                    Container(height: 30, width: 1, color: Colors.grey[300]),
-                    _buildHorizontalButton(
-                      icon: Icons.download,
-                      label: "PDF",
-                      color: AppColors.primaryColor,
-                      onTap: _downloadStockReport,
-                    ),
-                    Container(height: 30, width: 1, color: Colors.grey[300]),
-                    _buildHorizontalButton(
-                      icon: FontAwesomeIcons.whatsapp,
-                      label: "WhatsApp",
-                      color: Colors.green,
-                      isFaIcon: true,
-                      onTap: () async {
-                        await _shareViaWhatsApp();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Info Banner
-            if (selectedItems.isNotEmpty && !hasSearched)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primaryColor.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppColors.primaryColor.shade700,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${selectedItems.length} item(s) selected. Tap View to see stock report.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.primaryColor.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Loading indicator
-            if (isLoadingStockReport)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      LoadingAnimationWidget.waveDots(
-                        color: AppColors.primaryColor,
-                        size: 50,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Fetching stock data...',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Empty state
-            if (!isLoadingStockReport &&
-                hasSearched &&
-                stockReportItems.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 80,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No stock data found',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Try selecting different items or filters',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Hint for empty state
-            if (!hasSearched && selectedItems.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No items selected',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Select category and items to view stock report',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationWidget(
-        currentScreen: '/stockReport',
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // Category Card with border only
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AppColors.primaryColor.shade200,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.category,
+                              color: AppColors.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Select Category',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownSearch<String>(
+                        items:
+                            categories
+                                .map((category) => category.itemSubGrpName)
+                                .toList(),
+                        selectedItem: selectedCategoryName,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedCategoryName = value;
+                            selectedItem = null;
+                            if (value != null) {
+                              Category? selectedCategory;
+                              try {
+                                for (var cat in categories) {
+                                  if (cat.itemSubGrpName == value) {
+                                    selectedCategory = cat;
+                                    break;
+                                  }
+                                }
+                                if (selectedCategory != null) {
+                                  selectedCategoryKey =
+                                      selectedCategory.itemSubGrpKey;
+                                  _fetchItemsByCategory(selectedCategoryKey!);
+                                } else {
+                                  selectedCategoryKey = null;
+                                  _fetchAllItems();
+                                }
+                              } catch (e) {
+                                selectedCategoryKey = null;
+                                _fetchAllItems();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error selecting category: $e',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } else {
+                              selectedCategoryKey = null;
+                              _fetchAllItems();
+                            }
+                          });
+                        },
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: InputDecoration(
+                            hintText: "Choose category",
+                            hintStyle: GoogleFonts.poppins(fontSize: 13),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          fit: FlexFit.loose,
+                          searchFieldProps: TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: "Search Category",
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                          containerBuilder:
+                              (context, popupWidget) => Container(
+                                color: Colors.white,
+                                child: popupWidget,
+                              ),
+                          loadingBuilder:
+                              isLoadingCategories
+                                  ? (context, searchEntry) => Center(
+                                    child: LoadingAnimationWidget.waveDots(
+                                      color: AppColors.primaryColor,
+                                      size: 40,
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Items Card with border only
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AppColors.primaryColor.shade200,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.inventory,
+                              color: AppColors.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Select Items',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownSearch<Item>.multiSelection(
+                        items: items,
+                        compareFn: (Item a, Item b) => a.itemKey == b.itemKey,
+                        itemAsString:
+                            (Item i) =>
+                                i.itemName == "All Items"
+                                    ? "All"
+                                    : (i.itemName ?? ''),
+                        selectedItems: selectedItems,
+                        onChanged: (List<Item> value) {
+                          setState(() {
+                            selectedItems = value;
+                          });
+                        },
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: InputDecoration(
+                            hintText: "Choose items",
+                            hintStyle: GoogleFonts.poppins(fontSize: 13),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                        popupProps: PopupPropsMultiSelection.menu(
+                          showSearchBox: true,
+                          showSelectedItems: true,
+
+                          // ⭐ THIS HIDES THE DEFAULT CHECKBOX
+                          selectionWidget: (context, item, isSelected) {
+                            return const SizedBox();
+                          },
+
+                          searchFieldProps: TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: "Search Item",
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+
+                          itemBuilder: (context, item, isSelected) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              color:
+                                  isSelected
+                                      ? AppColors.primaryColor.withOpacity(0.1)
+                                      : Colors.transparent,
+                              child: ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  item.itemName ?? '',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                    color:
+                                        isSelected
+                                            ? AppColors.primaryColor
+                                            : Colors.black87,
+                                  ),
+                                ),
+                                trailing:
+                                    isSelected
+                                        ? Icon(
+                                          Icons.check,
+                                          color: AppColors.primaryColor,
+                                          size: 18,
+                                        )
+                                        : null,
+                              ),
+                            );
+                          },
+
+                          loadingBuilder:
+                              isLoadingItems
+                                  ? (context, searchEntry) => Center(
+                                    child: LoadingAnimationWidget.waveDots(
+                                      color: AppColors.primaryColor,
+                                      size: 40,
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action Buttons with border only
+              // Action Buttons with icon and label in same line
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildHorizontalButton(
+                        icon: Icons.visibility,
+                        label: "View",
+                        color: AppColors.primaryColor,
+                        onTap: _fetchStockReport,
+                      ),
+                      Container(height: 30, width: 1, color: Colors.grey[300]),
+                      _buildHorizontalButton(
+                        icon: Icons.download,
+                        label: "PDF",
+                        color: AppColors.primaryColor,
+                        onTap: _downloadStockReport,
+                      ),
+                      Container(height: 30, width: 1, color: Colors.grey[300]),
+                      _buildHorizontalButton(
+                        icon: FontAwesomeIcons.whatsapp,
+                        label: "WhatsApp",
+                        color: Colors.green,
+                        isFaIcon: true,
+                        onTap: () async {
+                          await _shareViaWhatsApp();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Info Banner
+              if (selectedItems.isNotEmpty && !hasSearched)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryColor.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.primaryColor.shade700,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${selectedItems.length} item(s) selected. Tap View to see stock report.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppColors.primaryColor.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Loading indicator
+              if (isLoadingStockReport)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        LoadingAnimationWidget.waveDots(
+                          color: AppColors.primaryColor,
+                          size: 50,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Fetching stock data...',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Empty state
+              if (!isLoadingStockReport &&
+                  hasSearched &&
+                  stockReportItems.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No stock data found',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try selecting different items or filters',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Hint for empty state
+              if (!hasSearched && selectedItems.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 80,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No items selected',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Select category and items to view stock report',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomNavigationWidget(
+          currentScreen: '/stockReport',
+        ),
       ),
     );
   }

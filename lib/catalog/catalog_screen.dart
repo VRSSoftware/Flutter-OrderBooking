@@ -484,6 +484,8 @@
 //   }
 // }
 
+
+
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -622,7 +624,16 @@ class _CatalogScreenState extends State<CatalogScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+ return WillPopScope(
+  onWillPop: () async {
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/home',
+      (Route<dynamic> route) => false,
+    );
+    return false; // Prevent default back button behavior
+  },
+  child: Scaffold(
       backgroundColor: Colors.grey[50], // Changed to grey background
       drawer: DrawerScreen(),
       appBar: AppBar(
@@ -822,7 +833,7 @@ class _CatalogScreenState extends State<CatalogScreen>
         ),
       ),
       bottomNavigationBar: BottomNavigationWidget(currentScreen: '/catalog'),
-    );
+     ) );
   }
 
   Widget _buildCategoryChip(Category category, bool isSelected, double buttonWidth) {

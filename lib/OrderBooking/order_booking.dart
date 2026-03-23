@@ -738,8 +738,6 @@
 //   }
 // }
 
-
-
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -823,7 +821,12 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
       _fetchCartCount();
     }
     //fetchPartyList();
-Future<List<String>> addedItems =  ApiService.fetchAddedItems(userId: UserSession.userName ?? '' ,coBrId: UserSession.coBrId ?? '', fcYrId:  UserSession.userFcYr ?? '', barcode : "" ) ;
+    Future<List<String>> addedItems = ApiService.fetchAddedItems(
+      userId: UserSession.userName ?? '',
+      coBrId: UserSession.coBrId ?? '',
+      fcYrId: UserSession.userFcYr ?? '',
+      barcode: "",
+    );
     _arrowController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 700),
@@ -1066,495 +1069,518 @@ Future<List<String>> addedItems =  ApiService.fetchAddedItems(userId: UserSessio
   Widget build(BuildContext context) {
     final cartModel = Provider.of<CartModel>(context);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Text(
-              showBarcodeWidget ? 'Barcode' : 'Order Booking',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading:
-            showBarcodeWidget
-                ? IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  onPressed: () {
-                    setState(() {
-                      showBarcodeWidget = false;
-                    });
-                  },
-                )
-                : Builder(
-                  builder:
-                      (context) => IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.white),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
-                      ),
-                ),
-        automaticallyImplyLeading: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    CupertinoIcons.cart_badge_plus,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                  onPressed: () {
-                    String route;
-
-                    if (showBarcodeWidget) {
-                      if (AppConstants.bookingType == "1") {
-                        route = '/viewOrder';
-                      } else if (AppConstants.bookingType == "2") {
-                        route = '/viewOrder2';
-                      } else {
-                        route = '/viewOrder';
-                      }
-                    } else {
-                      if (AppConstants.bookingType == "1") {
-                        route = '/viewOrder';
-                      } else if (AppConstants.bookingType == "2") {
-                        route = '/viewOrder2';
-                      } else {
-                        route = '/viewOrder';
-                      }
-                    }
-
-                    Navigator.pushNamed(
-                      context,
-                      route,
-                      arguments: {Constants.barcode: showBarcodeWidget},
-                    ).then((_) => _fetchCartCount());
-                  },
-                ),
-                if (cartModel.count > 0)
-                  Positioned(
-                    right: 6,
-                    top: 7,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 18,
-                        minHeight: 18,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${cartModel.count}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (Route<dynamic> route) => false,
+        );
+      }, // Allow back navigation
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        drawer: DrawerScreen(),
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Text(
+                showBarcodeWidget ? 'Barcode' : 'Order Booking',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
           ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.white.withOpacity(0.2), height: 1),
-        ),
-      ),
-
-      // ✅ FLOATING ACTION BUTTON - ONLY APPEARS WHEN ITEMS SELECTED
-      floatingActionButton:
-          (_selectedCategoryKeys.isNotEmpty || _selectedItemKeys.isNotEmpty) &&
-                  !showBarcodeWidget
-              ? ScaleTransition(
-                scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
-                child: SizedBox(
-                  height: 56,
-                  child: FloatingActionButton.extended(
-                    backgroundColor: AppColors.primaryColor,
+          backgroundColor: AppColors.primaryColor,
+          elevation: 0,
+          leading:
+              showBarcodeWidget
+                  ? IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        showBarcodeWidget = false;
+                      });
+                    },
+                  )
+                  : Builder(
+                    builder:
+                        (context) => IconButton(
+                          icon: const Icon(Icons.menu, color: Colors.white),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
+                  ),
+          automaticallyImplyLeading: false,
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
                     icon: const Icon(
-                      Icons.arrow_forward,
+                      CupertinoIcons.cart_badge_plus,
                       color: Colors.white,
-                      size: 20,
-                    ),
-                    label: const Text(
-                      'View',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                      size: 22,
                     ),
                     onPressed: () {
-                      String? categoryKeys;
-                      String? itemKeys;
+                      String route;
 
-                      if (_selectedCategoryKeys.isNotEmpty) {
-                        categoryKeys = _selectedCategoryKeys.join(',');
+                      if (showBarcodeWidget) {
+                        if (AppConstants.bookingType == "1") {
+                          route = '/viewOrder';
+                        } else if (AppConstants.bookingType == "2") {
+                          route = '/viewOrder2';
+                        } else {
+                          route = '/viewOrder';
+                        }
+                      } else {
+                        if (AppConstants.bookingType == "1") {
+                          route = '/viewOrder';
+                        } else if (AppConstants.bookingType == "2") {
+                          route = '/viewOrder2';
+                        } else {
+                          route = '/viewOrder';
+                        }
                       }
 
-                      if (_selectedItemKeys.isNotEmpty) {
-                        itemKeys = _selectedItemKeys.join(',');
-                      }
-                      print("Navigating to 1st from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}");
-
-                      Navigator.push(
+                      Navigator.pushNamed(
                         context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => OrderPage(
-                                itemKey: itemKeys,
-                                itemSubGrpKey: categoryKeys,
-                                itemName: null,
-                                coBr: coBr,
-                                fcYrId: fcYrId,
-                                selectedParty: selectedParty,
-                                type: Constants.SALE_BILL,
-                                isMultiSelect: true,
-                              ),
-                        ),
-                      ).then((_) {
-                        setState(() {
-                          _selectedCategoryKeys.clear();
-                          _selectedItemKeys.clear();
-                          _isMultiSelectMode = false;
-                          _filterItems();
-                        });
-                      });
-
-                      // Navigator.pushNamed(
-                      //   context,
-                      //   '/orderpage',
-                      //   arguments: {
-                      //     'itemKey': itemKeys,
-                      //     'itemSubGrpKey': categoryKeys,
-                      //     'itemName': null,
-                      //     'coBr': coBr,
-                      //     'fcYrId': fcYrId,
-                      //     'selectedParty': selectedParty,
-                      //     'type': Constants.SALE_BILL,
-                      //     'isMultiSelect': true,
-                      //   },
-                      // ).then((_) {
-                      //   setState(() {
-                      //     _selectedCategoryKeys.clear();
-                      //     _selectedItemKeys.clear();
-                      //     _isMultiSelectMode = false;
-                      //     _filterItems();
-                      //   });
-                      // });
+                        route,
+                        arguments: {Constants.barcode: showBarcodeWidget},
+                      ).then((_) => _fetchCartCount());
                     },
                   ),
-                ),
-              )
-              : null,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            double buttonWidth = ((constraints.maxWidth - 16 - 8) / 2) * 1;
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-
-                      // Party Dropdown (commented out as in original)
-                      // ... (keep your commented code as is)
-
-                      // Barcode Checkbox with improved styling
-                      // Barcode Checkbox with improved styling
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                  if (cartModel.count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 7,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
+                          color: Colors.red,
+                          shape: BoxShape.circle,
                         ),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: showBarcodeWidget,
-                              activeColor: AppColors.primaryColor,
-                              onChanged: (value) {
-                                setState(() {
-                                  showBarcodeWidget = value ?? false;
-                                  // Refresh cart count when toggling barcode mode
-                                  Future.delayed(
-                                    const Duration(milliseconds: 100),
-                                    () {
-                                      _fetchCartCount();
-                                    },
-                                  );
-                                });
-                              },
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${cartModel.count}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const Text(
-                              "Order Booking Barcode Wise",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: Colors.white.withOpacity(0.2), height: 1),
+          ),
+        ),
 
-                      const SizedBox(height: 12),
-
-                      // In OrderBookingScreen build method, update the BarcodeWiseWidget section
-                      if (showBarcodeWidget)
-                        SizedBox(
-                          width: double.infinity,
-                          child: BarcodeWiseWidget(
-                            onFilterPressed: (barcode) {
-                              print("Barcode: $barcode");
-                              setState(() {
-                                hasFiltered = true;
-                              });
-                            },
-                            onOrderConfirmed: () {
-                              // Refresh cart count when order is confirmed from barcode
-                              _fetchCartCount();
-                            },
-                            edit: false, // or appropriate value
-                          ),
+        // ✅ FLOATING ACTION BUTTON - ONLY APPEARS WHEN ITEMS SELECTED
+        floatingActionButton:
+            (_selectedCategoryKeys.isNotEmpty ||
+                        _selectedItemKeys.isNotEmpty) &&
+                    !showBarcodeWidget
+                ? ScaleTransition(
+                  scale: Tween(begin: 0.9, end: 1.1).animate(_arrowController),
+                  child: SizedBox(
+                    height: 56,
+                    child: FloatingActionButton.extended(
+                      backgroundColor: AppColors.primaryColor,
+                      icon: const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        'View',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
+                      ),
+                      onPressed: () {
+                        String? categoryKeys;
+                        String? itemKeys;
 
-                      if (!showBarcodeWidget) ...[
-                        const SizedBox(height: 20),
+                        if (_selectedCategoryKeys.isNotEmpty) {
+                          categoryKeys = _selectedCategoryKeys.join(',');
+                        }
 
-                        // Categories Header with Vertical Line
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        if (_selectedItemKeys.isNotEmpty) {
+                          itemKeys = _selectedItemKeys.join(',');
+                        }
+                        print(
+                          "Navigating to 1st from: ${ModalRoute.of(context)?.settings.name ?? 'anonymous route'}",
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => OrderPage(
+                                  itemKey: itemKeys,
+                                  itemSubGrpKey: categoryKeys,
+                                  itemName: null,
+                                  coBr: coBr,
+                                  fcYrId: fcYrId,
+                                  selectedParty: selectedParty,
+                                  type: Constants.SALE_BILL,
+                                  isMultiSelect: true,
+                                ),
+                          ),
+                        ).then((_) {
+                          setState(() {
+                            _selectedCategoryKeys.clear();
+                            _selectedItemKeys.clear();
+                            _isMultiSelectMode = false;
+                            _filterItems();
+                          });
+                        });
+
+                        // Navigator.pushNamed(
+                        //   context,
+                        //   '/orderpage',
+                        //   arguments: {
+                        //     'itemKey': itemKeys,
+                        //     'itemSubGrpKey': categoryKeys,
+                        //     'itemName': null,
+                        //     'coBr': coBr,
+                        //     'fcYrId': fcYrId,
+                        //     'selectedParty': selectedParty,
+                        //     'type': Constants.SALE_BILL,
+                        //     'isMultiSelect': true,
+                        //   },
+                        // ).then((_) {
+                        //   setState(() {
+                        //     _selectedCategoryKeys.clear();
+                        //     _selectedItemKeys.clear();
+                        //     _isMultiSelectMode = false;
+                        //     _filterItems();
+                        //   });
+                        // });
+                      },
+                    ),
+                  ),
+                )
+                : null,
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              double buttonWidth = ((constraints.maxWidth - 16 - 8) / 2) * 1;
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+
+                        // Party Dropdown (commented out as in original)
+                        // ... (keep your commented code as is)
+
+                        // Barcode Checkbox with improved styling
+                        // Barcode Checkbox with improved styling
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
                           child: Row(
                             children: [
-                              Container(
-                                width: 4,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
+                              Checkbox(
+                                value: showBarcodeWidget,
+                                activeColor: AppColors.primaryColor,
+                                onChanged: (value) {
+                                  setState(() {
+                                    showBarcodeWidget = value ?? false;
+                                    // Refresh cart count when toggling barcode mode
+                                    Future.delayed(
+                                      const Duration(milliseconds: 100),
+                                      () {
+                                        _fetchCartCount();
+                                      },
+                                    );
+                                  });
+                                },
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Categories",
+                              const Text(
+                                "Order Booking Barcode Wise",
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.grey[800],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                 ),
                               ),
-                              const Spacer(),
-                              // if (_categories.isNotEmpty &&
-                              //     !_isLoadingCategories)
-                              //   Text(
-                              //     '${_categories.length} total',
-                              //     style: TextStyle(
-                              //       fontSize: 12,
-                              //       color: Colors.grey[600],
-                              //     ),
-                              //   ),
                             ],
                           ),
                         ),
+
                         const SizedBox(height: 12),
 
-                        _isLoadingCategories
-                            ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
+                        // In OrderBookingScreen build method, update the BarcodeWiseWidget section
+                        if (showBarcodeWidget)
+                          SizedBox(
+                            width: double.infinity,
+                            child: BarcodeWiseWidget(
+                              onFilterPressed: (barcode) {
+                                print("Barcode: $barcode");
+                                setState(() {
+                                  hasFiltered = true;
+                                });
+                              },
+                              onOrderConfirmed: () {
+                                // Refresh cart count when order is confirmed from barcode
+                                _fetchCartCount();
+                              },
+                              edit: false, // or appropriate value
+                            ),
+                          ),
+
+                        if (!showBarcodeWidget) ...[
+                          const SizedBox(height: 20),
+
+                          // Categories Header with Vertical Line
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
-                                child: LoadingAnimationWidget.waveDots(
-                                  color: AppColors.primaryColor,
-                                  size: 30,
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Categories",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.grey[800],
+                                  ),
                                 ),
-                              ),
-                            )
-                            : _categoryError != null
-                            ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
+                                const Spacer(),
+                                // if (_categories.isNotEmpty &&
+                                //     !_isLoadingCategories)
+                                //   Text(
+                                //     '${_categories.length} total',
+                                //     style: TextStyle(
+                                //       fontSize: 12,
+                                //       color: Colors.grey[600],
+                                //     ),
+                                //   ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          _isLoadingCategories
+                              ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
+                                  child: LoadingAnimationWidget.waveDots(
+                                    color: AppColors.primaryColor,
+                                    size: 30,
+                                  ),
                                 ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red,
-                                      size: 40,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _categoryError!,
-                                      style: TextStyle(
+                              )
+                              : _categoryError != null
+                              ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
                                         color: Colors.red,
-                                        fontSize: 13,
+                                        size: 40,
                                       ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    ElevatedButton(
-                                      onPressed: _fetchCategories,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primaryColor,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _categoryError!,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 13,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ElevatedButton(
+                                        onPressed: _fetchCategories,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              AppColors.primaryColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                         ),
+                                        child: const Text('Retry'),
                                       ),
-                                      child: const Text('Retry'),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              : Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                ),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 10,
+                                  alignment: WrapAlignment.start,
+                                  children:
+                                      _categories.map((category) {
+                                        bool isSelected = _selectedCategoryKeys
+                                            .contains(category.itemSubGrpKey);
+
+                                        return _buildCategoryChip(
+                                          category,
+                                          isSelected,
+                                          buttonWidth,
+                                        );
+                                      }).toList(),
+                                ),
+                              ),
+
+                          const SizedBox(height: 24),
+
+                          // Items Header with Vertical Line and Search
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Items",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    //if (!_isLoadingItems && _items.isNotEmpty)
+                                    // Text(
+                                    //   '${_filteredItems.length} of ${_items.length}',
+                                    //   style: TextStyle(
+                                    //     fontSize: 12,
+                                    //     color: Colors.grey[600],
+                                    //   ),
+                                    // ),
                                   ],
                                 ),
-                              ),
-                            )
-                            : Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                              ),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 10,
-                                alignment: WrapAlignment.start,
-                                children:
-                                    _categories.map((category) {
-                                      bool isSelected = _selectedCategoryKeys
-                                          .contains(category.itemSubGrpKey);
+                                const SizedBox(height: 12),
 
-                                      return _buildCategoryChip(
-                                        category,
-                                        isSelected,
-                                        buttonWidth,
-                                      );
-                                    }).toList(),
-                              ),
+                                // Search Bar
+                                Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Search items...',
+                                      hintStyle: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 13,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: Colors.grey[600],
+                                        size: 18,
+                                      ),
+                                      suffixIcon:
+                                          _searchQuery.isNotEmpty
+                                              ? IconButton(
+                                                icon: Icon(
+                                                  Icons.clear,
+                                                  color: Colors.grey[600],
+                                                  size: 16,
+                                                ),
+                                                onPressed:
+                                                    () =>
+                                                        _searchController
+                                                            .clear(),
+                                              )
+                                              : null,
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                    ),
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              ],
                             ),
-
-                        const SizedBox(height: 24),
-
-                        // Items Header with Vertical Line and Search
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryColor,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Items",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Colors.grey[800],
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  //if (!_isLoadingItems && _items.isNotEmpty)
-                                  // Text(
-                                  //   '${_filteredItems.length} of ${_items.length}',
-                                  //   style: TextStyle(
-                                  //     fontSize: 12,
-                                  //     color: Colors.grey[600],
-                                  //   ),
-                                  // ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Search Bar
-                              Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search items...',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 13,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: Colors.grey[600],
-                                      size: 18,
-                                    ),
-                                    suffixIcon:
-                                        _searchQuery.isNotEmpty
-                                            ? IconButton(
-                                              icon: Icon(
-                                                Icons.clear,
-                                                color: Colors.grey[600],
-                                                size: 16,
-                                              ),
-                                              onPressed:
-                                                  () =>
-                                                      _searchController.clear(),
-                                            )
-                                            : null,
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                            ],
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Items Section
-                        _buildCategoryItems(buttonWidth),
+                          // Items Section
+                          _buildCategoryItems(buttonWidth),
+                        ],
+                        const Spacer(),
                       ],
-                      const Spacer(),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationWidget(
-        currentScreen: '/orderbooking',
+        bottomNavigationBar: BottomNavigationWidget(
+          currentScreen: '/orderbooking',
+        ),
       ),
     );
   }
