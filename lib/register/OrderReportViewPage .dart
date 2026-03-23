@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -81,6 +83,23 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
       }
     }
   }
+
+  pw.ImageProvider? _getLogoImage() {
+  try {
+    String logoBase64 = headerData['logo']?.toString() ?? '';
+    if (logoBase64.isNotEmpty) {
+      // Remove any data URL prefix if present (like "data:image/jpeg;base64,")
+      if (logoBase64.contains(',')) {
+        logoBase64 = logoBase64.split(',').last;
+      }
+      Uint8List bytes = base64.decode(logoBase64);
+      return pw.MemoryImage(bytes);
+    }
+  } catch (e) {
+    print('Error decoding logo: $e');
+  }
+  return null;
+}
 
   String _formatDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return '';
@@ -176,418 +195,444 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     }
   }
 
-  pw.Widget _buildPDFHeader() {
-    String address = headerData['RegdAdd']?.toString() ?? "";
-    String addressLine1 = "";
-    String addressLine2 = "";
+pw.Widget _buildPDFHeader() {
+  String address = headerData['RegdAdd']?.toString() ?? "";
+  String addressLine1 = "";
+  String addressLine2 = "";
 
-    if (address.length > 40) {
-      int splitIndex = address.indexOf(',', 30);
-      if (splitIndex == -1) {
-        splitIndex = address.lastIndexOf(' ', 40);
-      }
-      if (splitIndex > 0 && splitIndex < address.length - 1) {
-        addressLine1 = address.substring(0, splitIndex + 1);
-        addressLine2 = address.substring(splitIndex + 1).trim();
-      } else {
-        addressLine1 = address.substring(0, 40);
-        addressLine2 = address.substring(40);
-      }
-    } else {
-      addressLine1 = address;
+  if (address.length > 40) {
+    int splitIndex = address.indexOf(',', 30);
+    if (splitIndex == -1) {
+      splitIndex = address.lastIndexOf(' ', 40);
     }
-
-    String partyAddress = headerData['OAddr']?.toString() ?? "";
-    String partyAddressLine1 = "";
-    String partyAddressLine2 = "";
-
-    if (partyAddress.length > 30) {
-      int splitIndex = partyAddress.indexOf(',', 25);
-      if (splitIndex == -1) {
-        splitIndex = partyAddress.lastIndexOf(' ', 30);
-      }
-      if (splitIndex > 0 && splitIndex < partyAddress.length - 1) {
-        partyAddressLine1 = partyAddress.substring(0, splitIndex + 1);
-        partyAddressLine2 = partyAddress.substring(splitIndex + 1).trim();
-      } else {
-        partyAddressLine1 = partyAddress.substring(0, 30);
-        partyAddressLine2 = partyAddress.substring(30);
-      }
+    if (splitIndex > 0 && splitIndex < address.length - 1) {
+      addressLine1 = address.substring(0, splitIndex + 1);
+      addressLine2 = address.substring(splitIndex + 1).trim();
     } else {
-      partyAddressLine1 = partyAddress;
+      addressLine1 = address.substring(0, 40);
+      addressLine2 = address.substring(40);
     }
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.black),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
-        children: [
-          // Container with background color for the section above divider
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.only(top: 8, bottom: 8),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blue300, // Light blue-grey background
-              borderRadius: const pw.BorderRadius.only(
-                topLeft: pw.Radius.circular(4),
-                topRight: pw.Radius.circular(4),
-              ),
-            ),
-            child: pw.Column(
-              children: [
-                pw.Text(
-                  headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
-                  style: pw.TextStyle(
-                    fontSize: 18,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                  textAlign: pw.TextAlign.center,
-                ),
-                pw.SizedBox(height: 2),
-                pw.Text(
-                  headerData['RegdAdd']?.toString() ?? "",
-                  style: const pw.TextStyle(fontSize: 12),
-                  textAlign: pw.TextAlign.center,
-                ),
-                pw.Text(
-                  "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
-                  style: const pw.TextStyle(fontSize: 12),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          pw.Divider(height: 15, thickness: 0.2),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      "Party : ",
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        headerData['Led_Name']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                        softWrap: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(flex: 1, child: pw.Container()),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          "Address : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Expanded(
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              if (partyAddressLine1.isNotEmpty)
-                                pw.Text(
-                                  partyAddressLine1,
-                                  style: pw.TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: pw.FontWeight.bold,
-                                  ),
-                                  softWrap: true,
-                                ),
-                              if (partyAddressLine2.isNotEmpty)
-                                pw.Text(
-                                  partyAddressLine2,
-                                  style: pw.TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: pw.FontWeight.bold,
-                                  ),
-                                  softWrap: true,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Text(
-                          "Order No : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Text(
-                          headerData['Doc_No']?.toString() ?? '',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Row(
-                  children: [
-                    pw.Text(
-                      "GST No : ",
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                    pw.Text(
-                      headerData['GSTNo']?.toString() ?? '',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Text(
-                          "Date : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Text(
-                          _formatDate(headerData['Doc_Dt']?.toString()),
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Row(
-                  children: [
-                    pw.Text(
-                      "Mobile : ",
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                    pw.Text(
-                      headerData['Mobile']?.toString() ?? '',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Text(
-                          "Salesman : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Text(
-                          headerData['SalesPerson_Name']?.toString() ?? '',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Row(
-                  children: [
-                    pw.Text(
-                      "Del.Date : ",
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                    pw.Text(
-                      _formatDate(headerData['DlvDate']?.toString()),
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Text(
-                          "Transport : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Text(
-                          headerData['Transporter_Name']?.toString() ?? '',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      "Remark : ",
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey900,
-                      ),
-                    ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        headerData['Remark']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                        softWrap: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Text(
-                          "Broker : ",
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColors.grey900,
-                          ),
-                        ),
-                        pw.Text(
-                          headerData['Broker_Name']?.toString() ?? '',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  } else {
+    addressLine1 = address;
   }
 
+  String partyAddress = headerData['OAddr']?.toString() ?? "";
+  String partyAddressLine1 = "";
+  String partyAddressLine2 = "";
+
+  if (partyAddress.length > 30) {
+    int splitIndex = partyAddress.indexOf(',', 25);
+    if (splitIndex == -1) {
+      splitIndex = partyAddress.lastIndexOf(' ', 30);
+    }
+    if (splitIndex > 0 && splitIndex < partyAddress.length - 1) {
+      partyAddressLine1 = partyAddress.substring(0, splitIndex + 1);
+      partyAddressLine2 = partyAddress.substring(splitIndex + 1).trim();
+    } else {
+      partyAddressLine1 = partyAddress.substring(0, 30);
+      partyAddressLine2 = partyAddress.substring(30);
+    }
+  } else {
+    partyAddressLine1 = partyAddress;
+  }
+
+  // Get logo image
+  pw.ImageProvider? logoImage = _getLogoImage();
+
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.black),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        // Container with background color for the section above divider
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.only(top: 8, bottom: 8),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blue300, // Light blue-grey background
+            borderRadius: const pw.BorderRadius.only(
+              topLeft: pw.Radius.circular(4),
+              topRight: pw.Radius.circular(4),
+            ),
+          ),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Logo on left side
+              if (logoImage != null)
+                pw.Container(
+                  width: 60,
+                  height: 60,
+                  margin: const pw.EdgeInsets.only(left: 8, right: 8),
+                  child: pw.Image(
+                    logoImage,
+                    fit: pw.BoxFit.contain,
+                  ),
+                ),
+              // Company info in center/right
+              pw.Expanded(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                      textAlign: pw.TextAlign.center,
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      headerData['RegdAdd']?.toString() ?? "",
+                      style: const pw.TextStyle(fontSize: 12),
+                      textAlign: pw.TextAlign.center,
+                    ),
+                    pw.Text(
+                      "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
+                      style: const pw.TextStyle(fontSize: 12),
+                      textAlign: pw.TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              // Placeholder to balance the layout (optional)
+              if (logoImage != null)
+                pw.SizedBox(width: 68), // This maintains symmetry
+            ],
+          ),
+        ),
+        pw.Divider(height: 15, thickness: 0.2),
+        // ... rest of your existing code remains the same ...
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    "Party : ",
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      headerData['Led_Name']?.toString() ?? '',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                      softWrap: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(flex: 1, child: pw.Container()),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        "Address : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Expanded(
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            if (partyAddressLine1.isNotEmpty)
+                              pw.Text(
+                                partyAddressLine1,
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                                softWrap: true,
+                              ),
+                            if (partyAddressLine2.isNotEmpty)
+                              pw.Text(
+                                partyAddressLine2,
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                                softWrap: true,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              flex: 1,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Text(
+                        "Order No : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Text(
+                        headerData['Doc_No']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Row(
+                children: [
+                  pw.Text(
+                    "GST No : ",
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  pw.Text(
+                    headerData['GSTNo']?.toString() ?? '',
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              flex: 1,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Text(
+                        "Date : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Text(
+                        _formatDate(headerData['Doc_Dt']?.toString()),
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Row(
+                children: [
+                  pw.Text(
+                    "Mobile : ",
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  pw.Text(
+                    headerData['Mobile']?.toString() ?? '',
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              flex: 1,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Text(
+                        "Salesman : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Text(
+                        headerData['SalesPerson_Name']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Row(
+                children: [
+                  pw.Text(
+                    "Del.Date : ",
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  pw.Text(
+                    _formatDate(headerData['DlvDate']?.toString()),
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              flex: 1,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Text(
+                        "Transport : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Text(
+                        headerData['Transporter_Name']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              flex: 2,
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    "Remark : ",
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      headerData['Remark']?.toString() ?? '',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                      softWrap: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              flex: 1,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Text(
+                        "Broker : ",
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                      pw.Text(
+                        headerData['Broker_Name']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
   pw.Widget _buildPDFItemsTable() {
     if (items.isEmpty) {
       return pw.Center(child: pw.Text("No Items Found"));
@@ -1034,29 +1079,39 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     return pw.Column(children: tables);
   }
 
-  pw.Widget _buildPDFFooter() {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey400),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          // pw.Text("Created By: Admin", style: const pw.TextStyle(fontSize: 12)),
-          pw.Text(
-            "${headerData['Co_Name']?.toString() ?? ''}",
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.Text(
-            "Print Date: ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
-            style: const pw.TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
-    );
+pw.Widget _buildPDFFooter() {
+  // Determine the creator text based on Doc_From
+  String createdByText = "Created By: Admin";
+  String docFrom = headerData['Doc_From']?.toString() ?? '';
+  
+  if (docFrom == 'S') {
+    createdByText = "Created By: Salesman";
+  } else if (docFrom == 'A' || docFrom == 'C') {
+    createdByText = "Created By: Admin";
   }
+  
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.all(12),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey400),
+    ),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(createdByText, style: const pw.TextStyle(fontSize: 12)),
+        pw.Text(
+          "${headerData['Co_Name']?.toString() ?? ''}",
+          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Text(
+          "Print Date: ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
+          style: const pw.TextStyle(fontSize: 12),
+        ),
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1072,7 +1127,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         appBar: AppBar(
           backgroundColor: AppColors.primaryColor,
           title: Text(
-            "Order Form",
+            "Order Report",
             style: const TextStyle(color: Colors.white),
           ),
           leading: IconButton(

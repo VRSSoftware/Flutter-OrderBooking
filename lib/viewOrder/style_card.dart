@@ -1057,75 +1057,138 @@ Widget _buildCompactGradientButton({
   );
 }
   // Keep your existing _submitDelete and _submitUpdate methods as they are
-  Future<void> _submitDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm Deletion", style: TextStyle(fontSize: 16)),
-          content: const Text("Are you sure you want to delete this item?", style: TextStyle(fontSize: 14)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel", style: TextStyle(fontSize: 14)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.red, fontSize: 14)),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) return;
-    String sCode = widget.styleCode;
-    String bCode = "";
-    if (sCode.contains('---')) {
-      List<String> parts = widget.styleCode.split('---');
-      sCode = parts[0];
-      bCode = parts[1];
-    }
-    final payload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "data": {
-        "designcode": sCode,
-        "mrp": '0',
-        "WSP": '0',
-        "size": '',
-        "TotQty": '0',
-        "Note": noteController.text,
-        "color": "",
-        "Qty": " ",
-        "cobrid": UserSession.userName ?? '',
-        "user": "admin",
-        "barcode": bCode,
-      },
-      "typ": 2,
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
-
-      if (response.statusCode == 200) {
-        widget.onRemove();
-        Provider.of<CartModel>(context, listen: false).removeItem(sCode);
-      } else {
-        _showErrorDialog(context, "Failed to delete item.");
-      }
-    } catch (e) {
-      _showErrorDialog(context, "Error: $e");
-    }
+ Future<void> _submitDelete(BuildContext context) async {
+  print('=== DELETE METHOD STARTED ===');
+  print('Style code: ${widget.styleCode}');
+  
+  // Check UserSession values first
+  print('UserSession.userName: ${UserSession.userName}');
+  print('UserSession.coBrId: ${UserSession.coBrId}');
+  print('UserSession.userFcYr: ${UserSession.userFcYr}');
+  print('UserSession.userType: ${UserSession.userType}');
+  
+  // Validate session
+  if (UserSession.userName == null) {
+    print('❌ ERROR: UserSession.userName is null');
+    _showErrorDialog(context, "Session expired. Please log in again.");
+    return;
   }
+  if (UserSession.coBrId == null) {
+    print('❌ ERROR: UserSession.coBrId is null');
+    _showErrorDialog(context, "Session expired. Please log in again.");
+    return;
+  }
+  if (UserSession.userFcYr == null) {
+    print('❌ ERROR: UserSession.userFcYr is null');
+    _showErrorDialog(context, "Session expired. Please log in again.");
+    return;
+  }
+  
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Confirm Deletion", style: TextStyle(fontSize: 16)),
+        content: const Text("Are you sure you want to delete this item?", style: TextStyle(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(fontSize: 14)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red, fontSize: 14)),
+          ),
+        ],
+      );
+    },
+  );
 
+  if (confirmed != true) {
+    print('❌ User cancelled deletion');
+    return;
+  }
+  
+  String sCode = widget.styleCode;
+  String bCode = "";
+  if (sCode.contains('---')) {
+    List<String> parts = widget.styleCode.split('---');
+    sCode = parts[0];
+    bCode = parts.length > 1 ? parts[1] : "";
+  }
+  
+  print('Processed style code: $sCode');
+  print('Processed barcode: $bCode');
+  print('Note text: ${noteController.text}');
+  
+  final payload = {
+    "userId": UserSession.userName,
+    "coBrId": UserSession.coBrId,
+    "fcYrId": UserSession.userFcYr,
+    "data": {
+      "designcode": sCode,
+      "mrp": '0',
+      "WSP": '0',
+      "size": '',
+      "TotQty": '0',
+      "Note": noteController.text,
+      "color": "",
+      "Qty": " ",
+      "cobrid": UserSession.coBrId,
+      "user": UserSession.userName,
+      "barcode": bCode,
+    },
+    "typ": 2,
+  };
+  
+  print('=== PAYLOAD TO SEND ===');
+  print(jsonEncode(payload));
+  print('URL: ${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails');
+  
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    
+    print('=== RESPONSE RECEIVED ===');
+    print('Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      print('✅ Delete successful');
+      widget.onRemove();
+      try {
+        Provider.of<CartModel>(context, listen: false).removeItem(sCode);
+        print('✅ Removed from CartModel');
+      } catch (e) {
+        print('⚠️ Error removing from CartModel: $e');
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Item deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      print('❌ Delete failed with status: ${response.statusCode}');
+      print('Response: ${response.body}');
+      _showErrorDialog(context, "Failed to delete item. Status: ${response.statusCode}");
+    }
+  } catch (e) {
+    print('❌ Exception during delete: $e');
+    print('Stack trace: ${StackTrace.current}');
+    _showErrorDialog(context, "Error: $e");
+  }
+  
+  print('=== DELETE METHOD ENDED ===');
+}
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,

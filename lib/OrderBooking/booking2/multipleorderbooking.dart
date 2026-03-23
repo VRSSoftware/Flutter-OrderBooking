@@ -1566,6 +1566,9 @@
 //   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 // }
 
+
+
+
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1618,6 +1621,8 @@ class MultiCatalogBookingPage extends StatefulWidget {
     this.routeArguments,
   });
 
+  
+
   @override
   State<MultiCatalogBookingPage> createState() =>
       _MultiCatalogBookingPageState();
@@ -1644,9 +1649,14 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
   bool isLoading = true;
   int _loadingCounter = 0;
 
+  TextEditingController searchController = TextEditingController();
+  bool isSearching = false;
+  List<Catalog> filteredCatalogs = [];
+
   @override
   void initState() {
     super.initState();
+      filteredCatalogs = List.from(widget.catalogs);
     _loadingCounter = widget.catalogs.length;
     for (var catalog in widget.catalogs) {
       noteControllersMap[catalog.styleCode] = TextEditingController();
@@ -1654,6 +1664,25 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
       fetchCatalogData(catalog);
     }
   }
+
+
+  @override
+void dispose() {
+  searchController.dispose();
+  super.dispose();
+}
+
+  void filterCatalogs(String query) {
+  setState(() {
+    if (query.isEmpty) {
+      filteredCatalogs = List.from(widget.catalogs);
+    } else {
+      filteredCatalogs = widget.catalogs.where((catalog) {
+        return catalog.styleCode.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    }
+  });
+}
 
   Future<void> fetchCatalogData(Catalog catalog) async {
     final String apiUrl = '${AppConstants.BASE_URL}/catalog/GetOrderDetails';
@@ -1935,146 +1964,261 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     return '';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Book Multiple Items',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-            fontSize: 18,
-          ),
-        ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+   appBar: isSearching
+    ? AppBar(
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
+        toolbarHeight: 40,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        toolbarHeight: 40, // Reduced from default ~56 to 48
-        titleSpacing: 0, // Remove extra spacing if needed
-
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(
-            60.0,
-          ), // Increased height to accommodate dividers
-          child: Column(
-            children: [
-              // Top horizontal divider
-              Container(
-                height: 1,
-                width: double.infinity,
-                color: Colors.white.withOpacity(0.3),
+        title: Container(
+          height: 40,
+          child: TextField(
+            controller: searchController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.black87, fontSize: 12),
+            decoration: InputDecoration(
+              hintText: 'Search by Style Code...',
+              hintStyle: TextStyle(color: Colors.grey[500]),
+              fillColor: Colors.white,
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
               ),
-
-              // Main content with vertical dividers
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.maroon.withOpacity(0.9),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildSummaryChip(
-                      icon: Icons.currency_rupee,
-                      label:
-                          'Total: ₹${getTotalAmountAllStyles().toStringAsFixed(2)}',
-                      color: Colors.amber,
-                    ),
-
-                    // White vertical divider
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-
-                    _buildSummaryChip(
-                      icon: Icons.inventory,
-                      label: 'Items: ${getTotalItems()}',
-                      color: Colors.lightBlue,
-                    ),
-
-                    // White vertical divider
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-
-                    _buildSummaryChip(
-                      icon: Icons.shopping_cart,
-                      label: 'Qty: ${getTotalQtyAllStyles()}',
-                      color: Colors.green,
-                    ),
-                  ],
-                ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
               ),
-
-              // Bottom horizontal divider
-              Container(
-                height: 1,
-                width: double.infinity,
-                color: Colors.white.withOpacity(0.3),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
               ),
-            ],
+              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+              suffixIcon: searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey[600], size: 18),
+                      onPressed: () {
+                        setState(() {
+                          searchController.clear();
+                          filterCatalogs('');
+                        });
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            onChanged: filterCatalogs,
           ),
         ),
-      ),
-
-      body: SafeArea(
-        child:
-            isLoading
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Loading catalog data...',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
+        actions: [
+          // Add Cancel button to exit search
+          TextButton(
+            onPressed: () {
+              setState(() {
+                isSearching = false;
+                searchController.clear();
+                filterCatalogs('');
+              });
+            },
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+        ],
+           
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(60.0),
+              child: Column(
+                children: [
+                  Container(
+                    height: 1,
+                    width: double.infinity,
+                    color: Colors.white.withOpacity(0.3),
                   ),
-                )
-                : widget.catalogs.isEmpty
-                ? Center(
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.maroon.withOpacity(0.9),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildSummaryChip(
+                          icon: Icons.currency_rupee,
+                          label: 'Total: ₹${getTotalAmountAllStyles().toStringAsFixed(2)}',
+                          color: Colors.amber,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                        _buildSummaryChip(
+                          icon: Icons.inventory,
+                          label: 'Items: ${getTotalItems()}',
+                          color: Colors.lightBlue,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                        _buildSummaryChip(
+                          icon: Icons.shopping_cart,
+                          label: 'Qty: ${getTotalQtyAllStyles()}',
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    width: double.infinity,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            ),
+          )
+        : AppBar(
+            title: const Text(
+              'Book Multiple Items',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 18,
+              ),
+            ),
+            backgroundColor: AppColors.primaryColor,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search, color: Colors.white),
+                onPressed: () {
+                  setState(() {
+                    isSearching = true;
+                  });
+                },
+              ),
+            ],
+            toolbarHeight: 40,
+            titleSpacing: 0,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(60.0),
+              child: Column(
+                children: [
+                  Container(
+                    height: 1,
+                    width: double.infinity,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.maroon.withOpacity(0.9),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildSummaryChip(
+                          icon: Icons.currency_rupee,
+                          label: 'Total: ₹${getTotalAmountAllStyles().toStringAsFixed(2)}',
+                          color: Colors.amber,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                        _buildSummaryChip(
+                          icon: Icons.inventory,
+                          label: 'Items: ${getTotalItems()}',
+                          color: Colors.lightBlue,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                        _buildSummaryChip(
+                          icon: Icons.shopping_cart,
+                          label: 'Qty: ${getTotalQtyAllStyles()}',
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    height: 1,
+                    width: double.infinity,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    body: SafeArea(
+      child: isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading catalog data...',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            )
+          : filteredCatalogs.isEmpty
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.inventory_2_outlined,
+                        Icons.search_off,
                         size: 64,
                         color: Colors.grey[400],
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        "No items selected",
+                        "No items found for '${searchController.text}'",
                         style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 )
-                : Column(
+              : Column(
                   children: [
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.all(12),
-                        itemCount: widget.catalogs.length,
+                        itemCount: filteredCatalogs.length,
                         itemBuilder: (context, index) {
-                          final catalog = widget.catalogs[index];
+                          final catalog = filteredCatalogs[index];
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
@@ -2098,10 +2242,9 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
                     _buildBottomBar(),
                   ],
                 ),
-      ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildSummaryChip({
     required IconData icon,
     required String label,
