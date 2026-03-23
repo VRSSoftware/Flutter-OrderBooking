@@ -473,6 +473,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   //   }
   // }
 
+ 
   Future<void> _saveOrderLocally() async {
     if (_isSaving) return;
 
@@ -535,15 +536,27 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
             _additionalInfo['salesman'] ??
             _orderControllers.salesPersonKey ??
             '',
+            "usertype":UserSession.userType
       };
       final orderDataJson = jsonEncode(orderData);
       print("Saved Order Data:");
       print(orderDataJson);
 
+
       final response = await insertFinalSalesOrder(orderDataJson);
       if (response != null && response != "fail") {
         Provider.of<CartModel>(context, listen: false).clearAddedItems();
-        final formattedOrderNo = "SO$response";
+
+
+   String docNo = '';
+      try {
+        final responseMap = jsonDecode(response);
+        docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
+      } catch (e) {
+        docNo = response.toString();
+      }
+      
+      final formattedOrderNo = "SO$docNo";
 
         showDialog(
           context: context,
@@ -593,17 +606,17 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                                 ),
                                 children: [
                                   const TextSpan(text: 'Order '),
-                                  TextSpan(
-                                    text: formattedOrderNo,
-                                    style: TextStyle(
-                                      color: Colors.blue.shade700,
-                                      fontWeight: FontWeight.w900, // Extra bold
-                                      fontSize: 18, // Increased size
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: Colors.blue.shade300,
-                                      decorationThickness: 2,
-                                    ),
-                                  ),
+                                    TextSpan(
+                              text: formattedOrderNo,
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.blue.shade300,
+                                decorationThickness: 2,
+                              ),
+                            ),
                                   const TextSpan(text: ' saved successfully'),
                                 ],
                               ),
