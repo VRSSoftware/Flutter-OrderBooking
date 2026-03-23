@@ -1089,7 +1089,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
             _buildTabBar(),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(8),
                 child: Form(
                   key: _formKey,
                   child:
@@ -1841,10 +1841,11 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
         );
       }
 
-      // Build slivers directly without wrapping in SliverList
+      // Build slivers - each style is a SliverMainAxisGroup
       final List<Widget> allSlivers = [];
 
-      for (var entry in entries) {
+      for (var i = 0; i < entries.length; i++) {
+        final entry = entries[i];
         final styleKey = entry.key;
         final items = entry.value;
         final catalogOrder = _convertToCatalogOrderData(styleKey, items);
@@ -1856,68 +1857,87 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
 
         final styleSelectedColors = widget.selectedColors[styleKey]!;
 
-        // Add sticky header for this style
-        allSlivers.add(
+        // Create a group for this style's content
+        final List<Widget> styleSlivers = [];
+
+        // Add header (pinned: true - sticks within its group)
+        styleSlivers.add(
           SliverPersistentHeader(
             pinned: true,
             delegate: _CardHeaderDelegate(
               minHeight: 150,
               maxHeight: 150,
-              child: _buildStickyHeader(
-                styleKey,
-                catalogOrder.catalog,
-                context,
+              child: Container(
+                color: Colors.white,
+                child: _buildStickyHeader(
+                  styleKey,
+                  catalogOrder.catalog,
+                  context,
+                ),
               ),
             ),
           ),
         );
 
-        // Add spacing after header
-        allSlivers.add(SliverToBoxAdapter(child: const SizedBox(height: 8)));
-
         // Add all shades for this style
         for (var shade in styleSelectedColors) {
-          allSlivers.add(
+          styleSlivers.add(
             SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  _buildColorSection(catalogOrder, shade, styleKey, items),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed:
-                              () =>
-                                  _removeShadeLocally(context, styleKey, shade),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 10.0,
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    _buildColorSection(
+                      catalogOrder,
+                      shade,
+                      styleKey,
+                      items,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed:
+                                () => _removeShadeLocally(
+                                  context,
+                                  styleKey,
+                                  shade,
+                                ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0,
+                                vertical: 10.0,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              side: BorderSide(color: Colors.red.shade600),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            side: BorderSide(color: Colors.red.shade600),
-                          ),
-                          icon: Icon(Icons.delete, color: Colors.red.shade600),
-                          label: Text(
-                            'Delete',
-                            style: TextStyle(
+                            icon: Icon(
+                              Icons.delete,
                               color: Colors.red.shade600,
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.w600,
+                            ),
+                            label: Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: Colors.red.shade600,
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12.0),
-                      Expanded(child: _buildUpdateButton(styleKey, context)),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                ],
+                        const SizedBox(width: 12.0),
+                        Expanded(
+                          child: _buildUpdateButton(styleKey, context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                  ],
+                ),
               ),
             ),
           );
@@ -1925,18 +1945,41 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
 
         // Add Add Shade Button if available
         if (_getAvailableShades(styleKey, catalogOrder).isNotEmpty) {
-          allSlivers.add(
+          styleSlivers.add(
             SliverToBoxAdapter(
-              child: _buildAddShadeButton(styleKey, catalogOrder, context),
+              child: Container(
+                color: Colors.white,
+                child: _buildAddShadeButton(
+                  styleKey,
+                  catalogOrder,
+                  context,
+                ),
+              ),
             ),
           );
         }
 
-        // Add spacing between cards
-        allSlivers.add(SliverToBoxAdapter(child: const SizedBox(height: 16)));
+        // Add spacing at the bottom of this style
+        styleSlivers.add(
+          SliverToBoxAdapter(
+            child: Container(
+              color: Colors.white,
+              child: const SizedBox(height: 16),
+            ),
+          ),
+        );
+
+        // Wrap each style's slivers in SliverMainAxisGroup
+        allSlivers.add(
+          SliverMainAxisGroup(
+            slivers: styleSlivers,
+          ),
+        );
       }
 
-      return CustomScrollView(slivers: allSlivers);
+      return CustomScrollView(
+        slivers: allSlivers,
+      );
     }
   }
 
@@ -1947,28 +1990,25 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
   ) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, AppColors.primaryColor.withOpacity(0.02)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+          color: Colors.white,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
@@ -2908,174 +2948,169 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Column(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.white,
+      ),
+      child: Column(
+        children: [
+          // First header row: Shade, Quantity, Price
+          Row(
             children: [
-              // First header row: Shade, Quantity, Price
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 1.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        "Shade",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.lora(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                      ),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 1.0,
+                    horizontal: 8.0,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        "Quantity",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.lora(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                      ),
+                  child: Text(
+                    "Shade",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.lora(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "Amount",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.lora(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-
-              Divider(height: 1, color: Colors.grey.shade300),
-
-              // Second row: Shade name with its total quantity and price
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        shade,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          color: shadeColor,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        shadeTotalQty.toString(),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(fontSize: 14),
-                      ),
+                  child: Text(
+                    "Quantity",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.lora(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4.0,
-                        horizontal: 8.0,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      child: Text(
-                        '${shadeTotalPrice.toStringAsFixed(2)}',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(fontSize: 14),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-
-              Divider(height: 1, color: Colors.grey.shade300),
-
-              // Third header row: Size, Qty, Rate, WSP, Stock
-              Row(
-                children: [
-                  _buildHeader("Size", 1),
-                  _buildHeader("Qty", 2),
-                  _buildHeader("Rate", 1),
-                  _buildHeader("WSP", 1),
-                  _buildHeader("Stock", 1),
-                ],
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    "Amount",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.lora(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
               ),
-
-              Divider(height: 1, color: Colors.grey.shade300),
-
-              // Size rows
-              for (var size in sizes) ...[
-                _buildSizeRow(catalogOrder, shade, size, styleKey),
-                if (size != sizes.last)
-                  Divider(height: 1, color: Colors.grey.shade300),
-              ],
             ],
           ),
-        ),
-        const SizedBox(height: 15),
-      ],
+
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Second row: Shade name with its total quantity and price
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4.0,
+                    horizontal: 8.0,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text(
+                    shade,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: shadeColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4.0,
+                    horizontal: 8.0,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text(
+                    shadeTotalQty.toString(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.roboto(fontSize: 14),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4.0,
+                    horizontal: 8.0,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text(
+                    '${shadeTotalPrice.toStringAsFixed(2)}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.roboto(fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Third header row: Size, Qty, Rate, WSP, Stock
+          Row(
+            children: [
+              _buildHeader("Size", 1),
+              _buildHeader("Qty", 2),
+              _buildHeader("Rate", 1),
+              _buildHeader("WSP", 1),
+              _buildHeader("Stock", 1),
+            ],
+          ),
+
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Size rows
+          for (var size in sizes) ...[
+            _buildSizeRow(catalogOrder, shade, size, styleKey),
+            if (size != sizes.last)
+              Divider(height: 1, color: Colors.grey.shade300),
+          ],
+        ],
+      ),
     );
   }
 
@@ -4838,7 +4873,6 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
     Navigator.pop(context, newInfo);
   }
 }
-
 class _CardHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double minHeight;
   final double maxHeight;
