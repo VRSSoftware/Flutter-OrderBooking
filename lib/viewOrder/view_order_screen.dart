@@ -46,9 +46,15 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   double? mrkDown;
   bool isCustomerTabEnabled = false;
 
+    final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearching = false;
+  List<MapEntry<String, List<dynamic>>> _filteredGroupedItems = [];
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_filterSearchResults);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -64,6 +70,28 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       _loadBookingTypes();
     });
   }
+
+@override
+void dispose() {
+  _searchController.removeListener(_filterSearchResults);
+  _searchController.dispose();
+  _searchFocusNode.dispose();
+  super.dispose();
+}
+
+  void _filterSearchResults() {
+  final searchTerm = _searchController.text.toLowerCase().trim();
+  
+  setState(() {
+    if (searchTerm.isEmpty) {
+      _filteredGroupedItems = _styleManager.groupedItems.entries.toList();
+    } else {
+      _filteredGroupedItems = _styleManager.groupedItems.entries
+          .where((entry) => entry.key.toLowerCase().contains(searchTerm))
+          .toList();
+    }
+  });
+}
 
   Future<void> _loadBookingTypes() async {
     try {
@@ -214,6 +242,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     _updateTotals();
     setState(() {
       isLoading = false;
+
+    _filteredGroupedItems = _styleManager.groupedItems.entries.toList();
     });
   }
 
@@ -437,57 +467,144 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         Provider.of<CartModel>(context, listen: false).clearAddedItems();
         final formattedOrderNo = "SO$response";
 
-        showDialog(
+       showDialog(
           context: context,
+          barrierDismissible: false,
           builder:
               (context) => AlertDialog(
-                title: Text('Order Saved'),
-                content: Text('Order $formattedOrderNo saved successfully'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // REPLACE THIS: Navigator.push to PdfViewerScreen
-                      // WITH THIS: Navigator.push to OrderReportViewPage
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => OrderReportViewPage(
-                                orderNo:
-                                    response, // Use the response which is the order number
-                                orderData:
-                                    null, // You can pass additional data if needed
-                                showOnlyWithImage: false, // Default to false
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+                contentPadding: EdgeInsets.zero,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with background color
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        border: Border(
+                          bottom: BorderSide(color: Colors.green.shade100),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade700,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green.shade800,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Order '),
+                                  TextSpan(
+                                    text: formattedOrderNo,
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' saved successfully'),
+                                ],
                               ),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'View Report',
-                    ), // Changed from 'View PDF' to 'View Report'
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Navigator.pushReplacement(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => OrderBookingScreen(),
-                      //   ),
-                      // );
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OrderBookingScreen(),
-                        ),
-                        (Route<dynamic> route) => false,
-                      );
-                    },
-                    child: Text('Done'),
-                  ),
-                ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => OrderReportViewPage(
+                                          orderNo: response,
+                                          orderData: null,
+                                          showOnlyWithImage: false,
+                                        ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primaryColor,
+                                side: BorderSide(color: AppColors.primaryColor),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'View Report',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => OrderBookingScreen(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Done',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
         );
+      
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save order. Please try again.')),
@@ -627,8 +744,49 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: const Text(
+   appBar: AppBar(
+  backgroundColor: AppColors.primaryColor,
+  elevation: 4,
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back, color: Colors.white),
+    onPressed: () => Navigator.of(context).pop(),
+  ),
+  title: _isSearching
+      ? Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            style: const TextStyle(fontSize: 14, color: AppColors.primaryColor),
+            textAlignVertical: TextAlignVertical.center,
+            decoration: InputDecoration(
+              hintText: "Search by style code...",
+              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              isDense: true,
+              prefixIcon: Icon(Icons.search, size: 18, color: AppColors.primaryColor),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.close, size: 16, color: AppColors.primaryColor),
+                      onPressed: () {
+                        _searchController.clear();
+                        _isSearching = false;
+                        _filterSearchResults();
+                        _searchFocusNode.unfocus();
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
+                  : null,
+            ),
+          ),
+        )
+      : const Text(
           'View Order',
           style: TextStyle(
             color: Colors.white,
@@ -636,45 +794,51 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             fontSize: 20,
           ),
         ),
-    actions: [
-  // Clear Cart icon - Circular design
-  Container(
-    margin: const EdgeInsets.symmetric(horizontal: 4),
-    width: 40,
-    height: 40,
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.15),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: IconButton(
-      icon: ImageIcon(
-        const AssetImage('assets/icons/clean.png'),
-        color: Colors.white,
-        size: 20,
+  actions: [
+    if (!_isSearching)
+      IconButton(
+        icon: const Icon(Icons.search, color: Colors.white),
+        onPressed: () {
+          setState(() {
+            _isSearching = true;
+          });
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _searchFocusNode.requestFocus();
+          });
+        },
       ),
-      onPressed: () {
-        _showClearCartDialog();
-      },
-      tooltip: 'Clear Cart',
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-    ),
-  ),
-],
-        backgroundColor: AppColors.primaryColor,
-        elevation: 4,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+    // Clear Cart icon - Circular design
+    Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: IconButton(
+        icon: ImageIcon(
+          const AssetImage('assets/icons/clean.png'),
+          color: Colors.white,
+          size: 20,
+        ),
+        onPressed: () {
+          _showClearCartDialog();
+        },
+        tooltip: 'Clear Cart',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+      ),
+    ),
+  ],
+),
       body: SafeArea(
         child: Column(
           children: [
@@ -711,7 +875,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                 barcode: barcodeMode,
                               );
                               _updateTotals();
+                               _filterSearchResults();
                             },
+                             filteredEntries: _filteredGroupedItems,
                           ),
                 ),
               ),
@@ -1322,12 +1488,14 @@ class _StyleCardsView extends StatelessWidget {
   final VoidCallback updateTotals;
   final Color Function(String) getColor;
   final VoidCallback onUpdate;
+  final List<MapEntry<String, List<dynamic>>>? filteredEntries;
 
   const _StyleCardsView({
     required this.styleManager,
     required this.updateTotals,
     required this.getColor,
     required this.onUpdate,
+    this.filteredEntries,
   });
 
   @override
@@ -1342,30 +1510,57 @@ class _StyleCardsView extends StatelessWidget {
         ),
       );
     } else {
+      final entries = filteredEntries ?? styleManager.groupedItems.entries.toList();
+
+      // Show "No matching styles" when search is active and no results
+      if (entries.isEmpty && filteredEntries != null) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No matching styles found',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  // Clear search
+                  final searchController = 
+                      (context.findAncestorStateOfType<_ViewOrderScreenState>())?._searchController;
+                  if (searchController != null) {
+                    searchController.clear();
+                  }
+                },
+                child: Text('Clear search'),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Column(
-        children:
-            styleManager.groupedItems.entries
-                .map(
-                  (entry) => StyleCard(
-                    styleCode: entry.key,
-                    items: entry.value,
-                    controllers: styleManager.controllers[entry.key]!,
-                    onRemove: () {
-                      styleManager.removedStyles.add(entry.key);
-                      styleManager.controllers.remove(entry.key);
-                      updateTotals();
-                    },
-                    updateTotals: updateTotals,
-                    getColor: getColor,
-                    onUpdate: onUpdate,
-                  ),
-                )
-                .toList(),
+        children: entries.map((entry) {
+          return StyleCard(
+            styleCode: entry.key,
+            items: entry.value,
+            controllers: styleManager.controllers[entry.key]!,
+            onRemove: () {
+              styleManager.removedStyles.add(entry.key);
+              styleManager.controllers.remove(entry.key);
+              updateTotals();
+            },
+            updateTotals: updateTotals,
+            getColor: getColor,
+            onUpdate: onUpdate,
+          );
+        }).toList(),
       );
     }
   }
 }
-
 class _OrderForm extends StatefulWidget {
   final _OrderControllers controllers;
   final _DropdownData dropdownData;
@@ -1468,7 +1663,10 @@ class _OrderFormState extends State<_OrderForm> {
           },
           isEnabled: UserSession.userType != 'C',
         ),
+
+        if (UserSession.userType == 'A')
         buildTextField(context, "Comm (%)", widget.controllers.comm),
+
         _buildDropdown(
           "Transporter",
           "T",

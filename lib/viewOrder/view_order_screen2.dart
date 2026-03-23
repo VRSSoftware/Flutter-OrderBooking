@@ -57,9 +57,15 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   Map<String, Map<String, Map<String, int>>> quantities = {};
   Map<String, Set<String>> selectedColors = {};
 
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearching = false;
+  List<MapEntry<String, List<dynamic>>> _filteredGroupedItems = [];
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_filterSearchResults);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -73,6 +79,29 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
       fetchAndPrintSalesOrderNumber();
       _styleManager.updateTotalsCallback = _updateTotals;
       _loadBookingTypes();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterSearchResults);
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _filterSearchResults() {
+    final searchTerm = _searchController.text.toLowerCase().trim();
+
+    setState(() {
+      if (searchTerm.isEmpty) {
+        _filteredGroupedItems = _styleManager.groupedItems.entries.toList();
+      } else {
+        _filteredGroupedItems =
+            _styleManager.groupedItems.entries
+                .where((entry) => entry.key.toLowerCase().contains(searchTerm))
+                .toList();
+      }
     });
   }
 
@@ -226,6 +255,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
     _updateTotals();
     setState(() {
       isLoading = false;
+      _filteredGroupedItems = _styleManager.groupedItems.entries.toList();
     });
   }
 
@@ -517,49 +547,143 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
 
         showDialog(
           context: context,
+          barrierDismissible: false,
           builder:
               (context) => AlertDialog(
-                title: Text('Order Saved'),
-                content: Text('Order $formattedOrderNo saved successfully'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // REPLACE PdfViewerScreen with OrderReportViewPage
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => OrderReportViewPage(
-                                orderNo:
-                                    response, // Use the response which is the order number
-                                orderData: null,
-                                showOnlyWithImage: false,
-                              ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+                contentPadding: EdgeInsets.zero,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with background color
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
                         ),
-                      );
-                    },
-                    child: Text(
-                      'View Report',
-                    ), // Changed from 'View PDF' to 'View Report'
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Navigator.pushReplacement(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => OrderBookingScreen(),
-                      //   ),
-                      // );
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => OrderBookingScreen()),
-                        (Route<dynamic> route) => false,
-                      );
-                    },
-                    child: Text('Done'),
-                  ),
-                ],
+                        border: Border(
+                          bottom: BorderSide(color: Colors.green.shade100),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade700,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green.shade800,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Order '),
+                                  TextSpan(
+                                    text: formattedOrderNo,
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w900, // Extra bold
+                                      fontSize: 18, // Increased size
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Colors.blue.shade300,
+                                      decorationThickness: 2,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' saved successfully'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => OrderReportViewPage(
+                                          orderNo: response,
+                                          orderData: null,
+                                          showOnlyWithImage: false,
+                                        ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primaryColor,
+                                side: BorderSide(color: AppColors.primaryColor),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'View Report',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => OrderBookingScreen(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Done',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
         );
       } else {
@@ -702,6 +826,8 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
         }
       }
     }
+
+    _filterSearchResults();
   }
 
   void _showClearCartDialog() {
@@ -795,52 +921,119 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
       backgroundColor: Colors.white,
       drawer: DrawerScreen(),
       appBar: AppBar(
-        title: const Text(
-          'View Order',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
         backgroundColor: AppColors.primaryColor,
         elevation: 4,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-actions: [
-  // Clear Cart icon - Circular design
-  Container(
-    margin: const EdgeInsets.symmetric(horizontal: 4),
-    width: 40,
-    height: 40,
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.15),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: IconButton(
-      icon: ImageIcon(
-        const AssetImage('assets/icons/clean.png'),
-        color: Colors.white,
-        size: 20,
-      ),
-      onPressed: () {
-        _showClearCartDialog();
-      },
-      tooltip: 'Clear Cart',
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-    ),
-  ),
-],
+        title:
+            _isSearching
+                ? Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.primaryColor,
+                    ),
+                    textAlignVertical: TextAlignVertical.center,
+                    decoration: InputDecoration(
+                      hintText: "Search by style code...",
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 13,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 0,
+                      ),
+                      isDense: true,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 18,
+                        color: AppColors.primaryColor,
+                      ),
+                      suffixIcon:
+                          _searchController.text.isNotEmpty
+                              ? IconButton(
+                                icon: Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: AppColors.primaryColor,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _isSearching = false;
+                                  _filterSearchResults();
+                                  _searchFocusNode.unfocus();
+                                },
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              )
+                              : null,
+                    ),
+                  ),
+                )
+                : const Text(
+                  'View Order',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                  ),
+                ),
+
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  _searchFocusNode.requestFocus();
+                });
+              },
+            ),
+          // Clear Cart icon
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: ImageIcon(
+                const AssetImage('assets/icons/clean.png'),
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                _showClearCartDialog();
+              },
+              tooltip: 'Clear Cart',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Container(
@@ -933,12 +1126,14 @@ actions: [
                               _updateQuantitiesFromRefreshedItems();
 
                               _updateTotals();
-
+                              _filterSearchResults();
                               // Force a rebuild
                               setState(() {});
                             },
                             quantities: quantities,
                             selectedColors: selectedColors,
+                            filteredEntries: _filteredGroupedItems,
+                            isSearchActive: _searchController.text.isNotEmpty,
                           ),
                 ),
               ),
@@ -1588,6 +1783,8 @@ class _StyleCardsView2 extends StatelessWidget {
   final VoidCallback onUpdate;
   final Map<String, Map<String, Map<String, int>>> quantities;
   final Map<String, Set<String>> selectedColors;
+  final List<MapEntry<String, List<dynamic>>>? filteredEntries;
+  final bool isSearchActive;
 
   const _StyleCardsView2({
     required this.styleManager,
@@ -1596,6 +1793,8 @@ class _StyleCardsView2 extends StatelessWidget {
     required this.onUpdate,
     required this.quantities,
     required this.selectedColors,
+    this.filteredEntries,
+    this.isSearchActive = false,
   });
 
   List<String> _getAllShadesForStyle(String styleKey) {
@@ -1626,9 +1825,30 @@ class _StyleCardsView2 extends StatelessWidget {
         ),
       );
     } else {
+      final entries =
+          filteredEntries ?? styleManager.groupedItems.entries.toList();
+
+      // Show "No matching styles" only when search is active and no results
+      if (entries.isEmpty && filteredEntries != null) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No matching styles found',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Column(
         children:
-            styleManager.groupedItems.entries.map((entry) {
+            entries.map((entry) {
+              // ✅ USE entries instead of styleManager.groupedItems.entries
               final catalogOrder = _convertToCatalogOrderData(
                 entry.key,
                 entry.value,
@@ -2161,416 +2381,385 @@ class _StyleCard2State extends State<StyleCard2> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top row with image and details
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Product Image with reduced height
-                          Container(
-                            width: 80, // Reduced width
-                            height:
-                                60, // Fixed height - reduced from dynamic height
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.grey.shade300,
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(7),
-                              child: GestureDetector(
-                                onTap: () {
-                                  final imageUrl =
-                                      catalog.fullImagePath.contains("http")
-                                          ? catalog.fullImagePath
-                                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => ImageZoomScreen(
-                                            imageUrls: [imageUrl],
-                                            initialIndex: 0,
-                                          ),
-                                    ),
-                                  );
-                                },
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Image.network(
-                                      catalog.fullImagePath.contains("http")
-                                          ? catalog.fullImagePath
-                                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                                      fit: BoxFit.contain,
-                                      loadingBuilder: (
-                                        context,
-                                        child,
-                                        loadingProgress,
-                                      ) {
-                                        if (loadingProgress == null)
-                                          return child;
-                                        return Container(
-                                          color: Colors.grey.shade100,
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: 25,
-                                              height: 25,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(AppColors.primaryColor),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder:
-                                          (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) => Container(
-                                            color: Colors.grey.shade100,
-                                            child: Center(
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.broken_image,
-                                                    size: 25,
-                                                    color: Colors.grey.shade400,
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    'No Image',
-                                                    style: TextStyle(
-                                                      fontSize: 8,
-                                                      color:
-                                                          Colors.grey.shade500,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                    ),
-                                    // Image overlay on tap hint
-                                    Positioned(
-                                      bottom: 2,
-                                      right: 2,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(3),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.5),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.zoom_in,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                      // Left side - Product Image with increased height
+                      Container(
+                        width: 80, // Increased width
+                        height: 110, // Increased height
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
                           ),
-
-                          const SizedBox(width: 12),
-
-                          // Details Section - Expanded to take remaining width
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(7),
+                          child: GestureDetector(
+                            onTap: () {
+                              final imageUrl =
+                                  catalog.fullImagePath.contains("http")
+                                      ? catalog.fullImagePath
+                                      : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => ImageZoomScreen(
+                                        imageUrls: [imageUrl],
+                                        initialIndex: 0,
+                                      ),
+                                ),
+                              );
+                            },
+                            child: Stack(
+                              fit: StackFit.expand,
                               children: [
-                                // Style Code with border
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: Colors.red.shade200,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    catalog.styleCode,
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: Colors.red.shade900,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 6),
-
-                                // Shade Name with border
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryColor.withOpacity(
-                                      0.05,
-                                    ),
-                                    borderRadius: BorderRadius.circular(5),
-                                    border: Border.all(
-                                      color: AppColors.primaryColor.withOpacity(
-                                        0.2,
+                                Image.network(
+                                  catalog.fullImagePath.contains("http")
+                                      ? catalog.fullImagePath
+                                      : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                                  fit: BoxFit.contain,
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey.shade100,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 25,
+                                          height: 25,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  AppColors.primaryColor,
+                                                ),
+                                          ),
+                                        ),
                                       ),
-                                      width: 1,
+                                    );
+                                  },
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Container(
+                                        color: Colors.grey.shade100,
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.broken_image,
+                                                size: 25,
+                                                color: Colors.grey.shade400,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                'No Image',
+                                                style: TextStyle(
+                                                  fontSize: 8,
+                                                  color: Colors.grey.shade500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                ),
+                                // Image overlay on tap hint
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
                                     ),
-                                  ),
-                                  child: Text(
-                                    catalog.shadeName,
-                                    style: GoogleFonts.roboto(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                      color: AppColors.primaryColor.shade900,
+                                    child: const Icon(
+                                      Icons.zoom_in,
+                                      size: 12,
+                                      color: Colors.white,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap:
-                                () => _submitDelete(
-                                  context,
-                                ), // Calls the existing method for full style deletion
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(width: 12),
 
-                      // Stats row below the image - all in one line
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      // Right side - Column with two rows
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Stock Type
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(3),
+                            // First Row - Style Code and Delete Icon
+                            Row(
+                              children: [
+                                // Style Code with border - Expanded
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      shape: BoxShape.circle,
+                                      color: Colors.red.shade50.withOpacity(
+                                        0.3,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: Colors.red.shade200,
+                                        width: 1,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      Icons.inventory,
-                                      size: 12,
-                                      color: Colors.blue.shade700,
+                                    child: Text(
+                                      catalog.styleCode,
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: Colors.red.shade900,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Type',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.grey.shade600,
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                // Delete Button
+                                GestureDetector(
+                                  onTap: () => _submitDelete(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
                                     ),
                                   ),
-                                  Text(
-                                    catalog.upcoming_Stk == '1'
-                                        ? 'Upcoming'
-                                        : 'Ready',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
 
-                            // Vertical Divider
+                            const SizedBox(height: 12),
+
+                            // Second Row - Stats Container (Type, Stock, Order, Amount)
                             Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey.shade300,
-                            ),
-
-                            // Stock Qty
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.storage,
-                                      size: 12,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Stock',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  Text(
-                                    _calculateStockQuantity().toString(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                ],
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
                               ),
-                            ),
-
-                            // Vertical Divider
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey.shade300,
-                            ),
-
-                            // Order Qty
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.shopping_bag,
-                                      size: 12,
-                                      color: Colors.orange.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Order',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  Text(
-                                    _calculateCatalogQuantity().toString(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade700,
-                                    ),
-                                  ),
-                                ],
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
                               ),
-                            ),
-
-                            // Vertical Divider
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey.shade300,
-                            ),
-
-                            // Amount
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: [
+                                  // Stock Type
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.inventory,
+                                            size: 12,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Type',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          catalog.upcoming_Stk == '1'
+                                              ? 'Upcoming'
+                                              : 'Ready',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Vertical Divider
                                   Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.currency_rupee,
-                                      size: 12,
-                                      color: Colors.purple.shade700,
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.grey.shade300,
+                                  ),
+
+                                  // Stock Qty
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withOpacity(
+                                              0.1,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.storage,
+                                            size: 12,
+                                            color: Colors.green.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Stock',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          _calculateStockQuantity().toString(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Amount',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.grey.shade600,
+
+                                  // Vertical Divider
+                                  Container(
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.grey.shade300,
+                                  ),
+
+                                  // Order Qty
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(
+                                              0.1,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.shopping_bag,
+                                            size: 12,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Order',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          _calculateCatalogQuantity()
+                                              .toString(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    '₹${_calculateCatalogPrice().toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.purple.shade700,
+
+                                  // Vertical Divider
+                                  Container(
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.grey.shade300,
+                                  ),
+
+                                  // Amount
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple.withOpacity(
+                                              0.1,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.currency_rupee,
+                                            size: 12,
+                                            color: Colors.purple.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Amount',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '₹${_calculateCatalogPrice().toStringAsFixed(0)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.purple.shade700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -4093,7 +4282,10 @@ class _OrderForm2State extends State<_OrderForm2> {
           },
           isEnabled: UserSession.userType != 'C',
         ),
-        buildTextField2(context, "Comm (%)", widget.controllers.comm),
+
+        if (UserSession.userType == 'A')
+          buildTextField2(context, "Comm (%)", widget.controllers.comm),
+
         _buildDropdown(
           "Transporter",
           "T",

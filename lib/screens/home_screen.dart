@@ -285,8 +285,8 @@
 // }
 
 
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/MyWebViewPage.dart';
@@ -405,82 +405,215 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackgroundLight, // Now a slightly off-white color
-      drawer: DrawerScreen(),
-      // --- New AppBar Styling ---
-      appBar: AppBar(
-        toolbarHeight: 48, // ✅ Decrease height (default is 56)
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
 
-        title: Text(
-          'VRS Software',
-          style: GoogleFonts.roboto(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18, // Slightly reduced to match height
-          ),
-        ),
-
-        backgroundColor: AppColors.primaryColor,
-        elevation: 3,
-        centerTitle: true,
-
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-        ),
-
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(
-                  Icons.menu,
-                  color: Colors.white,
-                  size: 24, // Slightly smaller for compact look
-                ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-        ),
-      ),
-
-      // --- Your Existing Body Structure ---
-      body: Container(
-        decoration: BoxDecoration(
-          color: kBackgroundLight,
-          // Optional: Add a very subtle gradient for depth
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              kBackgroundLight,
-              kBackgroundLight.withOpacity(0.95),
-              Color(0xFFEEF2F6), // Slightly darker at bottom
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Padding(
-          // Changed padding to match p-4 from new design
-          padding: const EdgeInsets.all(16.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-                        _buildMainButtons(context, constraints.maxWidth),
+        bool shouldExit = await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 4,
+            contentPadding: EdgeInsets.zero,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with gradient background
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.shade600,
+                        Colors.red.shade800,
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
                   ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.exit_to_app,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Exit App',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Are you sure you want to close the app?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+                
+                // Buttons
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            side: BorderSide(color: Colors.grey.shade300),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'No',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                     Expanded(
+  child: ElevatedButton(
+    onPressed: () {
+      SystemNavigator.pop(); // This directly closes the app
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.red.shade600,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0,
+    ),
+    child: const Text(
+      'Yes',
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        if (shouldExit == true) {
+          Navigator.pop(context); // exit app
+        }
+        // If shouldExit == false, do nothing and stay on home screen
+      },
+      child: Scaffold(
+        backgroundColor: kBackgroundLight, // Now a slightly off-white color
+        drawer: DrawerScreen(),
+        // --- New AppBar Styling ---
+        appBar: AppBar(
+          toolbarHeight: 48, // ✅ Decrease height (default is 56)
+
+          title: Text(
+            'VRS Software',
+            style: GoogleFonts.roboto(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18, // Slightly reduced to match height
+            ),
+          ),
+
+          backgroundColor: AppColors.primaryColor,
+          elevation: 3,
+          centerTitle: true,
+
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+          ),
+
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Colors.white,
+                size: 24, // Slightly smaller for compact look
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
         ),
+
+        // --- Your Existing Body Structure ---
+        body: Container(
+          decoration: BoxDecoration(
+            color: kBackgroundLight,
+            // Optional: Add a very subtle gradient for depth
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                kBackgroundLight,
+                kBackgroundLight.withOpacity(0.95),
+                Color(0xFFEEF2F6), // Slightly darker at bottom
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: Padding(
+            // Changed padding to match p-4 from new design
+            padding: const EdgeInsets.all(16.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          _buildMainButtons(context, constraints.maxWidth),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        // --- Your Existing Bottom Nav Bar ---
+        bottomNavigationBar: BottomNavigationWidget(currentScreen: '/home'),
       ),
-      // --- Your Existing Bottom Nav Bar ---
-      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/home'),
     );
   }
 
@@ -548,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
     //     Navigator.pushNamed(context, '/saleBillRegister');
     //   }, buttonWidth));
-     buttons.add(_buildFeatureButton(context, 'Production', () {
+    buttons.add(_buildFeatureButton(context, 'Production', () {
       Navigator.pushNamed(context, '/production');
     }, buttonWidth));
     //   buttons.add (_buildFeatureButton(context, 'Web', () {
@@ -559,31 +692,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth));
 
     // --- Your Existing UserSession Logic ---
-  // --- Your Existing UserSession Logic ---
-if (UserSession.userType == 'A') {
-  buttons.add(
-    _buildFeatureButton(context, 'Stock Report', () {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/stockReport',
-        (Route<dynamic> route) => false,
+    if (UserSession.userType == 'A') {
+      buttons.add(
+        _buildFeatureButton(context, 'Stock Report', () {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/stockReport',
+            (Route<dynamic> route) => false,
+          );
+        }, buttonWidth),
       );
-    }, buttonWidth),
-  );
-}
+    }
 
-// Show Dashboard for Admin (A) and Customer (C) only, not for Salesperson (S)
-if (UserSession.userType == 'A' || UserSession.userType == 'C') {
-  buttons.add(
-    _buildFeatureButton(context, 'Dashboard', () {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-        (Route<dynamic> route) => false,
+    // Show Dashboard for Admin (A) and Customer (C) only, not for Salesperson (S)
+    if (UserSession.userType == 'A' || UserSession.userType == 'C') {
+      buttons.add(
+        _buildFeatureButton(context, 'Dashboard', () {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/dashboard',
+            (Route<dynamic> route) => false,
+          );
+        }, buttonWidth),
       );
-    }, buttonWidth),
-  );
-}
+    }
 
     return Center(
       child: Wrap(
@@ -635,17 +767,11 @@ if (UserSession.userType == 'A' || UserSession.userType == 'C') {
             animation: animationController,
             builder: (context, child) {
               return Transform.scale(
-                scale:
-                    1.0 -
-                    (animationController.value *
-                        0.03), // Simple scale calculation
+                scale: 1.0 - (animationController.value * 0.03), // Simple scale calculation
                 child: Container(
                   width: width,
                   child: Card(
-                    elevation:
-                        2.0 +
-                        (animationController.value *
-                            4), // Simple elevation calculation
+                    elevation: 2.0 + (animationController.value * 4), // Simple elevation calculation
                     color: kCardLight,
                     shadowColor: style.iconColor.withOpacity(
                       0.2 + (animationController.value * 0.2),
