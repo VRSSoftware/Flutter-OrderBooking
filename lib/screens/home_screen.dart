@@ -684,12 +684,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     buttons.add(_buildFeatureButton(context, 'Production', () {
       Navigator.pushNamed(context, '/production');
     }, buttonWidth));
-    //   buttons.add (_buildFeatureButton(context, 'Web', () {
-    //     Navigator.push(
-    //       context,
-    //       MaterialPageRoute(builder: (context) =>  UniversalWebView()),
-    //     );
-    //   }, buttonWidth));
+      buttons.add (_buildFeatureButton(context, 'Web', () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  UniversalWebView()),
+        );
+      }, buttonWidth));
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {

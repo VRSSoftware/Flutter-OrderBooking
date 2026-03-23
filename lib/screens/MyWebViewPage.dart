@@ -9,7 +9,7 @@ class UniversalWebView extends StatelessWidget {
       body: SafeArea(
         child: InAppWebView(
           initialUrlRequest: URLRequest(
-            url: WebUri("https://retail.vrsretail.in")
+            url: WebUri("https://erptrading.vrsretail.in/")
           ),
         ),
       ),
