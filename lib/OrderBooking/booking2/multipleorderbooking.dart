@@ -3458,15 +3458,15 @@ Widget build(BuildContext context) {
                       onPressed: () {
                         Navigator.pop(context);
                         Navigator.pop(context);
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderPage(),
-                            settings: RouteSettings(
-                              arguments: widget.routeArguments,
-                            ),
-                          ),
-                        );
+                        // Navigator.pushReplacement(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => OrderPage(),
+                        //     settings: RouteSettings(
+                        //       arguments: widget.routeArguments,
+                        //     ),
+                        //   ),
+                        // );
                       },
                       // Pop only the dialog
                       child: const Text("OK"),
