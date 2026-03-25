@@ -1370,12 +1370,20 @@ class _StyleManager {
     final map = <String, List<dynamic>>{};
     for (final item in _orderItems) {
       final styleCode = item['styleCode']?.toString() ?? 'No Style Code';
+      // Skip if style is in removedStyles
       if (removedStyles.contains(styleCode)) continue;
       map.putIfAbsent(styleCode, () => []).add(item);
     }
     return map;
   }
 
+  // Add a method to properly remove a style
+  void removeStyle(String styleCode) {
+    removedStyles.add(styleCode);
+    controllers.remove(styleCode);
+    // Force a rebuild of the UI
+    updateTotalsCallback?.call();
+  }
   Future<void> fetchOrderItems({required bool barcode}) async {
     final response = await http.post(
       Uri.parse(
@@ -1516,7 +1524,6 @@ class _StyleCardsView extends StatelessWidget {
     } else {
       final entries = filteredEntries ?? styleManager.groupedItems.entries.toList();
 
-      // Show "No matching styles" when search is active and no results
       if (entries.isEmpty && filteredEntries != null) {
         return Center(
           child: Column(
@@ -1531,7 +1538,6 @@ class _StyleCardsView extends StatelessWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
-                  // Clear search
                   final searchController = 
                       (context.findAncestorStateOfType<_ViewOrderScreenState>())?._searchController;
                   if (searchController != null) {
@@ -1547,10 +1553,19 @@ class _StyleCardsView extends StatelessWidget {
 
       return Column(
         children: entries.map((entry) {
+          // FIX: Check if controllers exist for this style before building
+          final controllersForStyle = styleManager.controllers[entry.key];
+          
+          // If controllers don't exist, skip this entry (shouldn't happen but safe)
+          if (controllersForStyle == null) {
+            print('Warning: No controllers found for style ${entry.key}');
+            return const SizedBox.shrink();
+          }
+          
           return StyleCard(
             styleCode: entry.key,
             items: entry.value,
-            controllers: styleManager.controllers[entry.key]!,
+            controllers: controllersForStyle, // Safe to use with !
             onRemove: () {
               styleManager.removedStyles.add(entry.key);
               styleManager.controllers.remove(entry.key);

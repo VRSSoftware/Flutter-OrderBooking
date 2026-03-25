@@ -44,7 +44,110 @@ class StyleCard extends StatefulWidget {
 
 class _StyleCardState extends State<StyleCard> {
   final TextEditingController noteController = TextEditingController();
-
+  
+  // Add these flags to track changes
+  bool _hasChanges = false;
+  Map<String, Map<String, String>> _originalQuantities = {};
+  String _originalNote = '';
+  
+  @override
+  void initState() {
+    super.initState();
+    _saveOriginalState();
+    _addListeners();
+  }
+  
+  @override
+  void dispose() {
+    _removeListeners();
+    noteController.dispose();
+    super.dispose();
+  }
+  
+  void _saveOriginalState() {
+    // Save original note
+    _originalNote = noteController.text;
+    
+    // Save original quantities
+    _originalQuantities.clear();
+    widget.controllers.forEach((shade, sizeMap) {
+      _originalQuantities[shade] = {};
+      sizeMap.forEach((size, controller) {
+        _originalQuantities[shade]![size] = controller.text;
+      });
+    });
+  }
+  
+  void _addListeners() {
+    // Add listener to note controller
+    noteController.addListener(_onNoteChanged);
+    
+    // Add listeners to all quantity controllers
+    widget.controllers.forEach((shade, sizeMap) {
+      sizeMap.forEach((size, controller) {
+        controller.addListener(_onQuantityChanged);
+      });
+    });
+  }
+  
+  void _removeListeners() {
+    noteController.removeListener(_onNoteChanged);
+    
+    widget.controllers.forEach((shade, sizeMap) {
+      sizeMap.forEach((size, controller) {
+        controller.removeListener(_onQuantityChanged);
+      });
+    });
+  }
+  
+  void _onNoteChanged() {
+    _checkForChanges();
+  }
+  
+  void _onQuantityChanged() {
+    _checkForChanges();
+  }
+  
+  void _checkForChanges() {
+    bool hasChanges = false;
+    
+    // Check note changes
+    if (noteController.text != _originalNote) {
+      hasChanges = true;
+    }
+    
+    // Check quantity changes
+    if (!hasChanges) {
+      for (var shade in widget.controllers.keys) {
+        final sizeMap = widget.controllers[shade]!;
+        for (var size in sizeMap.keys) {
+          final currentQty = sizeMap[size]!.text;
+          final originalQty = _originalQuantities[shade]?[size] ?? '0';
+          if (currentQty != originalQty) {
+            hasChanges = true;
+            break;
+          }
+        }
+        if (hasChanges) break;
+      }
+    }
+    
+    // Update state only if changed
+    if (_hasChanges != hasChanges) {
+      setState(() {
+        _hasChanges = hasChanges;
+      });
+    }
+  }
+  
+  // Reset after successful update
+  void _resetAfterUpdate() {
+    _saveOriginalState();
+    setState(() {
+      _hasChanges = false;
+    });
+  }
+  
   int _calculateTotalQty() {
     int total = 0;
     widget.controllers.forEach((shade, sizeMap) {
@@ -144,10 +247,6 @@ class _StyleCardState extends State<StyleCard> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                // Expanded(
-                //   child: _buildStatRow('Stock', totalStock.toString(), Icons.inventory, Colors.blue.shade700),
-                // ),
-                // const SizedBox(width: 6),
                 Expanded(
                   child: _buildStatRow('Qty', totalQty.toString(), Icons.shopping_bag, Colors.orange.shade700),
                 ),
@@ -945,129 +1044,133 @@ Widget _buildCompactDetailChip(String label, String value) {
       onTap: onTap,
     );
   }
-Widget _buildActionButtons(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      TextField(
-        controller: noteController,
-        decoration: InputDecoration(
-          labelText: 'Note',
-          labelStyle: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: TableColors.borderColor),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 7, // Reduced vertical padding
-          ),
-          isDense: true,
-        ),
-        style: const TextStyle(fontSize: 11),
-      ),
-      const SizedBox(height: 8), // Reduced spacing
-      Row(
-        children: [
-          // Update Button
-          Expanded(
-            child: _buildCompactGradientButton(
-              label: 'Update',
-              icon: Icons.update,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              onPressed: () => _submitUpdate(context),
-            ),
-          ),
-          const SizedBox(width: 8), // Reduced spacing
-          // Remove Button
-          Expanded(
-            child: _buildCompactGradientButton(
-              label: 'Remove',
-              icon: Icons.delete,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFf44336), Color(0xFFd32f2f)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              onPressed: () => _submitDelete(context),
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-}
 
-Widget _buildCompactGradientButton({
-  required String label,
-  required IconData icon,
-  required LinearGradient gradient,
-  required VoidCallback onPressed,
-}) {
-  return Container(
-    decoration: BoxDecoration(
-      gradient: gradient,
-      borderRadius: BorderRadius.circular(6),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 3,
-          offset: const Offset(0, 1),
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: noteController,
+          decoration: InputDecoration(
+            labelText: 'Note',
+            labelStyle: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: TableColors.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 7,
+            ),
+            isDense: true,
+          ),
+          style: const TextStyle(fontSize: 11),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            // Update Button - Now with enabled/disabled based on changes
+            Expanded(
+              child: _buildCompactGradientButton(
+                label: 'Update',
+                icon: Icons.update,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                onPressed: _hasChanges ? () => _submitUpdate(context) : null,
+                enabled: _hasChanges,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Remove Button
+            Expanded(
+              child: _buildCompactGradientButton(
+                label: 'Remove',
+                icon: Icons.delete,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFf44336), Color(0xFFd32f2f)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                onPressed: () => _submitDelete(context),
+                enabled: true,
+              ),
+            ),
+          ],
         ),
       ],
-    ),
-    height: 32, // Fixed height - reduced from 36 to 28
-    child: ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        shadowColor: Colors.transparent,
-        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8), // Minimal padding
-        shape: RoundedRectangleBorder(
+    );
+  }
+
+  Widget _buildCompactGradientButton({
+    required String label,
+    required IconData icon,
+    required LinearGradient gradient,
+    required VoidCallback? onPressed,
+    required bool enabled,
+  }) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: enabled ? gradient : null,
+          color: !enabled ? Colors.grey.shade300 : null,
           borderRadius: BorderRadius.circular(6),
-        ),
-        minimumSize: const Size(double.infinity, 32), // Reduced height
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduces tap target size
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 14), // Slightly smaller icon
-          const SizedBox(width: 4), // Reduced spacing
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11, // Smaller font
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
+          boxShadow: enabled ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
+          ] : [],
+        ),
+        height: 32,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: enabled ? Colors.white : Colors.grey.shade600,
+            shadowColor: Colors.transparent,
+            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            minimumSize: const Size(double.infinity, 32),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
-}
-  // Keep your existing _submitDelete and _submitUpdate methods as they are
- Future<void> _submitDelete(BuildContext context) async {
+    );
+  }
+
+
+Future<void> _submitDelete(BuildContext context) async {
   print('=== DELETE METHOD STARTED ===');
   print('Style code: ${widget.styleCode}');
   
-  // Check UserSession values first
-  print('UserSession.userName: ${UserSession.userName}');
-  print('UserSession.coBrId: ${UserSession.coBrId}');
-  print('UserSession.userFcYr: ${UserSession.userFcYr}');
-  print('UserSession.userType: ${UserSession.userType}');
-  
-  // Validate session
+  // Validate UserSession values
   if (UserSession.userName == null) {
     print('❌ ERROR: UserSession.userName is null');
     _showErrorDialog(context, "Session expired. Please log in again.");
@@ -1084,20 +1187,33 @@ Widget _buildCompactGradientButton({
     return;
   }
   
+  // Show confirmation dialog
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: const Text("Confirm Deletion", style: TextStyle(fontSize: 16)),
-        content: const Text("Are you sure you want to delete this item?", style: TextStyle(fontSize: 14)),
+        title: const Text(
+          "Confirm Deletion", 
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          "Are you sure you want to delete this item?",
+          style: TextStyle(fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(fontSize: 14)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red, fontSize: 14)),
+            child: const Text(
+              "Delete",
+              style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       );
@@ -1109,6 +1225,7 @@ Widget _buildCompactGradientButton({
     return;
   }
   
+  // Process style code
   String sCode = widget.styleCode;
   String bCode = "";
   if (sCode.contains('---')) {
@@ -1121,6 +1238,7 @@ Widget _buildCompactGradientButton({
   print('Processed barcode: $bCode');
   print('Note text: ${noteController.text}');
   
+  // Prepare payload for delete (typ: 2)
   final payload = {
     "userId": UserSession.userName,
     "coBrId": UserSession.coBrId,
@@ -1138,12 +1256,33 @@ Widget _buildCompactGradientButton({
       "user": UserSession.userName,
       "barcode": bCode,
     },
-    "typ": 2,
+    "typ": 2, // 2 = Delete operation
   };
   
   print('=== PAYLOAD TO SEND ===');
   print(jsonEncode(payload));
   print('URL: ${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails');
+  
+  // Show loading indicator
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Deleting item...'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
   
   try {
     final response = await http.post(
@@ -1152,59 +1291,88 @@ Widget _buildCompactGradientButton({
       ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
-    );
+    ).timeout(const Duration(seconds: 30));
+    
+    // Dismiss loading dialog
+    if (mounted) Navigator.pop(context);
     
     print('=== RESPONSE RECEIVED ===');
     print('Status code: ${response.statusCode}');
     print('Response body: ${response.body}');
     
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 && response.body.contains('Success')) {
       print('✅ Delete successful');
+      
+      // Call onRemove to update local state and remove from UI
       widget.onRemove();
+      
+      // Remove from CartModel
       try {
-        Provider.of<CartModel>(context, listen: false).removeItem(sCode);
+        final cartModel = Provider.of<CartModel>(context, listen: false);
+        cartModel.removeItem(sCode);
         print('✅ Removed from CartModel');
       } catch (e) {
         print('⚠️ Error removing from CartModel: $e');
       }
       
+      // Force refresh of parent data
+      widget.onUpdate();
+      
+      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Item deleted successfully'),
+          SnackBar(
+            content: Text('Item "${widget.styleCode}" deleted successfully'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } else {
       print('❌ Delete failed with status: ${response.statusCode}');
-      print('Response: ${response.body}');
-      _showErrorDialog(context, "Failed to delete item. Status: ${response.statusCode}");
+      _showErrorDialog(
+        context, 
+        "Failed to delete item.\nStatus: ${response.statusCode}\nResponse: ${response.body}"
+      );
     }
   } catch (e) {
+    // Dismiss loading dialog if still showing
+    if (mounted) Navigator.pop(context);
+    
     print('❌ Exception during delete: $e');
-    print('Stack trace: ${StackTrace.current}');
-    _showErrorDialog(context, "Error: $e");
+    _showErrorDialog(context, "Error deleting item: ${e.toString()}");
   }
   
   print('=== DELETE METHOD ENDED ===');
 }
-  void _showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text("Error", style: TextStyle(fontSize: 16)),
-            content: Text(message, style: const TextStyle(fontSize: 14)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK", style: TextStyle(fontSize: 14)),
-              ),
-            ],
+
+void _showErrorDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text(
+          "Error",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "OK",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ),
-    );
-  }
+        ],
+      );
+    },
+  );
+}
 
   Future<void> _submitUpdate(BuildContext context) async {
     List<Future> apiCalls = [];
@@ -1219,6 +1387,27 @@ Widget _buildCompactGradientButton({
       sCode = parts[0];
       bCode = parts[1];
     }
+    
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text('Updating item...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
     
     final initialPayload = {
       "userId": UserSession.userName ?? '',
@@ -1240,154 +1429,105 @@ Widget _buildCompactGradientButton({
       "typ": 1,
     };
 
-    final firstResponse = await http.post(
-      Uri.parse(
-        '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(initialPayload),
-    );
-
-    if (firstResponse.statusCode != 200) {
-      debugPrint(
-        'First API call failed with status code: ${firstResponse.statusCode}',
+    try {
+      final firstResponse = await http.post(
+        Uri.parse(
+          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(initialPayload),
       );
-      showDialog(
-        context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text("Error", style: TextStyle(fontSize: 16)),
-              content: const Text("Failed to submit initial order details.", style: TextStyle(fontSize: 14)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("OK", style: TextStyle(fontSize: 14)),
+
+      if (firstResponse.statusCode != 200) {
+        if (mounted) Navigator.pop(context);
+        _showErrorDialog(
+          context, 
+          "Failed to submit initial order details.\nStatus: ${firstResponse.statusCode}"
+        );
+        return;
+      }
+
+      for (var shadeEntry in widget.controllers.entries) {
+        String shade = shadeEntry.key;
+        for (var sizeEntry in shadeEntry.value.entries) {
+          String size = sizeEntry.key;
+          String qty = sizeEntry.value.text;
+          if (qty.isNotEmpty && int.tryParse(qty) != null && int.parse(qty) > 0) {
+            totalQty += int.parse(qty);
+            final payload = {
+              "userId": UserSession.userName ?? '',
+              "coBrId": UserSession.coBrId ?? '',
+              "fcYrId": UserSession.userFcYr ?? '',
+              "data": {
+                "designcode": sCode,
+                "mrp": sizeDetails[size]?['mrp']?.toStringAsFixed(0) ?? '0',
+                "WSP": sizeDetails[size]?['wsp']?.toStringAsFixed(0) ?? '0',
+                "size": size,
+                "TotQty": totalQty.toString(),
+                "Note": noteController.text,
+                "color": shade,
+                "Qty": qty,
+                "cobrid": UserSession.coBrId ?? '',
+                "user": "admin",
+                "barcode": bCode,
+              },
+              "typ": 0,
+            };
+
+            apiCalls.add(
+              http.post(
+                Uri.parse(
+                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
                 ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    for (var shadeEntry in widget.controllers.entries) {
-      String shade = shadeEntry.key;
-      for (var sizeEntry in shadeEntry.value.entries) {
-        String size = sizeEntry.key;
-        String qty = sizeEntry.value.text;
-        if (qty.isNotEmpty && int.tryParse(qty) != null && int.parse(qty) > 0) {
-          totalQty += int.parse(qty);
-          String sCode = widget.styleCode;
-          String bCode = "";
-          if (sCode.contains('---')) {
-            List<String> parts = widget.styleCode.split('---');
-            sCode = parts[0];
-            bCode = parts[1];
-          }
-          final payload = {
-            "userId": UserSession.userName ?? '',
-            "coBrId": UserSession.coBrId ?? '',
-            "fcYrId": UserSession.userFcYr ?? '',
-            "data": {
-              "designcode": sCode,
-              "mrp": sizeDetails[size]?['mrp']?.toStringAsFixed(0) ?? '0',
-              "WSP": sizeDetails[size]?['wsp']?.toStringAsFixed(0) ?? '0',
-              "size": size,
-              "TotQty": totalQty.toString(),
-              "Note": noteController.text,
-              "color": shade,
-              "Qty": qty,
-              "cobrid": UserSession.coBrId ?? '',
-              "user": "admin",
-              "barcode": bCode,
-            },
-            "typ": 0,
-          };
-
-          apiCalls.add(
-            http.post(
-              Uri.parse(
-                '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode(payload),
               ),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(payload),
+            );
+          }
+        }
+      }
+
+      if (apiCalls.isEmpty) {
+        if (mounted) Navigator.pop(context);
+        _showErrorDialog(context, "No quantities have been updated.");
+        return;
+      }
+
+      final responses = await Future.wait(apiCalls);
+      
+      // Dismiss loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      if (responses.every((r) => r.statusCode == 200)) {
+        debugPrint('Update successful for styleCode: ${widget.styleCode}');
+        
+        // Reset the changes flag and save new original state
+        _resetAfterUpdate();
+        
+        // Call parent update
+        widget.onUpdate();
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Order details updated successfully'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
-      }
-    }
-
-    if (apiCalls.isEmpty) {
-      showDialog(
-        context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text("No Updates", style: TextStyle(fontSize: 16)),
-              content: const Text("No quantities have been updated.", style: TextStyle(fontSize: 14)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("OK", style: TextStyle(fontSize: 14)),
-                ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    try {
-      final responses = await Future.wait(apiCalls);
-      if (responses.every((r) => r.statusCode == 200)) {
-        debugPrint('Update successful for styleCode: ${widget.styleCode}');
-        widget.onUpdate();
-        showDialog(
-          context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text("Success", style: TextStyle(fontSize: 16)),
-                content: const Text("Order details updated successfully.", style: TextStyle(fontSize: 14)),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK", style: TextStyle(fontSize: 14)),
-                  ),
-                ],
-              ),
-        );
       } else {
-        debugPrint(
-          'Update failed for some items: ${responses.map((r) => r.statusCode).toList()}',
-        );
-        showDialog(
-          context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text("Error", style: TextStyle(fontSize: 16)),
-                content: const Text("Failed to update some order details.", style: TextStyle(fontSize: 14)),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK", style: TextStyle(fontSize: 14)),
-                  ),
-                ],
-              ),
+        _showErrorDialog(
+          context,
+          "Failed to update some order details.\nStatus: ${responses.map((r) => r.statusCode).toList()}"
         );
       }
     } catch (e) {
+      if (mounted) Navigator.pop(context);
       debugPrint('Error during update: $e');
-      showDialog(
-        context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text("Error", style: TextStyle(fontSize: 16)),
-              content: Text("Failed to submit update: $e", style: const TextStyle(fontSize: 14)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("OK", style: TextStyle(fontSize: 14)),
-                ),
-              ],
-            ),
-      );
+      _showErrorDialog(context, "Failed to submit update: $e");
     }
   }
 }
