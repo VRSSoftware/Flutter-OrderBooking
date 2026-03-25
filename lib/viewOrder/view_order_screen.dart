@@ -469,7 +469,7 @@ Future<void> _saveOrderLocally() async {
         docNo = response.toString();
       }
       
-      final formattedOrderNo = "$docNo";
+      final formattedOrderNo = "SO$docNo";
 
       showDialog(
         context: context,
