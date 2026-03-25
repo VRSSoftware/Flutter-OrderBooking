@@ -2458,104 +2458,322 @@ class _StockReportPageState extends State<StockReportPage> {
     );
   }
 
-  // Add this method to handle WhatsApp sharing
-  Future<void> _shareViaWhatsApp() async {
-    if (selectedCategoryKey == null) {
+Future<void> _shareViaWhatsApp() async {
+  if (selectedCategoryKey == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select category'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  // Show mobile number dialog (without type selection since it's configured on backend)
+  final result = await _showMobileNumberDialog();
+  
+  if (result == null) return; // User cancelled
+
+  String mobileNo = result['mobileNo'] ?? '';
+
+  // Show loading dialog
+  if (!context.mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LoadingAnimationWidget.waveDots(color: Colors.green, size: 50),
+              const SizedBox(height: 20),
+              Text(
+                'Preparing stock report for WhatsApp...',
+                style: GoogleFonts.poppins(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  try {
+    // Fetch stock data
+    String itemKeys = selectedItems
+        .map((e) => e.itemKey)
+        .where((e) => e != null && e.isNotEmpty)
+        .join(',');
+
+    final fetchedStockReport = await ApiService.fetchStockReport(
+      itemSubGrpKey: selectedCategoryKey!,
+      itemKey: itemKeys,
+      userId: 'admin',
+      fcYrId: '24',
+      cobr: '01',
+      brandKey:
+          selectedBrands.isNotEmpty
+              ? selectedBrands.map((b) => b.brandKey).join(',')
+              : null,
+      styleKey:
+          selectedStyles.isNotEmpty
+              ? selectedStyles.map((s) => s.styleKey).join(',')
+              : null,
+      shadeKey:
+          selectedShades.isNotEmpty
+              ? selectedShades.map((s) => s.shadeKey).join(',')
+              : null,
+      sizeKey:
+          selectedSizes.isNotEmpty
+              ? selectedSizes.map((s) => s.itemSizeKey).join(',')
+              : null,
+      fromMRP: fromMRP.isNotEmpty ? double.tryParse(fromMRP) : null,
+      toMRP: toMRP.isNotEmpty ? double.tryParse(toMRP) : null,
+    );
+
+    if (context.mounted) {
+      Navigator.pop(context); // Close loading dialog
+    }
+
+    // Check whatsappType from AppConstants (set during login)
+    String whatsappType = AppConstants.whatsappType ?? '1'; // Default to '1' if not set
+    
+    // Send based on whatsapp type from backend configuration
+    if (whatsappType == "1") {
+      // Send PDF via Node API (existing method)
+      await _sendPDFViaNodeAPI(fetchedStockReport, mobileNo);
+    } else if (whatsappType == "2") {
+      // Send PDF via Backend API
+      await _sendPDFViaBackendAPI(fetchedStockReport, mobileNo);
+    } else {
+      // Fallback to Node API if type is unknown
+      await _sendPDFViaNodeAPI(fetchedStockReport, mobileNo);
+    }
+    
+  } catch (e) {
+    if (context.mounted) {
+      Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select category'),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
-      return;
-    }
-
-    // Show mobile number dialog
-    final result = await _showMobileNumberDialog();
-
-    if (result == null) return; // User cancelled
-
-    String mobileNo = result['mobileNo'] ?? '';
-
-    // Show loading dialog
-    if (!context.mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LoadingAnimationWidget.waveDots(color: Colors.green, size: 50),
-                const SizedBox(height: 20),
-                Text(
-                  'Preparing stock report for WhatsApp...',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    try {
-      // Fetch stock data
-      String itemKeys = selectedItems
-          .map((e) => e.itemKey)
-          .where((e) => e != null && e.isNotEmpty)
-          .join(',');
-
-      final fetchedStockReport = await ApiService.fetchStockReport(
-        itemSubGrpKey: selectedCategoryKey!,
-        itemKey: itemKeys,
-        userId: 'admin',
-        fcYrId: '24',
-        cobr: '01',
-        brandKey:
-            selectedBrands.isNotEmpty
-                ? selectedBrands.map((b) => b.brandKey).join(',')
-                : null,
-        styleKey:
-            selectedStyles.isNotEmpty
-                ? selectedStyles.map((s) => s.styleKey).join(',')
-                : null,
-        shadeKey:
-            selectedShades.isNotEmpty
-                ? selectedShades.map((s) => s.shadeKey).join(',')
-                : null,
-        sizeKey:
-            selectedSizes.isNotEmpty
-                ? selectedSizes.map((s) => s.itemSizeKey).join(',')
-                : null,
-        fromMRP: fromMRP.isNotEmpty ? double.tryParse(fromMRP) : null,
-        toMRP: toMRP.isNotEmpty ? double.tryParse(toMRP) : null,
-      );
-
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-      }
-
-      // Send PDF via Node API (whatsappType == "1")
-      await _sendPDFViaNodeAPI(fetchedStockReport, mobileNo);
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
+}
 
+
+Future<Map<String, String>?> _showMobileNumberDialog() {
+  TextEditingController mobileController = TextEditingController();
+  
+  // Get WhatsApp type info for display
+  String whatsappType = AppConstants.whatsappType ?? '1';
+  String apiTypeText = whatsappType == "1" ? "Node API" : "Backend API";
+  
+  return showDialog<Map<String, String>?>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(
+          "Enter Mobile Number",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: mobileController,
+              keyboardType: TextInputType.phone,
+              maxLength: 10,
+              decoration: InputDecoration(
+                labelText: "Mobile Number",
+                prefixIcon: const Icon(Icons.phone, size: 20),
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Colors.green[700],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Stock report will be sent as PDF via $apiTypeText',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final mobileNo = mobileController.text.trim();
+              if (mobileNo.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter mobile number'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              if (mobileNo.length != 10) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter valid 10-digit mobile number'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter numbers only'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, {'mobileNo': mobileNo});
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("Send via WhatsApp"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Method to send PDF via Backend API (whatsappType == "2")
+// Method to send PDF via Backend API (whatsappType == "2")
+Future<void> _sendPDFViaBackendAPI(
+  List<StockReportItem> stockData,
+  String mobileNo,
+) async {
+  try {
+    // Generate PDF first
+    final pdf = await _generateStockReportPDF(stockData);
+    
+    // Save to temp file
+    final tempDir = await getTemporaryDirectory();
+    final file = File(
+      '${tempDir.path}/stock_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await file.writeAsBytes(await pdf.save());
+    
+    // Create multipart request for backend API
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf'), // Your backend endpoint
+    );
+    
+    // Add PDF file to request - MUST use 'file' as parameter name
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file', // This matches @RequestParam("file") in your backend
+        file.path,
+        filename: 'stock_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      ),
+    );
+    
+    // Show sending indicator
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Sending stock report...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    // Send request
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    
+    if (response.statusCode == 200 && mounted) {
+      // Parse response
+      final responseBody = response.body;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(responseBody), // Shows "File saved: filename.pdf"
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save report: ${response.body}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    // Clean up temp file
+    await file.delete();
+    
+  } catch (e) {
+    print('Error sending PDF via Backend API: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    rethrow;
+  }
+}
+  
   // Method to send PDF via Node API (whatsappType == "1")
+ 
   Future<void> _sendPDFViaNodeAPI(
     List<StockReportItem> stockData,
     String mobileNo,
@@ -2635,131 +2853,7 @@ class _StockReportPageState extends State<StockReportPage> {
     }
   }
 
-  // Mobile number dialog (simplified version without format selection)
-  Future<Map<String, String>?> _showMobileNumberDialog() {
-    TextEditingController mobileController = TextEditingController();
-
-    return showDialog<Map<String, String>?>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            "Enter Mobile Number",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Mobile number input
-              TextField(
-                controller: mobileController,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                decoration: InputDecoration(
-                  labelText: "Mobile Number",
-                  prefixIcon: const Icon(Icons.phone, size: 20),
-                  counterText: '',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.green, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Info message
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Colors.green[700],
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Stock report will be sent as PDF via WhatsApp',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green[900],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final mobileNo = mobileController.text.trim();
-                if (mobileNo.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter mobile number'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                if (mobileNo.length != 10) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Please enter valid 10-digit mobile number',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter numbers only'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(context, {'mobileNo': mobileNo});
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text("Send via WhatsApp"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+ 
   // Prepare caption for WhatsApp message
   String _prepareStockReportCaption() {
     String category = selectedCategoryName ?? 'Category';
@@ -2787,7 +2881,7 @@ Generated from VRS ERP App
     final pdf = pw.Document();
 
     // Use the same grouping logic as bottom sheet
-    final groupedByItemAndStyle = _groupItemsByItemAndStyle();
+  final groupedByItemAndStyle = _groupItemsByItemAndStyleFromList(stockData); // ✅ Uses the passed stockData
 
     List<pw.Widget> content = [];
     int grandTotal = 0;

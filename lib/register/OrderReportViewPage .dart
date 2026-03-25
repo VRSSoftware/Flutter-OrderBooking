@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
@@ -1111,6 +1112,425 @@ pw.Widget _buildPDFFooter() {
   );
 }
  
+
+Future<void> _shareViaWhatsApp() async {
+  try {
+    // Show mobile number dialog
+    final result = await _showMobileNumberDialog();
+    
+    if (result == null) return; // User cancelled
+    
+    String mobileNo = result['mobileNo'] ?? '';
+    
+    // Show loading dialog
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Preparing order report for WhatsApp...',
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    
+    // Get WhatsApp type from AppConstants (set during login)
+    String whatsappType = AppConstants.whatsappType ?? '1'; // Default to '1' if not set
+    
+    // Send based on whatsapp type from backend configuration
+    if (whatsappType == "1") {
+      // Send PDF via Node API
+      await _shareViaWhatsAppNode(mobileNo);
+    } else if (whatsappType == "2") {
+      // Send PDF via Backend API
+      await _shareViaWhatsAppBackend(mobileNo);
+    } else {
+      // Fallback to Node API if type is unknown
+      await _shareViaWhatsAppNode(mobileNo);
+    }
+    
+    if (context.mounted) {
+      Navigator.pop(context); // Close loading dialog
+    }
+    
+  } catch (e) {
+    print('Error sending via WhatsApp: $e');
+    if (mounted) {
+      Navigator.pop(context); // Close loading dialog if open
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
+// Rename existing method to _shareViaWhatsAppNode
+Future<void> _shareViaWhatsAppNode(String mobileNo) async {
+  try {
+    // Generate PDF
+    final pdfBytes = await _generatePDF();
+    
+    // Save to temp file
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
+    await file.writeAsBytes(pdfBytes);
+    
+    // Read file bytes and convert to base64
+    final pdfBytesData = await file.readAsBytes();
+    String fileBase64 = base64Encode(pdfBytesData);
+    
+    // Prepare caption
+    String caption = _prepareOrderReportCaption();
+    
+    if (context.mounted) {
+      Navigator.pop(context); // Close loading dialog
+    }
+    
+    // Show sending indicator
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📤 Sending via WhatsApp...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    // Get WhatsApp key from AppConstants
+    String whatsappKey = AppConstants.whatsappKey ?? '';
+    if (whatsappKey.isEmpty) {
+      throw Exception('WhatsApp API key not configured');
+    }
+    
+    // Send via Node API
+    final response = await http.post(
+      Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+      body: {
+        'data': fileBase64,
+        'filename': 'Order_${widget.orderNo}.pdf',
+        'key': whatsappKey,
+        'number': '91$mobileNo',
+        'caption': caption,
+      },
+    ).timeout(const Duration(seconds: 30));
+    
+    if (response.statusCode == 200 && mounted) {
+      try {
+        final responseData = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              responseData['status'] == 'success' 
+                ? '✓ Order report sent successfully to $mobileNo'
+                : 'Failed: ${responseData['message'] ?? 'Unknown error'}',
+            ),
+            backgroundColor: responseData['status'] == 'success' 
+              ? Colors.green 
+              : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Order report sent successfully to $mobileNo'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to send via WhatsApp'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    // Clean up temp file
+    await file.delete();
+    
+  } catch (e) {
+    print('Error sending via Node API: $e');
+    rethrow;
+  }
+}
+// Mobile number dialog method
+Future<Map<String, String>?> _showMobileNumberDialog() {
+  TextEditingController mobileController = TextEditingController();
+  
+  return showDialog<Map<String, String>?>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(
+          "Enter Mobile Number",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: mobileController,
+              keyboardType: TextInputType.phone,
+              maxLength: 10,
+              decoration: InputDecoration(
+                labelText: "Mobile Number",
+                prefixIcon: const Icon(Icons.phone, size: 20),
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Colors.green[700],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Order report will be sent as PDF via WhatsApp',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final mobileNo = mobileController.text.trim();
+              if (mobileNo.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter mobile number'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              if (mobileNo.length != 10) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter valid 10-digit mobile number'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter numbers only'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, {'mobileNo': mobileNo});
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("Send via WhatsApp"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Prepare caption for order report
+String _prepareOrderReportCaption() {
+  String orderNo = widget.orderNo;
+  String orderDate = _formatDate(headerData['Doc_Dt']?.toString());
+  String partyName = headerData['Led_Name']?.toString() ?? '';
+  int totalItems = items.length;
+  
+  // Calculate total quantity - FIXED TYPE ERROR
+  int totalQty = 0;
+  for (var category in items) {
+    List styles = category['styles'] ?? [];
+    for (var style in styles) {
+      List shades = style['shades'] ?? [];
+      for (var shade in shades) {
+        List sizeData = shade['size_data'] ?? [];
+        for (var size in sizeData) {
+          // Convert num to int using .toInt() or handle null
+          dynamic qtyValue = size['Qty'] ?? 0;
+          if (qtyValue is num) {
+            totalQty += qtyValue.toInt();
+          } else if (qtyValue is int) {
+            totalQty += qtyValue;
+          } else {
+            totalQty += int.tryParse(qtyValue.toString()) ?? 0;
+          }
+        }
+      }
+    }
+  }
+  
+  return '''
+*📋 VRS ORDER REPORT*
+━━━━━━━━━━━━━━━━━━━━
+
+🏢 *Company:* ${headerData['Co_Name']?.toString() ?? 'VRS Software'}
+📦 *Order No:* $orderNo
+📅 *Order Date:* $orderDate
+👤 *Party:* $partyName
+📊 *Total Items:* $totalItems
+🔢 *Total Quantity:* $totalQty
+
+━━━━━━━━━━━━━━━━━━━━
+*Generated from VRS ERP App*
+  ''';
+}
+
+// Method to send PDF via Backend API (whatsappType == "2")
+Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
+  try {
+    // Generate PDF
+    final pdfBytes = await _generatePDF();
+    
+    // Save to temp file
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
+    await file.writeAsBytes(pdfBytes);
+    
+    // Create multipart request for backend API
+    final uri = Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf');
+    var request = http.MultipartRequest('POST', uri);
+    
+    // Add parameters
+    request.fields['mobile_no'] = mobileNo;
+    request.fields['order_no'] = widget.orderNo;
+    request.fields['party_name'] = headerData['Led_Name']?.toString() ?? '';
+    request.fields['order_date'] = _formatDate(headerData['Doc_Dt']?.toString());
+    
+    // Add PDF file to request
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file', // This must match @RequestParam("file") in your backend
+        file.path,
+        filename: 'Order_${widget.orderNo}.pdf',
+      ),
+    );
+    
+    // Show sending indicator
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📤 Sending order report...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    // Send request with timeout
+    final streamedResponse = await request.send().timeout(
+      const Duration(seconds: 45),
+    );
+    final response = await http.Response.fromStream(streamedResponse);
+    
+    if (response.statusCode == 200 && mounted) {
+      try {
+        final responseBody = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseBody['message'] ?? '✓ Order report sent successfully'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Order report sent successfully'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed: ${response.body}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    // Clean up temp file
+    await file.delete();
+    
+  } catch (e) {
+    print('Error sending PDF via Backend API: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    rethrow;
+  }
+}
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -1132,35 +1552,64 @@ pw.Widget _buildPDFFooter() {
             icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
             onPressed: _handleBackNavigation, // Use the same method
           ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.25),
-                    Colors.white.withOpacity(0.15),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.share, color: Colors.white, size: 20),
-                onPressed: isLoading ? null : _sharePDF,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-              ),
-            ),
-          ],
+       actions: [
+  // Share PDF button (existing)
+  Container(
+    margin: const EdgeInsets.only(right: 4),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.25),
+          Colors.white.withOpacity(0.15),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: IconButton(
+      icon: const Icon(Icons.share, color: Colors.white, size: 20),
+      onPressed: isLoading ? null : _sharePDF,
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+    ),
+  ),
+  // WhatsApp button (NEW)
+  Container(
+    margin: const EdgeInsets.only(right: 8),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.25),
+          Colors.white.withOpacity(0.15),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: IconButton(
+      icon: const Icon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
+      onPressed: isLoading ? null : _shareViaWhatsApp,
+      padding: const EdgeInsets.all(8),
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+    ),
+  ),
+],
         ),
         body:
             isLoading

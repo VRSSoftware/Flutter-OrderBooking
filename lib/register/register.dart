@@ -1181,25 +1181,25 @@ Future<void> _selectDateForCustom(bool isFromDate) async {
                                     ],
                                   ),
                                 ),
-                                PopupMenuItem<String>(
-                                  value: 'whatsapp',
-                                  child: Row(
-                                    children: [
-                                      FaIcon(
-                                        FontAwesomeIcons.whatsapp,
-                                        size: 20,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'WhatsApp',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                // PopupMenuItem<String>(
+                                //   value: 'whatsapp',
+                                //   child: Row(
+                                //     children: [
+                                //       FaIcon(
+                                //         FontAwesomeIcons.whatsapp,
+                                //         size: 20,
+                                //         color: AppColors.primaryColor,
+                                //       ),
+                                //       const SizedBox(width: 12),
+                                //       Text(
+                                //         'WhatsApp',
+                                //         style: GoogleFonts.poppins(
+                                //           fontSize: 14,
+                                //         ),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ),
                                 PopupMenuItem<String>(
                                   value: 'download',
                                   child: Row(
