@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
+import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
+import 'package:vrs_erp/Reports/Payable/PayableReport.dart';
+import 'package:vrs_erp/Reports/Receivable/ReceivableReport.dart';
+import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
@@ -58,13 +62,16 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         // primarySwatch: AppColors.primaryColor
         primaryColor: const Color(0xFF072F5F),
-        progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.primaryColor),
+        progressIndicatorTheme: ProgressIndicatorThemeData(
+          color: AppColors.primaryColor,
+        ),
         checkboxTheme: CheckboxThemeData(
           checkColor: WidgetStateProperty.all(Colors.white),
           overlayColor: WidgetStateProperty.all(AppColors.primaryColor),
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.primaryColor; // your desired background color when checked
+              return AppColors
+                  .primaryColor; // your desired background color when checked
             }
             return Colors.grey.shade300; // color when unchecked
           }),
@@ -96,9 +103,11 @@ class MyApp extends StatelessWidget {
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),
-        
+        '/reports': (context) => SalesAnalysis(),
 
-      
+        '/payable': (context) => PayableReport(),
+        '/receivable': (context) => ReceivableReport(),
+        '/ledger': (context) => LedgerReport(),
       },
 
       // home: SalesOrderInvoicePage(),

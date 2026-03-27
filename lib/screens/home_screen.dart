@@ -284,7 +284,6 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -395,6 +394,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.pink[700]!,
           Colors.pink[50]!,
         );
+
+      case 'Reports':
+        return IconStyle(
+          Icons.assessment,
+          Colors.green[700]!,
+          Colors.green[50]!,
+        );
+      case 'Payable':
+        return IconStyle(Icons.payments, Colors.red[700]!, Colors.red[50]!);
+
+      case 'Receivable':
+        return IconStyle(
+          Icons.account_balance_wallet,
+          Colors.teal[700]!,
+          Colors.teal[50]!,
+        );
+
+      case 'Ledger':
+        return IconStyle(
+          Icons.menu_book,
+          Colors.indigo[700]!,
+          Colors.indigo[50]!,
+        );
       case 'Web':
         return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
 
@@ -413,124 +435,126 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         bool shouldExit = await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 4,
-            contentPadding: EdgeInsets.zero,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with gradient background
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.shade600,
-                        Colors.red.shade800,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.exit_to_app,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Exit App',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Are you sure you want to close the app?',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+          builder:
+              (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                
-                // Buttons
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.grey.shade700,
-                            side: BorderSide(color: Colors.grey.shade300),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                elevation: 4,
+                contentPadding: EdgeInsets.zero,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with gradient background
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.red.shade600, Colors.red.shade800],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.exit_to_app,
+                              color: Colors.white,
+                              size: 32,
                             ),
                           ),
-                          child: const Text(
-                            'No',
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Exit App',
                             style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Are you sure you want to close the app?',
+                            style: TextStyle(fontSize: 14, color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                     Expanded(
-  child: ElevatedButton(
-    onPressed: () {
-      SystemNavigator.pop(); // This directly closes the app
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.red.shade600,
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 0,
-    ),
-    child: const Text(
-      'Yes',
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  ),
-),
-                    ],
-                  ),
+                    ),
+
+                    // Buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey.shade700,
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'No',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                SystemNavigator.pop(); // This directly closes the app
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Yes',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
         );
 
         if (shouldExit == true) {
@@ -563,14 +587,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
 
           leading: Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(
-                Icons.menu,
-                color: Colors.white,
-                size: 24, // Slightly smaller for compact look
-              ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
+            builder:
+                (context) => IconButton(
+                  icon: const Icon(
+                    Icons.menu,
+                    color: Colors.white,
+                    size: 24, // Slightly smaller for compact look
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
           ),
         ),
 
@@ -597,7 +622,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               builder: (context, constraints) {
                 return SingleChildScrollView(
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: IntrinsicHeight(
                       child: Column(
                         children: [
@@ -681,16 +708,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
     //     Navigator.pushNamed(context, '/saleBillRegister');
     //   }, buttonWidth));
-    buttons.add(_buildFeatureButton(context, 'Production', () {
-      Navigator.pushNamed(context, '/production');
-    }, buttonWidth));
-      buttons.add (_buildFeatureButton(context, 'Web', () {
+    buttons.add(
+      _buildFeatureButton(context, 'Production', () {
+        Navigator.pushNamed(context, '/production');
+      }, buttonWidth),
+    );
+    buttons.add(
+      _buildFeatureButton(context, 'Web', () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  UniversalWebView()),
+          MaterialPageRoute(builder: (context) => UniversalWebView()),
         );
-      }, buttonWidth));
+      }, buttonWidth),
+    );
 
+    buttons.add(
+      _buildFeatureButton(context, 'Reports', () {
+        Navigator.pushNamed(context, '/reports');
+      }, buttonWidth),
+    );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Payable', () {
+        Navigator.pushNamed(context, '/payable');
+      }, buttonWidth),
+    );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Receivable', () {
+        Navigator.pushNamed(context, '/receivable');
+      }, buttonWidth),
+    );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Ledger', () {
+        Navigator.pushNamed(context, '/ledger');
+      }, buttonWidth),
+    );
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
       buttons.add(
@@ -767,11 +821,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             animation: animationController,
             builder: (context, child) {
               return Transform.scale(
-                scale: 1.0 - (animationController.value * 0.03), // Simple scale calculation
+                scale:
+                    1.0 -
+                    (animationController.value *
+                        0.03), // Simple scale calculation
                 child: Container(
                   width: width,
                   child: Card(
-                    elevation: 2.0 + (animationController.value * 4), // Simple elevation calculation
+                    elevation:
+                        2.0 +
+                        (animationController.value *
+                            4), // Simple elevation calculation
                     color: kCardLight,
                     shadowColor: style.iconColor.withOpacity(
                       0.2 + (animationController.value * 0.2),
