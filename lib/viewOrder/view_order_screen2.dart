@@ -549,14 +549,16 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
 
 
    String docNo = '';
+   String docId = '';
       try {
         final responseMap = jsonDecode(response);
         docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
+           docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
       } catch (e) {
         docNo = response.toString();
       }
       
-      final formattedOrderNo = "SO$docNo";
+      final formattedOrderNo = "$docNo";
 
         showDialog(
           context: context,
@@ -640,7 +642,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                                   MaterialPageRoute(
                                     builder:
                                         (context) => OrderReportViewPage(
-                                          orderNo: response,
+                                          orderNo: docId,
                                           orderData: null,
                                           showOnlyWithImage: false,
                                         ),

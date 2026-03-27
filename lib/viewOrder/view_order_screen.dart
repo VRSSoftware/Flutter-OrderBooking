@@ -289,120 +289,6 @@ void dispose() {
     return today;
   }
 
-  // Future<void> _saveOrderLocally() async {
-  //   if (!_formKey.currentState!.validate()) return;
-
-  //   String? consigneeLedKey = '';
-  //   String? stationStnKey = '';
-  //   final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-  //   if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-  //     final selectedConsignee = consignees.firstWhere(
-  //       (consignee) => consignee.ledName == selectedConsigneeName,
-  //       orElse:
-  //           () => Consignee(
-  //             ledKey: '',
-  //             ledName: '',
-  //             stnKey: '',
-  //             stnName: '',
-  //             paymentTermsKey: '',
-  //             paymentTermsName: '',
-  //             pytTermDiscdays: '0',
-  //           ),
-  //     );
-  //     consigneeLedKey = selectedConsignee.ledKey;
-  //     stationStnKey = selectedConsignee.stnKey;
-  //   }
-
-  //   final orderData = {
-  //     "saleorderno": _orderControllers.orderNo.text,
-  //     "orderdate": formatDate(_orderControllers.date.text, true),
-  //     "customer": _orderControllers.selectedPartyKey ?? '',
-  //     "broker": _orderControllers.selectedBrokerKey ?? '',
-  //     "comission": _orderControllers.comm.text,
-  //     "transporter": _orderControllers.selectedTransporterKey ?? '',
-  //     "delivaryday": _orderControllers.deliveryDays.text,
-  //     "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-  //     "totitem": _orderControllers.totalItem.text,
-  //     "totqty": _orderControllers.totalQty.text,
-  //     "remark": _orderControllers.remark.text,
-  //     "consignee": consigneeLedKey,
-  //     "station": stationStnKey,
-  //     "paymentterms":
-  //         _additionalInfo['paymentterms'] ??
-  //         _orderControllers.pytTermDiscKey ??
-  //         '',
-  //     "paymentdays":
-  //         _additionalInfo['paymentdays'] ??
-  //         _orderControllers.creditPeriod?.toString() ??
-  //         '0',
-  //     "duedate": calculateDueDate(),
-  //     "refno": _additionalInfo['refno'] ?? '',
-  //     "date": getTodayWithZeroTime(),
-  //     "bookingtype": _additionalInfo['bookingtype'] ?? '',
-  //     "salesman":
-  //         _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-  //   };
-  //   final orderDataJson = jsonEncode(orderData);
-  //   print("Saved Order Data:");
-  //   print(orderDataJson);
-
-  //   try {
-  //     final response = await insertFinalSalesOrder(orderDataJson);
-  //     if (response != null && response != "fail") {
-  //       Provider.of<CartModel>(context, listen: false).clearAddedItems();
-  //       final formattedOrderNo = "SO$response";
-
-  //       showDialog(
-  //         context: context,
-  //         builder:
-  //             (context) => AlertDialog(
-  //               title: Text('Order Saved'),
-  //               content: Text('Order $formattedOrderNo saved successfully'),
-  //               actions: [
-  //                 TextButton(
-  //                   onPressed: () {
-  //                     Navigator.pop(context);
-  //                     Navigator.push(
-  //                       context,
-  //                       MaterialPageRoute(
-  //                         builder:
-  //                             (context) => PdfViewerScreen(
-  //                               rptName: 'SalesOrder',
-  //                               orderNo: formattedOrderNo,
-  //                               whatsappNo: _orderControllers.whatsAppMobileNo,
-  //                               partyName:
-  //                                   _orderControllers.selectedPartyName ?? '',
-  //                               orderDate: _orderControllers.date.text,
-  //                             ),
-  //                       ),
-  //                     );
-  //                   },
-  //                   child: Text('View PDF'),
-  //                 ),
-  //                 TextButton(
-  //                   onPressed: () {
-  //                     Navigator.pushReplacement(
-  //                       context,
-  //                       MaterialPageRoute(builder: (context) => HomeScreen()),
-  //                     );
-  //                   },
-  //                   child: Text('Done'),
-  //                 ),
-  //               ],
-  //             ),
-  //       );
-  //     } else {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Failed to save order. Please try again.')),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     print('Error during order saving: $e');
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
-  //   }
-  // }
 
   
 Future<void> _saveOrderLocally() async {
@@ -462,9 +348,11 @@ Future<void> _saveOrderLocally() async {
       
       // Parse the response to extract docNo
       String docNo = '';
+      String docId='';
       try {
         final responseMap = jsonDecode(response);
         docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
+         docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
       } catch (e) {
         docNo = response.toString();
       }
@@ -551,7 +439,7 @@ Future<void> _saveOrderLocally() async {
                             context,
                             MaterialPageRoute(
                               builder: (context) => OrderReportViewPage(
-                                orderNo: docNo,
+                                orderNo: docId,
                                 orderData: null,
                                 showOnlyWithImage: false,
                               ),
@@ -622,6 +510,8 @@ Future<void> _saveOrderLocally() async {
     ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
   }
 }
+  
+  
   void _updateTotals() {
     int totalQty = 0;
     double totalAmt = 0.0;
