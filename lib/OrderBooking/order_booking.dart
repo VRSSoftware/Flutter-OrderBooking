@@ -809,24 +809,18 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
   // Search functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
   @override
   void initState() {
     super.initState();
+
     showBarcodeWidget = widget.startWithBarcode;
     _fetchCategories();
-    _fetchAllItems(); // ✅ FIXED: Changed from fetchAllItems to _fetchAllItems
+    _fetchAllItems();
 
     if (coBr != null && fcYrId != null) {
       _fetchCartCount();
     }
-    //fetchPartyList();
-    Future<List<String>> addedItems = ApiService.fetchAddedItems(
-      userId: UserSession.userName ?? '',
-      coBrId: UserSession.coBrId ?? '',
-      fcYrId: UserSession.userFcYr ?? '',
-      barcode: "",
-    );
+
     _arrowController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 700),
@@ -834,12 +828,63 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
 
     _searchController.addListener(_onSearchChanged);
 
-    // Add listener to CartModel for real-time updates
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Provider.of<CartModel>(context, listen: false).clearAddedItems();
+
+    // ✅ FIXED: make callback async
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cartModel = Provider.of<CartModel>(context, listen: false);
+
+      List<String> items = await ApiService.fetchAddedItems(
+        userId: UserSession.userName ?? '',
+        coBrId: UserSession.coBrId ?? '',
+        fcYrId: UserSession.userFcYr ?? '',
+        barcode: "",
+      );
+
+      for (var item in items) {
+        cartModel.addItem(item);
+      }
+
       cartModel.addListener(_onCartChanged);
     });
   }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   showBarcodeWidget = widget.startWithBarcode;
+  //   _fetchCategories();
+  //   _fetchAllItems(); // ✅ FIXED: Changed from fetchAllItems to _fetchAllItems
+
+  //   if (coBr != null && fcYrId != null) {
+  //     _fetchCartCount();
+  //   }
+  //   //fetchPartyList();
+  //   Future<List<String>> addedItems = ApiService.fetchAddedItems(
+  //     userId: UserSession.userName ?? '',
+  //     coBrId: UserSession.coBrId ?? '',
+  //     fcYrId: UserSession.userFcYr ?? '',
+  //     barcode: "",
+  //   );
+  //   _arrowController = AnimationController(
+  //     vsync: this,
+  //     duration: Duration(milliseconds: 700),
+  //   )..repeat(reverse: true);
+
+  //   _searchController.addListener(_onSearchChanged);
+  //   Provider.of<CartModel>(context, listen: false).clearAddedItems();
+  //   // Add listener to CartModel for real-time updates
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final cartModel = Provider.of<CartModel>(context, listen: false);
+
+  //    List<String> items = await addedItems; // ✅ resolve Future first
+
+  //         for (var item in items) {
+  //           cartModel.addItem(item);
+  //         }
+
+  //     cartModel.addListener(_onCartChanged);
+  //   });
+  // }
 
   void _onCartChanged() {
     setState(() {
@@ -954,7 +999,8 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
         coBrId: UserSession.coBrId ?? '',
         userId: UserSession.userName ?? '',
         fcYrId: UserSession.userFcYr ?? '',
-        barcode: showBarcodeWidget ? 'true' : 'false',
+        // barcode: showBarcodeWidget ? 'true' : 'false',
+        barcode: 'false',
       );
 
       final cartModel = Provider.of<CartModel>(context, listen: false);
@@ -1353,7 +1399,9 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                                 // Refresh cart count when order is confirmed from barcode
                                 _fetchCartCount();
                               },
-                              edit: false, // or appropriate value
+                              edit: false, 
+                              
+                              // or appropriate value
                             ),
                           ),
 

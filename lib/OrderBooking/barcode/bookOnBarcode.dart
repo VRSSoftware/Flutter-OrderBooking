@@ -154,6 +154,59 @@ class _CatalogBookingTableState extends State<CatalogBookingTableBarcode> {
           isLoading = false;
         });
       }
+    } else if (response.statusCode == 409 || response.statusCode == 204) {
+      setState(() {
+        isLoading = false;
+      });
+
+      String message =
+          response.body.isNotEmpty ? response.body : "Something went wrong";
+
+      showDialog(
+        context: context,
+        barrierDismissible: false, // user must tap OK
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Alert"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // close dialog
+                  Navigator.of(context).pop(); // go back (pop screen)
+                },
+                child: const Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    } else if (response.statusCode == 204) {
+      setState(() {
+        isLoading = false;
+      });
+      String message =
+          response.body.isNotEmpty ? response.body : "Something went wrong";
+
+      showDialog(
+        context: context,
+        barrierDismissible: false, // user must tap OK
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Alert"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // close dialog
+                  Navigator.of(context).pop(); // go back (pop screen)
+                },
+                child: const Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
     } else {
       debugPrint('Failed to fetch catalog data: ${response.statusCode}');
     }

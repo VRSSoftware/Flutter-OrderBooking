@@ -350,8 +350,6 @@
 //   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 // }
 
-
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -419,334 +417,377 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     }
   }
 
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter) {
+      // Check if any dialog is currently open
+      bool isDialogOpen = ModalRoute.of(context)?.isCurrent != true;
 
-
- void _handleKeyEvent(RawKeyEvent event) {
-  if (event is RawKeyDownEvent &&
-      event.logicalKey == LogicalKeyboardKey.enter) {
-    
-    // Check if any dialog is currently open
-    bool isDialogOpen = ModalRoute.of(context)?.isCurrent != true;
-    
-    if (!isDialogOpen) {
-      final barcode = _barcodeController.text.trim();
-      if (barcode.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _barcodeController.clear();
-          _validateAndNavigate(barcode);
-        });
+      if (!isDialogOpen) {
+        final barcode = _barcodeController.text.trim();
+        if (barcode.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeController.clear();
+            _validateAndNavigate(barcode);
+          });
+        }
       }
     }
   }
-}
 
- Future<void> _scanBarcode() async {
-  // Hide keyboard before opening scanner
-  FocusManager.instance.primaryFocus?.unfocus();
-  
-  final barcode = await Navigator.push<String>(
-    context,
-    MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
-  );
-
-  if (barcode != null && barcode.isNotEmpty) {
-    final upperBarcode = barcode.toUpperCase();
-    setState(() {
-      _barcodeController.text = upperBarcode;
-    });
-    _validateAndNavigate(upperBarcode);
-  } else {
-    // Request focus back if scan was cancelled
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _barcodeFocusNode.requestFocus();
-    });
-  }
-}
-
-Future<void> _scanQRCode() async {
-  // Hide keyboard before opening scanner
-  FocusManager.instance.primaryFocus?.unfocus();
-  
-  final barcode = await Navigator.push<String>(
-    context,
-    MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
-  );
-
-  if (barcode != null && barcode.isNotEmpty) {
-    final upperBarcode = barcode.toUpperCase();
-    setState(() {
-      _barcodeController.text = upperBarcode;
-    });
-    _validateAndNavigate(upperBarcode);
-  } else {
-    // Request focus back if scan was cancelled
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _barcodeFocusNode.requestFocus();
-    });
-  }
-}
-void _validateAndNavigate(String barcode) async {
-  if (barcode.isEmpty) {
+  Future<void> _scanBarcode() async {
+    // Hide keyboard before opening scanner
     FocusManager.instance.primaryFocus?.unfocus();
-    _showAlertDialog(
+
+    final barcode = await Navigator.push<String>(
       context,
-      'Missing Barcode',
-      'Please enter or scan a barcode first.',
-    );
-    return;
-  }
-
-  String upperBarcode = barcode.toUpperCase();
-  print("Checking barcode: $upperBarcode, addedItems: $addedItems");
-  await _refreshAddedItems();
-  
-  // First check if already added in current session
-  if (addedItems.contains(upperBarcode)) {
-    FocusManager.instance.primaryFocus?.unfocus();
-    _showAlertDialog(
-      context,
-      'Already Added',
-      'This barcode is already added: $upperBarcode',
-    );
-    _barcodeController.clear();
-    return;
-  }
-
-  // Show loading dialog while checking
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Checking barcode...'),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  // Check barcode status
-  int barcodeStatus = await _checkBarcodeExists(upperBarcode);
-
-  if (!mounted) return;
-  Navigator.pop(context); // Close loading dialog
-
-  if (barcodeStatus == 0) {
-    // No data found
-    FocusManager.instance.primaryFocus?.unfocus();
-    _showAlertDialog(
-      context,
-      'No Data Found',
-      'No data found for barcode: $upperBarcode',
-    );
-    _barcodeController.clear();
-    return;
-  } else if (barcodeStatus == 2) {
-    // Already added in cart (from API)
-    FocusManager.instance.primaryFocus?.unfocus();
-    _showAlertDialog(
-      context,
-      'Already Added',
-      'This barcode is already added in the cart.',
-    );
-    _barcodeController.clear();
-    return;
-  }
-
-  // Only navigate if barcodeStatus == 1 (exists with data)
-  print("Barcode exists, navigating with barcode: $upperBarcode");
-  
-  // Determine which screen to use based on bookingType
-  Widget screen;
-  
-  if (AppConstants.bookingType == "1") {
-    screen = BookOnBarcode1(
-      barcode: upperBarcode,
-      onSuccess: () {
-        setState(() {
-          addedItems.add(upperBarcode);
-          print("Added barcode: $upperBarcode, addedItems: $addedItems");
-          _barcodeController.clear();
-        });
-        
-        if (widget.onOrderConfirmed != null) {
-          widget.onOrderConfirmed!();
-        }
-        
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _barcodeFocusNode.requestFocus();
-        });
-      },
-      onCancel: () {
-        _barcodeController.clear();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _barcodeFocusNode.requestFocus();
-        });
-      },
-      edit: widget.edit,
-    );
-  } else {
-    screen = BookOnBarcode2(
-      barcode: upperBarcode,
-      onSuccess: () {
-        setState(() {
-          addedItems.add(upperBarcode);
-          print("Added barcode: $upperBarcode, addedItems: $addedItems");
-          _barcodeController.clear();
-        });
-        
-        if (widget.onOrderConfirmed != null) {
-          widget.onOrderConfirmed!();
-        }
-        
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _barcodeFocusNode.requestFocus();
-        });
-      },
-      onCancel: () {
-        _barcodeController.clear();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _barcodeFocusNode.requestFocus();
-        });
-      },
-      edit: widget.edit,
-    );
-  }
-
-  // Navigate to the screen
-  await Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => screen),
-  );
-}
-// Update this method to return different values for different cases
-Future<int> _checkBarcodeExists(String barcode) async {
-  String apiUrl = '';
-  if (widget.edit) {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
-  } else {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
-  }
-  
-  final Map<String, dynamic> requestBody = {
-    "coBrId": UserSession.coBrId ?? '',
-    "userId": UserSession.userName ?? '',
-    "fcYrId": UserSession.userFcYr ?? '',
-    "barcode": barcode,
-  };
-
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
+      MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
     );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      if (data.isNotEmpty) {
-        return 1; // ✅ Barcode exists with data
-      } else {
-        return 0; // ❌ No data found
-      }
-    } else if (response.statusCode == 500) {
-      // Check if it's "already added" error
-      if (response.body.contains('Barcode already added')) {
-        return 2; // 🔴 Barcode already added in cart
-      }
-    }
-  } catch (e) {
-    print('Error checking barcode: $e');
-  }
-  return 0; // Default to no data found
-}
-void _showAlertDialog(BuildContext context, String title, String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Request focus only after dialog is dismissed
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _barcodeFocusNode.requestFocus();
-              });
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryColor,
-            ),
-            child: const Text('OK'),
-          ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      );
-    },
-  );
-}
-
-Future<void> _refreshAddedItems() async {
-  try {
-    // Fetch current cart items from the server
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        "coBrId": UserSession.coBrId ?? '',
-        "userId": UserSession.userName ?? '',
-        "fcYrId": UserSession.userFcYr ?? '',
-        "barcode": "true",
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final List cartItems = json.decode(response.body);
-      
-      // Extract barcodes from cart items
-      Set<String> currentBarcodes = {};
-      for (var item in cartItems) {
-        // Check if item has barcode field
-        if (item['barcode'] != null && item['barcode'].toString().isNotEmpty) {
-          currentBarcodes.add(item['barcode'].toString().toUpperCase());
-        }
-      }
-      
+    if (barcode != null && barcode.isNotEmpty) {
+      final upperBarcode = barcode.toUpperCase();
       setState(() {
-        addedItems = currentBarcodes.toList();
+        _barcodeController.text = upperBarcode;
       });
-      
-      print("Refreshed added items: $addedItems");
+      _validateAndNavigate(upperBarcode);
+    } else {
+      // Request focus back if scan was cancelled
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _barcodeFocusNode.requestFocus();
+      });
     }
-  } catch (e) {
-    print('Error refreshing added items: $e');
   }
-}
+
+  Future<void> _scanQRCode() async {
+    // Hide keyboard before opening scanner
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
+    );
+
+    if (barcode != null && barcode.isNotEmpty) {
+      final upperBarcode = barcode.toUpperCase();
+      setState(() {
+        _barcodeController.text = upperBarcode;
+      });
+      _validateAndNavigate(upperBarcode);
+    } else {
+      // Request focus back if scan was cancelled
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _barcodeFocusNode.requestFocus();
+      });
+    }
+  }
+
+  void _validateAndNavigate(String barcode) async {
+    if (barcode.isEmpty) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Missing Barcode',
+        'Please enter or scan a barcode first.',
+      );
+      return;
+    }
+
+    String upperBarcode = barcode.toUpperCase();
+    print("Checking barcode: $upperBarcode, addedItems: $addedItems");
+    await _refreshAddedItems();
+
+    // First check if already added in current session
+    if (addedItems.contains(upperBarcode)) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Already Added',
+        'This barcode is already added: $upperBarcode',
+      );
+      _barcodeController.clear();
+      return;
+    }
+
+    // Show loading dialog while checking
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Checking barcode...'),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    // Check barcode status
+    String barcodeStatus = await _checkBarcodeExists(upperBarcode);
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading dialog
+
+    if (barcodeStatus == "1") {
+      // No data found
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'No Data Found',
+        'No data found for barcode: $upperBarcode',
+      );
+      _barcodeController.clear();
+      return;
+    } else if (barcodeStatus == "2") {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Already Added',
+        'This barcode is already added in the cart.',
+      );
+      _barcodeController.clear();
+      return;
+    }
+    else if (barcodeStatus == "10") {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Already Added',
+        'This barcode is already added in the cart.',
+      );
+      _barcodeController.clear();
+      return;
+    }
+    else{
+       FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Error ',
+        barcodeStatus,
+      );
+      _barcodeController.clear();
+      return;
+    }
+
+    // Only navigate if barcodeStatus == 1 (exists with data)
+    print("Barcode exists, navigating with barcode: $upperBarcode");
+
+    // Determine which screen to use based on bookingType
+    Widget screen;
+
+    if (AppConstants.bookingType == "1") {
+      screen = BookOnBarcode1(
+        barcode: upperBarcode,
+        onSuccess: () {
+          setState(() {
+            addedItems.add(upperBarcode);
+            print("Added barcode: $upperBarcode, addedItems: $addedItems");
+            _barcodeController.clear();
+          });
+
+          if (widget.onOrderConfirmed != null) {
+            widget.onOrderConfirmed!();
+          }
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        onCancel: () {
+          _barcodeController.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        edit: widget.edit,
+      );
+    } else {
+      screen = BookOnBarcode2(
+        barcode: upperBarcode,
+        onSuccess: () {
+          setState(() {
+            addedItems.add(upperBarcode);
+            print("Added barcode: $upperBarcode, addedItems: $addedItems");
+            _barcodeController.clear();
+          });
+
+          if (widget.onOrderConfirmed != null) {
+            widget.onOrderConfirmed!();
+          }
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        onCancel: () {
+          _barcodeController.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        edit: widget.edit,
+      );
+    }
+
+    // Navigate to the screen
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
+
+  // Update this method to return different values for different cases
+  Future<String> _checkBarcodeExists(String barcode) async {
+    String apiUrl = '';
+    if (widget.edit) {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
+    } else {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
+    }
+
+    final Map<String, dynamic> requestBody = {
+      "coBrId": UserSession.coBrId ?? '',
+      "userId": UserSession.userName ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "barcode": barcode,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          return "1"; // ✅ Barcode exists with data
+        } else {
+          return "0"; // ❌ No data found
+        }
+      } else if (response.statusCode == 409) {
+        // FocusManager.instance.primaryFocus?.unfocus();
+        // _showAlertDialog(
+        //   context,
+        //   'Already Added',
+        //    response.body.isNotEmpty ? response.body : "Something went wrong",
+        // );
+        // _barcodeController.clear();
+        return response.body.isNotEmpty ? response.body : "Something went wrong";
+      }
+      else if (response.statusCode == 404) {
+        // FocusManager.instance.primaryFocus?.unfocus();
+        // _showAlertDialog(
+        //   context,
+        //   'No Data Found',
+        //    response.body.isNotEmpty ? response.body : "Something went wrong",
+        // );
+        // _barcodeController.clear();
+        return response.body.isNotEmpty ? response.body : "Something went wrong";
+      }
+       else if (response.statusCode == 500) {
+        // Check if it's "already added" error
+        if (response.body.contains('Barcode already added')) {
+          return "2"; // 🔴 Barcode already added in cart
+        }
+      }
+       debugPrint("Unexpected response for barcode check: ${response.statusCode} - ${response.body}");
+    } catch (e) {
+      print('Error checking barcode: $e');
+    }
+   
+    return "0"; // Default to no data found
+  }
+
+  void _showAlertDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          content: Text(message, style: const TextStyle(fontSize: 14)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Request focus only after dialog is dismissed
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _barcodeFocusNode.requestFocus();
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _refreshAddedItems() async {
+    try {
+      // Fetch current cart items from the server
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          "coBrId": UserSession.coBrId ?? '',
+          "userId": UserSession.userName ?? '',
+          "fcYrId": UserSession.userFcYr ?? '',
+          "barcode": "true",
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final List cartItems = json.decode(response.body);
+
+        // Extract barcodes from cart items
+        Set<String> currentBarcodes = {};
+        for (var item in cartItems) {
+          // Check if item has barcode field
+          if (item['barcode'] != null &&
+              item['barcode'].toString().isNotEmpty) {
+            currentBarcodes.add(item['barcode'].toString().toUpperCase());
+          }
+        }
+
+        setState(() {
+          addedItems = currentBarcodes.toList();
+        });
+
+        print("Refreshed added items: $addedItems");
+      }
+    } catch (e) {
+      print('Error refreshing added items: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -869,8 +910,8 @@ Future<void> _refreshAddedItems() async {
               ),
             ),
           ),
+
           // Remove the "No Data Found" text section that was here
-          
           if (_barcodeResults.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(12.0),
@@ -917,6 +958,7 @@ Future<void> _refreshAddedItems() async {
     );
   }
 }
+
 class DiagonalClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
