@@ -6,6 +6,7 @@ import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
 import 'package:vrs_erp/Reports/Payable/PayableReport.dart';
 import 'package:vrs_erp/Reports/Receivable/ReceivableReport.dart';
+import 'package:vrs_erp/Reports/Report_Home_Screen.dart';
 import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -103,8 +104,8 @@ class MyApp extends StatelessWidget {
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),
-        '/reports': (context) => SalesAnalysis(),
-
+         '/reportHomeScreen': (context) => ReportHomeScreen(),
+        '/salesAnalysis': (context) => SalesAnalysis(),
         '/payable': (context) => PayableReport(),
         '/receivable': (context) => ReceivableReport(),
         '/ledger': (context) => LedgerReport(),

@@ -395,27 +395,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.pink[50]!,
         );
 
-      case 'Reports':
-        return IconStyle(
-          Icons.assessment,
-          Colors.green[700]!,
-          Colors.green[50]!,
-        );
-      case 'Payable':
-        return IconStyle(Icons.payments, Colors.red[700]!, Colors.red[50]!);
-
-      case 'Receivable':
+      case 'Report':
         return IconStyle(
           Icons.account_balance_wallet,
           Colors.teal[700]!,
           Colors.teal[50]!,
-        );
-
-      case 'Ledger':
-        return IconStyle(
-          Icons.menu_book,
-          Colors.indigo[700]!,
-          Colors.indigo[50]!,
         );
       case 'Web':
         return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
@@ -723,28 +707,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     buttons.add(
-      _buildFeatureButton(context, 'Reports', () {
-        Navigator.pushNamed(context, '/reports');
+      _buildFeatureButton(context, 'Report', () {
+        Navigator.pushNamed(context, '/reportHomeScreen');
       }, buttonWidth),
     );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Payable', () {
-        Navigator.pushNamed(context, '/payable');
-      }, buttonWidth),
-    );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Receivable', () {
-        Navigator.pushNamed(context, '/receivable');
-      }, buttonWidth),
-    );
-
-    buttons.add(
-      _buildFeatureButton(context, 'Ledger', () {
-        Navigator.pushNamed(context, '/ledger');
-      }, buttonWidth),
-    );
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
       buttons.add(
