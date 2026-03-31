@@ -245,6 +245,7 @@ class _LoginPageState extends State<LoginScreen> {
         final Map<String, String> body = {
           'userName': _usernameController.text.trim(),
           'userPwd': _passwordController.text.trim(),
+          'firebaseToken': AppConstants.firebase_token ?? ''
         };
 
         try {

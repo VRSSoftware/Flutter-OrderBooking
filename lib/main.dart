@@ -1,11 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
-import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
-import 'package:vrs_erp/Reports/Payable/PayableReport.dart';
-import 'package:vrs_erp/Reports/Receivable/ReceivableReport.dart';
 import 'package:vrs_erp/Reports/Report_Home_Screen.dart';
 import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
@@ -13,6 +12,7 @@ import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
 import 'package:vrs_erp/dashboard/customerOrderDetailsPage.dart';
 import 'package:vrs_erp/dashboard/dashboard.dart';
+import 'package:vrs_erp/firebase_options.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
 import 'package:vrs_erp/privacypolicy/privacypolicy.dart';
@@ -30,6 +30,7 @@ import 'package:vrs_erp/screens/mdns/MdnsDiscoveryScreen.dart';
 import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
 import 'package:vrs_erp/screens/sale_bill/sale_bill_order_screen.dart';
 import 'package:vrs_erp/screens/splash_screen.dart';
+import 'package:vrs_erp/services/notification_service.dart';
 import 'package:vrs_erp/stockReport/stockreportpage.dart';
 import 'package:vrs_erp/viewOrder/TemptestPage.dart';
 import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
@@ -39,15 +40,35 @@ import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode2.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await NotificationService().init();
+    await _loadBaseUrlFromPrefs();
   usePathUrlStrategy();
+  
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => CartModel())],
       child: MyApp(),
     ),
   );
+}
+Future<void> _loadBaseUrlFromPrefs() async {
+  final prefs = await SharedPreferences.getInstance();
+  final savedUrl = prefs.getString('base_url');
+  
+  if (savedUrl != null && savedUrl.isNotEmpty) {
+    AppConstants.BASE_URL = savedUrl;
+    print("✅ Loaded URL from SharedPreferences: $savedUrl");
+  } else {
+    print("ℹ️ Using default URL: ${AppConstants.BASE_URL}");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -63,16 +84,13 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         // primarySwatch: AppColors.primaryColor
         primaryColor: const Color(0xFF072F5F),
-        progressIndicatorTheme: ProgressIndicatorThemeData(
-          color: AppColors.primaryColor,
-        ),
+        progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.primaryColor),
         checkboxTheme: CheckboxThemeData(
           checkColor: WidgetStateProperty.all(Colors.white),
           overlayColor: WidgetStateProperty.all(AppColors.primaryColor),
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors
-                  .primaryColor; // your desired background color when checked
+              return AppColors.primaryColor; // your desired background color when checked
             }
             return Colors.grey.shade300; // color when unchecked
           }),
@@ -104,11 +122,11 @@ class MyApp extends StatelessWidget {
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),
-         '/reportHomeScreen': (context) => ReportHomeScreen(),
+        '/reportHomeScreen': (context) => ReportHomeScreen(),
         '/salesAnalysis': (context) => SalesAnalysis(),
-        '/payable': (context) => PayableReport(),
-        '/receivable': (context) => ReceivableReport(),
-        '/ledger': (context) => LedgerReport(),
+        
+
+      
       },
 
       // home: SalesOrderInvoicePage(),

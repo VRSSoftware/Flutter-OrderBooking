@@ -494,7 +494,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
 
     String upperBarcode = barcode.toUpperCase();
     print("Checking barcode: $upperBarcode, addedItems: $addedItems");
-    await _refreshAddedItems();
+   // await _refreshAddedItems();
 
     // First check if already added in current session
     if (addedItems.contains(upperBarcode)) {

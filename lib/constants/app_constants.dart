@@ -10,15 +10,15 @@ class AppConstants {
   //  static  String? BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
   static String? BASE_URL = "https://api.vrsretail.in/vrs_erp2/api/v1";
   static String? whatsappKey;
-  static String? bookingType;
+  static String? bookingType = '2';
   static String? whatsappType;
   static String? seprateBarcodeWiseBooking = "1";
+  static String? firebase_token ;
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com";
   // static  String Pdf_url = "https://localhost:44303";
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com/";
   // static  String Pdf_url = "http://pdf.uniretailsoftware.com/";
-  static String Pdf_url =
-      "https://api.vrsretail.in/vrs_erp/api/v1/report/getRptReport";
+  static String Pdf_url = "${AppConstants.BASE_URL}/report/getRptReport";
 
      
       //static String whatsapptypepdf="https://rmnvwnd6-8080.inc1.devtunnels.ms/api/v1";
