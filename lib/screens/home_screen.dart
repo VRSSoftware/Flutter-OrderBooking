@@ -401,8 +401,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.teal[700]!,
           Colors.teal[50]!,
         );
-      case 'Web':
-        return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
+           case 'Ask VRS AI':
+        return IconStyle(
+          Icons.account_balance_wallet,
+          Colors.teal[700]!,
+          Colors.teal[50]!,
+        );
+      // case 'Web':
+      //   return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
 
       default:
         return IconStyle(Icons.grid_view, Colors.grey[700]!, Colors.grey[50]!);
@@ -697,14 +703,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/production');
       }, buttonWidth),
     );
-    buttons.add(
-      _buildFeatureButton(context, 'Web', () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UniversalWebView()),
-        );
+     buttons.add(
+      _buildFeatureButton(context, 'Ask VRS AI', () {
+        Navigator.pushNamed(context, '/vrsai');
       }, buttonWidth),
     );
+
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Web', () {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => UniversalWebView()),
+    //     );
+    //   }, buttonWidth),
+    // );
 
     buttons.add(
       _buildFeatureButton(context, 'Report', () {

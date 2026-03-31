@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConstants {
- // static String BASE_URL = "http://192.168.0.254:8080/api/v1";
+  // static String BASE_URL = "http://192.168.0.254:8080/api/v1";
   static bool isLive = true;
   //  static  String? BASE_URL;
   //  static  String? BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
@@ -13,48 +13,40 @@ class AppConstants {
   static String? bookingType = '2';
   static String? whatsappType;
   static String? seprateBarcodeWiseBooking = "1";
-  static String? firebase_token ;
+  static String? firebase_token;
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com";
   // static  String Pdf_url = "https://localhost:44303";
   // static  String Pdf_url = "http://gcubepdf.uniretailsoftware.com/";
   // static  String Pdf_url = "http://pdf.uniretailsoftware.com/";
   static String Pdf_url = "${AppConstants.BASE_URL}/report/getRptReport";
 
-     
-      //static String whatsapptypepdf="https://rmnvwnd6-8080.inc1.devtunnels.ms/api/v1";
+  //static String whatsapptypepdf="https://rmnvwnd6-8080.inc1.devtunnels.ms/api/v1";
 }
 
 class AppColors {
   // Primary color
-   static const MaterialColor primaryColor = MaterialColor(
-    0xFF072F5F,
-    <int, Color>{
-      50: Color(0xFFE3E9F0),
-      100: Color(0xFFB8C8D9),
-      200: Color(0xFF89A3C1),
-      300: Color(0xFF5A7EA9),
-      400: Color(0xFF36638F),
-      500: Color(0xFF072F5F),
-      600: Color(0xFF062A57),
-      700: Color(0xFF05234D),
-      800: Color(0xFF041D43),
-      900: Color(0xFF021230),
-    },
-  );
+  static const MaterialColor primaryColor =
+      MaterialColor(0xFF072F5F, <int, Color>{
+        50: Color(0xFFE3E9F0),
+        100: Color(0xFFB8C8D9),
+        200: Color(0xFF89A3C1),
+        300: Color(0xFF5A7EA9),
+        400: Color(0xFF36638F),
+        500: Color(0xFF072F5F),
+        600: Color(0xFF062A57),
+        700: Color(0xFF05234D),
+        800: Color(0xFF041D43),
+        900: Color(0xFF021230),
+      });
 
   // Secondary color
-  static const Color secondaryColor = Color.fromARGB(
-    255,
-    249,
-    249,
-    250,
-  );
+  static const Color secondaryColor = Color.fromARGB(255, 249, 249, 250);
 
   // Base colors
   static const Color baseColor = Color(0xFFbcb8ce); // Base
-  static const primaryBlue =  Color(0xFF2196F3);
-  static const slate600 =  Color(0xFF64748B);
-  static const slateBorder =  Color(0xFFCBD5E1);
+  static const primaryBlue = Color(0xFF2196F3);
+  static const slate600 = Color(0xFF64748B);
+  static const slateBorder = Color(0xFFCBD5E1);
 
   // Additional colors
   static const Color darkBrown = Color(0x32A6A7AF); // Dark Brown
@@ -70,14 +62,14 @@ class AppColors {
   static const Color blue = Color(0xFF194A66); // Muted Lavender shade
   static const Color mutedPink = Color(0xFF917898); // Muted Pink shade
   static const Color deepPurple = Color(0xFF4c394f); // Deep Purple shade
- static const Color Prime = Color(0xFF2e1a1e);
+  static const Color Prime = Color(0xFF2e1a1e);
   static const Color red = Colors.red;
   static const Color accentColor = Colors.green;
   static const Color background = Colors.white;
   static const Color textColor = Colors.black87;
-    static const Color pink = Colors.pinkAccent;
-    static const Color maroon = Color(0xFF8B0000);
-
+  static const Color pink = Colors.pinkAccent;
+  static const Color maroon = Color(0xFF8B0000);
+  static const Color orange = Colors.orange;
 }
 
 class UserSession {

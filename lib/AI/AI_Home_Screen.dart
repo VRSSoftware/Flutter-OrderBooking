@@ -21,12 +21,12 @@ class IconStyle {
   IconStyle(this.icon, this.iconColor, this.backgroundColor);
 }
 
-class ReportHomeScreen extends StatefulWidget {
+class AIHomeScreen extends StatefulWidget {
   @override
-  _ReportHomeScreenState createState() => _ReportHomeScreenState();
+  _AIHomeScreenState createState() => _AIHomeScreenState();
 }
 
-class _ReportHomeScreenState extends State<ReportHomeScreen>
+class _AIHomeScreenState extends State<AIHomeScreen>
     with TickerProviderStateMixin {
   // Animation controllers for each button
   final List<AnimationController> _animationControllers = [];
@@ -48,56 +48,19 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
   // This helper function maps your labels to the icons and colors
   IconStyle _getIconStyle(String label) {
     switch (label) {
-      case 'Sales Analysis':
+      case 'Image':
         return IconStyle(
           Icons.assessment,
           Colors.green[700]!,
           Colors.green[50]!,
         );
-        case 'Production Analysis':
-        return IconStyle(
-          Icons.assessment,
-          Colors.orange[700]!,
-          Colors.orange[50]!,
-        );
-           case 'Customer Analysis':
-        return IconStyle(
-          Icons.assessment,
-          Colors.pink[700]!,
-          Colors.pink[50]!,
-        );
-
-           case 'Stock Analysis':
-        return IconStyle(
-          Icons.assessment,
-          Colors.brown[700]!,
-          Colors.brown[50]!,
-        );
-
-                  case 'Order Analysis':
-        return IconStyle(
-          Icons.assessment,
-          Colors.yellow[700]!,
-          Colors.yellow[50]!,
-        );
-      case 'Payable':
-        return IconStyle(
-          Icons.payments,
-          Colors.red[700]!,
-          Colors.red[50]!,
-        );
-      case 'Receivable':
-        return IconStyle(
-          Icons.account_balance_wallet,
-          Colors.teal[700]!,
-          Colors.teal[50]!,
-        );
-      case 'Ledger':
-        return IconStyle(
-          Icons.menu_book,
-          Colors.indigo[700]!,
-          Colors.indigo[50]!,
-        );
+      // case 'Test AI':
+      //   return IconStyle(
+      //     Icons.payments,
+      //     Colors.red[700]!,
+      //     Colors.red[50]!,
+      //   );
+    
       default:
         return IconStyle(Icons.grid_view, Colors.grey[700]!, Colors.grey[50]!);
     }
@@ -245,7 +208,7 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
         appBar: AppBar(
           toolbarHeight: 48,
           title: Text(
-            'Reports',
+            'VRS AI',
             style: GoogleFonts.roboto(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -299,8 +262,8 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
                           // Header Section
                           _buildHeader(),
                           const SizedBox(height: 24),
-                          // Reports Grid
-                          _buildReportsGrid(context, constraints.maxWidth),
+                          // AIs Grid
+                          _buildAIsGrid(context, constraints.maxWidth),
                         ],
                       ),
                     ),
@@ -310,7 +273,7 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
             ),
           ),
         ),
-    
+        bottomNavigationBar: BottomNavigationWidget(currentScreen: '/AIs'),
       ),
     );
   }
@@ -354,7 +317,7 @@ Widget _buildHeader() {
             mainAxisSize: MainAxisSize.min, // Added to minimize height
             children: [
               Text(
-                'Financial Reports',
+                'ASK VRS AI',
                 style: GoogleFonts.poppins(
                   fontSize: 16, // Reduced from 18 to 16
                   fontWeight: FontWeight.bold,
@@ -362,13 +325,13 @@ Widget _buildHeader() {
                 ),
               ),
               const SizedBox(height: 2), // Reduced from 4 to 2
-              Text(
-                'View and analyze your financial data',
-                style: GoogleFonts.poppins(
-                  fontSize: 11, // Reduced from 13 to 11
-                  color: Colors.grey[600],
-                ),
-              ),
+              // Text(
+              //   'Fabric to Finish with AI',
+              //   style: GoogleFonts.poppins(
+              //     fontSize: 11, // Reduced from 13 to 11
+              //     color: Colors.grey[600],
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -377,7 +340,7 @@ Widget _buildHeader() {
   );
 }
 
-  Widget _buildReportsGrid(BuildContext context, double screenWidth) {
+  Widget _buildAIsGrid(BuildContext context, double screenWidth) {
     final crossAxisCount = screenWidth > 600 ? 2 : 1;
     final spacing = 5.0;
     final totalSpacing = (crossAxisCount - 1) * spacing;
@@ -389,66 +352,23 @@ Widget _buildHeader() {
     }
     _animationControllers.clear();
 
-    // List of reports
-    List<Map<String, dynamic>> reports = [
+    // List of AIs
+    List<Map<String, dynamic>> AIs = [
       {
-        "label": "Sales Analysis",
-        "route": "/salesAnalysis",
+        "label": "Image",
+        "route": "/image",
         "icon": Icons.assessment,
         "color": Colors.green,
         "description": "View sales performance and trends"
       },
-       {
-        "label": "Production Analysis",
-        "route": "/ProductionAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.orange,
-        "description": "View production performance and trends"
-      },
-         {
-        "label": "Customer Analysis",
-        "route": "/CustomerAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.orange,
-        "description": "View production performance and trends"
-      },
-
-           {
-        "label": "Stock Analysis",
-        "route": "/StockAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.brown,
-        "description": "View Stock Analysis and trends"
-      },
-
-         {
-        "label": "Order Analysis",
-        "route": "/OrderAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.yellow,
-        "description": "View Stock Analysis and trends"
-      },
-      {
-        "label": "Payable",
-        "route": "/payable",
-        "icon": Icons.payments,
-        "color": Colors.red,
-        "description": "Track amounts payable to suppliers"
-      },
-      {
-        "label": "Receivable",
-        "route": "/receivable",
-        "icon": Icons.account_balance_wallet,
-        "color": Colors.teal,
-        "description": "Track amounts receivable from customers"
-      },
-      {
-        "label": "Ledger",
-        "route": "/ledger",
-        "icon": Icons.menu_book,
-        "color": Colors.indigo,
-        "description": "View detailed ledger entries"
-      },
+      // {
+      //   "label": "Test AI",
+      //   "route": "/testAI",
+      //   "icon": Icons.payments,
+      //   "color": Colors.red,
+      //   "description": "Track amounts payable to suppliers"
+      // },
+     
     ];
 
     return Column(
@@ -457,7 +377,7 @@ Widget _buildHeader() {
         Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 12),
           child: Text(
-            'Available Reports',
+            'Available AIs',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -469,14 +389,14 @@ Widget _buildHeader() {
           spacing: spacing,
           runSpacing: spacing,
           alignment: WrapAlignment.start,
-          children: reports.map((report) {
-            return _buildReportButton(
+          children: AIs.map((AI) {
+            return _buildAIButton(
               context,
-              report["label"],
-              report["route"],
-              report["icon"],
-              report["color"],
-              report["description"],
+              AI["label"],
+              AI["route"],
+              AI["icon"],
+              AI["color"],
+              AI["description"],
               buttonWidth,
             );
           }).toList(),
@@ -485,7 +405,7 @@ Widget _buildHeader() {
     );
   }
 
-  Widget _buildReportButton(
+  Widget _buildAIButton(
     BuildContext context,
     String label,
     String route,

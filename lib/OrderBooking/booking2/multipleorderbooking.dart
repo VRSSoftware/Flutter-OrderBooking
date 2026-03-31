@@ -1,1574 +1,3 @@
-// import 'dart:convert';
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:google_fonts/google_fonts.dart';
-// import 'package:provider/provider.dart';
-// import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
-// import 'package:vrs_erp/catalog/imagezoom.dart';
-// import 'package:vrs_erp/constants/app_constants.dart';
-// import 'package:vrs_erp/models/CartModel.dart';
-// import 'package:vrs_erp/models/catalog.dart';
-
-// class CatalogItem {
-//   final String styleCode;
-//   final String shadeName;
-//   final String sizeName;
-//   final int clQty;
-//   final double mrp;
-//   final double wsp;
-
-//   CatalogItem({
-//     required this.styleCode,
-//     required this.shadeName,
-//     required this.sizeName,
-//     required this.clQty,
-//     required this.mrp,
-//     required this.wsp,
-//   });
-
-//   factory CatalogItem.fromJson(Map<String, dynamic> json) {
-//     return CatalogItem(
-//       styleCode: json['styleCode']?.toString() ?? '',
-//       shadeName: json['shadeName']?.toString() ?? '',
-//       sizeName: json['sizeName']?.toString() ?? '',
-//       clQty: int.tryParse(json['clqty']?.toString() ?? '0') ?? 0,
-//       mrp: double.tryParse(json['mrp']?.toString() ?? '0') ?? 0,
-//       wsp: double.tryParse(json['wsp']?.toString() ?? '0') ?? 0,
-//     );
-//   }
-// }
-
-// class MultiCatalogBookingPage extends StatefulWidget {
-//   final List<Catalog> catalogs;
-//   final VoidCallback onSuccess; // Add this line
-//   final Map<String, dynamic>? routeArguments;
-//   const MultiCatalogBookingPage({
-//     super.key,
-//     required this.catalogs,
-//     required this.onSuccess,
-//     this.routeArguments,
-//   });
-
-//   @override
-//   State<MultiCatalogBookingPage> createState() =>
-//       _MultiCatalogBookingPageState();
-// }
-
-// class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
-//   Map<String, List<CatalogItem>> catalogItemsMap = {};
-//   Map<String, List<String>> sizesMap = {};
-//   Map<String, List<String>> colorsMap = {};
-//   Map<String, Map<String, Map<String, TextEditingController>>> controllersMap =
-//       {};
-//   Map<String, String> styleCodeMap = {};
-//   Map<String, Map<String, double>> sizeMrpMap = {};
-//   Map<String, Map<String, double>> sizeWspMap = {};
-//   Map<String, TextEditingController> noteControllersMap = {};
-//   Map<String, bool> isLoadingMap = {};
-//   Map<String, List<String>> copiedRowsMap = {};
-
-//   String userId = UserSession.userName ?? '';
-//   String coBrId = UserSession.coBrId ?? '';
-//   String fcYrId = UserSession.userFcYr ?? '';
-//   bool stockWise = true;
-//   int maxSizes = 0;
-//   bool isLoading = true;
-//   int _loadingCounter = 0;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadingCounter = widget.catalogs.length;
-//     for (var catalog in widget.catalogs) {
-//       noteControllersMap[catalog.styleCode] = TextEditingController();
-//       copiedRowsMap[catalog.styleCode] = [];
-//       fetchCatalogData(catalog);
-//     }
-//   }
-
-//   Future<void> fetchCatalogData(Catalog catalog) async {
-//     final String apiUrl = '${AppConstants.BASE_URL}/catalog/GetOrderDetails';
-
-//     final Map<String, dynamic> requestBody = {
-//       "itemSubGrpKey": catalog.itemSubGrpKey.toString(),
-//       "itemKey": catalog.itemKey.toString(),
-//       "styleKey": catalog.styleKey.toString(),
-//       "userId": userId,
-//       "coBrId": coBrId,
-//       "fcYrId": fcYrId,
-//       "stockWise": stockWise,
-//       "brandKey": null,
-//       "shadeKey": null,
-//       "styleSizeId": null,
-//       "fromMRP": null,
-//       "toMRP": null,
-//     };
-
-//     try {
-//       final response = await http.post(
-//         Uri.parse(apiUrl),
-//         headers: {'Content-Type': 'application/json'},
-//         body: jsonEncode(requestBody),
-//       );
-
-//       if (response.statusCode == 200) {
-//         final List data = jsonDecode(response.body);
-//         if (data.isNotEmpty) {
-//           final items = data.map((e) => CatalogItem.fromJson(e)).toList();
-//           final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
-//           final uniqueColors = items.map((e) => e.shadeName).toSet().toList();
-
-//           Map<String, double> tempSizeMrpMap = {};
-//           Map<String, double> tempSizeWspMap = {};
-//           for (var item in items) {
-//             tempSizeMrpMap[item.sizeName] = item.mrp;
-//             tempSizeWspMap[item.sizeName] = item.wsp;
-//           }
-
-//           Map<String, Map<String, TextEditingController>> tempControllers = {};
-//           for (var color in uniqueColors) {
-//             tempControllers[color] = {};
-//             for (var size in uniqueSizes) {
-//               final match = items.firstWhere(
-//                 (item) => item.shadeName == color && item.sizeName == size,
-//                 orElse:
-//                     () => CatalogItem(
-//                       styleCode: catalog.styleCode,
-//                       shadeName: color,
-//                       sizeName: size,
-//                       clQty: 0,
-//                       mrp: tempSizeMrpMap[size] ?? 0,
-//                       wsp: tempSizeWspMap[size] ?? 0,
-//                     ),
-//               );
-//               final controller = TextEditingController();
-//               controller.addListener(() => setState(() {}));
-//               tempControllers[color]![size] = controller;
-//             }
-//           }
-
-//           setState(() {
-//             catalogItemsMap[catalog.styleCode] = items;
-//             sizesMap[catalog.styleCode] = uniqueSizes;
-//             colorsMap[catalog.styleCode] = uniqueColors;
-//             styleCodeMap[catalog.styleCode] = catalog.styleCode;
-//             sizeMrpMap[catalog.styleCode] = tempSizeMrpMap;
-//             sizeWspMap[catalog.styleCode] = tempSizeWspMap;
-//             controllersMap[catalog.styleCode] = tempControllers;
-//             isLoadingMap[catalog.styleCode] = false;
-//             if (uniqueSizes.length > maxSizes) {
-//               maxSizes = uniqueSizes.length;
-//             }
-//             _loadingCounter--;
-//             if (_loadingCounter == 0) {
-//               isLoading = false;
-//             }
-//           });
-//         } else {
-//           setState(() {
-//             isLoadingMap[catalog.styleCode] = false;
-//             _loadingCounter--;
-//             if (_loadingCounter == 0) {
-//               isLoading = false;
-//             }
-//           });
-//         }
-//       } else {
-//         debugPrint(
-//           'Failed to fetch catalog data for ${catalog.styleCode}: ${response.statusCode}',
-//         );
-//         setState(() {
-//           isLoadingMap[catalog.styleCode] = false;
-//           _loadingCounter--;
-//           if (_loadingCounter == 0) {
-//             isLoading = false;
-//           }
-//         });
-//       }
-//     } catch (e) {
-//       debugPrint('Error fetching catalog data for ${catalog.styleCode}: $e');
-//       setState(() {
-//         isLoadingMap[catalog.styleCode] = false;
-//         _loadingCounter--;
-//         if (_loadingCounter == 0) {
-//           isLoading = false;
-//         }
-//       });
-//     }
-//   }
-
-//   int getTotalQty(String styleCode) {
-//     int total = 0;
-//     final controllers = controllersMap[styleCode];
-//     if (controllers != null) {
-//       for (var row in controllers.values) {
-//         for (var cell in row.values) {
-//           total += int.tryParse(cell.text) ?? 0;
-//         }
-//       }
-//     }
-//     return total;
-//   }
-
-//   double getTotalAmount(String styleCode) {
-//     double total = 0;
-//     final controllers = controllersMap[styleCode];
-//     final wspMap = sizeWspMap[styleCode];
-//     if (controllers != null && wspMap != null) {
-//       for (var colorEntry in controllers.entries) {
-//         for (var sizeEntry in colorEntry.value.entries) {
-//           final qty = int.tryParse(sizeEntry.value.text) ?? 0;
-//           final wsp = wspMap[sizeEntry.key] ?? 0;
-//           total += qty * wsp;
-//         }
-//       }
-//     }
-//     return total;
-//   }
-
-//   int getTotalItems() {
-//     return widget.catalogs.length;
-//   }
-
-//   int getTotalQtyAllStyles() {
-//     int total = 0;
-//     for (var catalog in widget.catalogs) {
-//       total += getTotalQty(catalog.styleCode);
-//     }
-//     return total;
-//   }
-
-//   double getTotalAmountAllStyles() {
-//     double total = 0;
-//     for (var catalog in widget.catalogs) {
-//       total += getTotalAmount(catalog.styleCode);
-//     }
-//     return total;
-//   }
-
-//   int getTotalStock(String styleCode) {
-//     int total = 0;
-//     final items = catalogItemsMap[styleCode];
-//     if (items != null) {
-//       for (var item in items) {
-//         total += item.clQty;
-//       }
-//     }
-//     return total;
-//   }
-
-//   void _copyQtyInAllShade(String styleCode) {
-//     final colors = colorsMap[styleCode] ?? [];
-//     final sizes = sizesMap[styleCode] ?? [];
-//     if (colors.isEmpty || sizes.isEmpty) return;
-
-//     final sourceColor = colors.first;
-//     final sourceSize = sizes.first;
-//     final valueToCopy =
-//         controllersMap[styleCode]?[sourceColor]?[sourceSize]?.text ?? '';
-
-//     for (var color in colors) {
-//       for (var size in sizes) {
-//         controllersMap[styleCode]?[color]?[size]?.text = valueToCopy;
-//       }
-//     }
-
-//     setState(() {});
-//   }
-
-//   void _copySizeQtyInAllShade(String styleCode) {
-//     final colors = colorsMap[styleCode] ?? [];
-//     final sizes = sizesMap[styleCode] ?? [];
-//     if (colors.isEmpty || sizes.isEmpty) return;
-
-//     final sourceColor = colors.first;
-//     for (var size in sizes) {
-//       final valueToCopy =
-//           controllersMap[styleCode]?[sourceColor]?[size]?.text ?? '';
-//       for (var color in colors) {
-//         controllersMap[styleCode]?[color]?[size]?.text = valueToCopy;
-//       }
-//     }
-
-//     setState(() {});
-//   }
-
-//   void _copySizeQtyToOtherStyles(String sourceStyleCode) {
-//     final sourceControllers = controllersMap[sourceStyleCode];
-//     if (sourceControllers == null) return;
-
-//     for (var catalog in widget.catalogs) {
-//       final targetStyleCode = catalog.styleCode;
-//       if (targetStyleCode == sourceStyleCode) continue;
-//       final targetControllers = controllersMap[targetStyleCode];
-//       if (targetControllers == null) continue;
-
-//       for (var shade in sourceControllers.keys) {
-//         if (targetControllers.containsKey(shade)) {
-//           for (var size in sourceControllers[shade]!.keys) {
-//             if (targetControllers[shade]!.containsKey(size)) {
-//               final sourceQty = sourceControllers[shade]![size]!.text;
-//               targetControllers[shade]![size]!.text = sourceQty;
-//             }
-//           }
-//         }
-//       }
-//     }
-//     setState(() {});
-//   }
-
-//   void _deleteCatalog(Catalog catalog) {
-//     setState(() {
-//       widget.catalogs.removeWhere((c) => c.styleCode == catalog.styleCode);
-//       catalogItemsMap.remove(catalog.styleCode);
-//       sizesMap.remove(catalog.styleCode);
-//       colorsMap.remove(catalog.styleCode);
-//       controllersMap.remove(catalog.styleCode);
-//       styleCodeMap.remove(catalog.styleCode);
-//       sizeMrpMap.remove(catalog.styleCode);
-//       sizeWspMap.remove(catalog.styleCode);
-//       noteControllersMap[catalog.styleCode]?.dispose();
-//       noteControllersMap.remove(catalog.styleCode);
-//       isLoadingMap.remove(catalog.styleCode);
-//       copiedRowsMap.remove(catalog.styleCode);
-//     });
-//   }
-
-//   Color _getColorCode(String color) {
-//     switch (color.toLowerCase()) {
-//       case 'red':
-//         return Colors.red;
-//       case 'green':
-//         return Colors.green;
-//       case 'blue':
-//         return Colors.blue;
-//       case 'yellow':
-//         return Colors.yellow[800]!;
-//       case 'black':
-//         return Colors.black;
-//       case 'white':
-//         return Colors.grey;
-//       default:
-//         return Colors.black;
-//     }
-//   }
-
-//   String _getImageUrl(Catalog catalog) {
-//     final path = catalog.fullImagePath ?? '';
-//     if (UserSession.onlineImage == '0') {
-//       final imageName = path.split('/').last.split('?').first;
-//       return imageName.isEmpty
-//           ? ''
-//           : '${AppConstants.BASE_URL}/images/$imageName';
-//     } else if (UserSession.onlineImage == '1') {
-//       return path;
-//     }
-//     return '';
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text(
-//           'Book Multiple Items',
-//           style: TextStyle(color: Colors.white),
-//         ),
-//         backgroundColor: AppColors.primaryColor,
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         bottom: PreferredSize(
-//           preferredSize: const Size.fromHeight(20.0),
-//           child: Column(
-//             children: [
-//               const Divider(color: Colors.white),
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                 children: [
-//                   Text(
-//                     'Total: ₹${getTotalAmountAllStyles().toStringAsFixed(2)}',
-//                     style: GoogleFonts.roboto(
-//                       color: Colors.white,
-//                       fontSize: 12,
-//                     ),
-//                   ),
-//                   const VerticalDivider(color: Colors.white, thickness: 1),
-//                   Text(
-//                     'Total Item: ${getTotalItems()}',
-//                     style: GoogleFonts.roboto(
-//                       color: Colors.white,
-//                       fontSize: 12,
-//                     ),
-//                   ),
-//                   const VerticalDivider(color: Colors.white, thickness: 1),
-//                   Text(
-//                     'Total Qty: ${getTotalQtyAllStyles()}',
-//                     style: GoogleFonts.roboto(
-//                       color: Colors.white,
-//                       fontSize: 12,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-
-//       body: SafeArea(
-//         // Added SafeArea here
-//         child:
-//             isLoading
-//                 ? const Center(child: CircularProgressIndicator())
-//                 : widget.catalogs.isEmpty
-//                 ? const Center(child: Text("No items selected"))
-//                 : Column(
-//                   children: [
-//                     Expanded(
-//                       child: SingleChildScrollView(
-//                         child: Column(
-//                           children: [
-//                             ...List.generate(widget.catalogs.length, (index) {
-//                               final catalog = widget.catalogs[index];
-//                               return Padding(
-//                                 padding: const EdgeInsets.only(bottom: 24),
-//                                 child: _buildItemBookingSection(
-//                                   context,
-//                                   catalog,
-//                                 ),
-//                               );
-//                             }),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                     _buildBottomBar(), // Fixed at the bottom
-//                   ],
-//                 ),
-//         // bottomNavigationBar: _buildBottomBar(),
-//       ),
-//     );
-//   }
-
-//   Widget _buildItemBookingSection(BuildContext context, Catalog catalog) {
-//     if ((catalogItemsMap[catalog.styleCode] ?? []).isEmpty) {
-//       return const Center(child: Text("Empty"));
-//     }
-
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Row(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Container(
-//               margin: const EdgeInsets.only(left: 16, top: 8),
-//               width: 100,
-//               height: 100,
-//               child: GestureDetector(
-//                 onTap: () {
-//                   final imageUrl = _getImageUrl(catalog);
-//                   Navigator.push(
-//                     context,
-//                     MaterialPageRoute(
-//                       builder:
-//                           (context) => ImageZoomScreen(
-//                             imageUrls: [imageUrl],
-//                             initialIndex: 0,
-//                           ),
-//                     ),
-//                   );
-//                 },
-//                 child: ClipRRect(
-//                   borderRadius: BorderRadius.circular(12),
-//                   child: Image.network(
-//                     _getImageUrl(catalog),
-//                     fit: BoxFit.contain,
-//                     errorBuilder: (context, error, stackTrace) {
-//                       return Container(
-//                         color: Colors.grey.shade300,
-//                         child: const Center(child: Icon(Icons.error)),
-//                       );
-//                     },
-//                   ),
-//                 ),
-//               ),
-//             ),
-//             const SizedBox(width: 8),
-//             Expanded(
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Row(
-//                     children: [
-//                       Expanded(
-//                         child: _buildPriceTag(context, catalog.styleCode),
-//                       ),
-//                       IconButton(
-//                         icon: const Icon(Icons.copy_outlined),
-
-//                         iconSize: 20,
-//                         style: IconButton.styleFrom(
-//                           backgroundColor: AppColors.lightBlue,
-//                           shape: const CircleBorder(),
-//                           padding: const EdgeInsets.all(8),
-//                           foregroundColor: AppColors.primaryColor,
-//                         ),
-//                         onPressed: () {
-//                           showDialog(
-//                             context: context,
-//                             builder: (BuildContext dialogContext) {
-//                               return AlertDialog(
-//                                 shape: RoundedRectangleBorder(
-//                                   borderRadius: BorderRadius.circular(12),
-//                                 ),
-//                                 titlePadding: EdgeInsets.zero,
-//                                 contentPadding: EdgeInsets.zero,
-
-//                                 title: Container(
-//                                   width: double.infinity,
-//                                   padding: const EdgeInsets.symmetric(
-//                                     horizontal: 16,
-//                                     vertical: 12,
-//                                   ),
-//                                   decoration: BoxDecoration(
-//                                     color: Colors.grey.shade200,
-//                                     borderRadius: const BorderRadius.vertical(
-//                                       top: Radius.circular(12),
-//                                     ),
-//                                   ),
-//                                   child: Row(
-//                                     children: [
-//                                       const Expanded(
-//                                         child: Text(
-//                                           'Select an Action',
-//                                           style: TextStyle(
-//                                             fontSize: 18,
-//                                             fontWeight: FontWeight.w600,
-//                                           ),
-//                                         ),
-//                                       ),
-//                                       IconButton(
-//                                         icon: const Icon(Icons.close),
-//                                         onPressed: () {
-//                                           Navigator.of(dialogContext).pop();
-//                                         },
-//                                       ),
-//                                     ],
-//                                   ),
-//                                 ),
-
-//                                 content: Padding(
-//                                   padding: const EdgeInsets.all(16),
-//                                   child: Column(
-//                                     mainAxisSize: MainAxisSize.min,
-//                                     children: [
-//                                       GestureDetector(
-//                                         onTap: () {
-//                                           Navigator.of(dialogContext).pop();
-//                                           _copyQtyInAllShade(catalog.styleCode);
-//                                         },
-//                                         child: Container(
-//                                           width: double.infinity,
-//                                           padding: const EdgeInsets.symmetric(
-//                                             vertical: 12,
-//                                           ),
-//                                           margin: const EdgeInsets.only(
-//                                             bottom: 10,
-//                                           ),
-//                                           decoration: BoxDecoration(
-//                                             color: AppColors.primaryColor,
-//                                             borderRadius: BorderRadius.circular(
-//                                               8,
-//                                             ),
-//                                           ),
-//                                           alignment: Alignment.center,
-//                                           child: const Text(
-//                                             'Copy Qty in All Shade',
-//                                             style: TextStyle(
-//                                               color: Colors.white,
-//                                             ),
-//                                           ),
-//                                         ),
-//                                       ),
-
-//                                       GestureDetector(
-//                                         onTap: () {
-//                                           Navigator.of(dialogContext).pop();
-//                                           _copySizeQtyInAllShade(
-//                                             catalog.styleCode,
-//                                           );
-//                                         },
-//                                         child: Container(
-//                                           width: double.infinity,
-//                                           padding: const EdgeInsets.symmetric(
-//                                             vertical: 12,
-//                                           ),
-//                                           margin: const EdgeInsets.only(
-//                                             bottom: 10,
-//                                           ),
-//                                           decoration: BoxDecoration(
-//                                             color: AppColors.primaryColor,
-//                                             borderRadius: BorderRadius.circular(
-//                                               8,
-//                                             ),
-//                                           ),
-//                                           alignment: Alignment.center,
-//                                           child: const Text(
-//                                             'Copy Size Qty in All Shade',
-//                                             style: TextStyle(
-//                                               color: Colors.white,
-//                                             ),
-//                                           ),
-//                                         ),
-//                                       ),
-
-//                                       GestureDetector(
-//                                         onTap: () {
-//                                           Navigator.of(dialogContext).pop();
-//                                           _copySizeQtyToOtherStyles(
-//                                             catalog.styleCode,
-//                                           );
-//                                         },
-//                                         child: Container(
-//                                           width: double.infinity,
-//                                           padding: const EdgeInsets.symmetric(
-//                                             vertical: 12,
-//                                           ),
-//                                           decoration: BoxDecoration(
-//                                             color: Colors.green,
-//                                             borderRadius: BorderRadius.circular(
-//                                               8,
-//                                             ),
-//                                           ),
-//                                           alignment: Alignment.center,
-//                                           child: const Text(
-//                                             'Copy Size Qty to other Styles',
-//                                             style: TextStyle(
-//                                               color: Colors.white,
-//                                             ),
-//                                           ),
-//                                         ),
-//                                       ),
-//                                     ],
-//                                   ),
-//                                 ),
-//                               );
-//                             },
-//                           );
-//                         },
-//                       ),
-
-//                       IconButton(
-//                         icon: const Icon(
-//                           Icons.delete_outline,
-//                           color: Colors.red,
-//                         ),
-//                         iconSize: 24,
-//                         style: IconButton.styleFrom(
-//                           backgroundColor:
-//                               Colors.red.shade50, // Light red background
-//                           shape: const CircleBorder(), // Circular shape
-//                           padding: const EdgeInsets.all(
-//                             8,
-//                           ), // Padding around icon
-//                         ),
-//                         //onPressed: () => _deleteCatalog(catalog),
-//                         onPressed: () {
-//                           showDialog(
-//                             context: context,
-//                             builder: (dialogContext) {
-//                               return AlertDialog(
-//                                 shape: RoundedRectangleBorder(
-//                                   borderRadius: BorderRadius.circular(10),
-//                                 ),
-//                                 title: const Text('Confirm Delete'),
-//                                 content: const Text(
-//                                   'Are you sure you want to delete this style?',
-//                                 ),
-//                                 actions: [
-//                                   TextButton(
-//                                     onPressed: () {
-//                                       Navigator.of(dialogContext).pop();
-//                                     },
-//                                     child: const Text('Cancel'),
-//                                   ),
-//                                   ElevatedButton(
-//                                     style: ElevatedButton.styleFrom(
-//                                       backgroundColor: Colors.red,
-//                                     ),
-//                                     onPressed: () {
-//                                       Navigator.of(dialogContext).pop();
-//                                       _deleteCatalog(catalog);
-//                                     },
-//                                     child: const Text('Delete'),
-//                                   ),
-//                                 ],
-//                               );
-//                             },
-//                           );
-//                         },
-//                       ),
-//                     ],
-//                   ),
-//                   const SizedBox(height: 4),
-//                   Padding(
-//                     padding: const EdgeInsets.symmetric(horizontal: 8),
-//                     child: Row(
-//                       children: [
-//                         Text(
-//                           'Total Qty: ${getTotalQty(catalog.styleCode)}',
-//                           style: const TextStyle(
-//                             fontSize: 14,
-//                             fontWeight: FontWeight.normal,
-//                             color: Colors.black,
-//                           ),
-//                         ),
-//                         const SizedBox(width: 16),
-//                         Text(
-//                           'Total Stock: ${getTotalStock(catalog.styleCode)}',
-//                           style: const TextStyle(
-//                             fontSize: 14,
-//                             fontWeight: FontWeight.normal,
-//                             color: Colors.black,
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                   Padding(
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 8,
-//                       vertical: 4,
-//                     ),
-//                     child: Text(
-//                       'Amt: ${getTotalAmount(catalog.styleCode).toStringAsFixed(0)}',
-//                       style: const TextStyle(
-//                         fontSize: 14,
-//                         fontWeight: FontWeight.normal,
-//                         color: Colors.black,
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ],
-//         ),
-//         const SizedBox(height: 12),
-//         _buildCatalogTable(catalog),
-//       ],
-//     );
-//   }
-
-//   Widget _buildPriceTag(BuildContext context, String styleCode) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 8),
-//       child: Text(
-//         styleCode,
-//         style: const TextStyle(
-//           fontSize: 18,
-//           fontWeight: FontWeight.bold,
-//           color: Color(0xFF800000),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildCatalogTable(Catalog catalog) {
-//     final sizes = sizesMap[catalog.styleCode] ?? [];
-//     final screenWidth = MediaQuery.of(context).size.width;
-
-//     // Minimum table width: base column + 80px per size
-//     final baseTableWidth = 100 + (80 * sizes.length);
-//     // Use max(screen width, baseTableWidth) to ensure responsive scroll on small screens
-//     final requiredTableWidth =
-//         screenWidth > baseTableWidth ? screenWidth : baseTableWidth.toDouble();
-
-//     return Container(
-//       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       decoration: BoxDecoration(
-//         border: Border.all(color: Colors.black),
-//         borderRadius: BorderRadius.circular(0),
-//       ),
-//       child: SingleChildScrollView(
-//         scrollDirection: Axis.horizontal,
-//         child: ConstrainedBox(
-//           constraints: BoxConstraints(minWidth: requiredTableWidth),
-//           child: SingleChildScrollView(
-//             scrollDirection: Axis.vertical,
-//             child: Table(
-//               border: TableBorder.symmetric(
-//                 inside: BorderSide(color: Colors.grey.shade800, width: 1),
-//               ),
-//               columnWidths: _buildColumnWidths(),
-//               children: [
-//                 _buildPriceRow(
-//                   "MRP",
-//                   sizeMrpMap[catalog.styleCode] ?? {},
-//                   FontWeight.w600,
-//                   sizes,
-//                 ),
-//                 _buildPriceRow(
-//                   "WSP",
-//                   sizeWspMap[catalog.styleCode] ?? {},
-//                   FontWeight.w400,
-//                   sizes,
-//                 ),
-//                 _buildHeaderRow(catalog.styleCode, sizes),
-//                 for (
-//                   var i = 0;
-//                   i < (colorsMap[catalog.styleCode]?.length ?? 0);
-//                   i++
-//                 )
-//                   _buildQuantityRow(
-//                     catalog,
-//                     colorsMap[catalog.styleCode]![i],
-//                     i,
-//                     sizes,
-//                   ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Map<int, TableColumnWidth> _buildColumnWidths() {
-//     const baseWidth = 100.0;
-//     const firstColumnWidth =
-//         140.0; // Increased from 100 to 150 for shade name column
-//     return {
-//       0: const FixedColumnWidth(
-//         firstColumnWidth,
-//       ), // First column (Shade) - wider
-//       for (int i = 0; i < maxSizes; i++)
-//         (i + 1): const FixedColumnWidth(baseWidth * 0.8), // Size columns
-//     };
-//   }
-
-//   Widget _buildBottomBar() {
-//     final hasQty = widget.catalogs.any((c) => getTotalQty(c.styleCode) > 0);
-
-//     return Row(
-//       children: [
-//         Expanded(
-//           child: GestureDetector(
-//             onTap: () {
-//               Navigator.pushReplacement(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => OrderPage(),
-//                   settings: RouteSettings(arguments: widget.routeArguments),
-//                 ),
-//               );
-//             },
-//             child: Container(
-//               padding: const EdgeInsets.symmetric(vertical: 14),
-//                 color: const Color.fromARGB(255, 220, 239, 248),
-//               child: const Row(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   Icon(Icons.close, color: AppColors.primaryColor),
-//                   SizedBox(width: 6),
-//                   Text(
-//                     'Cancel',
-//                     style: TextStyle(
-//                       fontSize: 16,
-//                       color: AppColors.primaryColor,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ),
-
-//         Expanded(
-//           child: GestureDetector(
-//             onTap: hasQty ? _submitAllOrders : null,
-//             child: Container(
-//               padding: const EdgeInsets.symmetric(vertical: 14),
-//               color: hasQty ? AppColors.primaryColor : Colors.blueGrey,
-//               child: const Row(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   Icon(Icons.add, color: Colors.white),
-//                   SizedBox(width: 6),
-//                   Text(
-//                     'Confirm',
-//                     style: TextStyle(
-//                       fontSize: 16,
-//                       color: Colors.white,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-
-//   TableRow _buildPriceRow(
-//     String label,
-//     Map<String, double> sizePriceMap,
-//     FontWeight weight,
-//     List<String> sizes,
-//   ) {
-//     return TableRow(
-//       children: [
-//         TableCell(
-//           verticalAlignment: TableCellVerticalAlignment.middle,
-//           child: Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: Text(label, style: TextStyle(fontWeight: weight)),
-//           ),
-//         ),
-//         ...List.generate(maxSizes, (index) {
-//           if (index < sizes.length) {
-//             final size = sizes[index];
-//             final price = sizePriceMap[size] ?? 0.0;
-//             return TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Center(
-//                 child: Text(
-//                   price.toStringAsFixed(0),
-//                   style: TextStyle(fontWeight: weight),
-//                 ),
-//               ),
-//             );
-//           } else {
-//             return const TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Center(child: Text('')),
-//             );
-//           }
-//         }),
-//       ],
-//     );
-//   }
-
-//   TableRow _buildHeaderRow(String styleCode, List<String> sizes) {
-//     return TableRow(
-//       decoration: const BoxDecoration(
-//         color: Color.fromARGB(255, 236, 212, 204),
-//       ),
-//       children: [
-//         const TableCell(
-//           verticalAlignment: TableCellVerticalAlignment.middle,
-//           child: _TableHeaderCell(),
-//         ),
-//         ...List.generate(maxSizes, (index) {
-//           if (index < sizes.length) {
-//             return TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Center(
-//                 child: Text(
-//                   sizes[index],
-//                   style: const TextStyle(fontWeight: FontWeight.bold),
-//                   textAlign: TextAlign.center,
-//                 ),
-//               ),
-//             );
-//           } else {
-//             return const TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Center(child: Text('')),
-//             );
-//           }
-//         }),
-//       ],
-//     );
-//   }
-
-//   TableRow _buildQuantityRow(
-//     Catalog catalog,
-//     String color,
-//     int i,
-//     List<String> sizes,
-//   ) {
-//     // Get shade image URL
-//     final imageUrl = _getShadeImageUrl(catalog, color);
-
-//     return TableRow(
-//       children: [
-//         TableCell(
-//           verticalAlignment: TableCellVerticalAlignment.middle,
-//           child: Padding(
-//             padding: const EdgeInsets.all(8.0),
-//             child: Row(
-//               children: [
-//                 // Copy icon
-//                 GestureDetector(
-//                   child: const Icon(Icons.copy_all, size: 18),
-//                   onTap: () {
-//                     showDialog(
-//                       context: context,
-//                       builder: (BuildContext context) {
-//                         return AlertDialog(
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(12),
-//                           ),
-//                           titlePadding: EdgeInsets.zero,
-//                           contentPadding: EdgeInsets.zero,
-//                           title: Container(
-//                             width: double.infinity,
-//                             padding: const EdgeInsets.symmetric(
-//                               horizontal: 16,
-//                               vertical: 12,
-//                             ),
-//                             decoration: BoxDecoration(
-//                               color: Colors.grey.shade200,
-//                               borderRadius: const BorderRadius.vertical(
-//                                 top: Radius.circular(12),
-//                               ),
-//                             ),
-//                             child: Row(
-//                               children: [
-//                                 const Expanded(
-//                                   child: Text(
-//                                     'Select an Action',
-//                                     style: TextStyle(
-//                                       fontSize: 18,
-//                                       fontWeight: FontWeight.w600,
-//                                     ),
-//                                   ),
-//                                 ),
-//                                 IconButton(
-//                                   icon: const Icon(Icons.close),
-//                                   onPressed: () {
-//                                     Navigator.of(context).pop();
-//                                   },
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                           content: Padding(
-//                             padding: const EdgeInsets.all(16),
-//                             child: Column(
-//                               mainAxisSize: MainAxisSize.min,
-//                               children: [
-//                                 GestureDetector(
-//                                   onTap: () {
-//                                     Navigator.of(context).pop();
-//                                     final firstQty =
-//                                         controllersMap[catalog
-//                                                 .styleCode]?[color]
-//                                             ?.values
-//                                             .first
-//                                             .text;
-//                                     for (var size
-//                                         in sizesMap[catalog.styleCode] ?? []) {
-//                                       controllersMap[catalog
-//                                               .styleCode]?[color]?[size]
-//                                           ?.text = firstQty ?? '0';
-//                                     }
-//                                     setState(() {});
-//                                   },
-//                                   child: Container(
-//                                     width: double.infinity,
-//                                     padding: const EdgeInsets.symmetric(
-//                                       vertical: 12,
-//                                     ),
-//                                     margin: const EdgeInsets.only(bottom: 10),
-//                                     decoration: BoxDecoration(
-//                                       color: AppColors.primaryColor,
-//                                       borderRadius: BorderRadius.circular(8),
-//                                     ),
-//                                     alignment: Alignment.center,
-//                                     child: const Text(
-//                                       'Copy Qty in shade only',
-//                                       style: TextStyle(color: Colors.white),
-//                                     ),
-//                                   ),
-//                                 ),
-//                                 GestureDetector(
-//                                   onTap: () {
-//                                     Navigator.of(context).pop();
-//                                     List<String> copiedRow = [];
-//                                     for (var size
-//                                         in sizesMap[catalog.styleCode] ?? []) {
-//                                       final qty =
-//                                           controllersMap[catalog
-//                                                   .styleCode]?[color]?[size]
-//                                               ?.text ??
-//                                           '0';
-//                                       copiedRow.add(qty);
-//                                     }
-//                                     copiedRowsMap[catalog.styleCode] =
-//                                         copiedRow;
-//                                     setState(() {});
-//                                   },
-//                                   child: Container(
-//                                     width: double.infinity,
-//                                     padding: const EdgeInsets.symmetric(
-//                                       vertical: 12,
-//                                     ),
-//                                     margin: const EdgeInsets.only(bottom: 10),
-//                                     decoration: BoxDecoration(
-//                                       color: AppColors.primaryColor,
-//                                       borderRadius: BorderRadius.circular(8),
-//                                     ),
-//                                     alignment: Alignment.center,
-//                                     child: const Text(
-//                                       'Copy Row',
-//                                       style: TextStyle(color: Colors.white),
-//                                     ),
-//                                   ),
-//                                 ),
-//                                 GestureDetector(
-//                                   onTap: () {
-//                                     Navigator.of(context).pop();
-//                                     final copiedRow =
-//                                         copiedRowsMap[catalog.styleCode] ?? [];
-//                                     for (
-//                                       int j = 0;
-//                                       j <
-//                                           (sizesMap[catalog.styleCode]
-//                                                   ?.length ??
-//                                               0);
-//                                       j++
-//                                     ) {
-//                                       controllersMap[catalog
-//                                               .styleCode]?[color]?[sizesMap[catalog
-//                                               .styleCode]![j]]
-//                                           ?.text = copiedRow[j];
-//                                     }
-//                                     setState(() {});
-//                                   },
-//                                   child: Container(
-//                                     width: double.infinity,
-//                                     padding: const EdgeInsets.symmetric(
-//                                       vertical: 12,
-//                                     ),
-//                                     decoration: BoxDecoration(
-//                                       color: Colors.green,
-//                                       borderRadius: BorderRadius.circular(8),
-//                                     ),
-//                                     alignment: Alignment.center,
-//                                     child: const Text(
-//                                       'Paste Row',
-//                                       style: TextStyle(color: Colors.white),
-//                                     ),
-//                                   ),
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                         );
-//                       },
-//                     );
-//                   },
-//                 ),
-
-//                 // Minimal space after copy icon
-//                 const SizedBox(width: 2), // Reduced from 6 to 2
-
-//                 Expanded(
-//                   child: Row(
-//                     mainAxisSize: MainAxisSize.min,
-//                     children: [
-//                       // Text first
-//                       Expanded(
-//                         child: Text(
-//                           color,
-//                           style: TextStyle(
-//                             color: _getColorCode(color),
-//                             fontWeight: FontWeight.bold,
-//                             fontSize: 12,
-//                           ),
-//                           overflow: TextOverflow.ellipsis,
-//                           maxLines: 1,
-//                         ),
-//                       ),
-
-//                       // Image icon right after text with no margin
-//                       if (UserSession.imageDependsOn == 'S' && imageUrl != null)
-//                         Container(
-//                           margin: EdgeInsets.zero, // No margin
-//                           child: IconButton(
-//                             icon: Icon(
-//                               Icons.image,
-//                               size: 14,
-//                               color: AppColors.primaryColor,
-//                             ),
-//                             padding: EdgeInsets.zero, // No padding
-//                             constraints: const BoxConstraints(
-//                               minWidth: 16,
-//                               minHeight: 16,
-//                             ),
-//                             tooltip: 'View shade image',
-//                             onPressed: () {
-//                               Navigator.push(
-//                                 context,
-//                                 MaterialPageRoute(
-//                                   builder:
-//                                       (context) => ImageZoomScreen(
-//                                         imageUrls: [imageUrl],
-//                                         initialIndex: 0,
-//                                       ),
-//                                 ),
-//                               );
-//                             },
-//                           ),
-//                         ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//         ...List.generate(maxSizes, (index) {
-//           if (index < sizes.length) {
-//             final size = sizes[index];
-//             final controller = controllersMap[catalog.styleCode]?[color]?[size];
-//             final originalQty =
-//                 catalogItemsMap[catalog.styleCode]
-//                     ?.firstWhere(
-//                       (item) =>
-//                           item.shadeName == color && item.sizeName == size,
-//                       orElse:
-//                           () => CatalogItem(
-//                             styleCode: catalog.styleCode,
-//                             shadeName: color,
-//                             sizeName: size,
-//                             clQty: 0,
-//                             mrp: sizeMrpMap[catalog.styleCode]?[size] ?? 0,
-//                             wsp: sizeWspMap[catalog.styleCode]?[size] ?? 0,
-//                           ),
-//                     )
-//                     .clQty ??
-//                 0;
-
-//             return TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Padding(
-//                 padding: const EdgeInsets.all(4.0),
-//                 child: TextField(
-//                   controller: controller,
-//                   keyboardType: TextInputType.number,
-//                   textAlign: TextAlign.center,
-//                   decoration: InputDecoration(
-//                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
-//                     hintText: originalQty > 0 ? originalQty.toString() : '0',
-//                     hintStyle: const TextStyle(color: Colors.grey),
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               ),
-//             );
-//           } else {
-//             return const TableCell(
-//               verticalAlignment: TableCellVerticalAlignment.middle,
-//               child: Center(child: Text('')),
-//             );
-//           }
-//         }),
-//       ],
-//     );
-//   }
-
-//   String? _getShadeImageUrl(Catalog catalog, String shadeName) {
-//     if (catalog.shadeImages.isEmpty) return null;
-
-//     // Parse the shadeImages string - handle both ', ' and ',' separators
-//     String shadeImagesStr = catalog.shadeImages;
-
-//     // First try splitting by ', ' (comma + space)
-//     List<String> shadeEntries = shadeImagesStr.split(', ');
-
-//     // If that doesn't work (only one item), try splitting by ','
-//     if (shadeEntries.length == 1 && shadeImagesStr.contains(',')) {
-//       shadeEntries = shadeImagesStr.split(',');
-//     }
-
-//     for (var entry in shadeEntries) {
-//       // Trim the entry to remove any extra spaces
-//       entry = entry.trim();
-//       if (entry.isEmpty) continue;
-
-//       // Find the first ':' to split
-//       final colonIndex = entry.indexOf(':');
-//       if (colonIndex > 0) {
-//         final shade = entry.substring(0, colonIndex).trim().toLowerCase();
-//         final imageUrl = entry.substring(colonIndex + 1).trim();
-
-//         // Case-insensitive comparison and trim both strings
-//         if (shade.toLowerCase().trim() == shadeName.toLowerCase().trim()) {
-//           return imageUrl;
-//         }
-//       }
-//     }
-
-//     return null;
-//   }
-
-//   Future<void> _submitAllOrders() async {
-//     List<Future<http.Response>> apiCalls = [];
-//     List<String> apiCallStyles = [];
-//     final cartModel = Provider.of<CartModel>(context, listen: false);
-//     Set<String> processedStyles = {};
-
-//     for (var catalog in widget.catalogs) {
-//       final controllers = controllersMap[catalog.styleCode];
-//       final noteController = noteControllersMap[catalog.styleCode];
-//       final styleCode = styleCodeMap[catalog.styleCode] ?? '';
-//       final sizes = sizesMap[catalog.styleCode] ?? [];
-
-//       // Skip if the item is already in the cart
-//       if (cartModel.addedItems.contains(styleCode)) {
-//         continue;
-//       }
-
-//       if (controllers != null) {
-//         for (var colorEntry in controllers.entries) {
-//           String color = colorEntry.key;
-//           for (var sizeEntry in colorEntry.value.entries) {
-//             String size = sizeEntry.key;
-//             String qty = sizeEntry.value.text;
-//             if (qty.isNotEmpty &&
-//                 int.tryParse(qty) != null &&
-//                 int.parse(qty) > 0) {
-//               final payload = {
-//                 "userId": userId,
-//                 "coBrId": coBrId,
-//                 "fcYrId": fcYrId,
-//                 "data": {
-//                   "designcode": styleCode,
-//                   "mrp":
-//                       sizeMrpMap[catalog.styleCode]?[size]?.toStringAsFixed(
-//                         0,
-//                       ) ??
-//                       '0',
-//                   "WSP":
-//                       sizeWspMap[catalog.styleCode]?[size]?.toStringAsFixed(
-//                         0,
-//                       ) ??
-//                       '0',
-//                   "size": size,
-//                   "TotQty": getTotalQty(catalog.styleCode).toString(),
-//                   "Note": noteController?.text ?? '',
-//                   "color": color,
-//                   "Qty": qty,
-//                   "cobrid": coBrId,
-//                   "user": userId.toLowerCase(),
-//                   "barcode": "",
-//                 },
-//                 "typ": 0,
-//               };
-
-//               apiCalls.add(
-//                 http.post(
-//                   Uri.parse(
-//                     '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-//                   ),
-//                   headers: {'Content-Type': 'application/json'},
-//                   body: jsonEncode(payload),
-//                 ),
-//               );
-//               apiCallStyles.add(styleCode);
-//             }
-//           }
-//         }
-//       }
-//     }
-
-//     if (apiCalls.isEmpty) {
-//       if (mounted) {
-//         showDialog(
-//           context: context,
-//           builder:
-//               (_) => AlertDialog(
-//                 title: const Text("Warning"),
-//                 content: const Text(
-//                   "No new items with valid quantities to submit.",
-//                 ),
-//                 actions: [
-//                   TextButton(
-//                     onPressed: () => Navigator.pop(context),
-//                     child: const Text("OK"),
-//                   ),
-//                 ],
-//               ),
-//         );
-//       }
-//       return;
-//     }
-
-//     try {
-//       final responses = await Future.wait(apiCalls);
-//       final successfulStyles = <String>{};
-
-//       for (int i = 0; i < responses.length; i++) {
-//         final response = responses[i];
-//         if (response.statusCode == 200) {
-//           try {
-//             // Try parsing as JSON first
-//             final responseBody = jsonDecode(response.body);
-//             if (responseBody is Map<String, dynamic> &&
-//                 responseBody['success'] == true) {
-//               successfulStyles.add(apiCallStyles[i]);
-//               cartModel.addItem(apiCallStyles[i]);
-//             }
-//           } catch (e) {
-//             // Handle plain text "Success" response
-//             if (response.body.trim() == "Success") {
-//               successfulStyles.add(apiCallStyles[i]);
-//               cartModel.addItem(apiCallStyles[i]);
-//             } else {
-//               print(
-//                 'Failed to parse response for style ${apiCallStyles[i]}: $e, response: ${response.body}',
-//               );
-//             }
-//           }
-//         } else {
-//           print(
-//             'API call failed for style ${apiCallStyles[i]}: ${response.statusCode}, response: ${response.body}',
-//           );
-//         }
-//       }
-
-//       if (successfulStyles.isNotEmpty) {
-//         cartModel.updateCount(cartModel.count + successfulStyles.length);
-//         processedStyles = successfulStyles;
-//         widget.onSuccess();
-
-//         if (mounted) {
-//           showDialog(
-//             context: context,
-//             builder:
-//                 (_) => AlertDialog(
-//                   title: const Text("Success"),
-//                   content: Text(
-//                     "Successfully submitted ${successfulStyles.length} item${successfulStyles.length > 1 ? 's' : ''}.",
-//                   ),
-//                   actions: [
-//                     TextButton(
-//                       onPressed: () {
-//                         Navigator.pop(context);
-//                         Navigator.pushReplacement(
-//                           context,
-//                           MaterialPageRoute(
-//                             builder: (context) => OrderPage(),
-//                             settings: RouteSettings(
-//                               arguments: widget.routeArguments,
-//                             ),
-//                           ),
-//                         );
-//                       },
-//                       // Pop only the dialog
-//                       child: const Text("OK"),
-//                     ),
-//                   ],
-//                 ),
-//           );
-//         }
-//       } else {
-//         if (mounted) {
-//           showDialog(
-//             context: context,
-//             builder:
-//                 (_) => AlertDialog(
-//                   title: const Text("Error"),
-//                   content: const Text("No items were successfully submitted."),
-//                   actions: [
-//                     TextButton(
-//                       onPressed: () => Navigator.pop(context),
-//                       child: const Text("OK"),
-//                     ),
-//                   ],
-//                 ),
-//           );
-//         }
-//       }
-//     } catch (e) {
-//       if (mounted) {
-//         showDialog(
-//           context: context,
-//           builder:
-//               (_) => AlertDialog(
-//                 title: const Text("Error"),
-//                 content: Text("Failed to submit orders: $e"),
-//                 actions: [
-//                   TextButton(
-//                     onPressed: () => Navigator.pop(context),
-//                     child: const Text("OK"),
-//                   ),
-//                 ],
-//               ),
-//         );
-//       }
-//     }
-//   }
-// }
-
-// class _TableHeaderCell extends StatelessWidget {
-//   const _TableHeaderCell();
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       height: 48,
-//       child: CustomPaint(
-//         painter: _DiagonalLinePainter(),
-//         child: const Stack(
-//           children: [
-//             Positioned(
-//               left: 12,
-//               top: 20,
-//               child: Text(
-//                 'Shade',
-//                 style: TextStyle(
-//                   fontWeight: FontWeight.bold,
-//                   color: AppColors.primaryColor,
-//                 ),
-//               ),
-//             ),
-//             Positioned(
-//               right: 14,
-//               bottom: 20,
-//               child: Text(
-//                 'Size',
-//                 style: TextStyle(
-//                   fontWeight: FontWeight.bold,
-//                   color: Colors.red,
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class _DiagonalLinePainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final paint =
-//         Paint()
-//           ..color = Colors.grey.shade400
-//           ..strokeWidth = 1
-//           ..style = PaintingStyle.stroke;
-//     canvas.drawLine(Offset.zero, Offset(size.width, size.height), paint);
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-
-
-
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1580,6 +9,9 @@ import 'package:vrs_erp/catalog/imagezoom.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CartModel.dart';
 import 'package:vrs_erp/models/catalog.dart';
+
+import 'dart:typed_data';
+import 'package:http_parser/http_parser.dart';
 
 class CatalogItem {
   final String styleCode;
@@ -1649,6 +81,15 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
   bool isLoading = true;
   int _loadingCounter = 0;
 
+
+  // Add after copiedRowsMap
+Map<String, Map<String, Uint8List?>> aiGeneratedImages = {}; // Store AI generated images
+Map<String, Map<String, bool>> isGeneratingAIImage = {}; // Loading states for AI generation
+
+final String stabilityApiKey = 'sk-pWlAiqMTis8Dfj4lJWstDURxCWMStEX7Ob9OM80lb39AgR89';
+final String stabilityApiUrl = 'https://api.stability.ai/v2beta/stable-image/edit/search-and-replace';
+
+
   TextEditingController searchController = TextEditingController();
   bool isSearching = false;
   List<Catalog> filteredCatalogs = [];
@@ -1661,6 +102,8 @@ class _MultiCatalogBookingPageState extends State<MultiCatalogBookingPage> {
     for (var catalog in widget.catalogs) {
       noteControllersMap[catalog.styleCode] = TextEditingController();
       copiedRowsMap[catalog.styleCode] = [];
+      aiGeneratedImages[catalog.styleCode] = {}; // Add this line
+      isGeneratingAIImage[catalog.styleCode] = {}; // Add this line
       fetchCatalogData(catalog);
     }
   }
@@ -1929,6 +372,8 @@ void dispose() {
       noteControllersMap.remove(catalog.styleCode);
       isLoadingMap.remove(catalog.styleCode);
       copiedRowsMap.remove(catalog.styleCode);
+       aiGeneratedImages.remove(catalog.styleCode); // Add this line
+       isGeneratingAIImage.remove(catalog.styleCode); // Add this line
     });
   }
 
@@ -1963,6 +408,157 @@ void dispose() {
     }
     return '';
   }
+
+
+  // Add this method after _getImageUrl method
+Future<Uint8List?> generateAIImageWithShade(
+  String baseImageUrl,
+  String shadeName,
+  String styleCode,
+) async {
+  try {
+    final imageResponse = await http.get(Uri.parse(baseImageUrl));
+    if (imageResponse.statusCode != 200) {
+      print("Failed to download image: ${imageResponse.statusCode}");
+      return null;
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse(stabilityApiUrl),
+    );
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $stabilityApiKey',
+      'Accept': 'image/*',
+    });
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'image',
+        imageResponse.bodyBytes,
+        filename: 'original_image.png',
+        contentType: MediaType('image', 'png'),
+      ),
+    );
+
+    request.fields['prompt'] = 
+        "Transform this garment to $shadeName color. "
+        "Keep the exact same style, design, patterns, and fabric texture. "
+        "Only change the color to $shadeName. Maintain high quality and realism.";
+    
+    request.fields['search_prompt'] = "garment, clothing, dress, shirt, top";
+    request.fields['strength'] = '0.75';
+    request.fields['output_format'] = 'png';
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final bytes = await response.stream.toBytes();
+      return bytes;
+    } else {
+      final errorBody = await response.stream.bytesToString();
+      print("AI API Error (${response.statusCode}): $errorBody");
+      return null;
+    }
+  } catch (e) {
+    print("AI Generation Error: $e");
+    return null;
+  }
+}
+
+
+// Add this method after generateAIImageWithShade
+Future<void> generateImageForShade(
+  Catalog catalog,
+  String shadeName,
+  String baseImageUrl,
+) async {
+  if (isGeneratingAIImage[catalog.styleCode]?[shadeName] == true) {
+    return; // Already generating
+  }
+
+  setState(() {
+    isGeneratingAIImage[catalog.styleCode] ??= {};
+    isGeneratingAIImage[catalog.styleCode]![shadeName] = true;
+  });
+
+  final generatedImage = await generateAIImageWithShade(
+    baseImageUrl,
+    shadeName,
+    catalog.styleCode,
+  );
+
+  setState(() {
+    isGeneratingAIImage[catalog.styleCode]![shadeName] = false;
+    if (generatedImage != null) {
+      aiGeneratedImages[catalog.styleCode] ??= {};
+      aiGeneratedImages[catalog.styleCode]![shadeName] = generatedImage;
+      
+      // Show the generated image in a dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryColor),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        generatedImage,
+                        height: 300,
+                        width: 300,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'AI Generated: $shadeName',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  });
+}
+
+
+// Add this method after generateImageForShade
+Uint8List? getDisplayImage(Catalog catalog, String shadeName) {
+  // Check if we have AI generated image for this shade
+  if (aiGeneratedImages[catalog.styleCode]?.containsKey(shadeName) == true &&
+      aiGeneratedImages[catalog.styleCode]![shadeName] != null) {
+    return aiGeneratedImages[catalog.styleCode]![shadeName];
+  }
+  return null;
+}
 
 @override
 Widget build(BuildContext context) {
@@ -3030,6 +1626,8 @@ Widget build(BuildContext context) {
   ) {
     // Get shade image URL
     final imageUrl = _getShadeImageUrl(catalog, color);
+  final baseStyleImageUrl = _getImageUrl(catalog);
+  final isGenerating = isGeneratingAIImage[catalog.styleCode]?[color] == true;
 
     return TableRow(
       children: [
@@ -3074,6 +1672,41 @@ Widget build(BuildContext context) {
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
+                        ),
+                      ),
+                       if (UserSession.imageDependsOn == 'S' && baseStyleImageUrl.isNotEmpty)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: isGenerating
+                              ? null
+                              : () async {
+                                  await generateImageForShade(
+                                    catalog,
+                                    color,
+                                    baseStyleImageUrl,
+                                  );
+                                },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            child: isGenerating
+                                ? SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.auto_awesome,
+                                    size: 12,
+                                    color: Colors.purple,
+                                  ),
+                          ),
                         ),
                       ),
                       if (UserSession.imageDependsOn == 'S' && imageUrl != null)

@@ -1,12 +1,20 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vrs_erp/AI/AI_Home_Screen.dart';
+import 'package:vrs_erp/AI/AI_Test.dart';
+import 'package:vrs_erp/AI/Kurta.dart';
+import 'package:vrs_erp/Masters/Customer/Customer.dart';
+import 'package:vrs_erp/Masters/Design/Design_Master.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
+import 'package:vrs_erp/Reports/Customer/customer.dart';
+import 'package:vrs_erp/Reports/Order/Order.dart';
+import 'package:vrs_erp/Reports/Production/Production.dart';
 import 'package:vrs_erp/Reports/Report_Home_Screen.dart';
 import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
+import 'package:vrs_erp/Reports/Stock/Stock.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
@@ -42,16 +50,13 @@ import 'package:vrs_erp/viewOrder/view_order_screen_barcode2.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService().init();
-    await _loadBaseUrlFromPrefs();
+  await _loadBaseUrlFromPrefs();
   usePathUrlStrategy();
-  
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => CartModel())],
@@ -59,10 +64,11 @@ void main() async {
     ),
   );
 }
+
 Future<void> _loadBaseUrlFromPrefs() async {
   final prefs = await SharedPreferences.getInstance();
   final savedUrl = prefs.getString('base_url');
-  
+
   if (savedUrl != null && savedUrl.isNotEmpty) {
     AppConstants.BASE_URL = savedUrl;
     print("✅ Loaded URL from SharedPreferences: $savedUrl");
@@ -84,13 +90,16 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         // primarySwatch: AppColors.primaryColor
         primaryColor: const Color(0xFF072F5F),
-        progressIndicatorTheme: ProgressIndicatorThemeData(color: AppColors.primaryColor),
+        progressIndicatorTheme: ProgressIndicatorThemeData(
+          color: AppColors.primaryColor,
+        ),
         checkboxTheme: CheckboxThemeData(
           checkColor: WidgetStateProperty.all(Colors.white),
           overlayColor: WidgetStateProperty.all(AppColors.primaryColor),
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.primaryColor; // your desired background color when checked
+              return AppColors
+                  .primaryColor; // your desired background color when checked
             }
             return Colors.grey.shade300; // color when unchecked
           }),
@@ -124,9 +133,16 @@ class MyApp extends StatelessWidget {
         '/productionhomescreen': (context) => JobCardListScreen(),
         '/reportHomeScreen': (context) => ReportHomeScreen(),
         '/salesAnalysis': (context) => SalesAnalysis(),
-        
+        '/ProductionAnalysis': (context) => GarmentProductionAnalysis(),
+        '/CustomerAnalysis': (context) => CustomerAnalysis(),
+        '/StockAnalysis': (context) => StockAnalysis(),
+        '/OrderAnalysis': (context) => OrderAnalysis(),
 
-      
+        '/image': (context) => FabricToGarmentGenerator(),
+        '/vrsai': (context) => AIHomeScreen(),
+        '/testAI': (context) => FashionDesignerScreen(),
+        '/design': (context) => DesignMaster(),
+        '/customer': (context) => CustomerMaster(),
       },
 
       // home: SalesOrderInvoicePage(),

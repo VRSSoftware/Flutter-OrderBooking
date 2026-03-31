@@ -323,6 +323,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Catalog': Color(0xFFFF9800), // Orange
     'Order Register': Color(0xFF009688), // Teal
     'Stock Report': Color(0xFF3F51B5), // Indigo
+    'Customer': Color(0xFF3F51B5),
+    'Design': Color(0xFF3F51B5),
+    'Financial Report': Color(0xFFE91E63),
     'Setting': Color(0xFF607D8B), // Blue Grey
     'Delete Account': Color(0xFFF44336), // Red
   };
@@ -339,6 +342,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
     // 'Sale Bill': 'assets/images/salebill.png',
     // 'Sale Bill Register': 'assets/images/sale.png',
     'Production': 'assets/images/production.png',
+    'Financial Report': 'assets/images/financialReport.png',
+    'Design': 'assets/images/design.png',
+     'Customer': 'assets/images/customer.png',
     //  'Packing': 'assets/images/packing.png',
     // 'Packing Register': 'assets/images/packing_register.pngg',
   };
@@ -357,6 +363,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Production': Icons.precision_manufacturing,
     'Setting': Icons.settings,
     'Delete Account': Icons.delete_forever,
+    'Financial Report': Icons.analytics,
+    'Customer': Icons.supervisor_account,
+    'Design': Icons.auto_awesome,
   };
 
   @override
@@ -396,6 +405,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return 'Dashboard';
       case '/production':
         return 'Production';
+      case '/reportHomeScreen':
+        return 'Financial Report';
+        case '/customer':
+        return 'Customer';
+            case '/design':
+        return 'Design';
       case '/setting':
         return 'Setting';
       case '/deleteAccount':
@@ -471,7 +486,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
             child: Container(
               color: Color(0xFF1A1A2E), // Match drawer background
               child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+                physics:
+                    const NeverScrollableScrollPhysics(), // Disable scrolling
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -486,15 +502,18 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           if (title == 'Stock Report' || title == 'Dashboard') {
                             return UserSession.userType == 'A';
                           }
-                          return title != 'Setting' && title != 'Delete Account';
+                          return title != 'Setting' &&
+                              title != 'Delete Account';
                         })
-                        .map((title) => _buildDrawerItem(
-                              title,
-                              _getRouteFromSection(title),
-                            )),
+                        .map(
+                          (title) => _buildDrawerItem(
+                            title,
+                            _getRouteFromSection(title),
+                          ),
+                        ),
 
                     const SizedBox(height: 20),
-                    
+
                     // Account Section
                     _buildSectionHeader('ACCOUNT'),
                     const SizedBox(height: 5),
@@ -503,7 +522,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                     _buildDrawerItem('Delete Account', '/deleteAccount'),
 
                     const SizedBox(height: 20),
-                    
+
                     // Logout Button
                     _buildLogoutButton(),
 
@@ -544,12 +563,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: Colors.grey.shade800,
-            ),
-          ),
+          Expanded(child: Container(height: 1, color: Colors.grey.shade800)),
         ],
       ),
     );
@@ -579,6 +593,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return '/dashboard';
       case 'Production':
         return '/production';
+      case 'Financial Report':
+        return '/reportHomeScreen';
+           case 'Customer':
+        return '/customer';
+          case 'Design':
+        return '/design';
       case 'Setting':
         return '/setting';
       case 'Delete Account':
@@ -588,83 +608,86 @@ class _DrawerScreenState extends State<DrawerScreen> {
     }
   }
 
-Widget _buildProfileContent() {
-  return Row(
-    children: [
-      // Profile Image
-      Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+  Widget _buildProfileContent() {
+    return Row(
+      children: [
+        // Profile Image
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+          ),
+          child: const CircleAvatar(
+            radius: 28,
+            backgroundImage: AssetImage('assets/images/logo.png'),
+            backgroundColor: Colors.white,
+          ),
         ),
-        child: const CircleAvatar(
-          radius: 28,
-          backgroundImage: AssetImage('assets/images/logo.png'),
-          backgroundColor: Colors.white,
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Company Name at the top
-            Text(
-              UserSession.coBrName?.toUpperCase() ?? '',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.lightBlue,
-                letterSpacing: 0.3,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // User Name
-             Text(
-              UserSession.userName ?? '',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            // User Type
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: UserSession.userType == 'A' 
-                    ? Colors.amber.withOpacity(0.2)
-                    : Colors.blue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                UserSession.userType == 'C' 
-                    ? 'CUSTOMER' 
-                    : UserSession.userType == 'A' 
-                        ? 'ADMIN' 
-                        : 'SALESMAN',
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Company Name at the top
+              Text(
+                UserSession.coBrName?.toUpperCase() ?? '',
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: UserSession.userType == 'A' 
-                      ? Colors.amber 
-                      : Colors.blue.shade300,
-                  letterSpacing: 0.5,
+                  color: AppColors.lightBlue,
+                  letterSpacing: 0.3,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              // User Name
+              Text(
+                UserSession.userName ?? '',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              // User Type
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color:
+                      UserSession.userType == 'A'
+                          ? Colors.amber.withOpacity(0.2)
+                          : Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  UserSession.userType == 'C'
+                      ? 'CUSTOMER'
+                      : UserSession.userType == 'A'
+                      ? 'ADMIN'
+                      : 'SALESMAN',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        UserSession.userType == 'A'
+                            ? Colors.amber
+                            : Colors.blue.shade300,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
   Widget _buildDrawerItem(String title, String route) {
     final isSelected = selectedSection == title;
     final isHovered = hoveredSection == title;
@@ -677,16 +700,15 @@ Widget _buildProfileContent() {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected || isHovered
-              ? itemColor.withOpacity(0.15)
-              : Colors.transparent,
+          color:
+              isSelected || isHovered
+                  ? itemColor.withOpacity(0.15)
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: isSelected
-              ? Border.all(
-                  color: itemColor.withOpacity(0.3),
-                  width: 1,
-                )
-              : null,
+          border:
+              isSelected
+                  ? Border.all(color: itemColor.withOpacity(0.3), width: 1)
+                  : null,
         ),
         child: Material(
           color: Colors.transparent,
@@ -702,44 +724,50 @@ Widget _buildProfileContent() {
                     width: 28,
                     height: 28,
                     alignment: Alignment.center,
-                    child: iconPath != null
-                        ? Image.asset(
-                            iconPath,
-                            width: 18,
-                            height: 18,
-                            color: isSelected || isHovered
-                                ? itemColor
-                                : Colors.grey.shade400,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                _fallbackIcons[title] ?? Icons.help,
-                                size: 18,
-                                color: isSelected || isHovered
-                                    ? itemColor
-                                    : Colors.grey.shade400,
-                              );
-                            },
-                          )
-                        : Icon(
-                            _fallbackIcons[title] ?? Icons.help,
-                            size: 18,
-                            color: isSelected || isHovered
-                                ? itemColor
-                                : Colors.grey.shade400,
-                          ),
+                    child:
+                        iconPath != null
+                            ? Image.asset(
+                              iconPath,
+                              width: 18,
+                              height: 18,
+                              color:
+                                  isSelected || isHovered
+                                      ? itemColor
+                                      : Colors.grey.shade400,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  _fallbackIcons[title] ?? Icons.help,
+                                  size: 18,
+                                  color:
+                                      isSelected || isHovered
+                                          ? itemColor
+                                          : Colors.grey.shade400,
+                                );
+                              },
+                            )
+                            : Icon(
+                              _fallbackIcons[title] ?? Icons.help,
+                              size: 18,
+                              color:
+                                  isSelected || isHovered
+                                      ? itemColor
+                                      : Colors.grey.shade400,
+                            ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // Title
                   Expanded(
                     child: Text(
                       title,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected || isHovered
-                            ? itemColor
-                            : Colors.grey.shade300,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color:
+                            isSelected || isHovered
+                                ? itemColor
+                                : Colors.grey.shade300,
                       ),
                     ),
                   ),
