@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
+import 'package:vrs_erp/screens/home_screen.dart'; // Add this import
 
 // --- Colors from the new design ---
 const Color kPrimaryColor = Color(0xFF3B82F6);
@@ -49,18 +50,11 @@ class _AIHomeScreenState extends State<AIHomeScreen>
   IconStyle _getIconStyle(String label) {
     switch (label) {
       case 'Image':
-        return IconStyle(
-          Icons.assessment,
-          Colors.green[700]!,
-          Colors.green[50]!,
-        );
-      // case 'Test AI':
-      //   return IconStyle(
-      //     Icons.payments,
-      //     Colors.red[700]!,
-      //     Colors.red[50]!,
-      //   );
-    
+        return IconStyle(Icons.image, Colors.green[700]!, Colors.green[50]!);
+      case 'AI Chat Reports':
+        return IconStyle(Icons.bar_chart, Colors.blue[700]!, Colors.blue[50]!);
+      case 'Test AI':
+        return IconStyle(Icons.science, Colors.red[700]!, Colors.red[50]!);
       default:
         return IconStyle(Icons.grid_view, Colors.grey[700]!, Colors.grey[50]!);
     }
@@ -69,137 +63,11 @@ class _AIHomeScreenState extends State<AIHomeScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: false, // Prevent default back behavior
       onPopInvoked: (didPop) async {
-        if (didPop) return;
-
-        bool shouldExit = await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 4,
-                contentPadding: EdgeInsets.zero,
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header with gradient background
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 20,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.red.shade600, Colors.red.shade800],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.exit_to_app,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Exit App',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Are you sure you want to close the app?',
-                            style: TextStyle(fontSize: 14, color: Colors.white),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Buttons
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey.shade700,
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'No',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                SystemNavigator.pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red.shade600,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Yes',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        );
-
-        if (shouldExit == true) {
-          Navigator.pop(context);
+        if (!didPop) {
+          // Navigate to HomeScreen when back button is pressed
+          Navigator.pushReplacementNamed(context, '/home');
         }
       },
       child: Scaffold(
@@ -224,11 +92,7 @@ class _AIHomeScreenState extends State<AIHomeScreen>
           leading: Builder(
             builder:
                 (context) => IconButton(
-                  icon: const Icon(
-                    Icons.menu,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  icon: const Icon(Icons.menu, color: Colors.white, size: 24),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
           ),
@@ -259,9 +123,6 @@ class _AIHomeScreenState extends State<AIHomeScreen>
                     child: IntrinsicHeight(
                       child: Column(
                         children: [
-                          // Header Section
-                          _buildHeader(),
-                          const SizedBox(height: 24),
                           // AIs Grid
                           _buildAIsGrid(context, constraints.maxWidth),
                         ],
@@ -273,72 +134,9 @@ class _AIHomeScreenState extends State<AIHomeScreen>
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationWidget(currentScreen: '/AIs'),
       ),
     );
   }
-
-Widget _buildHeader() {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced from 20 to 12
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.primaryColor.withOpacity(0.1),
-          AppColors.primaryColor.withOpacity(0.05),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: AppColors.primaryColor.withOpacity(0.2),
-        width: 1,
-      ),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8), // Reduced from 12 to 8
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12), // Reduced from 15 to 12
-          ),
-          child: Icon(
-            Icons.insert_chart_outlined,
-            color: AppColors.primaryColor,
-            size: 24, // Reduced from 28 to 24
-          ),
-        ),
-        const SizedBox(width: 12), // Reduced from 16 to 12
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Added to minimize height
-            children: [
-              Text(
-                'ASK VRS AI',
-                style: GoogleFonts.poppins(
-                  fontSize: 16, // Reduced from 18 to 16
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 2), // Reduced from 4 to 2
-              // Text(
-              //   'Fabric to Finish with AI',
-              //   style: GoogleFonts.poppins(
-              //     fontSize: 11, // Reduced from 13 to 11
-              //     color: Colors.grey[600],
-              //   ),
-              // ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
   Widget _buildAIsGrid(BuildContext context, double screenWidth) {
     final crossAxisCount = screenWidth > 600 ? 2 : 1;
@@ -352,54 +150,51 @@ Widget _buildHeader() {
     }
     _animationControllers.clear();
 
-    // List of AIs
+    // List of AIs - Added AI Reports between Image and Test AI
     List<Map<String, dynamic>> AIs = [
       {
         "label": "Image",
         "route": "/image",
-        "icon": Icons.assessment,
+        "icon": Icons.image,
         "color": Colors.green,
-        "description": "View sales performance and trends"
+        "description": "Generate and analyze images using AI",
       },
-      // {
-      //   "label": "Test AI",
-      //   "route": "/testAI",
-      //   "icon": Icons.payments,
-      //   "color": Colors.red,
-      //   "description": "Track amounts payable to suppliers"
-      // },
-     
+      {
+        "label": "AI Chat Reports",
+        "route":
+            "/ai_reports", // Make sure this route is registered in your router
+        "icon": Icons.bar_chart,
+        "color": Colors.blue,
+        "description": "View comprehensive AI-powered analytics and reports",
+      },
+      {
+        "label": "Test AI",
+        "route": "/testAI",
+        "icon": Icons.science,
+        "color": Colors.red,
+        "description": "Test and experiment with AI capabilities",
+      },
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 12),
-          child: Text(
-            'Available AIs',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
-          ),
-        ),
         Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          alignment: WrapAlignment.start,
-          children: AIs.map((AI) {
-            return _buildAIButton(
-              context,
-              AI["label"],
-              AI["route"],
-              AI["icon"],
-              AI["color"],
-              AI["description"],
-              buttonWidth,
-            );
-          }).toList(),
+          alignment: WrapAlignment.center,
+          children:
+              AIs.map((AI) {
+                return _buildAIButton(
+                  context,
+                  AI["label"],
+                  AI["route"],
+                  AI["icon"],
+                  AI["color"],
+                  AI["description"],
+                  buttonWidth,
+                );
+              }).toList(),
         ),
       ],
     );
