@@ -16,52 +16,121 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   // Initialize local notifications & Firebase messaging
+  // Future<void> init() async {
+  //   // 1. Local notifications initialization
+  //   const AndroidInitializationSettings initializationSettingsAndroid =
+  //       AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  //   const InitializationSettings initializationSettings =
+  //       InitializationSettings(android: initializationSettingsAndroid);
+
+  //   await flutterLocalNotificationsPlugin.initialize(
+  //     initializationSettings,
+  //     onDidReceiveNotificationResponse: (details) {
+  //       print('Notification clicked: ${details.payload}');
+  //     },
+  //   );
+
+  //   // 2. Firebase Messaging initialization
+  //   FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  //   // Request permission (iOS)
+  //   NotificationSettings settings = await messaging.requestPermission(
+  //     alert: true,
+  //     badge: true,
+  //     sound: true,
+  //   );
+
+  //   print('User granted permission: ${settings.authorizationStatus}');
+
+  //   // Handle foreground messages
+  //   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  //     _showNotification(message);
+  //   });
+
+  //   // Handle background messages (requires top-level function in main.dart)
+  //   // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+  //   //   print('Notification clicked: ${message.notification?.title}');
+  //   // });
+  //   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+  //     print('Notification clicked: ${message.notification?.title}');
+  //     _handleNotificationClick(message.data);
+  //   });
+
+  //   // Optional: get FCM token
+  //   String? token = await messaging.getToken();
+  //   print('FCM Token: $token');
+  //   AppConstants.firebase_token = token ?? '';
+  // }
   Future<void> init() async {
-    // 1. Local notifications initialization
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+  // 1. Local notifications init (same as yours)
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        print('Notification clicked: ${details.payload}');
-      },
-    );
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (details) {
+      print('Notification clicked: ${details.payload}');
+    },
+  );
 
-    // 2. Firebase Messaging initialization
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    // Request permission (iOS)
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+  try {
+    // ✅ Check existing permission FIRST
+    NotificationSettings currentSettings =
+        await messaging.getNotificationSettings();
 
-    print('User granted permission: ${settings.authorizationStatus}');
+    if (currentSettings.authorizationStatus ==
+        AuthorizationStatus.notDetermined) {
+      
+      // Ask only if not decided
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    // Handle foreground messages
+      print('Permission result: ${settings.authorizationStatus}');
+    } else if (currentSettings.authorizationStatus ==
+        AuthorizationStatus.denied) {
+      
+      print('❌ Notifications are blocked by user');
+      // Do NOT request again → will throw error
+    } else {
+      print('✅ Notifications already allowed');
+    }
+
+    // ✅ Safe to continue app regardless of permission
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _showNotification(message);
     });
 
-    // Handle background messages (requires top-level function in main.dart)
-    // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    //   print('Notification clicked: ${message.notification?.title}');
-    // });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('Notification clicked: ${message.notification?.title}');
       _handleNotificationClick(message.data);
     });
 
-    // Optional: get FCM token
-    String? token = await messaging.getToken();
-    print('FCM Token: $token');
-    AppConstants.firebase_token = token ?? '';
+    // ✅ Token (wrap this too for safety on web)
+    try {
+      String? token = await messaging.getToken(
+        // REQUIRED for web (add your VAPID key here)
+        // vapidKey: "YOUR_VAPID_KEY",
+      );
+      print('FCM Token: $token');
+      AppConstants.firebase_token = token ?? '';
+    } catch (e) {
+      print("Token error: $e");
+    }
+
+  } catch (e) {
+    // 🔥 THIS prevents your crash
+    print("Firebase Messaging init error: $e");
   }
+}
 
   void _handleNotificationClick(Map<String, dynamic> data) {
     final route = data['route']; // Ensure your FCM payload has "route"
