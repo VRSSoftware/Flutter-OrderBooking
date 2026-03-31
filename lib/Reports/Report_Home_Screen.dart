@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
-import 'package:vrs_erp/widget/bottom_navbar.dart';
+import 'package:vrs_erp/screens/home_screen.dart'; // Add this import
 
 // --- Colors from the new design ---
 const Color kPrimaryColor = Color(0xFF3B82F6);
@@ -54,38 +54,28 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
           Colors.green[700]!,
           Colors.green[50]!,
         );
-        case 'Production Analysis':
+      case 'Production Analysis':
         return IconStyle(
-          Icons.assessment,
+          Icons.factory,
           Colors.orange[700]!,
           Colors.orange[50]!,
         );
-           case 'Customer Analysis':
+      case 'Customer Analysis':
+        return IconStyle(Icons.people, Colors.pink[700]!, Colors.pink[50]!);
+      case 'Stock Analysis':
         return IconStyle(
-          Icons.assessment,
-          Colors.pink[700]!,
-          Colors.pink[50]!,
-        );
-
-           case 'Stock Analysis':
-        return IconStyle(
-          Icons.assessment,
+          Icons.inventory,
           Colors.brown[700]!,
           Colors.brown[50]!,
         );
-
-                  case 'Order Analysis':
+      case 'Order Analysis':
         return IconStyle(
-          Icons.assessment,
-          Colors.yellow[700]!,
-          Colors.yellow[50]!,
+          Icons.shopping_cart,
+          Colors.amber[700]!,
+          Colors.amber[50]!,
         );
       case 'Payable':
-        return IconStyle(
-          Icons.payments,
-          Colors.red[700]!,
-          Colors.red[50]!,
-        );
+        return IconStyle(Icons.payments, Colors.red[700]!, Colors.red[50]!);
       case 'Receivable':
         return IconStyle(
           Icons.account_balance_wallet,
@@ -106,137 +96,11 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: false, // Prevent default back behavior
       onPopInvoked: (didPop) async {
-        if (didPop) return;
-
-        bool shouldExit = await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 4,
-                contentPadding: EdgeInsets.zero,
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header with gradient background
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 20,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.red.shade600, Colors.red.shade800],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.exit_to_app,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Exit App',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Are you sure you want to close the app?',
-                            style: TextStyle(fontSize: 14, color: Colors.white),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Buttons
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey.shade700,
-                                side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'No',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                SystemNavigator.pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red.shade600,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Yes',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        );
-
-        if (shouldExit == true) {
-          Navigator.pop(context);
+        if (!didPop) {
+          // Navigate to home screen when back button is pressed
+          Navigator.pushReplacementNamed(context, '/home');
         }
       },
       child: Scaffold(
@@ -261,121 +125,118 @@ class _ReportHomeScreenState extends State<ReportHomeScreen>
           leading: Builder(
             builder:
                 (context) => IconButton(
-                  icon: const Icon(
-                    Icons.menu,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  icon: const Icon(Icons.menu, color: Colors.white, size: 24),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
           ),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            color: kBackgroundLight,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                kBackgroundLight,
-                kBackgroundLight.withOpacity(0.95),
-                const Color(0xFFEEF2F6),
-              ],
-              stops: const [0.0, 0.5, 1.0],
+        body: SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: kBackgroundLight,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  kBackgroundLight,
+                  kBackgroundLight.withOpacity(0.95),
+                  const Color(0xFFEEF2F6),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          // Header Section
-                          _buildHeader(),
-                          const SizedBox(height: 24),
-                          // Reports Grid
-                          _buildReportsGrid(context, constraints.maxWidth),
-                        ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            // Header Section
+                            _buildHeader(),
+                            const SizedBox(height: 24),
+                            // Reports Grid
+                            _buildReportsGrid(context, constraints.maxWidth),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),
-    
       ),
     );
   }
 
-Widget _buildHeader() {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced from 20 to 12
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.primaryColor.withOpacity(0.1),
-          AppColors.primaryColor.withOpacity(0.05),
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryColor.withOpacity(0.1),
+            AppColors.primaryColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.insert_chart_outlined,
+              color: AppColors.primaryColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Analytics Reports',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'View and analyze your business data',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: AppColors.primaryColor.withOpacity(0.2),
-        width: 1,
-      ),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8), // Reduced from 12 to 8
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12), // Reduced from 15 to 12
-          ),
-          child: Icon(
-            Icons.insert_chart_outlined,
-            color: AppColors.primaryColor,
-            size: 24, // Reduced from 28 to 24
-          ),
-        ),
-        const SizedBox(width: 12), // Reduced from 16 to 12
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Added to minimize height
-            children: [
-              Text(
-                'Financial Reports',
-                style: GoogleFonts.poppins(
-                  fontSize: 16, // Reduced from 18 to 16
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 2), // Reduced from 4 to 2
-              Text(
-                'View and analyze your financial data',
-                style: GoogleFonts.poppins(
-                  fontSize: 11, // Reduced from 13 to 11
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildReportsGrid(BuildContext context, double screenWidth) {
     final crossAxisCount = screenWidth > 600 ? 2 : 1;
@@ -389,99 +250,95 @@ Widget _buildHeader() {
     }
     _animationControllers.clear();
 
-    // List of reports
+    // List of reports with correct subtitles
     List<Map<String, dynamic>> reports = [
       {
         "label": "Sales Analysis",
         "route": "/salesAnalysis",
         "icon": Icons.assessment,
         "color": Colors.green,
-        "description": "View sales performance and trends"
+        "description": "Analyze sales performance, trends, and revenue metrics",
       },
-       {
+      {
         "label": "Production Analysis",
         "route": "/ProductionAnalysis",
-        "icon": Icons.assessment,
+        "icon": Icons.factory,
         "color": Colors.orange,
-        "description": "View production performance and trends"
+        "description":
+            "Track production output, efficiency, and manufacturing metrics",
       },
-         {
+      {
         "label": "Customer Analysis",
         "route": "/CustomerAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.orange,
-        "description": "View production performance and trends"
+        "icon": Icons.people,
+        "color": Colors.pink,
+        "description":
+            "View customer behavior, segmentation, and purchase patterns",
       },
-
-           {
+      {
         "label": "Stock Analysis",
         "route": "/StockAnalysis",
-        "icon": Icons.assessment,
+        "icon": Icons.inventory,
         "color": Colors.brown,
-        "description": "View Stock Analysis and trends"
+        "description":
+            "Monitor inventory levels, stock movement, and reorder points",
       },
-
-         {
+      {
         "label": "Order Analysis",
         "route": "/OrderAnalysis",
-        "icon": Icons.assessment,
-        "color": Colors.yellow,
-        "description": "View Stock Analysis and trends"
+        "icon": Icons.shopping_cart,
+        "color": Colors.amber,
+        "description":
+            "Track order status, fulfillment rates, and delivery timelines",
       },
       {
         "label": "Payable",
         "route": "/payable",
         "icon": Icons.payments,
         "color": Colors.red,
-        "description": "Track amounts payable to suppliers"
+        "description": "Track amounts payable to suppliers and vendors",
       },
       {
         "label": "Receivable",
         "route": "/receivable",
         "icon": Icons.account_balance_wallet,
         "color": Colors.teal,
-        "description": "Track amounts receivable from customers"
+        "description": "Track amounts receivable from customers and clients",
       },
       {
         "label": "Ledger",
         "route": "/ledger",
         "icon": Icons.menu_book,
         "color": Colors.indigo,
-        "description": "View detailed ledger entries"
+        "description": "View detailed ledger entries and account statements",
       },
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 12),
-          child: Text(
-            'Available Reports',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
+    return Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children:
+                reports.map((report) {
+                  return _buildReportButton(
+                    context,
+                    report["label"],
+                    report["route"],
+                    report["icon"],
+                    report["color"],
+                    report["description"],
+                    buttonWidth,
+                  );
+                }).toList(),
           ),
-        ),
-        Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          alignment: WrapAlignment.start,
-          children: reports.map((report) {
-            return _buildReportButton(
-              context,
-              report["label"],
-              report["route"],
-              report["icon"],
-              report["color"],
-              report["description"],
-              buttonWidth,
-            );
-          }).toList(),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

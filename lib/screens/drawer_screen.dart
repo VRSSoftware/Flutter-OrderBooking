@@ -301,7 +301,6 @@
 //   }
 // }
 //-----------------------------------------------------------------------------
-
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/login_screen.dart';
@@ -325,7 +324,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Stock Report': Color(0xFF3F51B5), // Indigo
     'Customer': Color(0xFF3F51B5),
     'Design': Color(0xFF3F51B5),
-    'Financial Report': Color(0xFFE91E63),
+    'Analytics Report': Color(0xFFE91E63),
     'Setting': Color(0xFF607D8B), // Blue Grey
     'Delete Account': Color(0xFFF44336), // Red
   };
@@ -339,14 +338,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Dashboard': 'assets/images/dashboard.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
-    // 'Sale Bill': 'assets/images/salebill.png',
-    // 'Sale Bill Register': 'assets/images/sale.png',
     'Production': 'assets/images/production.png',
-    'Financial Report': 'assets/images/financialReport.png',
+    'Analytics Report': 'assets/images/analyticsReport.png',
     'Design': 'assets/images/design.png',
-     'Customer': 'assets/images/customer.png',
-    //  'Packing': 'assets/images/packing.png',
-    // 'Packing Register': 'assets/images/packing_register.pngg',
+    'Customer': 'assets/images/customer.png',
   };
 
   final Map<String, IconData> _fallbackIcons = {
@@ -363,7 +358,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Production': Icons.precision_manufacturing,
     'Setting': Icons.settings,
     'Delete Account': Icons.delete_forever,
-    'Financial Report': Icons.analytics,
+    'Analytics Report': Icons.analytics,
     'Customer': Icons.supervisor_account,
     'Design': Icons.auto_awesome,
   };
@@ -406,10 +401,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
       case '/production':
         return 'Production';
       case '/reportHomeScreen':
-        return 'Financial Report';
-        case '/customer':
+        return 'Analytics Report';
+      case '/customer':
         return 'Customer';
-            case '/design':
+      case '/design':
         return 'Design';
       case '/setting':
         return 'Setting';
@@ -481,13 +476,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
             child: _buildProfileContent(),
           ),
 
-          // Menu Items - No Scroll
+          // Menu Items - NOW WITH PROPER SCROLLING
           Expanded(
             child: Container(
               color: Color(0xFF1A1A2E), // Match drawer background
               child: SingleChildScrollView(
-                physics:
-                    const NeverScrollableScrollPhysics(), // Disable scrolling
+                physics: const AlwaysScrollableScrollPhysics(), // ✅ Enable scrolling
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -593,11 +587,11 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return '/dashboard';
       case 'Production':
         return '/production';
-      case 'Financial Report':
+      case 'Analytics Report':
         return '/reportHomeScreen';
-           case 'Customer':
+      case 'Customer':
         return '/customer';
-          case 'Design':
+      case 'Design':
         return '/design';
       case 'Setting':
         return '/setting';

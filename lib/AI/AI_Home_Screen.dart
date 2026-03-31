@@ -138,68 +138,57 @@ class _AIHomeScreenState extends State<AIHomeScreen>
     );
   }
 
-  Widget _buildAIsGrid(BuildContext context, double screenWidth) {
-    final crossAxisCount = screenWidth > 600 ? 2 : 1;
-    final spacing = 5.0;
-    final totalSpacing = (crossAxisCount - 1) * spacing;
-    final buttonWidth = (screenWidth - 32 - totalSpacing) / crossAxisCount;
+Widget _buildAIsGrid(BuildContext context, double screenWidth) {
+  final crossAxisCount = screenWidth > 600 ? 2 : 1;
+  final spacing = 5.0;
+  final totalSpacing = (crossAxisCount - 1) * spacing;
+  final buttonWidth = (screenWidth - 32 - totalSpacing) / crossAxisCount;
 
-    // Clear existing animation controllers before creating new ones
-    for (var controller in _animationControllers) {
-      controller.dispose();
-    }
-    _animationControllers.clear();
-
-    // List of AIs - Added AI Reports between Image and Test AI
-    List<Map<String, dynamic>> AIs = [
-      {
-        "label": "Image",
-        "route": "/image",
-        "icon": Icons.image,
-        "color": Colors.green,
-        "description": "Generate and analyze images using AI",
-      },
-      {
-        "label": "AI Chat Reports",
-        "route":
-            "/ai_reports", // Make sure this route is registered in your router
-        "icon": Icons.bar_chart,
-        "color": Colors.blue,
-        "description": "View comprehensive AI-powered analytics and reports",
-      },
-      {
-        "label": "Test AI",
-        "route": "/testAI",
-        "icon": Icons.science,
-        "color": Colors.red,
-        "description": "Test and experiment with AI capabilities",
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          alignment: WrapAlignment.center,
-          children:
-              AIs.map((AI) {
-                return _buildAIButton(
-                  context,
-                  AI["label"],
-                  AI["route"],
-                  AI["icon"],
-                  AI["color"],
-                  AI["description"],
-                  buttonWidth,
-                );
-              }).toList(),
-        ),
-      ],
-    );
+  // Clear existing animation controllers before creating new ones
+  for (var controller in _animationControllers) {
+    controller.dispose();
   }
+  _animationControllers.clear();
 
+  // List of AIs - Test AI removed
+  List<Map<String, dynamic>> AIs = [
+    {
+      "label": "Image",
+      "route": "/image",
+      "icon": Icons.image,
+      "color": Colors.green,
+      "description": "Generate and analyze images using AI",
+    },
+    {
+      "label": "AI Chat Reports",
+      "route": "/ai_reports",
+      "icon": Icons.bar_chart,
+      "color": Colors.blue,
+      "description": "View comprehensive AI-powered analytics and reports",
+    },
+  ];
+
+  return Center(
+    child: Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: AIs.map((AI) {
+        return _buildAIButton(
+          context,
+          AI["label"],
+          AI["route"],
+          AI["icon"],
+          AI["color"],
+          AI["description"],
+          buttonWidth,
+        );
+      }).toList(),
+    ),
+  );
+}
   Widget _buildAIButton(
     BuildContext context,
     String label,

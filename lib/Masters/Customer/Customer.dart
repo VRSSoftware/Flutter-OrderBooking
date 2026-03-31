@@ -7,45 +7,49 @@ import 'package:vrs_erp/screens/drawer_screen.dart';
 class CustomerMaster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        toolbarHeight: 48, // ✅ Decrease height (default is 56)
-
-        title: Text(
-          'Customer',
-          style: GoogleFonts.roboto(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18, // Slightly reduced to match height
+    return PopScope(
+      canPop: false, // Prevent default pop behavior
+      onPopInvoked: (bool didPop) async {
+        if (!didPop) {
+          // Navigate to home screen when back button is pressed
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home',
+            (route) => false, // Remove all previous routes
+          );
+        }
+      },
+      child: Scaffold(
+        drawer: DrawerScreen(),
+        appBar: AppBar(
+          toolbarHeight: 48,
+          title: Text(
+            'Customer Master',
+            style: GoogleFonts.roboto(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          backgroundColor: AppColors.primaryColor,
+          elevation: 3,
+          centerTitle: true,
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Colors.white,
+                size: 24,
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
         ),
-
-        backgroundColor: AppColors.primaryColor,
-        elevation: 3,
-        centerTitle: true,
-
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-        ),
-
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(
-                  Icons.menu,
-                  color: Colors.white,
-                  size: 24, // Slightly smaller for compact look
-                ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-        ),
-      ),
-
-      body: SafeArea(
-        child: InAppWebView(
-          initialUrlRequest: URLRequest(
-            url: WebUri("https://erptrading.vrsretail.in/customer"),
+        body: SafeArea(
+          child: InAppWebView(
+            initialUrlRequest: URLRequest(
+              url: WebUri("https://erptrading.vrsretail.in/customer"),
+            ),
           ),
         ),
       ),
