@@ -538,7 +538,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     if (!mounted) return;
     Navigator.pop(context); // Close loading dialog
 
-    if (barcodeStatus == "1") {
+    if (barcodeStatus == "0") {
       // No data found
       FocusManager.instance.primaryFocus?.unfocus();
       _showAlertDialog(
@@ -570,16 +570,16 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       _barcodeController.clear();
       return;
     }
-    else{
-       FocusManager.instance.primaryFocus?.unfocus();
-      _showAlertDialog(
-        context,
-        'Error ',
-        barcodeStatus,
-      );
-      _barcodeController.clear();
-      return;
-    }
+    // else{
+    //    FocusManager.instance.primaryFocus?.unfocus();
+    //   _showAlertDialog(
+    //     context,
+    //     'Error ',
+    //     barcodeStatus,
+    //   );
+    //   _barcodeController.clear();
+    //   return;
+    // }
 
     // Only navigate if barcodeStatus == 1 (exists with data)
     print("Barcode exists, navigating with barcode: $upperBarcode");
@@ -673,6 +673,9 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
+        print("barcode data Length ");
+        print(data.length);
+        print(data.isNotEmpty);
         if (data.isNotEmpty) {
           return "1"; // ✅ Barcode exists with data
         } else {
