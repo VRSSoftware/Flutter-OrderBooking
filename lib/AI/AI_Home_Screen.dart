@@ -161,7 +161,7 @@ Widget _buildAIsGrid(BuildContext context, double screenWidth) {
     },
     {
       "label": "AI Chat Reports",
-      "route": "/ai_reports",
+      "route": "/ai_chat_reports",
       "icon": Icons.bar_chart,
       "color": Colors.blue,
       "description": "View comprehensive AI-powered analytics and reports",

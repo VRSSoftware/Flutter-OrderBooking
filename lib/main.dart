@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vrs_erp/AI/AI_Home_Screen.dart';
 import 'package:vrs_erp/AI/AI_Test.dart';
+import 'package:vrs_erp/AI/AI_chat_report_web.dart/ai_chat_report_web.dart';
 import 'package:vrs_erp/AI/Kurta.dart';
 import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/Masters/Design/Design_Master.dart';
@@ -143,6 +144,8 @@ class MyApp extends StatelessWidget {
         '/testAI': (context) => FashionDesignerScreen(),
         '/design': (context) => DesignMaster(),
         '/customer': (context) => CustomerMaster(),
+        '/ai_chat_reports': (context) => aiChatReportWeb(),
+
       },
 
       // home: SalesOrderInvoicePage(),
