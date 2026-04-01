@@ -551,208 +551,212 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
-            return Container(
-              padding: const EdgeInsets.all(16),
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.7,
-              ),
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Scanned Barcodes',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '${validBarcodes.length} valid',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.green,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(),
-
-                  // List of barcodes
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _scannedBarcodes.length,
-                      itemBuilder: (context, index) {
-                        final item = _scannedBarcodes[index];
-                        final barcode = item['barcode'];
-                        final status = item['status'];
-
-                        Color statusColor;
-                        IconData statusIcon;
-                        String statusText;
-
-                        switch (status) {
-                          case 'valid':
-                            statusColor = Colors.green;
-                            statusIcon = Icons.check_circle;
-                            statusText = 'Valid';
-                            break;
-                          case 'pending':
-                            statusColor = Colors.orange;
-                            statusIcon = Icons.hourglass_empty;
-                            statusText = 'Checking...';
-                            break;
-                          case 'already_added':
-                            statusColor = Colors.red;
-                            statusIcon = Icons.warning;
-                            statusText = 'Already in Cart';
-                            break;
-                          default:
-                            statusColor = Colors.red;
-                            statusIcon = Icons.error;
-                            statusText = 'Invalid';
-                        }
-
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: statusColor.withOpacity(0.1),
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(color: statusColor),
+            return SafeArea(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Scanned Barcodes',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          title: Text(
-                            barcode,
-                            style: const TextStyle(fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          Text(
+                            '${validBarcodes.length} valid',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      statusIcon,
-                                      size: 14,
-                                      color: statusColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      statusText,
-                                      style: TextStyle(
-                                        fontSize: 11,
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+
+                    // List of barcodes
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _scannedBarcodes.length,
+                        itemBuilder: (context, index) {
+                          final item = _scannedBarcodes[index];
+                          final barcode = item['barcode'];
+                          final status = item['status'];
+
+                          Color statusColor;
+                          IconData statusIcon;
+                          String statusText;
+
+                          switch (status) {
+                            case 'valid':
+                              statusColor = Colors.green;
+                              statusIcon = Icons.check_circle;
+                              statusText = 'Valid';
+                              break;
+                            case 'pending':
+                              statusColor = Colors.orange;
+                              statusIcon = Icons.hourglass_empty;
+                              statusText = 'Checking...';
+                              break;
+                            case 'already_added':
+                              statusColor = Colors.red;
+                              statusIcon = Icons.warning;
+                              statusText = 'Already in Cart';
+                              break;
+                            default:
+                              statusColor = Colors.red;
+                              statusIcon = Icons.error;
+                              statusText = 'Invalid';
+                          }
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: statusColor.withOpacity(0.1),
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(color: statusColor),
+                              ),
+                            ),
+                            title: Text(
+                              barcode,
+                              style: const TextStyle(fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        statusIcon,
+                                        size: 14,
                                         color: statusColor,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _scannedSet.remove(barcode);
-                                    _scannedBarcodes.removeAt(index);
-                                  });
-                                  setStateSheet(() {});
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const Divider(),
-
-                  // Action buttons
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (context) => AlertDialog(
-                                      title: const Text('Clear All'),
-                                      content: Text(
-                                        'Clear all ${_scannedBarcodes.length} barcodes?',
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        statusText,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: statusColor,
+                                        ),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(context),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              _scannedBarcodes.clear();
-                                              _scannedSet.clear();
-                                            });
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text(
-                                            'Clear',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                            },
-                            child: const Text('Clear All'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _processValidBarcodes();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _scannedSet.remove(barcode);
+                                      _scannedBarcodes.removeAt(index);
+                                    });
+                                    setStateSheet(() {});
+                                  },
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              'Confirm (${validBarcodes.length})',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+
+                    const Divider(),
+
+                    // Action buttons with bottom padding for home indicator
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text('Clear All'),
+                                        content: Text(
+                                          'Clear all ${_scannedBarcodes.length} barcodes?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(context),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _scannedBarcodes.clear();
+                                                _scannedSet.clear();
+                                              });
+                                              Navigator.pop(context);
+                                              Navigator.pop(context);
+                                            },
+                                            child: const Text(
+                                              'Clear',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                              child: const Text('Clear All'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _processValidBarcodes();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                              ),
+                              child: Text(
+                                'Confirm (${validBarcodes.length})',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -982,26 +986,16 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       );
       _barcodeController.clear();
       return;
-    }
-        else if (barcodeStatus.contains("already added in cart")) {
+    } else if (barcodeStatus.contains("already added in cart")) {
       // Already added in cart (from API)
       FocusManager.instance.primaryFocus?.unfocus();
-      _showAlertDialog(
-        context,
-        'Already Added',
-        barcodeStatus,
-      );
+      _showAlertDialog(context, 'Already Added', barcodeStatus);
       _barcodeController.clear();
       return;
-    }
-        else if (barcodeStatus.contains("No data found for barcode")) {
+    } else if (barcodeStatus.contains("No data found for barcode")) {
       // Already added in cart (from API)
       FocusManager.instance.primaryFocus?.unfocus();
-      _showAlertDialog(
-        context,
-        'Already Added',
-        barcodeStatus,
-      );
+      _showAlertDialog(context, 'Already Added', barcodeStatus);
       _barcodeController.clear();
       return;
     }
@@ -1199,7 +1193,9 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
         children: [
           // Continuous Scan Checkbox - Matching the "Order Booking Barcode Wise" style
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
+            margin: const EdgeInsets.symmetric(
+              horizontal: 8,
+            ), // Changed from 12 to 8 to match
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
@@ -1209,7 +1205,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
               children: [
                 Checkbox(
                   value: _continuousScan,
-                  activeColor: AppColors.primaryColor,
                   onChanged: (value) {
                     setState(() {
                       _continuousScan = value ?? false;
@@ -1243,35 +1238,44 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                       }
                     });
                   },
+                  activeColor: AppColors.primaryColor,
                 ),
                 const Text(
-                  "Continuous Scan Mode",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  'Continuous Scan Mode',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600, // Added to match
+                    fontSize: 14,
+                  ),
                 ),
                 const Spacer(),
                 if (_continuousScan && _scannedBarcodes.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${_scannedBarcodes.length} items',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                  GestureDetector(
+                    onTap: _showScannedList,
+                    child: Container(
+                      margin: const EdgeInsets.only(
+                        right: 8,
+                      ), // Added for spacing
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_scannedBarcodes.length} items',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
               ],
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: RawKeyboardListener(
