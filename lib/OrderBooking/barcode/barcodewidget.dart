@@ -517,7 +517,21 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       );
     } else if (status == "2" || status == "10") {
       _showAlertDialog(context, 'Already Added', 'Already in cart: $barcode');
-    } else {
+    } else if (status.contains("already added in cart")) {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(context, 'Already Added', status);
+      _barcodeController.clear();
+      return;
+    } else if (status.contains("No data found for barcode")) {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(context, 'Invalid', status);
+      _barcodeController.clear();
+      return;
+    }
+    
+    else {
       _showAlertDialog(context, 'Invalid', 'No data found: $barcode');
     }
   }
