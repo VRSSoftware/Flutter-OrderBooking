@@ -1688,7 +1688,8 @@ class _StyleManager2 {
         "coBrId": UserSession.coBrId ?? '',
         "userId": UserSession.userName ?? '',
         "fcYrId": UserSession.userFcYr ?? '',
-        "barcode": barcode ? "true" : "false",
+        // "barcode": barcode ? "true" : "false",
+        "barcode": "false",
       }),
     );
 

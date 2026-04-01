@@ -2485,7 +2485,7 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
       }
 
       if (successfulLineItems > 0) {
-        cartModel.updateCount(cartModel.count + successfulLineItems);
+        // cartModel.updateCount(cartModel.count + successfulLineItems);
         widget.onSuccess();
         if (widget.edit) {
           EditOrderData.data.addAll(updatedCatalogOrderList);
