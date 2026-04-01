@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 
 // For image resizing on mobile
@@ -136,6 +140,70 @@ Future<String> _detectFabricColor(Uint8List imageBytes) async {
     if (r > 150 && g > 100 && b > 100) return 'Brown';
     return 'Beautiful';
   }
+
+Future<void> _downloadImage() async {
+  if (_generatedImage == null) return;
+  
+  setState(() {
+    _isGenerating = true;
+  });
+  
+  try {
+    final now = DateTime.now();
+    final timestamp = '${now.year}${now.month}${now.day}_${now.hour}${now.minute}${now.second}';
+    final fileName = 'garment_$timestamp.png';
+    
+    Directory? downloadsDir;
+    
+    if (!kIsWeb) {
+      if (Platform.isAndroid) {
+        downloadsDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadsDir.exists()) {
+          downloadsDir = await getExternalStorageDirectory();
+        }
+      } else {
+        downloadsDir = await getApplicationDocumentsDirectory();
+      }
+    }
+    
+    if (downloadsDir != null) {
+      final file = File('${downloadsDir.path}/$fileName');
+      await file.writeAsBytes(_generatedImage!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Image saved to: ${file.path}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      throw Exception('Could not access downloads directory');
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error saving image: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isGenerating = false;
+      });
+    }
+  }
+}
+
+Future<bool> _requestStoragePermission() async {
+  return true;
+}
 
   Future<void> _pickFabricImage() async {
     try {
@@ -676,27 +744,20 @@ cartoon, illustration, painting
         const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('💾 Image ready! Long press to save on mobile'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Done'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+     Expanded(
+  child: ElevatedButton.icon(
+    onPressed: _downloadImage,
+    icon: const Icon(Icons.download),
+    label: const Text('Download'),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.green.shade600,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  ),
+),
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
