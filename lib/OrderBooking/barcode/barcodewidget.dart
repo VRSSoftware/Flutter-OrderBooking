@@ -983,6 +983,28 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       _barcodeController.clear();
       return;
     }
+        else if (barcodeStatus.contains("already added in cart")) {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Already Added',
+        barcodeStatus,
+      );
+      _barcodeController.clear();
+      return;
+    }
+        else if (barcodeStatus.contains("No data found for barcode")) {
+      // Already added in cart (from API)
+      FocusManager.instance.primaryFocus?.unfocus();
+      _showAlertDialog(
+        context,
+        'Already Added',
+        barcodeStatus,
+      );
+      _barcodeController.clear();
+      return;
+    }
 
     Widget screen;
 

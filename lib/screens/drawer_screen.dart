@@ -481,7 +481,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
             child: Container(
               color: Color(0xFF1A1A2E), // Match drawer background
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(), // ✅ Enable scrolling
+                physics:
+                    const AlwaysScrollableScrollPhysics(), // ✅ Enable scrolling
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -514,6 +515,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
 
                     _buildDrawerItem('Setting', '/setting'),
                     _buildDrawerItem('Delete Account', '/deleteAccount'),
+
+                    const SizedBox(height: 20),
+                    _buildOrderTypeChangeWidget(),
 
                     const SizedBox(height: 20),
 
@@ -815,6 +819,59 @@ class _DrawerScreenState extends State<DrawerScreen> {
                   const SizedBox(width: 12),
                   Text(
                     'Logout',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isHovered ? Colors.red : Colors.grey.shade300,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderTypeChangeWidget() {
+    final isHovered = hoveredSection == 'Change Order Type';
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => hoveredSection = 'Change Order Type'),
+      onExit: (_) => setState(() => hoveredSection = null),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: isHovered ? Colors.red.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              AppConstants.bookingType =
+                  AppConstants.bookingType == '1' ? '2' : '1';
+              Navigator.pop(context);
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.swap_horiz,
+                      size: 18,
+                      color: isHovered ? Colors.red : Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                  'Change Order Type to ${AppConstants.bookingType == '1' ? '2' : '1'}',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
