@@ -73,6 +73,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import 'login_screen.dart';
@@ -85,6 +86,8 @@ class BaseUrlSettingsScreen extends StatefulWidget {
 class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
   final TextEditingController _urlController = TextEditingController();
   bool _isLoading = false;
+  final TextEditingController fcmToken =
+    TextEditingController(text: AppConstants.firebase_token ?? 'No FCM Token');
 
   @override
   void initState() {
@@ -97,7 +100,7 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? savedUrl = prefs.getString('base_url');
-      
+
       if (savedUrl != null && savedUrl.isNotEmpty) {
         _urlController.text = savedUrl;
       } else {
@@ -130,7 +133,9 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
         SnackBar(
           content: Text('Please enter a valid URL'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -144,10 +149,7 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.primaryColor.shade50,
-              Colors.white,
-            ],
+            colors: [AppColors.primaryColor.shade50, Colors.white],
           ),
         ),
         child: SafeArea(
@@ -178,9 +180,9 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                       color: AppColors.primaryColor.shade700,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Title
                   Text(
                     'Base URL Configuration',
@@ -190,20 +192,17 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                       color: AppColors.primaryColor.shade800,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   Text(
                     'Enter your server URL to connect',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   const SizedBox(height: 48),
-                  
+
                   // URL Input Card
                   Card(
                     elevation: 4,
@@ -234,9 +233,9 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 12),
-                          
+
                           // URL TextField
                           TextField(
                             controller: _urlController,
@@ -263,9 +262,45 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                               color: Colors.grey.shade800,
                             ),
                           ),
-                          
+                          const SizedBox(height: 12),
+
+                          // URL TextField
+                          TextField(
+                            controller: fcmToken,
+                            readOnly: true, // allows copy but prevents editing
+                            enabled: !_isLoading,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.public_rounded,
+                                color: Colors.grey.shade400,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.copy),
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: fcmToken.text),
+                                  );
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                            ),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+
                           const SizedBox(height: 8),
-                          
+
                           // Hint Text
                           Text(
                             'Include http:// or https://',
@@ -275,9 +310,9 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                               fontStyle: FontStyle.italic,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Confirm Button
                           SizedBox(
                             width: double.infinity,
@@ -285,54 +320,55 @@ class _BaseUrlSettingsScreenState extends State<BaseUrlSettingsScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _saveBaseUrl,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryColor.shade700,
+                                backgroundColor:
+                                    AppColors.primaryColor.shade700,
                                 foregroundColor: Colors.white,
                                 elevation: 2,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                               ),
-                              child: _isLoading
-                                  ? SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
+                              child:
+                                  _isLoading
+                                      ? SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Confirm & Continue',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
+                                      )
+                                      : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Confirm & Continue',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward_rounded),
-                                      ],
-                                    ),
+                                          const SizedBox(width: 8),
+                                          Icon(Icons.arrow_forward_rounded),
+                                        ],
+                                      ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Footer Note
                   Text(
                     'This setting will be saved for future sessions',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                     textAlign: TextAlign.center,
                   ),
                 ],
