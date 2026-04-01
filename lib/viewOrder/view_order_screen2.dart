@@ -1866,7 +1866,9 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
         final styleKey = entry.key;
         final items = entry.value;
         final catalogOrder = _convertToCatalogOrderData(styleKey, items);
-
+        print('Building style: $styleKey with ${items.length} items');
+        print(catalogOrder.catalog.styleCode);
+        print(catalogOrder.catalog.fullImagePath);
         // Ensure selectedColors exists for this style
         if (!widget.selectedColors.containsKey(styleKey)) {
           widget.selectedColors[styleKey] = {};
@@ -2050,10 +2052,13 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                     borderRadius: BorderRadius.circular(7),
                     child: GestureDetector(
                       onTap: () {
-                        final imageUrl =
-                            catalog.fullImagePath.contains("http")
-                                ? catalog.fullImagePath
-                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                        print('Image tapped: ${catalog.fullImagePath}');
+                        // final imageUrl =
+                        //     catalog.fullImagePath.contains("http")
+                        //         ? catalog.fullImagePath
+                        //         : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                        final imageUrl = catalog.fullImagePath;
+                               
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -2069,9 +2074,8 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                         fit: StackFit.expand,
                         children: [
                           Image.network(
-                            catalog.fullImagePath.contains("http")
-                                ? catalog.fullImagePath
-                                : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                             catalog.fullImagePath,
+                            // "https://api.vrsretail.in/vrs_erp2/api/v1/images/NW001.jpg",
                             fit: BoxFit.contain,
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
@@ -3358,7 +3362,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
           0,
           (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
         ),
-        fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+        fullImagePath: firstItem['fullImagePath']?.toString() ?? '/NoImage.jpg',
         remark: firstItem['remark']?.toString() ?? '',
         imageId: '',
         sizeDetails: sizes
