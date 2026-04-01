@@ -1690,7 +1690,7 @@ class CatalogItem {
   final String remark;
   final String itemName;
   final String brandName;
-  final String fullImagePath; 
+  final String fullImagePath;
 
   CatalogItem({
     required this.styleCode,
@@ -1705,8 +1705,7 @@ class CatalogItem {
     required this.remark,
     required this.itemName,
     required this.brandName,
-     required this.fullImagePath,
- 
+    required this.fullImagePath,
   });
 
   factory CatalogItem.fromJson(Map<String, dynamic> json) {
@@ -1723,7 +1722,7 @@ class CatalogItem {
       remark: json['remark']?.toString() ?? '',
       itemName: json['itemName']?.toString() ?? '',
       brandName: json['brandName']?.toString() ?? '',
-       fullImagePath: json['fullImagePath']?.toString() ?? '/NoImage.jpg',
+      fullImagePath: json['fullImagePath']?.toString() ?? '/NoImage.jpg',
     );
   }
 }
@@ -1733,7 +1732,6 @@ class BookOnBarcode1 extends StatefulWidget {
   final VoidCallback onSuccess;
   final VoidCallback onCancel;
   final bool edit;
-  
 
   const BookOnBarcode1({
     Key? key,
@@ -1760,12 +1758,12 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
   Map<String, Map<String, double>> sizeMrpMap = {};
   Map<String, Map<String, double>> sizeWspMap = {};
 
-  List<String> _allBarcodes = [];  
+  List<String> _allBarcodes = [];
 
   @override
   void initState() {
     super.initState();
-     _parseBarcodes(); 
+    _parseBarcodes();
     _loadOrderDetails();
     barcode = widget.barcode;
   }
@@ -1776,270 +1774,260 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
     super.dispose();
   }
 
-// Add this method after initState
-void _parseBarcodes() {
-  if (widget.barcode.contains(',')) {
-    _allBarcodes = widget.barcode.split(',').map((b) => b.trim()).toList();
-  } else {
-    _allBarcodes = [widget.barcode];
-  }
-}
-
-
-// REPLACE the existing fetchCatalogData with these two methods
-
-// Method to fetch data for a specific barcode
-Future<List<CatalogItem>?> fetchCatalogDataForBarcode(String barcode) async {
-  String apiUrl = '';
-  if (widget.edit) {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
-  } else {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
-  }
-  final Map<String, dynamic> requestBody = {
-    "coBrId": UserSession.coBrId ?? '',
-    "userId": UserSession.userName ?? '',
-    "fcYrId": UserSession.userFcYr ?? '',
-    "barcode": barcode.trim(),
-  };
-
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      if (data.isNotEmpty) {
-        return data.map((e) => CatalogItem.fromJson(e)).toList();
-      } else {
-        return [];
-      }
-    } else if (response.statusCode == 500) {
-      if (response.body.contains('Barcode already added')) {
-        if (mounted) {
-          await _showAlertDialogAndPop(
-            context,
-            'Already Added',
-            'This barcode is already added in the cart.',
-          );
-        }
-        return null;
-      }
-    }
-  } catch (e) {
-    debugPrint('Error fetching catalog data for $barcode: $e');
-  }
-  return [];
-}
-
-
-
-Future<void> _loadOrderDetails() async {
-  setState(() {
-    isLoading = true;
-  });
-
-  // Collect all items from all barcodes
-  List<CatalogItem> allCatalogItems = [];
-  
-  for (String barcode in _allBarcodes) {
-    final catalogItems = await fetchCatalogDataForBarcode(barcode);
-    if (catalogItems != null && catalogItems.isNotEmpty) {
-      allCatalogItems.addAll(catalogItems);
-    }
-  }
-
-  final List<CatalogOrderData> tempList = [];
-
-  // Check if any items were found
-  if (allCatalogItems.isEmpty) {
-    setState(() {
-      isLoading = false;
-      hasData = false;
-    });
-    if (mounted) {
-      Future.delayed(Duration(milliseconds: 100), () {
-        if (mounted && allCatalogItems.isEmpty) {
-          Navigator.pop(context, false);
-        }
-      });
-    }
-    return;
-  }
-
-  setState(() {
-    hasData = true;
-  });
-
-  // Group by style code
-  final styleGroups = <String, List<CatalogItem>>{};
-  for (var item in allCatalogItems) {
-    styleGroups.putIfAbsent(item.styleCode, () => []).add(item);
-  }
-
-  for (var styleCode in styleGroups.keys) {
-    final items = styleGroups[styleCode]!;
-    
-    // Get unique shades and sizes
-    final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
-    final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
-
-    // CRITICAL FIX: Build size MRP and WSP maps from ALL items
-    // This ensures MRP/WSP is consistent across shades
-    Map<String, double> tempSizeMrpMap = {};
-    Map<String, double> tempSizeWspMap = {};
-    
-    for (var size in uniqueSizes) {
-      // Get the MRP for this size - should be same across all shades
-      // Take the first occurrence of this size
-      final sizeItem = items.firstWhere(
-        (i) => i.sizeName == size, 
-        orElse: () => items.first
-      );
-      tempSizeMrpMap[size] = sizeItem.mrp;
-      tempSizeWspMap[size] = sizeItem.wsp;
-    }
-    sizeMrpMap[styleCode] = tempSizeMrpMap;
-    sizeWspMap[styleCode] = tempSizeWspMap;
-
-    // Build a map for quick lookup of shade+size combinations for stock qty
-    final Map<String, CatalogItem> itemMap = {};
-    for (var item in items) {
-      final key = '${item.shadeName}|${item.sizeName}';
-      if (!itemMap.containsKey(key)) {
-        itemMap[key] = item;
-      }
-    }
-
-    // Get first item for common data
-    final firstItem = items.first;
-
-    final catalog = Catalog(
-      itemSubGrpKey: '',
-      itemSubGrpName: '',
-      itemKey: '',
-      itemName: firstItem.itemName,
-      brandKey: '',
-      brandName: firstItem.brandName,
-      styleKey: styleCode,
-      styleCode: styleCode,
-      shadeKey: '',
-      shadeName: uniqueShades.join(','),
-      styleSizeId: '',
-      sizeName: uniqueSizes.join(','),
-      mrp: firstItem.mrp,
-      wsp: firstItem.wsp,
-      onlyMRP: firstItem.mrp,
-      clqty: firstItem.clQty,
-      total: items.fold(0, (sum, item) => sum + item.clQty),
-      upcoming_Stk: firstItem.upcoming_Stk,
-      fullImagePath: items.first.fullImagePath,
-      remark: firstItem.remark,
-      imageId: '',
-      sizeDetails: uniqueSizes
-          .map(
-            (size) =>
-                '$size (${tempSizeMrpMap[size]},${tempSizeWspMap[size]})',
-          )
-          .join(', '),
-      sizeDetailsWithoutWSp: uniqueSizes
-          .map(
-            (size) =>
-                '$size (${tempSizeMrpMap[size]})',
-          )
-          .join(', '),
-      sizeWithMrp: uniqueSizes
-          .map(
-            (size) =>
-                '$size (${tempSizeMrpMap[size]})',
-          )
-          .join(', '),
-      styleCodeWithcount: styleCode,
-      onlySizes: uniqueSizes.join(','),
-      sizeWithWsp: uniqueSizes
-          .map(
-            (size) =>
-                '$size (${tempSizeWspMap[size]})',
-          )
-          .join(', '),
-      createdDate: '',
-      shadeImages: '',
-      barcode: firstItem.barcode,
-    );
-
-    // Build matrix - each row is a shade, each column is a size
-    // The matrix data format: "MRP,WSP,STOCK_QTY,STK_QTY"
-    final matrix = <List<String>>[];
-    for (var shade in uniqueShades) {
-      final row = <String>[];
-      for (var size in uniqueSizes) {
-        final key = '$shade|$size';
-        final item = itemMap[key];
-        
-        if (item != null) {
-          // Use the item's data for stock, but use the size-based MRP/WSP
-          // This ensures MRP/WSP are consistent across shades
-          row.add('${tempSizeMrpMap[size]},${tempSizeWspMap[size]},${item.clQty},${item.stkQty}');
-        } else {
-          // If combination doesn't exist, use default values with size-based MRP/WSP
-          row.add('${tempSizeMrpMap[size]},${tempSizeWspMap[size]},0,0');
-        }
-      }
-      matrix.add(row);
-    }
-
-    final orderMatrix = OrderMatrix(
-      shades: uniqueShades,
-      sizes: uniqueSizes,
-      matrix: matrix,
-    );
-
-    tempList.add(
-      CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
-    );
-
-    // Update selectedColors2 properly - add ALL shades to the set
-    if (selectedColors2.containsKey(styleCode)) {
-      selectedColors2[styleCode]!.addAll(uniqueShades.toSet());
+  // Add this method after initState
+  void _parseBarcodes() {
+    if (widget.barcode.contains(',')) {
+      _allBarcodes = widget.barcode.split(',').map((b) => b.trim()).toList();
     } else {
-      selectedColors2[styleCode] = uniqueShades.toSet();
+      _allBarcodes = [widget.barcode];
     }
-    
-    // Initialize quantities
-    if (!quantities.containsKey(styleCode)) {
-      quantities[styleCode] = {};
-    }
-    
-    copiedRowsMap[styleCode] = [];
+  }
 
-    // Initialize quantities for all shades and sizes
-    for (var shade in uniqueShades) {
-      if (!quantities[styleCode]!.containsKey(shade)) {
-        quantities[styleCode]![shade] = {};
+  // REPLACE the existing fetchCatalogData with these two methods
+
+  // Method to fetch data for a specific barcode
+  Future<List<CatalogItem>?> fetchCatalogDataForBarcode(String barcode) async {
+    String apiUrl = '';
+    if (widget.edit) {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
+    } else {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
+    }
+    final Map<String, dynamic> requestBody = {
+      "coBrId": UserSession.coBrId ?? '',
+      "userId": UserSession.userName ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "barcode": barcode.trim(),
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          return data.map((e) => CatalogItem.fromJson(e)).toList();
+        } else {
+          return [];
+        }
+      } else if (response.statusCode == 500) {
+        if (response.body.contains('Barcode already added')) {
+          if (mounted) {
+            await _showAlertDialogAndPop(
+              context,
+              'Already Added',
+              'This barcode is already added in the cart.',
+            );
+          }
+          return null;
+        }
       }
+    } catch (e) {
+      debugPrint('Error fetching catalog data for $barcode: $e');
+    }
+    return [];
+  }
+
+  Future<void> _loadOrderDetails() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    // Collect all items from all barcodes
+    List<CatalogItem> allCatalogItems = [];
+
+    for (String barcode in _allBarcodes) {
+      final catalogItems = await fetchCatalogDataForBarcode(barcode);
+      if (catalogItems != null && catalogItems.isNotEmpty) {
+        allCatalogItems.addAll(catalogItems);
+      }
+    }
+
+    final List<CatalogOrderData> tempList = [];
+
+    // Check if any items were found
+    if (allCatalogItems.isEmpty) {
+      setState(() {
+        isLoading = false;
+        hasData = false;
+      });
+      if (mounted) {
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (mounted && allCatalogItems.isEmpty) {
+            Navigator.pop(context, false);
+          }
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      hasData = true;
+    });
+
+    // Group by style code
+    final styleGroups = <String, List<CatalogItem>>{};
+    for (var item in allCatalogItems) {
+      styleGroups.putIfAbsent(item.styleCode, () => []).add(item);
+    }
+
+    for (var styleCode in styleGroups.keys) {
+      final items = styleGroups[styleCode]!;
+
+      // Get unique shades and sizes
+      final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
+      final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
+
+      // CRITICAL FIX: Build size MRP and WSP maps from ALL items
+      // This ensures MRP/WSP is consistent across shades
+      Map<String, double> tempSizeMrpMap = {};
+      Map<String, double> tempSizeWspMap = {};
+
       for (var size in uniqueSizes) {
-        if (!quantities[styleCode]![shade]!.containsKey(size)) {
-          quantities[styleCode]![shade]![size] = 1;
-          
-          final controllerKey = '$styleCode-$shade-$size';
-          if (!_controllers.containsKey(controllerKey)) {
-            final controller = TextEditingController(text: '1');
-            controller.addListener(() => setState(() {}));
-            _controllers[controllerKey] = controller;
+        // Get the MRP for this size - should be same across all shades
+        // Take the first occurrence of this size
+        final sizeItem = items.firstWhere(
+          (i) => i.sizeName == size,
+          orElse: () => items.first,
+        );
+        tempSizeMrpMap[size] = sizeItem.mrp;
+        tempSizeWspMap[size] = sizeItem.wsp;
+      }
+      sizeMrpMap[styleCode] = tempSizeMrpMap;
+      sizeWspMap[styleCode] = tempSizeWspMap;
+
+      // Build a map for quick lookup of shade+size combinations for stock qty
+      final Map<String, CatalogItem> itemMap = {};
+      for (var item in items) {
+        final key = '${item.shadeName}|${item.sizeName}';
+        if (!itemMap.containsKey(key)) {
+          itemMap[key] = item;
+        }
+      }
+
+      // Get first item for common data
+      final firstItem = items.first;
+
+      final catalog = Catalog(
+        itemSubGrpKey: '',
+        itemSubGrpName: '',
+        itemKey: '',
+        itemName: firstItem.itemName,
+        brandKey: '',
+        brandName: firstItem.brandName,
+        styleKey: styleCode,
+        styleCode: styleCode,
+        shadeKey: '',
+        shadeName: uniqueShades.join(','),
+        styleSizeId: '',
+        sizeName: uniqueSizes.join(','),
+        mrp: firstItem.mrp,
+        wsp: firstItem.wsp,
+        onlyMRP: firstItem.mrp,
+        clqty: firstItem.clQty,
+        total: items.fold(0, (sum, item) => sum + item.clQty),
+        upcoming_Stk: firstItem.upcoming_Stk,
+        fullImagePath: items.first.fullImagePath,
+        remark: firstItem.remark,
+        imageId: '',
+        sizeDetails: uniqueSizes
+            .map(
+              (size) =>
+                  '$size (${tempSizeMrpMap[size]},${tempSizeWspMap[size]})',
+            )
+            .join(', '),
+        sizeDetailsWithoutWSp: uniqueSizes
+            .map((size) => '$size (${tempSizeMrpMap[size]})')
+            .join(', '),
+        sizeWithMrp: uniqueSizes
+            .map((size) => '$size (${tempSizeMrpMap[size]})')
+            .join(', '),
+        styleCodeWithcount: styleCode,
+        onlySizes: uniqueSizes.join(','),
+        sizeWithWsp: uniqueSizes
+            .map((size) => '$size (${tempSizeWspMap[size]})')
+            .join(', '),
+        createdDate: '',
+        shadeImages: '',
+        barcode: firstItem.barcode,
+      );
+
+      // Build matrix - each row is a shade, each column is a size
+      // The matrix data format: "MRP,WSP,STOCK_QTY,STK_QTY"
+      final matrix = <List<String>>[];
+      for (var shade in uniqueShades) {
+        final row = <String>[];
+        for (var size in uniqueSizes) {
+          final key = '$shade|$size';
+          final item = itemMap[key];
+
+          if (item != null) {
+            // Use the item's data for stock, but use the size-based MRP/WSP
+            // This ensures MRP/WSP are consistent across shades
+            row.add(
+              '${tempSizeMrpMap[size]},${tempSizeWspMap[size]},${item.clQty},${item.stkQty}',
+            );
+          } else {
+            // If combination doesn't exist, use default values with size-based MRP/WSP
+            row.add('${tempSizeMrpMap[size]},${tempSizeWspMap[size]},0,0');
+          }
+        }
+        matrix.add(row);
+      }
+
+      final orderMatrix = OrderMatrix(
+        shades: uniqueShades,
+        sizes: uniqueSizes,
+        matrix: matrix,
+      );
+
+      tempList.add(
+        CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
+      );
+
+      // Update selectedColors2 properly - add ALL shades to the set
+      if (selectedColors2.containsKey(styleCode)) {
+        selectedColors2[styleCode]!.addAll(uniqueShades.toSet());
+      } else {
+        selectedColors2[styleCode] = uniqueShades.toSet();
+      }
+
+      // Initialize quantities
+      if (!quantities.containsKey(styleCode)) {
+        quantities[styleCode] = {};
+      }
+
+      copiedRowsMap[styleCode] = [];
+
+      // Initialize quantities for all shades and sizes
+      for (var shade in uniqueShades) {
+        if (!quantities[styleCode]!.containsKey(shade)) {
+          quantities[styleCode]![shade] = {};
+        }
+        for (var size in uniqueSizes) {
+          if (!quantities[styleCode]![shade]!.containsKey(size)) {
+            quantities[styleCode]![shade]![size] = 1;
+
+            final controllerKey = '$styleCode-$shade-$size';
+            if (!_controllers.containsKey(controllerKey)) {
+              final controller = TextEditingController(text: '1');
+              controller.addListener(() => setState(() {}));
+              _controllers[controllerKey] = controller;
+            }
           }
         }
       }
     }
-  }
 
-  setState(() {
-    catalogOrderList = tempList;
-    isLoading = false;
-  });
-}
+    setState(() {
+      catalogOrderList = tempList;
+      isLoading = false;
+    });
+  }
   // Future<List<CatalogItem>> fetchCatalogData() async {
   //   String apiUrl = '';
   //   if (widget.edit) {
@@ -2083,98 +2071,99 @@ Future<void> _loadOrderDetails() async {
   //   return [];
   // }
 
-
   // Add this new method
-Future<void> _showAlertDialogAndPop(BuildContext context, String title, String message) async {
-  return showDialog(
-    context: context,
-    barrierDismissible: false, // Prevent dismissing by tapping outside
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryColor,
+  Future<void> _showAlertDialogAndPop(
+    BuildContext context,
+    String title,
+    String message,
+  ) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
             ),
-            child: const Text('OK'),
           ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      );
-    },
-  );
-}
-
-Future<List<CatalogItem>?> fetchCatalogData() async {
-  String apiUrl = '';
-  if (widget.edit) {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
-  } else {
-    apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
-  }
-  final Map<String, dynamic> requestBody = {
-    "coBrId": UserSession.coBrId ?? '',
-    "userId": UserSession.userName ?? '',
-    "fcYrId": UserSession.userFcYr ?? '',
-    "barcode": widget.barcode.trim(),
-  };
-
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
+          content: Text(message, style: const TextStyle(fontSize: 14)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        );
+      },
     );
-
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      if (data.isNotEmpty) {
-        return data.map((e) => CatalogItem.fromJson(e)).toList();
-      } else {
-        // Empty response - No data found
-        return []; // Return empty list for no data
-      }
-    } else if (response.statusCode == 500) {
-      // Check if the response body contains "Barcode already added"
-      if (response.body.contains('Barcode already added')) {
-        // ✅ Show dialog for already added barcode
-        if (mounted) {
-          await _showAlertDialogAndPop(
-            context,
-            'Already Added',
-            'This barcode is already added in the cart.',
-          );
-        }
-        return null; // 🔴 Return null for already added case
-      } else {
-        // Other 500 errors
-        debugPrint('Server error: ${response.body}');
-      }
-    } else {
-      debugPrint('Failed to fetch catalog data: ${response.statusCode}');
-    }
-  } catch (e) {
-    debugPrint('Error fetching catalog data: $e');
   }
-  return []; // Return empty list for other errors
-}
+
+  Future<List<CatalogItem>?> fetchCatalogData() async {
+    String apiUrl = '';
+    if (widget.edit) {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
+    } else {
+      apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
+    }
+    final Map<String, dynamic> requestBody = {
+      "coBrId": UserSession.coBrId ?? '',
+      "userId": UserSession.userName ?? '',
+      "fcYrId": UserSession.userFcYr ?? '',
+      "barcode": widget.barcode.trim(),
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          return data.map((e) => CatalogItem.fromJson(e)).toList();
+        } else {
+          // Empty response - No data found
+          return []; // Return empty list for no data
+        }
+      } else if (response.statusCode == 500) {
+        // Check if the response body contains "Barcode already added"
+        if (response.body.contains('Barcode already added')) {
+          // ✅ Show dialog for already added barcode
+          if (mounted) {
+            await _showAlertDialogAndPop(
+              context,
+              'Already Added',
+              'This barcode is already added in the cart.',
+            );
+          }
+          return null; // 🔴 Return null for already added case
+        } else {
+          // Other 500 errors
+          debugPrint('Server error: ${response.body}');
+        }
+      } else {
+        debugPrint('Failed to fetch catalog data: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching catalog data: $e');
+    }
+    return []; // Return empty list for other errors
+  }
+
   int _getQuantity(String styleKey, String shade, String size) {
     return quantities[styleKey]?[shade]?[size] ?? 1;
   }
@@ -2293,29 +2282,31 @@ Future<List<CatalogItem>?> fetchCatalogData() async {
     setState(() {});
   }
 
-void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
-  if (sizes.isEmpty) return;
-  final firstSize = sizes.first;
-  final firstQuantity = _getQuantity(styleKey, shade, firstSize);
-  
-  setState(() {
-    for (var size in sizes) {
-      // Update the quantities map
-      _setQuantity(styleKey, shade, size, firstQuantity);
-      
-      // Update the controller text
-      final controllerKey = '$styleKey-$shade-$size';
-      if (_controllers.containsKey(controllerKey)) {
-        _controllers[controllerKey]!.text = firstQuantity.toString();
-      } else {
-        // Create new controller if it doesn't exist
-        final controller = TextEditingController(text: firstQuantity.toString());
-        controller.addListener(() => setState(() {}));
-        _controllers[controllerKey] = controller;
+  void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
+    if (sizes.isEmpty) return;
+    final firstSize = sizes.first;
+    final firstQuantity = _getQuantity(styleKey, shade, firstSize);
+
+    setState(() {
+      for (var size in sizes) {
+        // Update the quantities map
+        _setQuantity(styleKey, shade, size, firstQuantity);
+
+        // Update the controller text
+        final controllerKey = '$styleKey-$shade-$size';
+        if (_controllers.containsKey(controllerKey)) {
+          _controllers[controllerKey]!.text = firstQuantity.toString();
+        } else {
+          // Create new controller if it doesn't exist
+          final controller = TextEditingController(
+            text: firstQuantity.toString(),
+          );
+          controller.addListener(() => setState(() {}));
+          _controllers[controllerKey] = controller;
+        }
       }
-    }
-  });
-}
+    });
+  }
 
   Future<void> _submitAllOrders() async {
     List<Future<http.Response>> apiCalls = [];
@@ -2583,18 +2574,14 @@ void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
         iconTheme: const IconThemeData(color: Colors.white),
         toolbarHeight: 48,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(
-            49.0,
-          ), // Increased by 1px for divider
+          preferredSize: const Size.fromHeight(49.0),
           child: Column(
             children: [
-              // White divider line
               Container(
                 height: 1,
                 width: double.infinity,
                 color: Colors.white.withOpacity(0.3),
               ),
-              // Bottom container
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 8.0,
@@ -2656,6 +2643,7 @@ void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
       body: SafeArea(
         child: Column(
           children: [
+            // Scrollable content area
             Expanded(
               child:
                   isLoading
@@ -2717,347 +2705,392 @@ void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
                         ),
                       ),
             ),
+
+            // Bottom buttons (fixed at bottom, not scrollable)
+            // Bottom buttons (fixed at bottom, no container background)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCompactGradientButton(
+                    label: 'CANCEL ALL',
+                    icon: Icons.close,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF9E9E9E), Color(0xFF757575)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    onPressed: () {
+                      widget.onCancel();
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 1), // Small gap between buttons
+                Expanded(
+                  child: _buildCompactGradientButton(
+                    label: 'CONFIRM ALL',
+                    icon: Icons.check,
+                    gradient:
+                        _calculateTotalQuantity() > 0
+                            ? LinearGradient(
+                              colors: [
+                                AppColors.primaryColor,
+                                AppColors.primaryColor.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                            : const LinearGradient(
+                              colors: [Color(0xFFBDBDBD), Color(0xFF9E9E9E)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                    onPressed:
+                        _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
- Widget _buildOrderItem(CatalogOrderData catalogOrder) {
-  final catalog = catalogOrder.catalog;
-  final Set<String> selectedColors = selectedColors2[catalog.styleKey] ?? {};
-  final sizes = catalogOrder.orderMatrix.sizes;
-  final items =
-      catalogOrderList
-          .firstWhere((order) => order.catalog.styleKey == catalog.styleKey)
-          .orderMatrix;
+  Widget _buildOrderItem(CatalogOrderData catalogOrder) {
+    final catalog = catalogOrder.catalog;
+    final Set<String> selectedColors = selectedColors2[catalog.styleKey] ?? {};
+    final sizes = catalogOrder.orderMatrix.sizes;
+    final items =
+        catalogOrderList
+            .firstWhere((order) => order.catalog.styleKey == catalog.styleKey)
+            .orderMatrix;
 
-  return Card(
-    margin: EdgeInsets.zero,
-    elevation: 1,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // REMOVE THIS ENTIRE BARCODE SECTION
-        // The barcode container is removed - no barcode displayed
-        
-        // Header with image and details (keep this as is)
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image
-              GestureDetector(
-                onTap: () {
-                  final imageUrl =
-                      catalog.fullImagePath.contains("http")
-                          ? catalog.fullImagePath
-                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => ImageZoomScreen(
-                            imageUrls: [imageUrl],
-                            initialIndex: 0,
-                          ),
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // REMOVE THIS ENTIRE BARCODE SECTION
+          // The barcode container is removed - no barcode displayed
+
+          // Header with image and details (keep this as is)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image
+                GestureDetector(
+                  onTap: () {
+                    final imageUrl =
+                        catalog.fullImagePath.contains("http")
+                            ? catalog.fullImagePath
+                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ImageZoomScreen(
+                              imageUrls: [imageUrl],
+                              initialIndex: 0,
+                            ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 90,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: TableColors.borderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: Container(
-                  width: 90,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: TableColors.borderColor),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        catalog.fullImagePath.contains("http")
+                            ? catalog.fullImagePath
+                            : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 30,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Style Code with AppColors.primaryColor
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primaryColor.withOpacity(0.08),
+                              Colors.white,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.primaryColor.withOpacity(0.2),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryColor.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Style Code with badge
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'STYLE :',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    catalog.styleCode,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryColor,
+                                      letterSpacing: 0.3,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Divider(
+                              color: AppColors.primaryColor.withOpacity(0.2),
+                              height: 1,
+                              thickness: 1,
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                if (catalog.itemName.isNotEmpty &&
+                                    catalog.itemName != '')
+                                  _buildCompactDetailChip(
+                                    'Product',
+                                    catalog.itemName,
+                                  ),
+                                if (catalog.brandName.isNotEmpty)
+                                  _buildCompactDetailChip(
+                                    'Brand',
+                                    catalog.brandName,
+                                  ),
+                                _buildCompactStatusChip(
+                                  'Stock Type',
+                                  catalog.upcoming_Stk == '1'
+                                      ? 'Upcoming'
+                                      : 'Ready',
+                                  catalog.upcoming_Stk == '1'
+                                      ? Colors.orange
+                                      : Colors.green,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      catalog.fullImagePath.contains("http")
-                          ? catalog.fullImagePath
-                          : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 30,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Style Code with AppColors.primaryColor
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primaryColor.withOpacity(0.08),
-                            Colors.white,
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.primaryColor.withOpacity(0.2),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryColor.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Style Code with badge
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'STYLE :',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  catalog.styleCode,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryColor,
-                                    letterSpacing: 0.3,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Divider(
-                            color: AppColors.primaryColor.withOpacity(0.2),
-                            height: 1,
-                            thickness: 1,
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 4,
-                            children: [
-                              if (catalog.itemName.isNotEmpty &&
-                                  catalog.itemName != '')
-                                _buildCompactDetailChip(
-                                  'Product',
-                                  catalog.itemName,
-                                ),
-                              if (catalog.brandName.isNotEmpty)
-                                _buildCompactDetailChip(
-                                  'Brand',
-                                  catalog.brandName,
-                                ),
-                              _buildCompactStatusChip(
-                                'Stock Type',
-                                catalog.upcoming_Stk == '1'
-                                    ? 'Upcoming'
-                                    : 'Ready',
-                                catalog.upcoming_Stk == '1'
-                                    ? Colors.orange
-                                    : Colors.green,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        // Stats row (keep as is)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildStatRow(
-                  'Stock',
-                  _calculateStockQuantity(catalog.styleKey).toString(),
-                  Icons.inventory,
-                  Colors.blue.shade700,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildStatRow(
-                  'Order',
-                  _calculateCatalogQuantity(catalog.styleKey).toString(),
-                  Icons.shopping_bag,
-                  Colors.orange.shade700,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _buildStatRow(
-                  'Amt',
-                  '${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
-                  Icons.currency_rupee,
-                  Colors.green.shade700,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Table for each shade - shows each shade as a separate row
-        // ...selectedColors.map(
-        //   (shade) => Column(
-        //     children: [
-        //       _buildEnhancedShadeTable(catalogOrder, shade),
-        //       const SizedBox(height: 8),
-        //     ],
-        //   ),
-        // ),
-        _buildCombinedTable(catalogOrder),
-
-        const SizedBox(height: 5),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: TextField(
-            decoration: InputDecoration(
-              isDense: true,
-              labelText: 'Note',
-              labelStyle: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: BorderSide(color: TableColors.borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: BorderSide(
-                  color: AppColors.primaryColor,
-                  width: 2,
-                ),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 4,
-              ),
-              prefixIcon: Icon(
-                Icons.note_outlined,
-                size: 16,
-                color: AppColors.primaryColor,
-              ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 30,
-              ),
+              ],
             ),
-            style: const TextStyle(fontSize: 11),
-            maxLines: 1,
           ),
-        ),
 
-        const SizedBox(height: 5),
+          const SizedBox(height: 4),
 
-        // Cancel/Confirm buttons
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildCompactGradientButton(
-                  label: 'CANCEL',
-                  icon: Icons.close,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF9E9E9E), Color(0xFF757575)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          // Stats row (keep as is)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildStatRow(
+                    'Stock',
+                    _calculateStockQuantity(catalog.styleKey).toString(),
+                    Icons.inventory,
+                    Colors.blue.shade700,
                   ),
-                  onPressed: () => _deleteStyle(catalog.styleKey),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildCompactGradientButton(
-                  label: 'CONFIRM',
-                  icon: Icons.check,
-                  gradient:
-                      _calculateTotalQuantity() > 0
-                          ? LinearGradient(
-                            colors: [
-                              AppColors.primaryColor,
-                              AppColors.primaryColor.withOpacity(0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                          : const LinearGradient(
-                            colors: [Color(0xFFBDBDBD), Color(0xFF9E9E9E)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                  onPressed:
-                      _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildStatRow(
+                    'Order',
+                    _calculateCatalogQuantity(catalog.styleKey).toString(),
+                    Icons.shopping_bag,
+                    Colors.orange.shade700,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildStatRow(
+                    'Amt',
+                    '${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
+                    Icons.currency_rupee,
+                    Colors.green.shade700,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+
+          const SizedBox(height: 12),
+
+          // Table for each shade - shows each shade as a separate row
+          // ...selectedColors.map(
+          //   (shade) => Column(
+          //     children: [
+          //       _buildEnhancedShadeTable(catalogOrder, shade),
+          //       const SizedBox(height: 8),
+          //     ],
+          //   ),
+          // ),
+          _buildCombinedTable(catalogOrder),
+
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: TextField(
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: 'Note',
+                labelStyle: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: TableColors.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryColor,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                prefixIcon: Icon(
+                  Icons.note_outlined,
+                  size: 16,
+                  color: AppColors.primaryColor,
+                ),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 28,
+                  minHeight: 30,
+                ),
+              ),
+              style: const TextStyle(fontSize: 11),
+              maxLines: 1,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          //   padding: const EdgeInsets.all(12),
+          //   child: Row(
+          //     children: [
+          //       Expanded(
+          //         child: _buildCompactGradientButton(
+          //           label: 'CANCEL',
+          //           icon: Icons.close,
+          //           gradient: const LinearGradient(
+          //             colors: [Color(0xFF9E9E9E), Color(0xFF757575)],
+          //             begin: Alignment.topLeft,
+          //             end: Alignment.bottomRight,
+          //           ),
+          //           onPressed: () => _deleteStyle(catalog.styleKey),
+          //         ),
+          //       ),
+          //       const SizedBox(width: 12),
+          //       Expanded(
+          //         child: _buildCompactGradientButton(
+          //           label: 'CONFIRM',
+          //           icon: Icons.check,
+          //           gradient:
+          //               _calculateTotalQuantity() > 0
+          //                   ? LinearGradient(
+          //                     colors: [
+          //                       AppColors.primaryColor,
+          //                       AppColors.primaryColor.withOpacity(0.8),
+          //                     ],
+          //                     begin: Alignment.topLeft,
+          //                     end: Alignment.bottomRight,
+          //                   )
+          //                   : const LinearGradient(
+          //                     colors: [Color(0xFFBDBDBD), Color(0xFF9E9E9E)],
+          //                     begin: Alignment.topLeft,
+          //                     end: Alignment.bottomRight,
+          //                   ),
+          //           onPressed:
+          //               _calculateTotalQuantity() > 0 ? _submitAllOrders : null,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCompactDetailChip(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -3159,8 +3192,6 @@ void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
       ),
     );
   }
-
-  
 
   Widget _buildEnhancedShadeTable(CatalogOrderData catalogOrder, String shade) {
     final styleKey = catalogOrder.catalog.styleKey;
@@ -3626,466 +3657,450 @@ void _copyQtyInShadeOnly(String styleKey, String shade, List<String> sizes) {
     );
   }
 
-// Add this new method - builds the combined table with MRP, WSP, and all shades
-Widget _buildCombinedTable(CatalogOrderData catalogOrder) {
-  final styleKey = catalogOrder.catalog.styleKey;
-  final sizes = catalogOrder.orderMatrix.sizes;
-  final sizeMrp = sizeMrpMap[styleKey] ?? {};
-  final sizeWsp = sizeWspMap[styleKey] ?? {};
-  final allShades = selectedColors2[styleKey] ?? {};
-  final items = catalogOrderList
-      .firstWhere((order) => order.catalog.styleKey == styleKey)
-      .orderMatrix;
+  // Add this new method - builds the combined table with MRP, WSP, and all shades
+  Widget _buildCombinedTable(CatalogOrderData catalogOrder) {
+    final styleKey = catalogOrder.catalog.styleKey;
+    final sizes = catalogOrder.orderMatrix.sizes;
+    final sizeMrp = sizeMrpMap[styleKey] ?? {};
+    final sizeWsp = sizeWspMap[styleKey] ?? {};
+    final allShades = selectedColors2[styleKey] ?? {};
+    final items =
+        catalogOrderList
+            .firstWhere((order) => order.catalog.styleKey == styleKey)
+            .orderMatrix;
 
-  return Container(
-    width: double.infinity,
-    decoration: BoxDecoration(
-      border: Border(
-        top: BorderSide(color: TableColors.borderColor),
-        bottom: BorderSide(color: TableColors.borderColor),
-      ),
-      color: Colors.white,
-    ),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minWidth: MediaQuery.of(context).size.width,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: TableColors.borderColor),
+          bottom: BorderSide(color: TableColors.borderColor),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: Table(
-            border: TableBorder.all(
-              color: TableColors.borderColor,
-              width: 0.5,
-            ),
-            columnWidths: _buildColumnWidths(sizes.length),
-            children: [
-              // Header row with diagonal line
-              TableRow(
-                decoration: BoxDecoration(color: TableColors.headerBg),
-                children: [
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: Container(
-                      height: 50,
-                      child: CustomPaint(
-                        painter: _SimpleDiagonalPainter(),
-                        child: const Stack(
-                          children: [
-                            Positioned(
-                              left: 8,
-                              top: 22,
-                              child: Text(
-                                'SHADE',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 10,
-                              bottom: 20,
-                              child: Text(
-                                'SIZE',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber,
-                                  fontSize: 14,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  ...sizes.map(
-                    (size) => TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            size,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // MRP row (shown only once)
-              TableRow(
-                decoration: BoxDecoration(color: TableColors.priceRowBg),
-                children: [
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      child: const Text(
-                        'MRP',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryColor,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ...sizes.map((size) {
-                    final price = sizeMrp[size] ?? 0.0;
-                    return TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: TableColors.borderColor,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${price.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-
-              // WSP row (shown only once)
-              TableRow(
-                decoration: BoxDecoration(color: TableColors.priceRowBg),
-                children: [
-                  TableCell(
-                    verticalAlignment: TableCellVerticalAlignment.middle,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      child: const Text(
-                        'WSP',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryColor,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ...sizes.map((size) {
-                    final price = sizeWsp[size] ?? 0.0;
-                    return TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: TableColors.borderColor,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${price.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-
-              // All shade rows (multiple rows)
-              ...allShades.map((shade) => _buildShadeRow(catalogOrder, shade, sizes, items)),
-            ],
-          ),
-        ),
+        color: Colors.white,
       ),
-    ),
-  );
-}
-
-// New method to build individual shade rows - returns TableRow
-TableRow _buildShadeRow(CatalogOrderData catalogOrder, String shade, List<String> sizes, OrderMatrix items) {
-  final styleKey = catalogOrder.catalog.styleKey;
-
-  return TableRow(
-    decoration: BoxDecoration(color: TableColors.evenRowBg),
-    children: [
-      TableCell(
-        verticalAlignment: TableCellVerticalAlignment.middle,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 8,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width,
           ),
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Table(
+              border: TableBorder.all(
                 color: TableColors.borderColor,
                 width: 0.5,
               ),
-            ),
-          ),
-          child: Row(
-            children: [
-              // Copy icon
-              Container(
-                margin: const EdgeInsets.only(right: 6),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            titlePadding: EdgeInsets.zero,
-                            contentPadding: EdgeInsets.zero,
-                            title: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
+              columnWidths: _buildColumnWidths(sizes.length),
+              children: [
+                // Header row with diagonal line
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.headerBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        height: 50,
+                        child: CustomPaint(
+                          painter: _SimpleDiagonalPainter(),
+                          child: const Stack(
+                            children: [
+                              Positioned(
+                                left: 8,
+                                top: 22,
+                                child: Text(
+                                  'SHADE',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                    letterSpacing: 0.8,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      'Select an Action',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                              Positioned(
+                                right: 10,
+                                bottom: 20,
+                                child: Text(
+                                  'SIZE',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber,
+                                    fontSize: 14,
+                                    letterSpacing: 0.8,
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...sizes.map(
+                      (size) => TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 0.5,
                               ),
                             ),
-                            content: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _buildDialogOption(
-                                    'Copy Qty in shade only',
-                                    AppColors.primaryColor,
-                                    () {
-                                      Navigator.of(context).pop();
-                                      _copyQtyInShadeOnly(
-                                        styleKey,
-                                        shade,
-                                        sizes,
-                                      );
-                                    },
+                          ),
+                          child: Center(
+                            child: Text(
+                              size,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // MRP row (shown only once)
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.priceRowBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        color: AppColors.primaryColor.withOpacity(0.1),
+                        child: const Text(
+                          'MRP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...sizes.map((size) {
+                      final price = sizeMrp[size] ?? 0.0;
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: TableColors.borderColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${price.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+
+                // WSP row (shown only once)
+                TableRow(
+                  decoration: BoxDecoration(color: TableColors.priceRowBg),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        color: AppColors.primaryColor.withOpacity(0.1),
+                        child: const Text(
+                          'WSP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...sizes.map((size) {
+                      final price = sizeWsp[size] ?? 0.0;
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.middle,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: TableColors.borderColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${price.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+
+                // All shade rows (multiple rows)
+                ...allShades.map(
+                  (shade) => _buildShadeRow(catalogOrder, shade, sizes, items),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // New method to build individual shade rows - returns TableRow
+  TableRow _buildShadeRow(
+    CatalogOrderData catalogOrder,
+    String shade,
+    List<String> sizes,
+    OrderMatrix items,
+  ) {
+    final styleKey = catalogOrder.catalog.styleKey;
+
+    return TableRow(
+      decoration: BoxDecoration(color: TableColors.evenRowBg),
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(color: TableColors.borderColor, width: 0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Copy icon
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              titlePadding: EdgeInsets.zero,
+                              contentPadding: EdgeInsets.zero,
+                              title: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
                                   ),
-                                  _buildDialogOption(
-                                    'Copy Row',
-                                    Colors.blue,
-                                    () {
-                                      Navigator.of(context).pop();
-                                      _copyRow(
-                                        styleKey,
-                                        shade,
-                                        sizes,
-                                      );
-                                    },
-                                  ),
-                                  _buildDialogOption(
-                                    'Paste Row',
-                                    Colors.green,
-                                    () {
-                                      Navigator.of(context).pop();
-                                      _pasteRow(
-                                        styleKey,
-                                        shade,
-                                        sizes,
-                                      );
-                                    },
-                                  ),
-                                  _buildDialogOption(
-                                    'Copy Qty in All Shade',
-                                    Colors.purple,
-                                    () {
-                                      Navigator.of(context).pop();
-                                      _copyQtyInAllShade(
-                                        styleKey,
-                                        shade,
-                                        sizes,
-                                      );
-                                    },
-                                  ),
-                                  if (catalogOrderList.length > 1)
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Select an Action',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              content: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
                                     _buildDialogOption(
-                                      'Copy Size Qty to other Styles',
-                                      Colors.orange,
+                                      'Copy Qty in shade only',
+                                      AppColors.primaryColor,
                                       () {
                                         Navigator.of(context).pop();
-                                        _copySizeQtyToOtherStyles(
+                                        _copyQtyInShadeOnly(
                                           styleKey,
+                                          shade,
+                                          sizes,
                                         );
                                       },
                                     ),
-                                ],
+                                    _buildDialogOption(
+                                      'Copy Row',
+                                      Colors.blue,
+                                      () {
+                                        Navigator.of(context).pop();
+                                        _copyRow(styleKey, shade, sizes);
+                                      },
+                                    ),
+                                    _buildDialogOption(
+                                      'Paste Row',
+                                      Colors.green,
+                                      () {
+                                        Navigator.of(context).pop();
+                                        _pasteRow(styleKey, shade, sizes);
+                                      },
+                                    ),
+                                    _buildDialogOption(
+                                      'Copy Qty in All Shade',
+                                      Colors.purple,
+                                      () {
+                                        Navigator.of(context).pop();
+                                        _copyQtyInAllShade(
+                                          styleKey,
+                                          shade,
+                                          sizes,
+                                        );
+                                      },
+                                    ),
+                                    if (catalogOrderList.length > 1)
+                                      _buildDialogOption(
+                                        'Copy Size Qty to other Styles',
+                                        Colors.orange,
+                                        () {
+                                          Navigator.of(context).pop();
+                                          _copySizeQtyToOtherStyles(styleKey);
+                                        },
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Icon(
-                        Icons.copy_all,
-                        size: 14,
-                        color: AppColors.primaryColor,
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          Icons.copy_all,
+                          size: 14,
+                          color: AppColors.primaryColor,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Text(
-                  shade,
-                  style: TextStyle(
-                    color: _getColorCode(shade),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                Expanded(
+                  child: Text(
+                    shade,
+                    style: TextStyle(
+                      color: _getColorCode(shade),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      ...sizes.map((size) {
-        final quantity = _getQuantity(styleKey, shade, size);
-        final controllerKey = '$styleKey-$shade-$size';
-        final controller = _controllers[controllerKey];
+        ...sizes.map((size) {
+          final quantity = _getQuantity(styleKey, shade, size);
+          final controllerKey = '$styleKey-$shade-$size';
+          final controller = _controllers[controllerKey];
 
-        // Get clqty from matrix for hint
-        final shadeIndex = items.shades.indexOf(shade.trim());
-        final sizeIndex = items.sizes.indexOf(size.trim());
-        String clQty = '0';
-        if (shadeIndex != -1 && sizeIndex != -1) {
-          final matrixData = items.matrix[shadeIndex][sizeIndex].split(',');
-          clQty = matrixData.length > 2 ? matrixData[2] : '0';
-        }
+          // Get clqty from matrix for hint
+          final shadeIndex = items.shades.indexOf(shade.trim());
+          final sizeIndex = items.sizes.indexOf(size.trim());
+          String clQty = '0';
+          if (shadeIndex != -1 && sizeIndex != -1) {
+            final matrixData = items.matrix[shadeIndex][sizeIndex].split(',');
+            clQty = matrixData.length > 2 ? matrixData[2] : '0';
+          }
 
-        return TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 2,
-            ),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: TableColors.borderColor,
-                  width: 0.5,
+          return TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: TableColors.borderColor, width: 0.5),
                 ),
               ),
-            ),
-            child: TextField(
-              controller: controller,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  hintText: clQty,
+                  hintStyle: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade400,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                 ),
-                hintText: clQty,
-                hintStyle: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade400,
-                  fontStyle: FontStyle.italic,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                onChanged: (value) {
+                  final newQuantity =
+                      int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                  _setQuantity(styleKey, shade, size, newQuantity);
+                },
               ),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-              onChanged: (value) {
-                final newQuantity =
-                    int.tryParse(value.isEmpty ? '0' : value) ?? 0;
-                _setQuantity(styleKey, shade, size, newQuantity);
-              },
             ),
-          ),
-        );
-      }),
-    ],
-  );
-}
+          );
+        }),
+      ],
+    );
+  }
 
   Widget _buildDialogOption(String title, Color color, VoidCallback onTap) {
     return GestureDetector(
@@ -4131,7 +4146,8 @@ TableRow _buildShadeRow(CatalogOrderData catalogOrder, String shade, List<String
     return Container(
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius:
+            BorderRadius.zero, // No border radius for full width buttons
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -4140,28 +4156,30 @@ TableRow _buildShadeRow(CatalogOrderData catalogOrder, String shade, List<String
           ),
         ],
       ),
-      height: 36,
+      height: 48, // Slightly taller for better touch area
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-          minimumSize: const Size(double.infinity, 36),
+          padding: EdgeInsets.zero, // Remove all padding
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+          ), // Square corners
+          minimumSize: const Size(double.infinity, 48),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 14),
-            const SizedBox(width: 6),
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
           ],
