@@ -388,7 +388,13 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     'Shades': true,
     'StyleCode': true,
   };
-  // Remove this line: bool _noDataFound = false;
+
+  // Continuous scan variables
+  bool _continuousScan = false;
+  List<Map<String, dynamic>> _scannedBarcodes =
+      []; // Store with validation status
+  Set<String> _scannedSet = {};
+  bool _isValidating = false;
 
   @override
   void initState() {
@@ -420,7 +426,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.enter) {
-      // Check if any dialog is currently open
       bool isDialogOpen = ModalRoute.of(context)?.isCurrent != true;
 
       if (!isDialogOpen) {
@@ -428,59 +433,485 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
         if (barcode.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _barcodeController.clear();
-            _validateAndNavigate(barcode);
+            if (_continuousScan) {
+              _addBarcodeToList(barcode);
+            } else {
+              _validateAndNavigate(barcode);
+            }
           });
         }
       }
     }
   }
 
+  // NEW: Add barcode to continuous scan list
+  Future<void> _addBarcodeToList(String barcode) async {
+    if (_isValidating) return;
+
+    String upperBarcode = barcode.toUpperCase();
+
+    // Check if already added in current session (in cart)
+    if (addedItems.contains(upperBarcode)) {
+      _showAlertDialog(
+        context,
+        'Already Added',
+        'This barcode is already in cart: $upperBarcode',
+      );
+      return;
+    }
+
+    // Check if already in current scan list
+    if (_scannedSet.contains(upperBarcode)) {
+      _showAlertDialog(
+        context,
+        'Already in List',
+        'Already scanned: $upperBarcode',
+      );
+      return;
+    }
+
+    // Add with pending status
+    setState(() {
+      _scannedBarcodes.add({'barcode': upperBarcode, 'status': 'pending'});
+      _scannedSet.add(upperBarcode);
+    });
+
+    // Validate the barcode
+    _validateBarcode(upperBarcode);
+  }
+
+  // NEW: Validate a barcode and update its status
+  Future<void> _validateBarcode(String barcode) async {
+    setState(() {
+      _isValidating = true;
+    });
+
+    String status = await _checkBarcodeExists(barcode);
+
+    if (!mounted) return;
+
+    setState(() {
+      int index = _scannedBarcodes.indexWhere(
+        (item) => item['barcode'] == barcode,
+      );
+      if (index != -1) {
+        if (status == "1") {
+          _scannedBarcodes[index]['status'] = 'valid';
+        } else if (status == "2" || status == "10") {
+          _scannedBarcodes[index]['status'] = 'already_added';
+        } else {
+          _scannedBarcodes[index]['status'] = 'invalid';
+        }
+      }
+      _isValidating = false;
+    });
+
+    // Show feedback
+    if (status == "1") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Added: $barcode'),
+          duration: const Duration(milliseconds: 800),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (status == "2" || status == "10") {
+      _showAlertDialog(context, 'Already Added', 'Already in cart: $barcode');
+    } else {
+      _showAlertDialog(context, 'Invalid', 'No data found: $barcode');
+    }
+  }
+
+  // NEW: Show scanned barcodes list in bottom sheet
+  void _showScannedList() {
+    if (_scannedBarcodes.isEmpty) {
+      _showAlertDialog(context, 'Empty List', 'No barcodes scanned yet.');
+      return;
+    }
+
+    // Filter only valid barcodes
+    List<Map<String, dynamic>> validBarcodes =
+        _scannedBarcodes.where((item) => item['status'] == 'valid').toList();
+
+    if (validBarcodes.isEmpty) {
+      _showAlertDialog(
+        context,
+        'No Valid Barcodes',
+        'No valid barcodes to process.',
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Scanned Barcodes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${validBarcodes.length} valid',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+
+                  // List of barcodes
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _scannedBarcodes.length,
+                      itemBuilder: (context, index) {
+                        final item = _scannedBarcodes[index];
+                        final barcode = item['barcode'];
+                        final status = item['status'];
+
+                        Color statusColor;
+                        IconData statusIcon;
+                        String statusText;
+
+                        switch (status) {
+                          case 'valid':
+                            statusColor = Colors.green;
+                            statusIcon = Icons.check_circle;
+                            statusText = 'Valid';
+                            break;
+                          case 'pending':
+                            statusColor = Colors.orange;
+                            statusIcon = Icons.hourglass_empty;
+                            statusText = 'Checking...';
+                            break;
+                          case 'already_added':
+                            statusColor = Colors.red;
+                            statusIcon = Icons.warning;
+                            statusText = 'Already in Cart';
+                            break;
+                          default:
+                            statusColor = Colors.red;
+                            statusIcon = Icons.error;
+                            statusText = 'Invalid';
+                        }
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: statusColor.withOpacity(0.1),
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(color: statusColor),
+                            ),
+                          ),
+                          title: Text(
+                            barcode,
+                            style: const TextStyle(fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: 14,
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      statusText,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _scannedSet.remove(barcode);
+                                    _scannedBarcodes.removeAt(index);
+                                  });
+                                  setStateSheet(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  // Action buttons
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('Clear All'),
+                                      content: Text(
+                                        'Clear all ${_scannedBarcodes.length} barcodes?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _scannedBarcodes.clear();
+                                              _scannedSet.clear();
+                                            });
+                                            Navigator.pop(context);
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text(
+                                            'Clear',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
+                            child: const Text('Clear All'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _processValidBarcodes();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor,
+                            ),
+                            child: Text(
+                              'Confirm (${validBarcodes.length})',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // NEW: Process all valid barcodes and open BookOnBarcode1
+  Future<void> _processValidBarcodes() async {
+    List<String> validBarcodes =
+        _scannedBarcodes
+            .where((item) => item['status'] == 'valid')
+            .map((item) => item['barcode'] as String)
+            .toList();
+
+    if (validBarcodes.isEmpty) {
+      _showAlertDialog(
+        context,
+        'No Valid Barcodes',
+        'No valid barcodes to process.',
+      );
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Prepare barcodes string (comma-separated for API)
+    String allBarcodes = validBarcodes.join(',');
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading
+
+    Widget screen;
+
+    if (AppConstants.bookingType == "1") {
+      screen = BookOnBarcode1(
+        barcode: allBarcodes,
+        onSuccess: () {
+          setState(() {
+            // Add all valid barcodes to added items
+            for (String barcode in validBarcodes) {
+              addedItems.add(barcode);
+            }
+            // Clear the scanned list
+            _scannedBarcodes.clear();
+            _scannedSet.clear();
+            _barcodeController.clear();
+          });
+
+          if (widget.onOrderConfirmed != null) {
+            widget.onOrderConfirmed!();
+          }
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        onCancel: () {
+          _barcodeController.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        edit: widget.edit,
+      );
+    } else {
+      screen = BookOnBarcode2(
+        barcode: allBarcodes,
+        onSuccess: () {
+          setState(() {
+            for (String barcode in validBarcodes) {
+              addedItems.add(barcode);
+            }
+            _scannedBarcodes.clear();
+            _scannedSet.clear();
+            _barcodeController.clear();
+          });
+
+          if (widget.onOrderConfirmed != null) {
+            widget.onOrderConfirmed!();
+          }
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        onCancel: () {
+          _barcodeController.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _barcodeFocusNode.requestFocus();
+          });
+        },
+        edit: widget.edit,
+      );
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
+
+  // UPDATED: Scan barcode with continuous scan support
   Future<void> _scanBarcode() async {
-    // Hide keyboard before opening scanner
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final barcode = await Navigator.push<String>(
+    final result = await Navigator.push<List<String>>(
       context,
       MaterialPageRoute(builder: (context) => BarcodeScannerScreen()),
     );
 
-    if (barcode != null && barcode.isNotEmpty) {
-      final upperBarcode = barcode.toUpperCase();
-      setState(() {
-        _barcodeController.text = upperBarcode;
-      });
-      _validateAndNavigate(upperBarcode);
+    if (result != null && result.isNotEmpty) {
+      for (String barcode in result) {
+        if (_continuousScan) {
+          _addBarcodeToList(barcode);
+        } else {
+          _validateAndNavigate(barcode);
+          break; // Only process first barcode in single mode
+        }
+      }
     } else {
-      // Request focus back if scan was cancelled
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _barcodeFocusNode.requestFocus();
       });
     }
   }
 
+  // UPDATED: Scan QR code with continuous scan support
   Future<void> _scanQRCode() async {
-    // Hide keyboard before opening scanner
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final barcode = await Navigator.push<String>(
+    final result = await Navigator.push<List<String>>(
       context,
       MaterialPageRoute(builder: (context) => QRCodeScannerScreen()),
     );
 
-    if (barcode != null && barcode.isNotEmpty) {
-      final upperBarcode = barcode.toUpperCase();
-      setState(() {
-        _barcodeController.text = upperBarcode;
-      });
-      _validateAndNavigate(upperBarcode);
+    if (result != null && result.isNotEmpty) {
+      for (String barcode in result) {
+        if (_continuousScan) {
+          _addBarcodeToList(barcode);
+        } else {
+          _validateAndNavigate(barcode);
+          break; // Only process first barcode in single mode
+        }
+      }
     } else {
-      // Request focus back if scan was cancelled
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _barcodeFocusNode.requestFocus();
       });
     }
   }
 
+  // EXISTING: Single barcode validation (unchanged)
   void _validateAndNavigate(String barcode) async {
     if (barcode.isEmpty) {
       FocusManager.instance.primaryFocus?.unfocus();
@@ -493,10 +924,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     }
 
     String upperBarcode = barcode.toUpperCase();
-    print("Checking barcode: $upperBarcode, addedItems: $addedItems");
-   // await _refreshAddedItems();
 
-    // First check if already added in current session
     if (addedItems.contains(upperBarcode)) {
       FocusManager.instance.primaryFocus?.unfocus();
       _showAlertDialog(
@@ -508,7 +936,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       return;
     }
 
-    // Show loading dialog while checking
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -532,14 +959,12 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
           ),
     );
 
-    // Check barcode status
     String barcodeStatus = await _checkBarcodeExists(upperBarcode);
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loading dialog
+    Navigator.pop(context);
 
     if (barcodeStatus == "0") {
-      // No data found
       FocusManager.instance.primaryFocus?.unfocus();
       _showAlertDialog(
         context,
@@ -548,8 +973,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       );
       _barcodeController.clear();
       return;
-    } else if (barcodeStatus == "2") {
-      // Already added in cart (from API)
+    } else if (barcodeStatus == "2" || barcodeStatus == "10") {
       FocusManager.instance.primaryFocus?.unfocus();
       _showAlertDialog(
         context,
@@ -559,32 +983,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       _barcodeController.clear();
       return;
     }
-    else if (barcodeStatus == "10") {
-      // Already added in cart (from API)
-      FocusManager.instance.primaryFocus?.unfocus();
-      _showAlertDialog(
-        context,
-        'Already Added',
-        'This barcode is already added in the cart.',
-      );
-      _barcodeController.clear();
-      return;
-    }
-    // else{
-    //    FocusManager.instance.primaryFocus?.unfocus();
-    //   _showAlertDialog(
-    //     context,
-    //     'Error ',
-    //     barcodeStatus,
-    //   );
-    //   _barcodeController.clear();
-    //   return;
-    // }
 
-    // Only navigate if barcodeStatus == 1 (exists with data)
-    print("Barcode exists, navigating with barcode: $upperBarcode");
-
-    // Determine which screen to use based on bookingType
     Widget screen;
 
     if (AppConstants.bookingType == "1") {
@@ -593,7 +992,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
         onSuccess: () {
           setState(() {
             addedItems.add(upperBarcode);
-            print("Added barcode: $upperBarcode, addedItems: $addedItems");
             _barcodeController.clear();
           });
 
@@ -619,7 +1017,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
         onSuccess: () {
           setState(() {
             addedItems.add(upperBarcode);
-            print("Added barcode: $upperBarcode, addedItems: $addedItems");
             _barcodeController.clear();
           });
 
@@ -641,14 +1038,13 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
       );
     }
 
-    // Navigate to the screen
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => screen),
     );
   }
 
-  // Update this method to return different values for different cases
+  // EXISTING: Check barcode exists (unchanged)
   Future<String> _checkBarcodeExists(String barcode) async {
     String apiUrl = '';
     if (widget.edit) {
@@ -673,48 +1069,35 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
-        print("barcode data Length ");
-        print(data.length);
-        print(data.isNotEmpty);
         if (data.isNotEmpty) {
-          return "1"; // ✅ Barcode exists with data
+          return "1";
         } else {
-          return "0"; // ❌ No data found
+          return "0";
         }
       } else if (response.statusCode == 409) {
-        // FocusManager.instance.primaryFocus?.unfocus();
-        // _showAlertDialog(
-        //   context,
-        //   'Already Added',
-        //    response.body.isNotEmpty ? response.body : "Something went wrong",
-        // );
-        // _barcodeController.clear();
-        return response.body.isNotEmpty ? response.body : "Something went wrong";
-      }
-      else if (response.statusCode == 404) {
-        // FocusManager.instance.primaryFocus?.unfocus();
-        // _showAlertDialog(
-        //   context,
-        //   'No Data Found',
-        //    response.body.isNotEmpty ? response.body : "Something went wrong",
-        // );
-        // _barcodeController.clear();
-        return response.body.isNotEmpty ? response.body : "Something went wrong";
-      }
-       else if (response.statusCode == 500) {
-        // Check if it's "already added" error
+        return response.body.isNotEmpty
+            ? response.body
+            : "Something went wrong";
+      } else if (response.statusCode == 404) {
+        return response.body.isNotEmpty
+            ? response.body
+            : "Something went wrong";
+      } else if (response.statusCode == 500) {
         if (response.body.contains('Barcode already added')) {
-          return "2"; // 🔴 Barcode already added in cart
+          return "2";
         }
       }
-       debugPrint("Unexpected response for barcode check: ${response.statusCode} - ${response.body}");
+      debugPrint(
+        "Unexpected response: ${response.statusCode} - ${response.body}",
+      );
     } catch (e) {
       print('Error checking barcode: $e');
     }
-   
-    return "0"; // Default to no data found
+
+    return "0";
   }
 
+  // EXISTING: Show alert dialog (unchanged)
   void _showAlertDialog(BuildContext context, String title, String message) {
     showDialog(
       context: context,
@@ -734,7 +1117,6 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                // Request focus only after dialog is dismissed
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _barcodeFocusNode.requestFocus();
                 });
@@ -753,9 +1135,9 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
     );
   }
 
+  // EXISTING: Refresh added items (unchanged)
   Future<void> _refreshAddedItems() async {
     try {
-      // Fetch current cart items from the server
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/orderBooking/GetViewOrder'),
         headers: {'Content-Type': 'application/json'},
@@ -769,11 +1151,8 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
 
       if (response.statusCode == 200) {
         final List cartItems = json.decode(response.body);
-
-        // Extract barcodes from cart items
         Set<String> currentBarcodes = {};
         for (var item in cartItems) {
-          // Check if item has barcode field
           if (item['barcode'] != null &&
               item['barcode'].toString().isNotEmpty) {
             currentBarcodes.add(item['barcode'].toString().toUpperCase());
@@ -783,20 +1162,94 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
         setState(() {
           addedItems = currentBarcodes.toList();
         });
-
-        print("Refreshed added items: $addedItems");
       }
     } catch (e) {
       print('Error refreshing added items: $e');
     }
   }
 
+  // UPDATED: Build method with dynamic button
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Continuous Scan Checkbox - Matching the "Order Booking Barcode Wise" style
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _continuousScan,
+                  activeColor: AppColors.primaryColor,
+                  onChanged: (value) {
+                    setState(() {
+                      _continuousScan = value ?? false;
+                      if (!_continuousScan && _scannedBarcodes.isNotEmpty) {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('Clear List?'),
+                                content: Text(
+                                  'You have ${_scannedBarcodes.length} barcode(s). Clear them?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _scannedBarcodes.clear();
+                                        _scannedSet.clear();
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Text('Clear'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Keep'),
+                                  ),
+                                ],
+                              ),
+                        );
+                      }
+                    });
+                  },
+                ),
+                const Text(
+                  "Continuous Scan Mode",
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const Spacer(),
+                if (_continuousScan && _scannedBarcodes.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${_scannedBarcodes.length} items',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: RawKeyboardListener(
@@ -813,8 +1266,11 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                       keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.none,
                       decoration: InputDecoration(
-                        labelText: "Enter Barcode",
-                        labelStyle: const TextStyle(fontSize: 14),
+                        labelText:
+                            _continuousScan
+                                ? "Enter Barcode (Press Enter to Add)"
+                                : "Enter Barcode",
+                        labelStyle: const TextStyle(fontSize: 13),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 6.0,
@@ -859,6 +1315,8 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
               ),
             ),
           ),
+
+          // Dynamic button - changes based on mode
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 12.0,
@@ -867,11 +1325,19 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
             child: Center(
               child: GestureDetector(
                 onTap: () {
-                  _validateAndNavigate(_barcodeController.text.trim());
+                  final barcode = _barcodeController.text.trim();
+                  if (barcode.isNotEmpty) {
+                    if (_continuousScan) {
+                      _addBarcodeToList(barcode);
+                      _barcodeController.clear();
+                    } else {
+                      _validateAndNavigate(barcode);
+                    }
+                  }
                 },
                 child: Container(
                   height: 38,
-                  width: 140,
+                  width: _continuousScan ? 120 : 140,
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: AppColors.primaryColor,
@@ -887,9 +1353,9 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                           child: Container(
                             color: AppColors.primaryColor,
                             alignment: Alignment.center,
-                            child: const Text(
-                              'SEARCH',
-                              style: TextStyle(
+                            child: Text(
+                              _continuousScan ? 'ADD' : 'SEARCH',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -903,7 +1369,7 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
                         width: 38,
                         alignment: Alignment.center,
                         child: Icon(
-                          Icons.search,
+                          _continuousScan ? Icons.add : Icons.search,
                           color: AppColors.primaryColor,
                         ),
                       ),
@@ -914,7 +1380,72 @@ class _BarcodeWiseWidgetState extends State<BarcodeWiseWidget> {
             ),
           ),
 
-          // Remove the "No Data Found" text section that was here
+          // Show scanned barcodes preview (quick view)
+          if (_continuousScan && _scannedBarcodes.isNotEmpty && !_isValidating)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const Text(
+                    'Quick Preview:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children:
+                        _scannedBarcodes.take(3).map((item) {
+                          Color statusColor =
+                              item['status'] == 'valid'
+                                  ? Colors.green
+                                  : (item['status'] == 'pending'
+                                      ? Colors.orange
+                                      : Colors.red);
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: statusColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              item['barcode'],
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: statusColor,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                  if (_scannedBarcodes.length > 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '+${_scannedBarcodes.length - 3} more',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+
           if (_barcodeResults.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(12.0),
