@@ -55,7 +55,7 @@ class AppColors {
   static const Color lightBlue = Color(0xFFDBECF6); // Light Blue
   static const Color lightGray = Color(0xFFE5E9ED); // Light Gray
   static const Color veryLightGray = Color(0xFFF1F5F9); // Very Light Gray
-  static const Color paleYellow = Color(0xFFFEF5D3); // Pale Yellow
+  static const Color paleYellow = Color(0xFFFEF5D3); // Pale Yellow   
   static const Color black = Color(0xFF000000); // Black
   static const Color darkPurple = Color(0xFF19062C); // Dark Purple shade
   static const Color softPurple = Color(0xFFd5ddef); // Soft Purple shade
