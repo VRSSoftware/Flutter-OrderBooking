@@ -245,191 +245,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     }
   }
 
-  // Future<void> _loadOrderDetails() async {
-  //   setState(() {
-  //     isLoading = true;
-  //   });
-
-  //   final catalogItems = await fetchCatalogData();
-  //   final List<CatalogOrderData> tempList = [];
-
-  //   if (catalogItems.isNotEmpty) {
-  //     setState(() {
-  //       hasData = true;
-  //     });
-
-  //     final styleGroups = <String, List<CatalogItem>>{};
-  //     for (var item in catalogItems) {
-  //       styleGroups.putIfAbsent(item.styleCode, () => []).add(item);
-  //     }
-
-  //     for (var styleCode in styleGroups.keys) {
-  //       final items = styleGroups[styleCode]!;
-  //       final uniqueShades = items.map((e) => e.shadeName).toSet().toList();
-  //       final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
-
-  //       final catalog = Catalog(
-  //         itemSubGrpKey: '',
-  //         itemSubGrpName: '',
-  //         itemKey: '',
-  //         itemName: 'Unknown Product',
-  //         brandKey: '',
-  //         brandName: '',
-  //         styleKey: styleCode,
-  //         styleCode: styleCode,
-  //         shadeKey: '',
-  //         shadeName: uniqueShades.join(','),
-  //         styleSizeId: '',
-  //         sizeName: uniqueSizes.join(','),
-  //         mrp: items.first.mrp,
-  //         wsp: items.first.wsp,
-  //         onlyMRP: items.first.mrp,
-  //         clqty: items.first.clQty,
-  //         total: items.fold(0, (sum, item) => sum + item.clQty),
-  //         upcoming_Stk: items.first.upcoming_Stk,
-  //         fullImagePath: items.first.fullImagePath,
-
-  //         remark: '',
-  //         imageId: '',
-  //         sizeDetails: uniqueSizes
-  //             .map(
-  //               (size) =>
-  //                   '$size (${items.firstWhere((i) => i.sizeName == size).mrp},${items.firstWhere((i) => i.sizeName == size).wsp})',
-  //             )
-  //             .join(', '),
-  //         sizeDetailsWithoutWSp: uniqueSizes
-  //             .map(
-  //               (size) =>
-  //                   '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
-  //             )
-  //             .join(', '),
-  //         sizeWithMrp: uniqueSizes
-  //             .map(
-  //               (size) =>
-  //                   '$size (${items.firstWhere((i) => i.sizeName == size).mrp})',
-  //             )
-  //             .join(', '),
-  //         styleCodeWithcount: styleCode,
-  //         onlySizes: uniqueSizes.join(','),
-  //         sizeWithWsp: uniqueSizes
-  //             .map(
-  //               (size) =>
-  //                   '$size (${items.firstWhere((i) => i.sizeName == size).wsp})',
-  //             )
-  //             .join(', '),
-  //         createdDate: '',
-  //         shadeImages: '',
-  //         barcode: items.first.barcode,
-  //       );
-
-  //       final matrix = <List<String>>[];
-  //       for (var shade in uniqueShades) {
-  //         final row = <String>[];
-  //         for (var size in uniqueSizes) {
-  //           final item = items.firstWhere(
-  //             (i) => i.shadeName == shade && i.sizeName == size,
-  //             orElse:
-  //                 () => CatalogItem(
-  //                   styleCode: styleCode,
-  //                   shadeName: shade,
-  //                   sizeName: size,
-  //                   clQty: items.first.clQty,
-  //                   mrp: items.first.mrp,
-  //                   wsp: items.first.wsp,
-  //                   upcoming_Stk: items.first.upcoming_Stk,
-  //                   stkQty: items.first.stkQty,
-  //                   barcode: items.first.barcode,
-  //                   fullImagePath: items.first.fullImagePath,
-
-  //                 ),
-  //           );
-  //           row.add('${item.mrp},${item.wsp},${item.clQty},${item.stkQty}');
-  //         }
-  //         matrix.add(row);
-  //       }
-
-  //       final orderMatrix = OrderMatrix(
-  //         shades: uniqueShades,
-  //         sizes: uniqueSizes,
-  //         matrix: matrix,
-  //       );
-
-  //       tempList.add(
-  //         CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
-  //       );
-
-  //       selectedColors2[styleCode] = uniqueShades.toSet();
-  //       quantities[styleCode] = {};
-  //       for (var shade in uniqueShades) {
-  //         quantities[styleCode]![shade] = {};
-  //         for (var size in uniqueSizes) {
-  //           quantities[styleCode]![shade]![size] =
-  //               UserSession.coBrName == 'G CUBE NX' ? 0 : 0;
-  //           final controllerKey = '$styleCode-$shade-$size';
-  //           final controller = TextEditingController(text: '0');
-  //           controller.addListener(() => setState(() {}));
-  //           _controllers[controllerKey] = controller;
-  //         }
-  //       }
-  //     }
-  //   } else {
-  //     setState(() {
-  //       hasData = false;
-  //     });
-  //   }
-
-  //   setState(() {
-  //     catalogOrderList = tempList;
-  //     isLoading = false;
-  //   });
-
-  //   if (!hasData && mounted) {
-  //     Navigator.pop(context, false);
-  //   }
-  // }
-
-  // Future<List<CatalogItem>> fetchCatalogData() async {
-  //   String apiUrl = '';
-  //   if (widget.edit) {
-  //     apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetailsUpdated';
-  //   } else {
-  //     apiUrl = '${AppConstants.BASE_URL}/orderBooking/GetBarcodeDetails';
-  //   }
-  //   final Map<String, dynamic> requestBody = {
-  //     "coBrId": UserSession.coBrId ?? '',
-  //     "userId": UserSession.userName ?? '',
-  //     "fcYrId": UserSession.userFcYr ?? '',
-  //     "barcode": widget.barcode.trim(),
-  //   };
-
-  //   try {
-  //     final response = await http.post(
-  //       Uri.parse(apiUrl),
-  //       headers: {'Content-Type': 'application/json'},
-  //       body: jsonEncode(requestBody),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       final List data = jsonDecode(response.body);
-  //       if (data.isNotEmpty) {
-  //         return data.map((e) => CatalogItem.fromJson(e)).toList();
-  //       }
-  //     } else if (response.statusCode == 500 &&
-  //         response.body == 'Barcode already added') {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('This barcode is already added in the cart.'),
-  //           backgroundColor: AppColors.primaryColor,
-  //         ),
-  //       );
-  //     } else {
-  //       debugPrint('Failed to fetch catalog data: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error fetching catalog data: $e');
-  //   }
-  //   return [];
-  // }
   Future<List<CatalogItem>> fetchCatalogData(String barcode) async {
     String apiUrl = '';
     if (widget.edit) {
@@ -501,6 +316,83 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     Navigator.pop(context);
   }
 
+  void _copyStyleQuantities(
+    String sourceStyleKey,
+    Set<String> targetStyleKeys,
+  ) {
+    final sourceQuantities = quantities[sourceStyleKey] ?? {};
+    setState(() {
+      for (var targetStyleKey in targetStyleKeys) {
+        final targetCatalogOrder = catalogOrderList.firstWhere(
+          (order) => order.catalog.styleKey == targetStyleKey,
+        );
+        final targetShades = selectedColors2[targetStyleKey] ?? {};
+        final validSizes = targetCatalogOrder.orderMatrix.sizes;
+
+        quantities[targetStyleKey] ??= {};
+        for (var sourceShade in sourceQuantities.keys) {
+          if (targetShades.contains(sourceShade)) {
+            quantities[targetStyleKey]!.putIfAbsent(sourceShade, () => {});
+            sourceQuantities[sourceShade]!.forEach((size, quantity) {
+              if (validSizes.contains(size)) {
+                quantities[targetStyleKey]![sourceShade]![size] = quantity;
+                final controllerKey = '$targetStyleKey-$sourceShade-$size';
+                if (_controllers.containsKey(controllerKey)) {
+                  _controllers[controllerKey]!.text = quantity.toString();
+                }
+              }
+            });
+          }
+        }
+      }
+    });
+  }
+
+  void _copyShadeQuantities(
+    String styleKey,
+    String sourceShade,
+    Set<String> targetShades,
+  ) {
+    final sourceQuantities = quantities[styleKey]?[sourceShade] ?? {};
+    setState(() {
+      for (var targetShade in targetShades) {
+        quantities[styleKey]!.putIfAbsent(targetShade, () => {});
+        sourceQuantities.forEach((size, quantity) {
+          quantities[styleKey]![targetShade]![size] = quantity;
+          final controllerKey = '$styleKey-$targetShade-$size';
+          if (_controllers.containsKey(controllerKey)) {
+            _controllers[controllerKey]!.text = quantity.toString();
+          }
+        });
+      }
+    });
+  }
+
+  void _copyShadeToAllSizes(
+    String styleKey,
+    String sourceShade,
+    List<String> validSizes,
+  ) {
+    setState(() {
+      quantities[styleKey]!.putIfAbsent(sourceShade, () => {});
+      // Get the quantity of the first size in the source shade, default to 0 if not set
+      final firstSize = validSizes.isNotEmpty ? validSizes.first : null;
+      final quantityToCopy =
+          firstSize != null
+              ? quantities[styleKey]![sourceShade]![firstSize] ?? 0
+              : 0;
+
+      // Copy the quantity to all sizes in the source shade
+      for (var size in validSizes) {
+        quantities[styleKey]![sourceShade]![size] = quantityToCopy;
+        final controllerKey = '$styleKey-$sourceShade-$size';
+        if (_controllers.containsKey(controllerKey)) {
+          _controllers[controllerKey]!.text = quantityToCopy.toString();
+        }
+      }
+    });
+  }
+
   void _copyFirstSizeQuantity(
     String styleKey,
     String shade,
@@ -544,7 +436,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
   Future<void> _submitAllOrders() async {
     List<Future<http.Response>> apiCalls = [];
     List<String> apiCallStyles = [];
-   // final cartModel = Provider.of<CartModel>(context, listen: false);
     addedItems.clear();
 
     List<CatalogOrderData> updatedCatalogOrderList = [];
@@ -619,7 +510,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                 "clqty": quantity.toString(),
                 "cobrid": UserSession.coBrId ?? '',
                 "user": "admin",
-                "barcode": itemBarcode, // Use the specific barcode
+                "barcode": itemBarcode,
                 "styleCode": styleCode,
                 "shadeName": shade,
                 "sizeName": size,
@@ -644,7 +535,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   "Qty": quantity.toString(),
                   "cobrid": UserSession.coBrId ?? '',
                   "user": "admin",
-                  "barcode": itemBarcode, // Use the specific barcode
+                  "barcode": itemBarcode,
                 },
                 "typ": 0,
                 "barcode": "true",
@@ -719,7 +610,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       }
 
       if (successfulLineItems > 0) {
-       // cartModel.updateCount(cartModel.count + successfulLineItems);
         widget.onSuccess();
         if (widget.edit) {
           EditOrderData.data.addAll(updatedCatalogOrderList);
@@ -822,13 +712,11 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
           preferredSize: const Size.fromHeight(49.0),
           child: Column(
             children: [
-              // White divider line
               Container(
                 height: 1,
                 width: double.infinity,
                 color: Colors.white.withOpacity(0.3),
               ),
-              // Bottom container with totals
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 8.0,
@@ -840,7 +728,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   children: [
                     Flexible(
                       child: Text(
-                        'Total: ${_calculateTotalPrice().toStringAsFixed(2)}',
+                        'Total: ₹${_calculateTotalPrice().toStringAsFixed(2)}',
                         style: GoogleFonts.roboto(
                           color: Colors.white,
                           fontSize: 12,
@@ -890,7 +778,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       body: SafeArea(
         child: Column(
           children: [
-            // Main Content
             Expanded(
               child:
                   isLoading
@@ -922,7 +809,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                                   color: Colors.black87,
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: 16),
                               SizedBox(
                                 width: 22,
                                 height: 22,
@@ -962,7 +849,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   width: double.infinity,
                   child: Row(
                     children: [
-                      // Cancel Button - 50% width
                       Expanded(
                         child: _buildCompactGradientButton(
                           label: 'CANCEL',
@@ -977,7 +863,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                           borderRadius: BorderRadius.zero,
                         ),
                       ),
-                      // Confirm Button - 50% width
                       Expanded(
                         child: _buildCompactGradientButton(
                           label: 'CONFIRM',
@@ -1101,7 +986,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    // widget.barcode,
                     itemBarcode,
                     style: TextStyle(
                       fontSize: 14,
@@ -1114,7 +998,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
             ),
           ),
 
-          // Product Header with Image
+          // Product Header with Image and Copy/Delete Actions
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -1193,7 +1077,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Product Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1260,6 +1143,96 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                // Copy Style Button
+                                Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () async {
+                                      final result = await showDialog<
+                                        Set<String>
+                                      >(
+                                        context: context,
+                                        builder:
+                                            (context) => CopyToStylesDialog(
+                                              styleKeys:
+                                                  catalogOrderList
+                                                      .map(
+                                                        (order) =>
+                                                            order
+                                                                .catalog
+                                                                .styleKey,
+                                                      )
+                                                      .where(
+                                                        (key) =>
+                                                            key !=
+                                                            catalog.styleKey,
+                                                      )
+                                                      .toList(),
+                                              styleCodes:
+                                                  catalogOrderList
+                                                      .map(
+                                                        (order) =>
+                                                            order
+                                                                .catalog
+                                                                .styleCode,
+                                                      )
+                                                      .toList(),
+                                              sourceStyleKey: catalog.styleKey,
+                                              sourceStyleCode: catalog.styleCode,
+                                            ),
+                                      );
+
+                                      if (result != null && result.isNotEmpty) {
+                                        _copyStyleQuantities(
+                                          catalog.styleKey,
+                                          result,
+                                        );
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryColor
+                                            .withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.copy,
+                                        size: 16,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Delete Button
+                                Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () {
+                                      _confirmDeleteStyle(
+                                        catalog.styleKey,
+                                        catalog.styleCode,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.delete,
+                                        size: 16,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -1269,12 +1242,10 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                               thickness: 1,
                             ),
                             const SizedBox(height: 8),
-                            // Wrap for status chips
                             Wrap(
                               spacing: 8,
                               runSpacing: 4,
                               children: [
-                                // Stock Type Chip
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
@@ -1329,7 +1300,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                                     ],
                                   ),
                                 ),
-                                // Shades Chip
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
@@ -1424,15 +1394,13 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
 
           const SizedBox(height: 16),
 
-          // Color Sections - Original table design preserved
+          // Color Sections - Updated with same design as CreateOrderScreen
           ...selectedColors.map(
             (color) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: _buildColorSection(catalogOrder, color),
             ),
           ),
-
-          // const SizedBox(height: 5),
 
           // Note field
           Padding(
@@ -1480,42 +1448,131 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     );
   }
 
-  // Helper method to count unique shades
-  int uniqueShadesCount(String styleKey) {
-    return selectedColors2[styleKey]?.length ?? 0;
+  Future<void> _confirmDeleteStyle(String styleKey, String styleCode) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 8,
+          titlePadding: const EdgeInsets.only(top: 30, bottom: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 8,
+          ),
+          actionsPadding: const EdgeInsets.only(
+            bottom: 24,
+            right: 24,
+            left: 24,
+          ),
+          title: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    styleCode,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Are you sure you want to delete this style?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade600,
+                      backgroundColor: Colors.grey.shade50,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.delete_outline, size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "Delete",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      _deleteStyle(styleKey);
+    }
   }
 
-  Widget _buildCompactStatusChip(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
+  int uniqueShadesCount(String styleKey) {
+    return selectedColors2[styleKey]?.length ?? 0;
   }
 
   Widget _buildStatRow(String label, String value, IconData icon, Color color) {
@@ -1593,42 +1650,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     );
   }
 
-  // Original table design - completely preserved
-  TableRow _buildTableRow(String label, String value, {Color? valueColor}) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(label, style: GoogleFonts.roboto(fontSize: 14)),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 4.0),
-          child: Align(
-            alignment: Alignment.center,
-            child: Text(":", style: TextStyle(fontSize: 14)),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: GoogleFonts.roboto(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: valueColor ?? Colors.black,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   int _calculateCatalogQuantity(String styleKey) {
     int total = 0;
     for (var shade in quantities[styleKey]?.keys ?? []) {
@@ -1690,7 +1711,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     return total;
   }
 
-  // Add this method to your class to get color based on shade name
   Color _getColorCode(String color) {
     switch (color.toLowerCase()) {
       case 'red':
@@ -1717,12 +1737,10 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       case 'gray':
         return Colors.grey;
       default:
-        // Return a random color based on string hash for variety
         return Colors.primaries[color.hashCode % Colors.primaries.length];
     }
   }
 
-  // Helper method to calculate quantity for a specific shade
   int _calculateShadeQuantity(String styleKey, String shade) {
     int total = 0;
     final shadeQuantities = quantities[styleKey]?[shade];
@@ -1734,15 +1752,34 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     return total;
   }
 
+  double _calculateShadePrice(CatalogOrderData catalogOrder, String shade) {
+    double total = 0;
+    final styleKey = catalogOrder.catalog.styleKey;
+    final matrix = catalogOrder.orderMatrix;
+    final shadeIndex = matrix.shades.indexOf(shade.trim());
+    if (shadeIndex == -1) return total;
+    for (var size in quantities[styleKey]?[shade]?.keys ?? []) {
+      final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
+      if (sizeIndex == -1) continue;
+      final rate =
+          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
+          0;
+      final quantity = quantities[styleKey]![shade]![size]!;
+      total += rate * quantity;
+    }
+    return total;
+  }
+
   Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
     final sizes = catalogOrder.orderMatrix.sizes;
     final styleKey = catalogOrder.catalog.styleKey;
-    final TextEditingController multiplierController = TextEditingController();
+    final allShades =
+        catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Modern Card-style Header (Option 4)
+        // Modern Card-style Header with Copy Option
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1762,7 +1799,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
           ),
           child: Row(
             children: [
-              // Color indicator with shine effect
               Container(
                 width: 18,
                 height: 18,
@@ -1788,7 +1824,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Shade name
               Expanded(
                 child: Text(
                   shade,
@@ -1801,7 +1836,58 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Quantity summary for this shade
+              // Copy Shade Button
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () async {
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder:
+                          (context) => ShadeSelectionDialog(
+                            shades:
+                                allShades.where((s) => s != shade).toList(),
+                            sourceShade: shade,
+                          ),
+                    );
+
+                    if (result != null) {
+                      if (result['option'] == 'all_sizes') {
+                        _copyShadeToAllSizes(
+                          styleKey,
+                          shade,
+                          sizes,
+                        );
+                      } else if (result['option'] == 'other_shades') {
+                        final selectedShades = result['selectedShades']
+                            as Set<String>;
+                        if (selectedShades.isNotEmpty) {
+                          _copyShadeQuantities(
+                            styleKey,
+                            shade,
+                            selectedShades,
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.copy_all,
+                      size: 16,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -1821,7 +1907,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
           ),
         ),
 
-        // Original table structure preserved
+        // Table structure matching CreateOrderScreen
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
@@ -1853,6 +1939,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                             ),
                           ),
                           const SizedBox(width: 4),
+                          // Size copy options
                           IconButton(
                             icon: const Icon(
                               Icons.copy,
@@ -1912,6 +1999,8 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                               if (choice == 'copy') {
                                 _copyFirstSizeQuantity(styleKey, shade, sizes);
                               } else if (choice == 'multiply') {
+                                final TextEditingController multiplierController =
+                                    TextEditingController();
                                 final multiplier = await showDialog<int>(
                                   context: context,
                                   builder:
@@ -1983,7 +2072,8 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
               // Size rows
               for (var size in sizes) ...[
                 _buildSizeRow(catalogOrder, shade, size),
-                Divider(height: 1, color: Colors.grey.shade300),
+                if (size != sizes.last)
+                  Divider(height: 1, color: Colors.grey.shade300),
               ],
             ],
           ),
@@ -1992,7 +2082,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     );
   }
 
-  // Original header builder
   Widget _buildHeader(String text, int flex) => Expanded(
     flex: flex,
     child: Container(
@@ -2012,7 +2101,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     ),
   );
 
-  // Original size row builder
   Widget _buildSizeRow(
     CatalogOrderData catalogOrder,
     String shade,
@@ -2025,7 +2113,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
 
     String rate = '';
     String wsp = '0';
-    String qty = '1';
     String stkQty = '0';
 
     if (shadeIndex != -1 && sizeIndex != -1) {
@@ -2040,7 +2127,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     final controllerKey = '$styleKey-$shade-$size';
     final controller = _controllers.putIfAbsent(
       controllerKey,
-      () => TextEditingController(text: '1'),
+      () => TextEditingController(text: quantity.toString()),
     );
 
     if (controller.text != quantity.toString()) {
@@ -2068,7 +2155,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   icon: const Icon(Icons.remove, size: 20),
                 ),
                 SizedBox(
-                  width: 18,
+                  width: 22,
                   child: TextField(
                     controller: controller,
                     textAlign: TextAlign.center,
@@ -2113,7 +2200,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     );
   }
 
-  // Original cell builder
   Widget _buildCell(String text, int flex) => Expanded(
     flex: flex,
     child: Container(
@@ -2128,4 +2214,229 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       ),
     ),
   );
+}
+
+// ShadeSelectionDialog Class (same as CreateOrderScreen)
+class ShadeSelectionDialog extends StatefulWidget {
+  final List<String> shades;
+  final String sourceShade;
+
+  const ShadeSelectionDialog({
+    Key? key,
+    required this.shades,
+    required this.sourceShade,
+  }) : super(key: key);
+
+  @override
+  _ShadeSelectionDialogState createState() => _ShadeSelectionDialogState();
+}
+
+class _ShadeSelectionDialogState extends State<ShadeSelectionDialog> {
+  final Set<String> _selectedShades = {};
+  bool _isAllSizesChecked = false;
+  bool _showShadeSelection = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: Text('Copy Quantities', style: GoogleFonts.poppins()),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!_showShadeSelection) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Copy quantity in all sizes of "${widget.sourceShade}"',
+                    style: GoogleFonts.roboto(),
+                  ),
+                  value: _isAllSizesChecked,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isAllSizesChecked = value ?? false;
+                    });
+                  },
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showShadeSelection = true;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Copy quantities of "${widget.sourceShade}" in other shades',
+                          style: GoogleFonts.roboto(),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_showShadeSelection) ...[
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Copying from: ${widget.sourceShade}',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Divider(),
+              ...widget.shades.map((shade) {
+                return CheckboxListTile(
+                  title: Text(shade, style: GoogleFonts.roboto()),
+                  value: _selectedShades.contains(shade),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedShades.add(shade);
+                      } else {
+                        _selectedShades.remove(shade);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Cancel', style: GoogleFonts.montserrat()),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_isAllSizesChecked && !_showShadeSelection) {
+              Navigator.pop(context, {
+                'option': 'all_sizes',
+                'sourceShade': widget.sourceShade,
+              });
+            } else if (_showShadeSelection && _selectedShades.isNotEmpty) {
+              Navigator.pop(context, {
+                'option': 'other_shades',
+                'selectedShades': _selectedShades,
+              });
+            }
+          },
+          child: Text('OK', style: GoogleFonts.montserrat()),
+        ),
+      ],
+    );
+  }
+}
+
+// CopyToStylesDialog Class (same as CreateOrderScreen)
+class CopyToStylesDialog extends StatefulWidget {
+  final List<String> styleKeys;
+  final List<String> styleCodes;
+  final String sourceStyleKey;
+  final String sourceStyleCode;
+
+  const CopyToStylesDialog({
+    Key? key,
+    required this.styleKeys,
+    required this.styleCodes,
+    required this.sourceStyleKey,
+    required this.sourceStyleCode,
+  }) : super(key: key);
+
+  @override
+  _CopyToStylesDialogState createState() => _CopyToStylesDialogState();
+}
+
+class _CopyToStylesDialogState extends State<CopyToStylesDialog> {
+  late Set<String> _selectedStyleKeys;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStyleKeys = widget.styleKeys.toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: Text('Copy Qty to Other Styles', style: GoogleFonts.poppins()),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Copying from: ${widget.sourceStyleCode}',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(),
+            ...widget.styleKeys.asMap().entries.map((entry) {
+              final index = entry.key;
+              final styleKey = entry.value;
+              final styleCode = widget.styleCodes[index];
+              return CheckboxListTile(
+                title: Text(styleCode, style: GoogleFonts.roboto()),
+                value: _selectedStyleKeys.contains(styleKey),
+                onChanged: (bool? value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedStyleKeys.add(styleKey);
+                    } else {
+                      _selectedStyleKeys.remove(styleKey);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Cancel', style: GoogleFonts.montserrat()),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context, _selectedStyleKeys);
+          },
+          child: Text('OK', style: GoogleFonts.montserrat()),
+        ),
+      ],
+    );
+  }
 }

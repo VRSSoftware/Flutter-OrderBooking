@@ -1188,7 +1188,8 @@ Widget build(BuildContext context) {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
-        return Container(
+        return SafeArea (
+       child: Container(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1240,7 +1241,7 @@ Widget build(BuildContext context) {
               ),
             ],
           ),
-        );
+         ), );
       },
     );
   }
@@ -1806,7 +1807,9 @@ Widget build(BuildContext context) {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
-        return Container(
+        return SafeArea (
+          child:
+        Container(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1889,8 +1892,8 @@ Widget build(BuildContext context) {
               ),
             ],
           ),
-        );
-      },
+         ), );
+        },
     );
   }
 
