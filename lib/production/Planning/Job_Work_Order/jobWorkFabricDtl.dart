@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
+import 'package:vrs_erp/production/Widgets/custom_searchable_dropdown.dart';
+import 'package:vrs_erp/production/Widgets/custom_text_field.dart';
+import 'package:vrs_erp/services/production_services.dart';
 
 class FabricDetailsScreenForJobWork extends StatefulWidget {
   final Map<String, dynamic>? fabricDetail;
+  final int? totalPcsFromFinish;
+  final Function(Map<String, dynamic>)? onFabricChanged; // Callback when fabric data changes
   
-  const FabricDetailsScreenForJobWork({super.key, this.fabricDetail});
+  const FabricDetailsScreenForJobWork({
+    super.key, 
+    this.fabricDetail, 
+    this.totalPcsFromFinish,
+    this.onFabricChanged,
+  });
 
   @override
   State<FabricDetailsScreenForJobWork> createState() => _FabricDetailsScreenForJobWorkState();
@@ -22,22 +32,30 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
   final TextEditingController _reqQtyCtrl = TextEditingController();
   final TextEditingController _wastCtrl = TextEditingController();
   final TextEditingController _actualQtyCtrl = TextEditingController();
+  final TextEditingController _wasteAmtCtrl = TextEditingController();
   final TextEditingController _descriptionCtrl = TextEditingController();
   final TextEditingController _remarkCtrl = TextEditingController();
   
   // ────────────────────── Selected Values ──────────────────────
-  String? _selectedType;
-  String? _selectedProduct;
-  String? _selectedDesign;
-  String? _selectedShade;
-  String? _selectedBrand;
+  Map<String, dynamic>? _selectedType;
+  Map<String, dynamic>? _selectedProduct;
+  Map<String, dynamic>? _selectedDesign;
+  Map<String, dynamic>? _selectedShade;
+  Map<String, dynamic>? _selectedBrand;
   
   // ────────────────────── Dropdown Lists ──────────────────────
-  final List<String> _typeList = ['Cotton', 'Polyester', 'Denim', 'Linen', 'Silk'];
-  final List<String> _productList = ['Product A', 'Product B', 'Product C', 'Product D'];
-  final List<String> _designList = ['DES001', 'DES002', 'DES003', 'DES004', 'DES005'];
-  final List<String> _shadeList = ['White', 'Black', 'Blue', 'Red', 'Green', 'Yellow'];
-  final List<String> _brandList = ['Brand A', 'Brand B', 'Brand C', 'Brand D'];
+  List<Map<String, dynamic>> _typeList = [];
+  List<Map<String, dynamic>> _productList = [];
+  List<Map<String, dynamic>> _designList = [];
+  List<Map<String, dynamic>> _shadeList = [];
+  List<Map<String, dynamic>> _brandList = [];
+  
+  // ────────────────────── Loading States ──────────────────────
+  bool _isLoadingTypes = true;
+  bool _isLoadingProducts = false;
+  bool _isLoadingDesigns = false;
+  bool _isLoadingShades = true;
+  bool _isLoadingBrands = true;
   
   // ────────────────────── Focus Nodes ──────────────────────
   final FocusNode _typeFocus = FocusNode();
@@ -53,40 +71,204 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
   final FocusNode _descriptionFocus = FocusNode();
   final FocusNode _remarkFocus = FocusNode();
   
-  // ────────────────────── Search Controllers ──────────────────────
-  final TextEditingController _typeSearchCtrl = TextEditingController();
-  final TextEditingController _productSearchCtrl = TextEditingController();
-  final TextEditingController _designSearchCtrl = TextEditingController();
-  final TextEditingController _shadeSearchCtrl = TextEditingController();
-  final TextEditingController _brandSearchCtrl = TextEditingController();
-  
   double _qtyVar = 0;
   
   @override
   void initState() {
     super.initState();
     
-    // Add listener for wast% to calculate actual qty
+    // Add listeners for calculations
+    _ratioCtrl.addListener(_calculateFromRatio);
     _wastCtrl.addListener(_calculateActualQty);
-    _reqQtyCtrl.addListener(_calculateActualQty);
+    _reqQtyCtrl.addListener(_calculateFromReqQty);
+    
+    _loadInitialData();
     
     if (widget.fabricDetail != null) {
       _populateFormWithExistingData();
     }
+    
+    // If totalPcsFromFinish is provided, calculate initial req qty
+    if (widget.totalPcsFromFinish != null && widget.totalPcsFromFinish! > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _calculateFromRatio();
+      });
+    }
+  }
+  
+  void _calculateFromRatio() {
+    double ratio = double.tryParse(_ratioCtrl.text) ?? 0;
+    if (ratio > 0 && widget.totalPcsFromFinish != null && widget.totalPcsFromFinish! > 0) {
+      double reqQty = widget.totalPcsFromFinish! * ratio;
+      _reqQtyCtrl.text = reqQty.toStringAsFixed(3);
+      _calculateActualQty();
+      _notifyFabricChanged();
+    } else if (ratio == 0) {
+      _reqQtyCtrl.text = '0';
+      _calculateActualQty();
+      _notifyFabricChanged();
+    }
+  }
+  
+  void _calculateFromReqQty() {
+    double reqQty = double.tryParse(_reqQtyCtrl.text) ?? 0;
+    if (reqQty > 0 && widget.totalPcsFromFinish != null && widget.totalPcsFromFinish! > 0) {
+      double ratio = reqQty / widget.totalPcsFromFinish!;
+      _ratioCtrl.text = ratio.toStringAsFixed(5);
+      _calculateActualQty();
+      _notifyFabricChanged();
+    }
+  }
+  
+  void _calculateActualQty() {
+    double reqQty = double.tryParse(_reqQtyCtrl.text) ?? 0;
+    double wast = double.tryParse(_wastCtrl.text) ?? 0;
+    
+    // Calculate waste amount: (reqQty * wast) / 100
+    double wasteAmount = (reqQty * wast) / 100;
+    double actualQty = reqQty + wasteAmount;
+    
+    _wasteAmtCtrl.text = wasteAmount.toStringAsFixed(3);
+    _actualQtyCtrl.text = actualQty.toStringAsFixed(3);
+  }
+  
+  void _notifyFabricChanged() {
+    if (widget.onFabricChanged != null) {
+      final fabricData = {
+        'ratio': double.tryParse(_ratioCtrl.text) ?? 0,
+        'reqQty': double.tryParse(_reqQtyCtrl.text) ?? 0,
+        'actualQty': double.tryParse(_actualQtyCtrl.text) ?? 0,
+        'wast': double.tryParse(_wastCtrl.text) ?? 0,
+      };
+      widget.onFabricChanged!(fabricData);
+    }
+  }
+  
+  bool _validateReqQty() {
+    double reqQty = double.tryParse(_reqQtyCtrl.text) ?? 0;
+    if (reqQty <= 0) {
+      _showErrorDialog('Invalid Quantity Specified! Please enter a valid Req Qty greater than 0.');
+      return false;
+    }
+    return true;
+  }
+  
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Validation Error',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _loadFabricTypes(),
+      _loadShades(),
+      _loadBrands(),
+    ]);
+  }
+  
+  Future<void> _loadFabricTypes() async {
+    setState(() => _isLoadingTypes = true);
+    final types = await ProductionService.getFabricTypes();
+    setState(() {
+      _typeList = types;
+      _isLoadingTypes = false;
+    });
+  }
+  
+  Future<void> _loadFabricProducts(String itemGrpKey) async {
+    setState(() => _isLoadingProducts = true);
+    final products = await ProductionService.getFabricProducts(itemGrpKey);
+    setState(() {
+      _productList = products;
+      _isLoadingProducts = false;
+    });
+  }
+  
+  Future<void> _loadDesigns(String itemKey) async {
+    setState(() => _isLoadingDesigns = true);
+    final designs = await ProductionService.getDesignsByItemKey(itemKey);
+    setState(() {
+      _designList = designs;
+      _isLoadingDesigns = false;
+    });
+  }
+  
+  Future<void> _loadShades() async {
+    setState(() => _isLoadingShades = true);
+    final shades = await ProductionService.getShades();
+    setState(() {
+      _shadeList = shades;
+      _isLoadingShades = false;
+    });
+  }
+  
+  Future<void> _loadBrands() async {
+    setState(() => _isLoadingBrands = true);
+    final brands = await ProductionService.getBrands();
+    setState(() {
+      _brandList = brands;
+      _isLoadingBrands = false;
+    });
   }
   
   void _populateFormWithExistingData() {
     final data = widget.fabricDetail!;
-    _selectedType = data['type'];
-    _typeCtrl.text = _selectedType ?? '';
-    _selectedProduct = data['product'];
-    _productCtrl.text = _selectedProduct ?? '';
-    _selectedDesign = data['design'];
-    _designCtrl.text = _selectedDesign ?? '';
-    _selectedShade = data['shade'];
-    _shadeCtrl.text = _selectedShade ?? '';
-    _selectedBrand = data['brand'];
-    _brandCtrl.text = _selectedBrand ?? '';
+    
+    if (data['type'] != null) {
+      _selectedType = {
+        'key': data['typeKey'] ?? '',
+        'name': data['type'],
+        'type': data['typeCode'] ?? ''
+      };
+      _typeCtrl.text = data['type'];
+    }
+    
+    if (data['product'] != null) {
+      _selectedProduct = {
+        'key': data['productKey'] ?? '',
+        'name': data['product'],
+      };
+      _productCtrl.text = data['product'];
+    }
+    
+    if (data['design'] != null) {
+      _selectedDesign = {
+        'key': data['designKey'] ?? '',
+        'name': data['design'],
+      };
+      _designCtrl.text = data['design'];
+    }
+    
+    if (data['shade'] != null) {
+      _selectedShade = {
+        'key': data['shadeKey'] ?? '',
+        'name': data['shade'],
+      };
+      _shadeCtrl.text = data['shade'];
+    }
+    
+    if (data['brand'] != null) {
+      _selectedBrand = {
+        'key': data['brandKey'] ?? '',
+        'name': data['brand'],
+      };
+      _brandCtrl.text = data['brand'];
+    }
+    
     _widthCtrl.text = data['width']?.toString() ?? '';
     _ratioCtrl.text = data['ratio']?.toString() ?? '';
     _reqQtyCtrl.text = data['reqQty']?.toString() ?? '';
@@ -95,14 +277,9 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
     _descriptionCtrl.text = data['description'] ?? '';
     _remarkCtrl.text = data['remark'] ?? '';
     _qtyVar = data['qtyVar'] ?? 0;
-  }
-  
-  void _calculateActualQty() {
-    double reqQty = double.tryParse(_reqQtyCtrl.text) ?? 0;
-    double wast = double.tryParse(_wastCtrl.text) ?? 0;
     
-    double actualQty = reqQty + (reqQty * wast / 100);
-    _actualQtyCtrl.text = actualQty.toStringAsFixed(2);
+    // Calculate waste amount for existing data
+    _calculateActualQty();
   }
   
   void _showQtyVarDialog() {
@@ -157,254 +334,10 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
     _reqQtyCtrl.dispose();
     _wastCtrl.dispose();
     _actualQtyCtrl.dispose();
+    _wasteAmtCtrl.dispose();
     _descriptionCtrl.dispose();
     _remarkCtrl.dispose();
-    _typeSearchCtrl.dispose();
-    _productSearchCtrl.dispose();
-    _designSearchCtrl.dispose();
-    _shadeSearchCtrl.dispose();
-    _brandSearchCtrl.dispose();
     super.dispose();
-  }
-  
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    bool readOnly = false,
-    bool isRequired = false,
-    TextInputType? keyboardType,
-    VoidCallback? onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey.shade300,
-                width: focusNode.hasFocus ? 2 : 1,
-              ),
-            ),
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              readOnly: readOnly,
-              keyboardType: keyboardType,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: InputBorder.none,
-                hintText: label,
-                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-                suffixIcon: onTap != null
-                    ? Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey.shade600)
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildSearchableDropdown({
-    required String label,
-    required TextEditingController controller,
-    required List<String> items,
-    required String? selected,
-    required ValueChanged<String?> onChanged,
-    required FocusNode focusNode,
-    required TextEditingController searchController,
-    bool isRequired = false,
-  }) {
-    OverlayEntry? _overlay;
-    
-    void _removeOverlay() {
-      _overlay?.remove();
-      _overlay = null;
-      searchController.clear();
-    }
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              focusNode.requestFocus();
-              _removeOverlay();
-              final box = context.findRenderObject() as RenderBox;
-              final offset = box.localToGlobal(Offset.zero);
-              final width = box.size.width;
-              
-              List<String> filteredItems = List.from(items);
-              
-              _overlay = OverlayEntry(
-                builder: (_) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: _removeOverlay,
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
-                    Positioned(
-                      left: offset.dx,
-                      top: offset.dy + 56,
-                      width: width,
-                      child: Material(
-                        elevation: 8,
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.4,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: TextField(
-                                  controller: searchController,
-                                  autofocus: true,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search $label...',
-                                    prefixIcon: const Icon(Icons.search, size: 18),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onChanged: (query) {
-                                    filteredItems = items
-                                        .where((e) => e.toLowerCase().contains(query.toLowerCase()))
-                                        .toList();
-                                    _overlay?.markNeedsBuild();
-                                  },
-                                ),
-                              ),
-                              Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: filteredItems.length,
-                                  itemBuilder: (c, i) {
-                                    final item = filteredItems[i];
-                                    return ListTile(
-                                      dense: true,
-                                      title: Text(
-                                        item,
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                      selected: selected == item,
-                                      selectedTileColor: AppColors.primaryColor.withOpacity(0.1),
-                                      onTap: () {
-                                        _removeOverlay();
-                                        setState(() {
-                                          onChanged(item);
-                                          controller.text = item;
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-              Overlay.of(context).insert(_overlay!);
-            },
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey.shade300,
-                  width: focusNode.hasFocus ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      controller.text.isEmpty ? 'Select $label' : controller.text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: controller.text.isEmpty ? Colors.grey.shade400 : Colors.black87,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 22),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -420,212 +353,278 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSearchableDropdown(
-                  label: 'Type',
-                  controller: _typeCtrl,
-                  items: _typeList,
-                  selected: _selectedType,
-                  onChanged: (v) => _selectedType = v,
-                  focusNode: _typeFocus,
-                  searchController: _typeSearchCtrl,
-                  isRequired: true,
-                ),
-                _buildSearchableDropdown(
-                  label: 'Product',
-                  controller: _productCtrl,
-                  items: _productList,
-                  selected: _selectedProduct,
-                  onChanged: (v) => _selectedProduct = v,
-                  focusNode: _productFocus,
-                  searchController: _productSearchCtrl,
-                  isRequired: true,
-                ),
-                _buildSearchableDropdown(
-                  label: 'Design',
-                  controller: _designCtrl,
-                  items: _designList,
-                  selected: _selectedDesign,
-                  onChanged: (v) => _selectedDesign = v,
-                  focusNode: _designFocus,
-                  searchController: _designSearchCtrl,
-                  isRequired: true,
-                ),
-                _buildSearchableDropdown(
-                  label: 'Shade',
-                  controller: _shadeCtrl,
-                  items: _shadeList,
-                  selected: _selectedShade,
-                  onChanged: (v) => _selectedShade = v,
-                  focusNode: _shadeFocus,
-                  searchController: _shadeSearchCtrl,
-                ),
-                _buildSearchableDropdown(
-                  label: 'Brand',
-                  controller: _brandCtrl,
-                  items: _brandList,
-                  selected: _selectedBrand,
-                  onChanged: (v) => _selectedBrand = v,
-                  focusNode: _brandFocus,
-                  searchController: _brandSearchCtrl,
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        label: 'Width',
-                        controller: _widthCtrl,
-                        focusNode: _widthFocus,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildTextField(
-                        label: 'Ratio',
-                        controller: _ratioCtrl,
-                        focusNode: _ratioFocus,
-                        keyboardType: TextInputType.number,
-                      ),
+      body: Column(
+        children: [
+          // Scrollable Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        label: 'Req Qty',
-                        controller: _reqQtyCtrl,
-                        focusNode: _reqQtyFocus,
-                        keyboardType: TextInputType.number,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomSearchableDropdown(
+                        label: 'Type',
+                        controller: _typeCtrl,
+                        items: _typeList,
+                        selected: _selectedType,
+                        onChanged: (v) async {
+                          setState(() {
+                            _selectedType = v;
+                            _selectedProduct = null;
+                            _productCtrl.clear();
+                            _selectedDesign = null;
+                            _designCtrl.clear();
+                          });
+                          if (v != null) {
+                            await _loadFabricProducts(v['key']);
+                          }
+                        },
+                        focusNode: _typeFocus,
                         isRequired: true,
+                        isLoading: _isLoadingTypes,
+                        showClearButton: true,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildTextField(
-                        label: 'Wast (%)',
-                        controller: _wastCtrl,
-                        focusNode: _wastFocus,
-                        keyboardType: TextInputType.number,
+                      CustomSearchableDropdown(
+                        label: 'Product',
+                        controller: _productCtrl,
+                        items: _productList,
+                        selected: _selectedProduct,
+                        onChanged: (v) async {
+                          setState(() {
+                            _selectedProduct = v;
+                            _selectedDesign = null;
+                            _designCtrl.clear();
+                          });
+                          if (v != null) {
+                            await _loadDesigns(v['key']);
+                          }
+                        },
+                        focusNode: _productFocus,
+                        isRequired: true,
+                        isLoading: _isLoadingProducts,
+                        showClearButton: true,
                       ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ElevatedButton(
-                          onPressed: _showQtyVarDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade50,
-                            foregroundColor: AppColors.primaryColor,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(color: AppColors.primaryColor),
+                      CustomSearchableDropdown(
+                        label: 'Design',
+                        controller: _designCtrl,
+                        items: _designList,
+                        selected: _selectedDesign,
+                        onChanged: (v) => setState(() => _selectedDesign = v),
+                        focusNode: _designFocus,
+                        isRequired: true,
+                        isLoading: _isLoadingDesigns,
+                        showClearButton: true,
+                      ),
+                      CustomSearchableDropdown(
+                        label: 'Shade',
+                        controller: _shadeCtrl,
+                        items: _shadeList,
+                        selected: _selectedShade,
+                        onChanged: (v) => setState(() => _selectedShade = v),
+                        focusNode: _shadeFocus,
+                        isLoading: _isLoadingShades,
+                        showClearButton: true,
+                      ),
+                      CustomSearchableDropdown(
+                        label: 'Brand',
+                        controller: _brandCtrl,
+                        items: _brandList,
+                        selected: _selectedBrand,
+                        onChanged: (v) => setState(() => _selectedBrand = v),
+                        focusNode: _brandFocus,
+                        isLoading: _isLoadingBrands,
+                        showClearButton: true,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Width',
+                              controller: _widthCtrl,
+                              focusNode: _widthFocus,
+                              keyboardType: TextInputType.number,
                             ),
                           ),
-                          child: Text('Change Var(%): ${_qtyVar.toStringAsFixed(2)}%'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                _buildTextField(
-                  label: 'Actual Qty',
-                  controller: _actualQtyCtrl,
-                  focusNode: _actualQtyFocus,
-                  readOnly: true,
-                ),
-                _buildTextField(
-                  label: 'Description',
-                  controller: _descriptionCtrl,
-                  focusNode: _descriptionFocus,
-                ),
-                _buildTextField(
-                  label: 'Remark',
-                  controller: _remarkCtrl,
-                  focusNode: _remarkFocus,
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Bottom Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Ratio',
+                              controller: _ratioCtrl,
+                              focusNode: _ratioFocus,
+                              keyboardType: TextInputType.number,
+                            ),
                           ),
-                        ),
-                        child: const Text('Cancel', style: TextStyle(fontSize: 16)),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final fabricData = {
-                            'type': _selectedType,
-                            'product': _selectedProduct,
-                            'design': _selectedDesign,
-                            'shade': _selectedShade,
-                            'brand': _selectedBrand,
-                            'width': double.tryParse(_widthCtrl.text) ?? 0,
-                            'ratio': double.tryParse(_ratioCtrl.text) ?? 0,
-                            'reqQty': double.tryParse(_reqQtyCtrl.text) ?? 0,
-                            'wast': double.tryParse(_wastCtrl.text) ?? 0,
-                            'actualQty': double.tryParse(_actualQtyCtrl.text) ?? 0,
-                            'qtyVar': _qtyVar,
-                            'description': _descriptionCtrl.text,
-                            'remark': _remarkCtrl.text,
-                          };
-                          Navigator.pop(context, fabricData);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Req Qty',
+                              controller: _reqQtyCtrl,
+                              focusNode: _reqQtyFocus,
+                              keyboardType: TextInputType.number,
+                              isRequired: true,
+                            ),
                           ),
-                        ),
-                        child: const Text('Confirm', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Wast (%)',
+                              controller: _wastCtrl,
+                              focusNode: _wastFocus,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      // Waste Amount Field (Read-only)
+                      CustomTextField(
+                        label: 'Waste Amt',
+                        controller: _wasteAmtCtrl,
+                        focusNode: FocusNode(),
+                        readOnly: true,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ElevatedButton(
+                                onPressed: _showQtyVarDialog,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue.shade50,
+                                  foregroundColor: AppColors.primaryColor,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: BorderSide(color: AppColors.primaryColor),
+                                  ),
+                                ),
+                                child: Text('Change Var(%): ${_qtyVar.toStringAsFixed(2)}%'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      CustomTextField(
+                        label: 'Actual Qty',
+                        controller: _actualQtyCtrl,
+                        focusNode: _actualQtyFocus,
+                        readOnly: true,
+                      ),
+                      CustomTextField(
+                        label: 'Description',
+                        controller: _descriptionCtrl,
+                        focusNode: _descriptionFocus,
+                        maxLines: 3,
+                      ),
+                      CustomTextField(
+                        label: 'Remark',
+                        controller: _remarkCtrl,
+                        focusNode: _remarkFocus,
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
                 ),
-                
-                const SizedBox(height: 20),
+              ),
+            ),
+          ),
+          
+          // Fixed Bottom Buttons with SafeArea
+          SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        shape: const RoundedRectangleBorder(),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Validate Req Qty before saving
+                        if (!_validateReqQty()) {
+                          return;
+                        }
+                        
+                        final fabricData = {
+                          'type': _selectedType?['name'],
+                          'typeKey': _selectedType?['key'],
+                          'typeCode': _selectedType?['type'],
+                          'product': _selectedProduct?['name'],
+                          'productKey': _selectedProduct?['key'],
+                          'design': _selectedDesign?['name'],
+                          'designKey': _selectedDesign?['key'],
+                          'shade': _selectedShade?['name'],
+                          'shadeKey': _selectedShade?['key'],
+                          'brand': _selectedBrand?['name'],
+                          'brandKey': _selectedBrand?['key'],
+                          'width': double.tryParse(_widthCtrl.text) ?? 0,
+                          'ratio': double.tryParse(_ratioCtrl.text) ?? 0,
+                          'reqQty': double.tryParse(_reqQtyCtrl.text) ?? 0,
+                          'wast': double.tryParse(_wastCtrl.text) ?? 0,
+                          'wasteAmt': double.tryParse(_wasteAmtCtrl.text) ?? 0,
+                          'actualQty': double.tryParse(_actualQtyCtrl.text) ?? 0,
+                          'qtyVar': _qtyVar,
+                          'description': _descriptionCtrl.text,
+                          'remark': _remarkCtrl.text,
+                        };
+                        Navigator.pop(context, fabricData);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: const Text('Confirm'),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/production/Planning/Job_Work_Order/jobWorkFinishDtl.dart';
-
+import 'package:vrs_erp/production/Widgets/custom_date_field.dart';
+import 'package:vrs_erp/production/Widgets/custom_searchable_dropdown.dart';
+import 'package:vrs_erp/production/Widgets/custom_text_field.dart';
+import 'package:vrs_erp/services/production_services.dart';
 
 class CreateJobOrderScreen extends StatefulWidget {
   final Map<String, dynamic>? jobWork;
-  
+
   const CreateJobOrderScreen({super.key, this.jobWork});
 
   @override
@@ -19,9 +22,9 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   int _selectedTab = 0;
 
   // ────────────────────── Job Order Controllers ──────────────────────
-  final TextEditingController _seriesCtrl = TextEditingController(text: 'JW');
-  final TextEditingController _lastCdCtrl = TextEditingController(text: '00005');
-  final TextEditingController _docNoCtrl = TextEditingController(text: 'JW00006');
+  final TextEditingController _seriesCtrl = TextEditingController(text: '');
+  final TextEditingController _lastCdCtrl = TextEditingController(text: '');
+  final TextEditingController _docNoCtrl = TextEditingController(text: '');
   final TextEditingController _docDtCtrl = TextEditingController();
   final TextEditingController _refNoCtrl = TextEditingController();
   final TextEditingController _expectedDlvDtCtrl = TextEditingController();
@@ -29,25 +32,38 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   final TextEditingController _estEndDtCtrl = TextEditingController();
   final TextEditingController _actualStartDtCtrl = TextEditingController();
   final TextEditingController _actualEndDtCtrl = TextEditingController();
-  
+
   // ────────────────────── Dropdown Values ──────────────────────
-  String? _selectedJobber;
+  Map<String, dynamic>? _selectedJobber;
   String? _selectedStation;
   String? _selectedProcess;
-  
+
   // ────────────────────── Radio Button Values ──────────────────────
   String _orderType = 'Open';
   String _stockPickup = 'Partial';
-  
+
   // ────────────────────── Checkbox Values ──────────────────────
   bool _receivedAsFinished = false;
   bool _reProcess = false;
-  
-  // ────────────────────── Dropdown Lists ──────────────────────
-  final List<String> _jobbers = ['SELF', 'ABC Textiles', 'XYZ Garments', 'LMN Industries'];
-  final List<String> _stations = ['SURAT', 'MUMBAI', 'DELHI', 'AHMEDABAD', 'BANGALORE'];
-  final List<String> _processes = ['Cutting', 'Stitching', 'Washing', 'Packing', 'Finishing'];
-  
+
+  // ────────────────────── Dynamic Dropdown Lists ──────────────────────
+  List<Map<String, dynamic>> _jobberList = [];
+  List<String> _stations = [];
+  final List<String> _processes = [
+    'Cutting',
+    'Stitching',
+    'Washing',
+    'Packing',
+    'Finishing',
+  ];
+
+  // ────────────────────── Loading States ──────────────────────
+  bool _isLoadingJobbers = false;
+
+  // ────────────────────── Validation Error Messages ──────────────────────
+  String? _estDateError;
+  String? _actualDateError;
+
   // ────────────────────── Focus Nodes ──────────────────────
   final FocusNode _docDtFocus = FocusNode();
   final FocusNode _refNoFocus = FocusNode();
@@ -59,35 +75,37 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   final FocusNode _estEndDtFocus = FocusNode();
   final FocusNode _actualStartDtFocus = FocusNode();
   final FocusNode _actualEndDtFocus = FocusNode();
-  
+
   // ────────────────────── Financial Controllers ──────────────────────
   final TextEditingController _grossAmtCtrl = TextEditingController(text: '0');
   final TextEditingController _othAmtCtrl = TextEditingController(text: '0');
   final TextEditingController _gstPercCtrl = TextEditingController(text: '18');
   final TextEditingController _gstAmtCtrl = TextEditingController(text: '0');
   final TextEditingController _netAmtCtrl = TextEditingController(text: '0');
-  
+
   // ────────────────────── Other Process Controllers ──────────────────────
   final TextEditingController _otherProcessCtrl = TextEditingController();
   final TextEditingController _jobRateCtrl = TextEditingController();
   final TextEditingController _jobAmtCtrl = TextEditingController();
   final TextEditingController _remarkCtrl = TextEditingController();
-  String? _selectedOtherProcess;
-  final List<String> _otherProcesses = ['Dyeing', 'Printing', 'Washing', 'Finishing', 'Embroidery'];
-  
+  Map<String, dynamic>? _selectedOtherProcess;
+  final List<Map<String, dynamic>> _otherProcessesList = [
+    {'key': 'Dyeing', 'name': 'Dyeing'},
+    {'key': 'Printing', 'name': 'Printing'},
+    {'key': 'Washing', 'name': 'Washing'},
+    {'key': 'Finishing', 'name': 'Finishing'},
+    {'key': 'Embroidery', 'name': 'Embroidery'},
+  ];
+
   // ────────────────────── Finish Details ──────────────────────
   final List<Map<String, dynamic>> _finishDetailsList = [];
-  
+  final Set<int> _expandedCards = {};
+
   // ────────────────────── Animation ──────────────────────
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
-  // ────────────────────── Search Controllers for Dropdowns ──────────────────────
-  final TextEditingController _jobberSearchCtrl = TextEditingController();
-  final TextEditingController _stationSearchCtrl = TextEditingController();
-  final TextEditingController _processSearchCtrl = TextEditingController();
-  
-  // Controllers for dropdowns
+
+  // ────────────────────── Controllers for dropdowns ──────────────────────
   final TextEditingController _jobberCtrl = TextEditingController();
   final TextEditingController _stationCtrl = TextEditingController();
   final TextEditingController _processCtrl = TextEditingController();
@@ -101,7 +119,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
         _selectedTab = _tabController.index;
       });
     });
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -111,31 +129,70 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
       curve: Curves.easeIn,
     );
     _animationController.forward();
-    
+
     // Set default date
     _docDtCtrl.text = _getCurrentDate();
-    
+
     // Add listeners for financial calculations
     _grossAmtCtrl.addListener(_calculateNetAmt);
     _othAmtCtrl.addListener(_calculateNetAmt);
     _gstPercCtrl.addListener(_calculateNetAmt);
-    
+
+    _loadSeries();
+    if (widget.jobWork == null) {
+      _loadDocNo();
+    }
+
+    // Load jobbers
+    _loadJobbers();
+
     // If editing, populate the form with existing data
     if (widget.jobWork != null) {
       _populateFormWithExistingData();
     }
   }
-  
+
+  Future<void> _loadSeries() async {
+    final seriesData = await ProductionService.getSeries('143');
+    if (seriesData.isNotEmpty) {
+      setState(() {
+        _seriesCtrl.text = seriesData['Sr_Code'] ?? '';
+      });
+    }
+  }
+
+  Future<void> _loadDocNo() async {
+    final docNoData = await ProductionService.getDocNo();
+    setState(() {
+      _lastCdCtrl.text = docNoData['LastCd'] ?? '';
+      _docNoCtrl.text = docNoData['DocNo'] ?? '';
+    });
+  }
+
+  Future<void> _loadJobbers() async {
+    setState(() => _isLoadingJobbers = true);
+    _jobberList = await ProductionService.getJobbers();
+    setState(() => _isLoadingJobbers = false);
+  }
+
   void _populateFormWithExistingData() {
     final data = widget.jobWork!;
-    _seriesCtrl.text = data['series']?.toString() ?? 'JW';
+    _seriesCtrl.text = data['series']?.toString() ?? '';
     _lastCdCtrl.text = data['lastCd']?.toString() ?? '';
     _docNoCtrl.text = data['docNo']?.toString() ?? '';
     _docDtCtrl.text = data['docDt']?.toString() ?? _getCurrentDate();
     _refNoCtrl.text = data['refNo']?.toString() ?? '';
     _expectedDlvDtCtrl.text = data['expectedDlvDt']?.toString() ?? '';
-    _selectedJobber = data['jobber']?.toString();
-    _jobberCtrl.text = _selectedJobber ?? '';
+
+    if (data['jobber'] != null) {
+      _selectedJobber = {
+        'key': data['jobberKey'] ?? '',
+        'name': data['jobber'],
+        'station': data['station'] ?? '',
+      };
+      _jobberCtrl.text = data['jobber'];
+    }
+
     _selectedStation = data['station']?.toString();
     _stationCtrl.text = _selectedStation ?? '';
     _orderType = data['orderType']?.toString() ?? 'Open';
@@ -151,26 +208,28 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _grossAmtCtrl.text = data['grossAmt']?.toString() ?? '0';
     _othAmtCtrl.text = data['othAmt']?.toString() ?? '0';
     _gstPercCtrl.text = data['gstPerc']?.toString() ?? '18';
-    
+
     // Finish details
     if (data['finishDetails'] != null) {
-      _finishDetailsList.addAll(List<Map<String, dynamic>>.from(data['finishDetails']));
+      _finishDetailsList.addAll(
+        List<Map<String, dynamic>>.from(data['finishDetails']),
+      );
     }
-    
+
     // Calculate net amount
     _calculateNetAmt();
   }
-  
+
   String _getCurrentDate() {
     final now = DateTime.now();
     return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
   }
-  
+
   String _getCurrentDateTime() {
     final now = DateTime.now();
     return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
   }
-  
+
   int _calculateTotalPcs() {
     int total = 0;
     for (var finish in _finishDetailsList) {
@@ -178,20 +237,81 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     }
     return total;
   }
-  
+
   void _calculateNetAmt() {
     double gross = double.tryParse(_grossAmtCtrl.text) ?? 0;
     double oth = double.tryParse(_othAmtCtrl.text) ?? 0;
     double gstPerc = double.tryParse(_gstPercCtrl.text) ?? 0;
-    
+
     double total = gross + oth;
     double gstAmt = total * (gstPerc / 100);
     double netAmt = total + gstAmt;
-    
+
     _gstAmtCtrl.text = gstAmt.toStringAsFixed(2);
     _netAmtCtrl.text = netAmt.toStringAsFixed(2);
   }
-  
+
+  // ────────────────────── Validation Methods ──────────────────────
+  void _validateEstDates() {
+    if (_estStartDtCtrl.text.isNotEmpty && _estEndDtCtrl.text.isNotEmpty) {
+      final startDate = _parseDate(_estStartDtCtrl.text);
+      final endDate = _parseDate(_estEndDtCtrl.text);
+
+      if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+        setState(() {
+          _estDateError = 'Est End Date cannot be before Est Start Date';
+        });
+      } else {
+        setState(() {
+          _estDateError = null;
+        });
+      }
+    } else {
+      setState(() {
+        _estDateError = null;
+      });
+    }
+  }
+
+  void _validateActualDates() {
+    if (_actualStartDtCtrl.text.isNotEmpty &&
+        _actualEndDtCtrl.text.isNotEmpty) {
+      final startDate = _parseDate(_actualStartDtCtrl.text);
+      final endDate = _parseDate(_actualEndDtCtrl.text);
+
+      if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+        setState(() {
+          _actualDateError =
+              'Actual End Date cannot be before Actual Start Date';
+        });
+      } else {
+        setState(() {
+          _actualDateError = null;
+        });
+      }
+    } else {
+      setState(() {
+        _actualDateError = null;
+      });
+    }
+  }
+
+  DateTime? _parseDate(String dateStr) {
+    try {
+      final parts = dateStr.split('/');
+      if (parts.length == 3) {
+        return DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[1]),
+          int.parse(parts[0]),
+        );
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -215,9 +335,6 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _jobRateCtrl.dispose();
     _jobAmtCtrl.dispose();
     _remarkCtrl.dispose();
-    _jobberSearchCtrl.dispose();
-    _stationSearchCtrl.dispose();
-    _processSearchCtrl.dispose();
     _jobberCtrl.dispose();
     _stationCtrl.dispose();
     _processCtrl.dispose();
@@ -233,329 +350,63 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _actualEndDtFocus.dispose();
     super.dispose();
   }
-  
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    bool readOnly = false,
-    bool isRequired = false,
-    TextInputType? keyboardType,
-    VoidCallback? onTap,
-    bool isDate = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: focusNode.hasFocus
-                    ? AppColors.primaryColor
-                    : Colors.grey.shade300,
-                width: focusNode.hasFocus ? 2 : 1,
-              ),
-            ),
-            child: GestureDetector(
-              onTap: onTap,
-              child: AbsorbPointer(
-                absorbing: readOnly || onTap != null,
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  readOnly: readOnly || onTap != null,
-                  keyboardType: keyboardType,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: InputBorder.none,
-                    hintText: label,
-                    hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-                    suffixIcon: onTap != null
-                        ? Icon(
-                            isDate ? Icons.calendar_today : Icons.arrow_drop_down,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildSearchableDropdown({
-    required String label,
-    required TextEditingController controller,
-    required List<String> items,
-    required String? selected,
-    required ValueChanged<String?> onChanged,
-    required FocusNode focusNode,
-    required TextEditingController searchController,
-    bool isRequired = false,
-  }) {
-    OverlayEntry? _overlay;
-    
-    void _removeOverlay() {
-      _overlay?.remove();
-      _overlay = null;
-      searchController.clear();
-    }
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              focusNode.requestFocus();
-              _removeOverlay();
-              final box = context.findRenderObject() as RenderBox;
-              final offset = box.localToGlobal(Offset.zero);
-              final width = box.size.width;
-              
-              List<String> filteredItems = List.from(items);
-              
-              _overlay = OverlayEntry(
-                builder: (_) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: _removeOverlay,
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
-                    Positioned(
-                      left: offset.dx,
-                      top: offset.dy + 56,
-                      width: width,
-                      child: Material(
-                        elevation: 8,
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.4,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: TextField(
-                                  controller: searchController,
-                                  autofocus: true,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search $label...',
-                                    prefixIcon: const Icon(Icons.search, size: 18),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onChanged: (query) {
-                                    filteredItems = items
-                                        .where((e) => e.toLowerCase().contains(query.toLowerCase()))
-                                        .toList();
-                                    _overlay?.markNeedsBuild();
-                                  },
-                                ),
-                              ),
-                              Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: filteredItems.length,
-                                  itemBuilder: (c, i) {
-                                    final item = filteredItems[i];
-                                    return ListTile(
-                                      dense: true,
-                                      title: Text(
-                                        item,
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                      selected: selected == item,
-                                      selectedTileColor: AppColors.primaryColor.withOpacity(0.1),
-                                      onTap: () {
-                                        _removeOverlay();
-                                        setState(() {
-                                          onChanged(item);
-                                          controller.text = item;
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-              Overlay.of(context).insert(_overlay!);
-            },
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey.shade300,
-                  width: focusNode.hasFocus ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      controller.text.isEmpty ? 'Select $label' : controller.text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: controller.text.isEmpty ? Colors.grey.shade400 : Colors.black87,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 22),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildDateField(String label, TextEditingController controller, FocusNode focusNode) {
-    return _buildTextField(
-      label: label,
-      controller: controller,
-      focusNode: focusNode,
-      onTap: () async {
-        focusNode.requestFocus();
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.light(primary: AppColors.primaryColor),
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null) {
-          controller.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-        }
-      },
-      isDate: true,
-    );
-  }
-  
-void _addFinishDetail() async {
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const FinishDetailScreenForJobWork(),
-    ),
-  );
-  
-  if (result != null && mounted) {
-    setState(() {
-      _finishDetailsList.add(result);
-    });
-  }
-}
 
-void _editFinishDetail(int index) async {
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => FinishDetailScreenForJobWork(
-        finishDetail: _finishDetailsList[index],
+  void _addFinishDetail() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FinishDetailScreenForJobWork(),
       ),
-    ),
-  );
-  
-  if (result != null && mounted) {
-    setState(() {
-      _finishDetailsList[index] = result;
-    });
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _finishDetailsList.add(result);
+      });
+    }
   }
-}
- 
-  
+
+  void _editFinishDetail(int index) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => FinishDetailScreenForJobWork(
+              finishDetail: _finishDetailsList[index],
+            ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _finishDetailsList[index] = result;
+      });
+    }
+  }
+
   void _deleteFinishDetail(int index) {
     setState(() {
       _finishDetailsList.removeAt(index);
     });
   }
-  
+
   void _saveJobOrder() {
+    // Final validation before save
+    _validateEstDates();
+    _validateActualDates();
+
+    if (_estDateError != null || _actualDateError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _estDateError ?? _actualDateError ?? 'Please fix validation errors',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final jobOrderData = {
       'series': _seriesCtrl.text,
       'lastCd': _lastCdCtrl.text,
@@ -563,7 +414,8 @@ void _editFinishDetail(int index) async {
       'docDt': _docDtCtrl.text,
       'refNo': _refNoCtrl.text,
       'expectedDlvDt': _expectedDlvDtCtrl.text,
-      'jobber': _selectedJobber,
+      'jobber': _selectedJobber?['name'],
+      'jobberKey': _selectedJobber?['key'],
       'station': _selectedStation,
       'orderType': _orderType,
       'estStartDt': _estStartDtCtrl.text,
@@ -588,21 +440,448 @@ void _editFinishDetail(int index) async {
       'totPcs': _calculateTotalPcs(),
       'jobChgPc': double.tryParse(_jobRateCtrl.text) ?? 0,
     };
-    
+
     Navigator.pop(context, jobOrderData);
   }
-  
+
   void _saveOtherProcess() {
     final otherProcessData = {
-      'process': _selectedOtherProcess,
+      'process': _selectedOtherProcess?['name'],
+      'processKey': _selectedOtherProcess?['key'],
       'jobRate': double.tryParse(_jobRateCtrl.text),
       'jobAmt': double.tryParse(_jobAmtCtrl.text),
       'remark': _remarkCtrl.text,
     };
-    
+
     Navigator.pop(context, otherProcessData);
   }
-  
+
+  Widget _buildFinishCard(int index, Map<String, dynamic> finish) {
+    final isExpanded = _expandedCards.contains(index);
+    final fabrics = finish['fabrics'] as List? ?? [];
+    final totalPcs = finish['totalPcs'] ?? 0;
+    final avgRatio = finish['avgRatio'] ?? 0;
+    final cutMtr = finish['cutMtr'] ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Card Header
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedCards.remove(index);
+                } else {
+                  _expandedCards.add(index);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  // Icon
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.checklist,
+                      color: AppColors.primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          finish['product'] ?? 'Finish ${index + 1}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'PCS: $totalPcs',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Fabrics: ${fabrics.length}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Actions
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.edit,
+                          size: 20,
+                          color: AppColors.primaryColor,
+                        ),
+                        onPressed: () => _editFinishDetail(index),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete,
+                          size: 20,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => _deleteFinishDetail(index),
+                      ),
+                      Icon(
+                        isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: Colors.grey,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Expanded Content
+          if (isExpanded)
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  // Finish Summary
+                  _buildInfoRow('Design No:', finish['designNo'] ?? '-'),
+                  _buildInfoRow('Type:', finish['type'] ?? '-'),
+                  _buildInfoRow('Shade:', finish['shade'] ?? '-'),
+                  _buildInfoRow('Order No:', finish['orderNo'] ?? '-'),
+                  _buildInfoRow('Merchandiser:', finish['merchandiser'] ?? '-'),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Avg Ratio',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                avgRatio.toStringAsFixed(5),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: Colors.grey.shade300,
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Cut Mtr',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                cutMtr.toStringAsFixed(3),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Fabrics Section
+                  if (fabrics.isNotEmpty) ...[
+                    const Text(
+                      'FABRICS DETAILS',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...fabrics.map((fabric) => _buildFabricCard(fabric)),
+                  ] else
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No fabrics added',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFabricCard(Map<String, dynamic> fabric) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fabric['product'] ?? 'Product',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Ratio: ${(fabric['ratio'] ?? 0).toStringAsFixed(5)}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _buildFabricDetailChip(
+                'Type',
+                fabric['type'] ?? '-',
+                Colors.purple,
+              ),
+              _buildFabricDetailChip(
+                'Design',
+                fabric['design'] ?? '-',
+                Colors.teal,
+              ),
+              _buildFabricDetailChip(
+                'Shade',
+                fabric['shade'] ?? '-',
+                Colors.pink,
+              ),
+              _buildFabricDetailChip(
+                'Req Qty',
+                (fabric['reqQty'] ?? 0).toStringAsFixed(3),
+                Colors.blue,
+              ),
+              _buildFabricDetailChip(
+                'Wast%',
+                (fabric['wast'] ?? 0).toStringAsFixed(2),
+                Colors.red,
+              ),
+              _buildFabricDetailChip(
+                'Actual Qty',
+                (fabric['actualQty'] ?? 0).toStringAsFixed(3),
+                Colors.green,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFabricDetailChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -630,674 +909,650 @@ void _editFinishDetail(int index) async {
         opacity: _fadeAnimation,
         child: TabBarView(
           controller: _tabController,
-          children: [
-            _buildJobOrderForm(),
-            _buildOtherProcessForm(),
-          ],
+          children: [_buildJobOrderForm(), _buildOtherProcessForm()],
         ),
       ),
     );
   }
-  
+
   Widget _buildJobOrderForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Basic Information Card
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'BASIC INFORMATION',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                  const Divider(height: 20),
-                  
-                  // Row 1: Series, Last Cd, Doc No
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Series',
-                          controller: _seriesCtrl,
-                          focusNode: FocusNode(),
-                          readOnly: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Last Cd',
-                          controller: _lastCdCtrl,
-                          focusNode: FocusNode(),
-                          readOnly: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Doc No',
-                          controller: _docNoCtrl,
-                          focusNode: FocusNode(),
-                          readOnly: true,
-                          isRequired: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Row 2: Doc Dt, Ref No
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField('Doc Dt', _docDtCtrl, _docDtFocus),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Ref No',
-                          controller: _refNoCtrl,
-                          focusNode: _refNoFocus,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Row 3: Expected Dlv Dt
-                  _buildDateField('Expected Dlv Dt', _expectedDlvDtCtrl, _expectedDlvDtFocus),
-                  
-                  // Row 4: Jobber, Station
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSearchableDropdown(
-                          label: 'Jobber',
-                          controller: _jobberCtrl,
-                          items: _jobbers,
-                          selected: _selectedJobber,
-                          onChanged: (v) => _selectedJobber = v,
-                          focusNode: _jobberFocus,
-                          searchController: _jobberSearchCtrl,
-                          isRequired: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSearchableDropdown(
-                          label: 'Station',
-                          controller: _stationCtrl,
-                          items: _stations,
-                          selected: _selectedStation,
-                          onChanged: (v) => _selectedStation = v,
-                          focusNode: _stationFocus,
-                          searchController: _stationSearchCtrl,
-                          isRequired: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Order Type Radio Buttons
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
-                          child: Text(
-                            'Order Type',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('Open', style: TextStyle(fontSize: 14)),
-                                value: 'Open',
-                                groupValue: _orderType,
-                                onChanged: (value) => setState(() => _orderType = value!),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                              ),
-                            ),
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('BOM', style: TextStyle(fontSize: 14)),
-                                value: 'BOM',
-                                groupValue: _orderType,
-                                onChanged: (value) => setState(() => _orderType = value!),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Dates Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField('Est Start Dt', _estStartDtCtrl, _estStartDtFocus),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDateField('Est End Dt', _estEndDtCtrl, _estEndDtFocus),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField('Actual Start Dt', _actualStartDtCtrl, _actualStartDtFocus),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDateField('Actual End Dt', _actualEndDtCtrl, _actualEndDtFocus),
-                      ),
-                    ],
-                  ),
-                  
-                  // Process Dropdown
-                  _buildSearchableDropdown(
-                    label: 'Process',
-                    controller: _processCtrl,
-                    items: _processes,
-                    selected: _selectedProcess,
-                    onChanged: (v) => _selectedProcess = v,
-                    focusNode: _processFocus,
-                    searchController: _processSearchCtrl,
-                  ),
-                  
-                  // Stock Pickup Radio Buttons
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
-                          child: Text(
-                            'Stock Pickup',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('Partial', style: TextStyle(fontSize: 14)),
-                                value: 'Partial',
-                                groupValue: _stockPickup,
-                                onChanged: (value) => setState(() => _stockPickup = value!),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                              ),
-                            ),
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('Ready', style: TextStyle(fontSize: 14)),
-                                value: 'Ready',
-                                groupValue: _stockPickup,
-                                onChanged: (value) => setState(() => _stockPickup = value!),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Checkboxes Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CheckboxListTile(
-                          title: const Text('Received As Finished', style: TextStyle(fontSize: 13)),
-                          value: _receivedAsFinished,
-                          onChanged: (value) => setState(() => _receivedAsFinished = value!),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          controlAffinity: ListTileControlAffinity.leading,
-                        ),
-                      ),
-                      Expanded(
-                        child: CheckboxListTile(
-                          title: const Text('ReProcess', style: TextStyle(fontSize: 13)),
-                          value: _reProcess,
-                          onChanged: (value) => setState(() => _reProcess = value!),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          controlAffinity: ListTileControlAffinity.leading,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Finish Details Section
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                InkWell(
-                  onTap: _addFinishDetail,
+                // Basic Information Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const Text(
+                          'BASIC INFORMATION',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.checklist, color: AppColors.primaryColor, size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'FINISH DETAILS',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF2C3E50),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Series',
+                                controller: _seriesCtrl,
+                                focusNode: FocusNode(),
+                                readOnly: true,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Last Cd',
+                                controller: _lastCdCtrl,
+                                focusNode: FocusNode(),
+                                readOnly: true,
                               ),
-                              child: Text(
-                                '${_finishDetailsList.length}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primaryColor,
-                                ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Doc No',
+                                controller: _docNoCtrl,
+                                focusNode: FocusNode(),
+                                readOnly: true,
+                                isRequired: true,
                               ),
                             ),
                           ],
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomDateField(
+                                label: 'Doc Dt',
+                                controller: _docDtCtrl,
+                                focusNode: _docDtFocus,
+                                maxDate: DateTime.now(),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Ref No',
+                                controller: _refNoCtrl,
+                                focusNode: _refNoFocus,
+                              ),
+                            ),
+                          ],
+                        ),
+                        CustomDateField(
+                          label: 'Expected Dlv Dt',
+                          controller: _expectedDlvDtCtrl,
+                          focusNode: _expectedDlvDtFocus,
+                          minDate: DateTime.now(),
+                        ),
+                        CustomSearchableDropdown(
+                          label: 'Jobber',
+                          controller: _jobberCtrl,
+                          items: _jobberList,
+                          selected: _selectedJobber,
+                          onChanged: (v) {
+                            setState(() {
+                              _selectedJobber = v;
+                              if (v != null &&
+                                  v['station'] != null &&
+                                  v['station'].isNotEmpty) {
+                                _selectedStation = v['station'];
+                                _stationCtrl.text = _selectedStation!;
+                              }
+                            });
+                          },
+                          focusNode: _jobberFocus,
+                          isRequired: true,
+                          isLoading: _isLoadingJobbers,
+                          showClearButton: true,
+                          allowClear: true,
+                        ),
+                        CustomTextField(
+                          label: 'Station',
+                          controller: _stationCtrl,
+                          focusNode: _stationFocus,
+                          readOnly: true,
+                        ),
                         Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                child: Text(
+                                  'Order Type',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RadioListTile<String>(
+                                      title: const Text('Open', style: TextStyle(fontSize: 14)),
+                                      value: 'Open',
+                                      groupValue: _orderType,
+                                      onChanged: (value) => setState(() => _orderType = value!),
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: RadioListTile<String>(
+                                      title: const Text('BOM', style: TextStyle(fontSize: 14)),
+                                      value: 'BOM',
+                                      groupValue: _orderType,
+                                      onChanged: (value) => setState(() => _orderType = value!),
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          child: const Icon(
-                            Icons.add,
-                            color: AppColors.primaryColor,
-                            size: 20,
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomDateField(
+                                label: 'Est Start Dt',
+                                controller: _estStartDtCtrl,
+                                focusNode: _estStartDtFocus,
+                                onDateChanged: (date) => _validateEstDates(),
+                                onValidationError: (error) => setState(() => _estDateError = error),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomDateField(
+                                label: 'Est End Dt',
+                                controller: _estEndDtCtrl,
+                                focusNode: _estEndDtFocus,
+                                fromDate: _parseDate(_estStartDtCtrl.text),
+                                errorText: _estDateError,
+                                onDateChanged: (date) => _validateEstDates(),
+                                onValidationError: (error) => setState(() => _estDateError = error),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomDateField(
+                                label: 'Actual Start Dt',
+                                controller: _actualStartDtCtrl,
+                                focusNode: _actualStartDtFocus,
+                                onDateChanged: (date) => _validateActualDates(),
+                                onValidationError: (error) => setState(() => _actualDateError = error),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomDateField(
+                                label: 'Actual End Dt',
+                                controller: _actualEndDtCtrl,
+                                focusNode: _actualEndDtFocus,
+                                fromDate: _parseDate(_actualStartDtCtrl.text),
+                                errorText: _actualDateError,
+                                onDateChanged: (date) => _validateActualDates(),
+                                onValidationError: (error) => setState(() => _actualDateError = error),
+                              ),
+                            ),
+                          ],
+                        ),
+                        CustomSearchableDropdown(
+                          label: 'Process',
+                          controller: _processCtrl,
+                          items: _processes.map((p) => {'key': p, 'name': p}).toList(),
+                          selected: _selectedProcess != null ? {'key': _selectedProcess!, 'name': _selectedProcess!} : null,
+                          onChanged: (v) => setState(() => _selectedProcess = v?['name']),
+                          focusNode: _processFocus,
+                          showClearButton: true,
+                          allowClear: true,
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                child: Text(
+                                  'Stock Pickup',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RadioListTile<String>(
+                                      title: const Text('Partial', style: TextStyle(fontSize: 14)),
+                                      value: 'Partial',
+                                      groupValue: _stockPickup,
+                                      onChanged: (value) => setState(() => _stockPickup = value!),
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: RadioListTile<String>(
+                                      title: const Text('Ready', style: TextStyle(fontSize: 14)),
+                                      value: 'Ready',
+                                      groupValue: _stockPickup,
+                                      onChanged: (value) => setState(() => _stockPickup = value!),
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: const Text('Received As Finished', style: TextStyle(fontSize: 13)),
+                                value: _receivedAsFinished,
+                                onChanged: (value) => setState(() => _receivedAsFinished = value!),
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                controlAffinity: ListTileControlAffinity.leading,
+                              ),
+                            ),
+                            Expanded(
+                              child: CheckboxListTile(
+                                title: const Text('ReProcess', style: TextStyle(fontSize: 13)),
+                                value: _reProcess,
+                                onChanged: (value) => setState(() => _reProcess = value!),
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                controlAffinity: ListTileControlAffinity.leading,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
-                
-                // Finish Details List
-                if (_finishDetailsList.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: _finishDetailsList.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        Map<String, dynamic> finish = entry.value;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: ListTile(
-                            title: Text(
-                              finish['product'] ?? 'Finish ${index + 1}',
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            subtitle: Text(
-                              'Design: ${finish['designNo'] ?? '-'} | PCS: ${finish['totalPcs'] ?? 0}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryColor),
-                                  onPressed: () => _editFinishDetail(index),
+                const SizedBox(height: 12),
+                // Finish Details Section
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      InkWell(
+                        onTap: _addFinishDetail,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.checklist, color: AppColors.primaryColor, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'FINISH DETAILS',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${_finishDetailsList.length}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                  onPressed: () => _deleteFinishDetail(index),
+                                child: const Icon(Icons.add, color: AppColors.primaryColor, size: 20),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_finishDetailsList.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: List.generate(_finishDetailsList.length, (index) {
+                              return _buildFinishCard(index, _finishDetailsList[index]);
+                            }),
+                          ),
+                        )
+                      else
+                        const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(Icons.inbox, size: 48, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text(
+                                  'No finish details added',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
                                 ),
                               ],
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Financial Details Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FINANCIAL DETAILS',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Gross Amt',
+                                controller: _grossAmtCtrl,
+                                focusNode: FocusNode(),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Oth Amt',
+                                controller: _othAmtCtrl,
+                                focusNode: FocusNode(),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'GST Perc (%)',
+                                controller: _gstPercCtrl,
+                                focusNode: FocusNode(),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'GST Amt',
+                                controller: _gstAmtCtrl,
+                                focusNode: FocusNode(),
+                                readOnly: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                          ),
+                          child: CustomTextField(
+                            label: 'Net Amt',
+                            controller: _netAmtCtrl,
+                            focusNode: FocusNode(),
+                            readOnly: true,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Financial Details Card
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'FINANCIAL DETAILS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                  const Divider(height: 20),
-                  
-                  // Row 1: Gross Amt, Oth Amt
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Gross Amt',
-                          controller: _grossAmtCtrl,
-                          focusNode: FocusNode(),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'Oth Amt',
-                          controller: _othAmtCtrl,
-                          focusNode: FocusNode(),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Row 2: GST Perc, GST Amt
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'GST Perc (%)',
-                          controller: _gstPercCtrl,
-                          focusNode: FocusNode(),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          label: 'GST Amt',
-                          controller: _gstAmtCtrl,
-                          focusNode: FocusNode(),
-                          readOnly: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Net Amt
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
-                    ),
-                    child: _buildTextField(
-                      label: 'Net Amt',
-                      controller: _netAmtCtrl,
-                      focusNode: FocusNode(),
-                      readOnly: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
-          
-          const SizedBox(height: 20),
-          
-          // Buttons Row - Cancel and Save
-          Row(
+        ),
+        SafeArea(
+          child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      shape: const RoundedRectangleBorder(),
+                      side: const BorderSide(color: Colors.grey, width: 0.5),
+                      backgroundColor: Colors.grey.shade50,
+                      foregroundColor: Colors.black87,
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
                     ),
-                    side: BorderSide(color: Colors.grey.shade400),
-                  ),
-                  child: const Text(
-                    'CANCEL',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: const Text('CANCEL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: _saveJobOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: _saveJobOrder,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(),
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
                     ),
-                  ),
-                  child: const Text(
-                    'SAVE',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: const Text('SAVE', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
             ],
           ),
-          
-          const SizedBox(height: 20),
-        ],
-      ),
+        ),
+      ],
     );
   }
-  
+
   Widget _buildOtherProcessForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'OTHER PROCESS DETAILS',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              const Divider(height: 20),
-              
-              // Process Dropdown
-              _buildSearchableDropdown(
-                label: 'Process',
-                controller: _otherProcessCtrl,
-                items: _otherProcesses,
-                selected: _selectedOtherProcess,
-                onChanged: (v) => _selectedOtherProcess = v,
-                focusNode: FocusNode(),
-                searchController: TextEditingController(),
-                isRequired: true,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Job Rate
-              _buildTextField(
-                label: 'Job Rate',
-                controller: _jobRateCtrl,
-                focusNode: FocusNode(),
-                keyboardType: TextInputType.number,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Job Amt
-              _buildTextField(
-                label: 'Job Amt',
-                controller: _jobAmtCtrl,
-                focusNode: FocusNode(),
-                keyboardType: TextInputType.number,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Remark
-              _buildTextField(
-                label: 'Remark',
-                controller: _remarkCtrl,
-                focusNode: FocusNode(),
-                keyboardType: TextInputType.multiline,
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Buttons Row - Cancel and Save
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(color: Colors.grey.shade400),
-                      ),
-                      child: const Text(
-                        'CANCEL',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _saveOtherProcess,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'SAVE',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    ),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'OTHER PROCESS DETAILS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    const Divider(height: 20),
+                    CustomSearchableDropdown(
+                      label: 'Process',
+                      controller: _otherProcessCtrl,
+                      items: _otherProcessesList,
+                      selected: _selectedOtherProcess,
+                      onChanged: (v) => setState(() => _selectedOtherProcess = v),
+                      focusNode: FocusNode(),
+                      isRequired: true,
+                      showClearButton: true,
+                      allowClear: true,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      label: 'Job Rate',
+                      controller: _jobRateCtrl,
+                      focusNode: FocusNode(),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      label: 'Job Amt',
+                      controller: _jobAmtCtrl,
+                      focusNode: FocusNode(),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      label: 'Remark',
+                      controller: _remarkCtrl,
+                      focusNode: FocusNode(),
+                      keyboardType: TextInputType.multiline,
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      shape: const RoundedRectangleBorder(),
+                      side: const BorderSide(color: Colors.grey, width: 0.5),
+                      backgroundColor: Colors.grey.shade50,
+                      foregroundColor: Colors.black87,
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text('CANCEL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: _saveOtherProcess,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(),
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text('Confirm', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/production/Planning/Job_Work_Order/jobOrderScreenAdd.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/services/production_services.dart';
 
 class JobWorkScreen extends StatefulWidget {
   const JobWorkScreen({super.key});
@@ -12,83 +13,14 @@ class JobWorkScreen extends StatefulWidget {
 
 class _JobWorkScreenState extends State<JobWorkScreen>
     with SingleTickerProviderStateMixin {
-  final List<Map<String, dynamic>> _jobWorks = [
-    {
-      'docNo': 'JW00001',
-      'docDt': '20/03/2026',
-      'soNo': 'SO001',
-      'jobber': 'SELF',
-      'station': 'SURAT',
-      'totPcs': 500,
-      'jobChgPc': 45.0,
-      'status': 'In Progress',
-      'createdBy': 'Admin',
-      'createdOn': '20/03/2026 09:00 AM',
-      'updatedBy': 'Admin',
-      'updatedOn': '20/03/2026 10:30 AM',
-    },
-    {
-      'docNo': 'JW00002',
-      'docDt': '21/03/2026',
-      'soNo': 'SO002',
-      'jobber': 'ABC Textiles',
-      'station': 'MUMBAI',
-      'totPcs': 750,
-      'jobChgPc': 42.50,
-      'status': 'Planned',
-      'createdBy': 'User1',
-      'createdOn': '21/03/2026 11:00 AM',
-      'updatedBy': 'User1',
-      'updatedOn': '21/03/2026 11:30 AM',
-    },
-    {
-      'docNo': 'JW00003',
-      'docDt': '22/03/2026',
-      'soNo': 'SO003',
-      'jobber': 'XYZ Garments',
-      'station': 'DELHI',
-      'totPcs': 1200,
-      'jobChgPc': 38.75,
-      'status': 'Completed',
-      'createdBy': 'Admin',
-      'createdOn': '22/03/2026 09:30 AM',
-      'updatedBy': 'Admin',
-      'updatedOn': '22/03/2026 05:00 PM',
-    },
-    {
-      'docNo': 'JW00004',
-      'docDt': '23/03/2026',
-      'soNo': 'SO004',
-      'jobber': 'SELF',
-      'station': 'AHMEDABAD',
-      'totPcs': 300,
-      'jobChgPc': 55.00,
-      'status': 'Delayed',
-      'createdBy': 'Manager',
-      'createdOn': '23/03/2026 08:00 AM',
-      'updatedBy': 'Manager',
-      'updatedOn': '23/03/2026 02:00 PM',
-    },
-    {
-      'docNo': 'JW00005',
-      'docDt': '24/03/2026',
-      'soNo': 'SO005',
-      'jobber': 'ABC Textiles',
-      'station': 'SURAT',
-      'totPcs': 900,
-      'jobChgPc': 48.25,
-      'status': 'In Progress',
-      'createdBy': 'User2',
-      'createdOn': '24/03/2026 10:00 AM',
-      'updatedBy': 'User2',
-      'updatedOn': '24/03/2026 11:15 AM',
-    },
-  ];
-
+  List<Map<String, dynamic>> _jobWorks = [];
   List<Map<String, dynamic>> _filteredJobWorks = [];
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
+  bool _isLoading = true;
+  String? _errorMessage;
+  
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   late Animation<double> _opacityAnimation;
@@ -96,7 +28,6 @@ class _JobWorkScreenState extends State<JobWorkScreen>
   @override
   void initState() {
     super.initState();
-    _filteredJobWorks = List.from(_jobWorks);
     _searchController.addListener(_filterJobWorks);
     
     _animationController = AnimationController(
@@ -117,6 +48,8 @@ class _JobWorkScreenState extends State<JobWorkScreen>
         _toggleSearch();
       }
     });
+    
+    _loadJobWorks();
   }
 
   @override
@@ -128,6 +61,25 @@ class _JobWorkScreenState extends State<JobWorkScreen>
     super.dispose();
   }
 
+  Future<void> _loadJobWorks() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    final jobWorks = await ProductionService.getJobWorks();
+    
+    setState(() {
+      _jobWorks = jobWorks;
+      _filteredJobWorks = List.from(jobWorks);
+      _isLoading = false;
+      
+      if (jobWorks.isEmpty) {
+        _errorMessage = 'No job works found';
+      }
+    });
+  }
+
   void _filterJobWorks() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -136,7 +88,6 @@ class _JobWorkScreenState extends State<JobWorkScreen>
       } else {
         _filteredJobWorks = _jobWorks.where((work) {
           return work['docNo'].toString().toLowerCase().contains(query) ||
-              work['soNo'].toString().toLowerCase().contains(query) ||
               work['jobber'].toString().toLowerCase().contains(query) ||
               work['station'].toString().toLowerCase().contains(query);
         }).toList();
@@ -146,7 +97,6 @@ class _JobWorkScreenState extends State<JobWorkScreen>
 
   void _toggleSearch() {
     if (_isSearching) {
-      // Close search
       _animationController.reverse();
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -158,7 +108,6 @@ class _JobWorkScreenState extends State<JobWorkScreen>
         }
       });
     } else {
-      // Open search
       setState(() {
         _isSearching = true;
       });
@@ -176,52 +125,37 @@ class _JobWorkScreenState extends State<JobWorkScreen>
     _toggleSearch();
   }
 
-void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
-  if (jobWork == null) {
-    // Navigate to create new job work
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CreateJobOrderScreen(),
-      ),
-    );
-    
-    // Handle the result if needed
-    if (result != null && mounted) {
-      // Add the new job work to the list
-      setState(() {
-        _jobWorks.add(result);
-        _filterJobWorks(); // Refresh the filtered list
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Job Order Created Successfully!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+  Future<void> _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
+    if (jobWork == null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CreateJobOrderScreen(),
         ),
       );
-    }
-  } else {
-    // Navigate to edit existing job work
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CreateJobOrderScreen(
-          jobWork: jobWork, // Pass existing data for editing
+      
+      if (result != null && mounted) {
+        await _loadJobWorks(); // Reload the list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Job Order Created Successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreateJobOrderScreen(
+            jobWork: jobWork,
+          ),
         ),
-      ),
-    );
-    
-    // Handle the result if needed
-    if (result != null && mounted) {
-      final index = _jobWorks.indexWhere((work) => work['docNo'] == jobWork['docNo']);
-      if (index != -1) {
-        setState(() {
-          _jobWorks[index] = result;
-          _filterJobWorks(); // Refresh the filtered list
-        });
-        
+      );
+      
+      if (result != null && mounted) {
+        await _loadJobWorks(); // Reload the list
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Job Order Updated Successfully!'),
@@ -232,9 +166,11 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
       }
     }
   }
-}
+
   Color _getStatusColor(String status) {
     switch (status) {
+      case 'Active':
+        return Colors.green;
       case 'In Progress':
         return AppColors.primaryColor;
       case 'Planned':
@@ -250,6 +186,8 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
 
   Color _getStatusBackgroundColor(String status) {
     switch (status) {
+      case 'Active':
+        return Colors.green.withOpacity(0.1);
       case 'In Progress':
         return AppColors.primaryColor.withOpacity(0.1);
       case 'Planned':
@@ -437,7 +375,7 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
                             focusNode: _searchFocusNode,
                             autofocus: true,
                             decoration: InputDecoration(
-                              hintText: 'Search by Doc No, SO No, Jobber, Station...',
+                              hintText: 'Search by Doc No, Jobber, Station...',
                               prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
                               suffixIcon: _searchController.text.isNotEmpty
                                   ? IconButton(
@@ -479,399 +417,7 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
           color: Colors.grey.shade100,
         ),
         child: SafeArea(
-          child: _filteredJobWorks.isEmpty && !_isSearching
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: _filteredJobWorks.length,
-                  itemBuilder: (context, index) {
-                    final jobWork = _filteredJobWorks[index];
-                    final status = jobWork['status']?.toString() ?? 'Unknown';
-                    final statusColor = _getStatusColor(status);
-                    final statusBgColor = _getStatusBackgroundColor(status);
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Card(
-                        elevation: 0,
-                        margin: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: Colors.grey.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(
-                              dividerColor: Colors.transparent,
-                            ),
-                            child: ExpansionTile(
-                              tilePadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              childrenPadding: EdgeInsets.zero,
-                              expandedCrossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              leading: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: statusBgColor,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  jobWork['status'] == 'Completed'
-                                      ? Icons.check_circle_outline
-                                      : jobWork['status'] == 'In Progress'
-                                          ? Icons.engineering_outlined
-                                          : jobWork['status'] == 'Planned'
-                                              ? Icons.schedule_outlined
-                                              : Icons.warning_amber_outlined,
-                                  color: statusColor,
-                                  size: 24,
-                                ),
-                              ),
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          jobWork['docNo']?.toString() ??
-                                              'JW00000',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2C3E50),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: statusBgColor,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: statusColor.withOpacity(0.3),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          status,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: statusColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.calendar_today,
-                                              size: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              jobWork['docDt']?.toString() ??
-                                                  'N/A',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade700,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.shopping_cart,
-                                              size: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'SO: ${jobWork['soNo']?.toString() ?? 'N/A'}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade700,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              trailing: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: AppColors.primaryColor,
-                                  size: 18,
-                                ),
-                              ),
-                              backgroundColor: Colors.white,
-                              collapsedBackgroundColor: Colors.white,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade50,
-                                    border: Border(
-                                      top: BorderSide(
-                                        color: Colors.grey.shade200,
-                                      ),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Jobber & Station Row
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: _buildDetailChip(
-                                              icon: Icons.business,
-                                              label: 'Jobber',
-                                              value: jobWork['jobber']
-                                                      ?.toString() ??
-                                                  '-',
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: _buildDetailChip(
-                                              icon: Icons.location_on,
-                                              label: 'Station',
-                                              value: jobWork['station']
-                                                      ?.toString() ??
-                                                  '-',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // Quantity & Job Charge Section
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Colors.grey.shade200,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: _buildMetricItem(
-                                                    label: 'Total Pcs',
-                                                    value: jobWork['totPcs']
-                                                            ?.toString() ??
-                                                        '0',
-                                                    icon: Icons.shopping_bag,
-                                                  ),
-                                                ),
-                                                Container(
-                                                  height: 30,
-                                                  width: 1,
-                                                  color: Colors.grey.shade300,
-                                                ),
-                                                Expanded(
-                                                  child: _buildMetricItem(
-                                                    label: 'Job Charge/Pc',
-                                                    value: _formatCurrency(
-                                                      jobWork['jobChgPc'] ?? 0,
-                                                    ),
-                                                    icon: Icons.currency_rupee,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // Audit Info
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Colors.grey.shade200,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: _buildAuditItem(
-                                                    label: 'Created By',
-                                                    value: jobWork['createdBy']
-                                                            ?.toString() ??
-                                                        '-',
-                                                    icon: Icons.person_add,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: _buildAuditItem(
-                                                    label: 'Created On',
-                                                    value: jobWork['createdOn']
-                                                            ?.toString() ??
-                                                        '-',
-                                                    icon: Icons.access_time,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: _buildAuditItem(
-                                                    label: 'Updated By',
-                                                    value: jobWork['updatedBy']
-                                                            ?.toString() ??
-                                                        '-',
-                                                    icon: Icons.update,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: _buildAuditItem(
-                                                    label: 'Updated On',
-                                                    value: jobWork['updatedOn']
-                                                            ?.toString() ??
-                                                        '-',
-                                                    icon: Icons.update,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-
-                                      // Action Buttons
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: OutlinedButton.icon(
-                                              onPressed: () =>
-                                                  _navigateToJobWorkDetail(
-                                                      jobWork),
-                                              icon: const Icon(
-                                                Icons.visibility,
-                                                size: 16,
-                                              ),
-                                              label: const Text(
-                                                'VIEW DETAILS',
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor:
-                                                    AppColors.primaryColor,
-                                                side: const BorderSide(
-                                                  color: AppColors.primaryColor,
-                                                ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  vertical: 10,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  _navigateToJobWorkDetail(
-                                                      jobWork),
-                                              icon: const Icon(
-                                                Icons.edit,
-                                                size: 16,
-                                              ),
-                                              label: const Text(
-                                                'EDIT',
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    AppColors.primaryColor,
-                                                foregroundColor: Colors.white,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  vertical: 10,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+          child: _buildBody(),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -894,6 +440,422 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
     );
   }
 
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading job works...',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_errorMessage != null && _jobWorks.isEmpty) {
+      return _buildEmptyState();
+    }
+    
+    if (_filteredJobWorks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 80,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No results found for "${_searchController.text}"',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                _searchController.clear();
+                _filterJobWorks();
+              },
+              child: const Text('Clear search'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: _filteredJobWorks.length,
+      itemBuilder: (context, index) {
+        final jobWork = _filteredJobWorks[index];
+        final status = jobWork['status']?.toString() ?? 'Active';
+        final statusColor = _getStatusColor(status);
+        final statusBgColor = _getStatusBackgroundColor(status);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Card(
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                ),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  childrenPadding: EdgeInsets.zero,
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: statusBgColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      status == 'Active'
+                          ? Icons.check_circle_outline
+                          : status == 'In Progress'
+                              ? Icons.engineering_outlined
+                              : status == 'Planned'
+                                  ? Icons.schedule_outlined
+                                  : Icons.warning_amber_outlined,
+                      color: statusColor,
+                      size: 24,
+                    ),
+                  ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              jobWork['docNo']?.toString() ?? '',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusBgColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: statusColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              status,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  jobWork['docDt']?.toString() ?? 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  size: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  jobWork['createdBy']?.toString() ?? 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: AppColors.primaryColor,
+                      size: 18,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  collapsedBackgroundColor: Colors.white,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.grey.shade200,
+                          ),
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Jobber & Station Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDetailChip(
+                                  icon: Icons.business,
+                                  label: 'Jobber',
+                                  value: jobWork['jobber']?.toString() ?? '-',
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildDetailChip(
+                                  icon: Icons.location_on,
+                                  label: 'Station',
+                                  value: jobWork['station']?.toString() ?? '-',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Quantity & Job Charge Section
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildMetricItem(
+                                        label: 'Total Pcs',
+                                        value: jobWork['totPcs']?.toString() ?? '0',
+                                        icon: Icons.shopping_bag,
+                                      ),
+                                    ),
+                                    Container(
+                                      height: 30,
+                                      width: 1,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    Expanded(
+                                      child: _buildMetricItem(
+                                        label: 'Job Charge/Pc',
+                                        value: _formatCurrency(jobWork['jobChgPc'] ?? 0),
+                                        icon: Icons.currency_rupee,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Audit Info
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildAuditItem(
+                                        label: 'Created By',
+                                        value: jobWork['createdBy']?.toString() ?? '-',
+                                        icon: Icons.person_add,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildAuditItem(
+                                        label: 'Created On',
+                                        value: jobWork['createdOn']?.toString() ?? '-',
+                                        icon: Icons.access_time,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if ((jobWork['updatedBy']?.toString() ?? '').isNotEmpty ||
+                                    (jobWork['updatedOn']?.toString() ?? '').isNotEmpty)
+                                  const SizedBox(height: 6),
+                                if ((jobWork['updatedBy']?.toString() ?? '').isNotEmpty ||
+                                    (jobWork['updatedOn']?.toString() ?? '').isNotEmpty)
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildAuditItem(
+                                          label: 'Updated By',
+                                          value: jobWork['updatedBy']?.toString() ?? '-',
+                                          icon: Icons.update,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildAuditItem(
+                                          label: 'Updated On',
+                                          value: jobWork['updatedOn']?.toString() ?? '-',
+                                          icon: Icons.update,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _navigateToJobWorkDetail(jobWork),
+                                  icon: const Icon(
+                                    Icons.visibility,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'VIEW DETAILS',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primaryColor,
+                                    side: const BorderSide(
+                                      color: AppColors.primaryColor,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _navigateToJobWorkDetail(jobWork),
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'EDIT',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -906,7 +868,7 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
           ),
           const SizedBox(height: 16),
           Text(
-            'No Job Works Found',
+            _errorMessage ?? 'No Job Works Found',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -922,19 +884,34 @@ void _navigateToJobWorkDetail(Map<String, dynamic>? jobWork) async {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _navigateToJobWorkDetail(null),
-            icon: const Icon(Icons.add),
-            label: const Text('Create Job Order'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          if (_errorMessage != null)
+            ElevatedButton.icon(
+              onPressed: _loadJobWorks,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
-          ),
+          if (_errorMessage == null)
+            ElevatedButton.icon(
+              onPressed: () => _navigateToJobWorkDetail(null),
+              icon: const Icon(Icons.add),
+              label: const Text('Create Job Order'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
         ],
       ),
     );
