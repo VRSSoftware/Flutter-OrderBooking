@@ -35,7 +35,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
 
   // ────────────────────── Dropdown Values ──────────────────────
   Map<String, dynamic>? _selectedJobber;
-  String? _selectedStation;
+  Map<String, dynamic>? _selectedStation;
   String? _selectedProcess;
 
   // ────────────────────── Radio Button Values ──────────────────────
@@ -75,11 +75,15 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   final FocusNode _estEndDtFocus = FocusNode();
   final FocusNode _actualStartDtFocus = FocusNode();
   final FocusNode _actualEndDtFocus = FocusNode();
+  final FocusNode _othAmtFocus = FocusNode();
+  final FocusNode _gstPercFocus = FocusNode();
 
   // ────────────────────── Financial Controllers ──────────────────────
   final TextEditingController _grossAmtCtrl = TextEditingController(text: '0');
   final TextEditingController _othAmtCtrl = TextEditingController(text: '0');
-  final TextEditingController _gstPercCtrl = TextEditingController(text: '18');
+  final TextEditingController _gstPercCtrl = TextEditingController(
+    text: '5',
+  ); // Changed default to 5
   final TextEditingController _gstAmtCtrl = TextEditingController(text: '0');
   final TextEditingController _netAmtCtrl = TextEditingController(text: '0');
 
@@ -133,23 +137,65 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     // Set default date
     _docDtCtrl.text = _getCurrentDate();
 
-    // Add listeners for financial calculations
-    _grossAmtCtrl.addListener(_calculateNetAmt);
-    _othAmtCtrl.addListener(_calculateNetAmt);
-    _gstPercCtrl.addListener(_calculateNetAmt);
+    // Set default dates for other date fields
+    _estStartDtCtrl.text = _getCurrentDate();
+    _estEndDtCtrl.text = _getCurrentDate();
+    _actualStartDtCtrl.text = _getCurrentDate();
+    _actualEndDtCtrl.text = _getCurrentDate();
+    _expectedDlvDtCtrl.text = _getCurrentDate();
+
+    // Make Gross Amount read-only
+    _grossAmtCtrl.addListener(() {
+      if (_grossAmtCtrl.text.isEmpty) {
+        _grossAmtCtrl.text = '0';
+      }
+    });
 
     _loadSeries();
     if (widget.jobWork == null) {
       _loadDocNo();
     }
 
-    // Load jobbers
-    _loadJobbers();
+    // Load jobbers and set default after loading
+    _loadJobbers().then((_) {
+      if (widget.jobWork == null && _jobberList.isNotEmpty) {
+        setState(() {
+          _selectedJobber = _jobberList[0];
+          _jobberCtrl.text = _jobberList[0]['name'] ?? '';
+          if (_jobberList[0]['station'] != null &&
+              _jobberList[0]['station'].isNotEmpty) {
+            _selectedStation = {
+              "key": _jobberList[0]['stationKey'],
+              "name": _jobberList[0]['station'],
+            };
 
-    // If editing, populate the form with existing data
+            _stationCtrl.text = _selectedStation?['name'] ?? '';
+          }
+        });
+      }
+    });
+
+    // Set default process
+    if (_processes.isNotEmpty) {
+      _selectedProcess = _processes[0];
+      _processCtrl.text = _processes[0];
+    }
+
+    // Set default other process
+    if (_otherProcessesList.isNotEmpty) {
+      _selectedOtherProcess = _otherProcessesList[0];
+      _otherProcessCtrl.text = _otherProcessesList[0]['name'] ?? '';
+    }
+
+    // If editing, populate the form with existing data (this will override defaults)
     if (widget.jobWork != null) {
       _populateFormWithExistingData();
     }
+
+    // Add this line to trigger initial calculation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _calculateNetAmt();
+    });
   }
 
   Future<void> _loadSeries() async {
@@ -182,7 +228,8 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _docNoCtrl.text = data['docNo']?.toString() ?? '';
     _docDtCtrl.text = data['docDt']?.toString() ?? _getCurrentDate();
     _refNoCtrl.text = data['refNo']?.toString() ?? '';
-    _expectedDlvDtCtrl.text = data['expectedDlvDt']?.toString() ?? '';
+    _expectedDlvDtCtrl.text =
+        data['expectedDlvDt']?.toString() ?? _getCurrentDate();
 
     if (data['jobber'] != null) {
       _selectedJobber = {
@@ -193,21 +240,28 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
       _jobberCtrl.text = data['jobber'];
     }
 
-    _selectedStation = data['station']?.toString();
-    _stationCtrl.text = _selectedStation ?? '';
+    if (data['station'] != null) {
+      _selectedStation = {"key": data['stationKey'], "name": data['station']};
+
+      _stationCtrl.text = _selectedStation?['name'] ?? '';
+    }
     _orderType = data['orderType']?.toString() ?? 'Open';
-    _estStartDtCtrl.text = data['estStartDt']?.toString() ?? '';
-    _estEndDtCtrl.text = data['estEndDt']?.toString() ?? '';
-    _actualStartDtCtrl.text = data['actualStartDt']?.toString() ?? '';
-    _actualEndDtCtrl.text = data['actualEndDt']?.toString() ?? '';
-    _selectedProcess = data['process']?.toString();
+    _estStartDtCtrl.text = data['estStartDt']?.toString() ?? _getCurrentDate();
+    _estEndDtCtrl.text = data['estEndDt']?.toString() ?? _getCurrentDate();
+    _actualStartDtCtrl.text =
+        data['actualStartDt']?.toString() ?? _getCurrentDate();
+    _actualEndDtCtrl.text =
+        data['actualEndDt']?.toString() ?? _getCurrentDate();
+    _selectedProcess =
+        data['process']?.toString() ??
+        (_processes.isNotEmpty ? _processes[0] : null);
     _processCtrl.text = _selectedProcess ?? '';
     _stockPickup = data['stockPickup']?.toString() ?? 'Partial';
     _receivedAsFinished = data['receivedAsFinished'] ?? false;
     _reProcess = data['reProcess'] ?? false;
     _grossAmtCtrl.text = data['grossAmt']?.toString() ?? '0';
     _othAmtCtrl.text = data['othAmt']?.toString() ?? '0';
-    _gstPercCtrl.text = data['gstPerc']?.toString() ?? '18';
+    _gstPercCtrl.text = data['gstPerc']?.toString() ?? '5';
 
     // Finish details
     if (data['finishDetails'] != null) {
@@ -238,17 +292,50 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     return total;
   }
 
+  // Calculate Gross Amount from all finish details
+  double _calculateGrossAmount() {
+    double total = 0;
+    for (var finish in _finishDetailsList) {
+      total += finish['amount'] as double? ?? 0;
+    }
+    return total;
+  }
+
+  // Update Gross Amount whenever finish details change
+  void _updateGrossAmount() {
+    double grossAmount = _calculateGrossAmount();
+    _grossAmtCtrl.text = grossAmount.toStringAsFixed(2);
+    _calculateNetAmt();
+  }
+
   void _calculateNetAmt() {
-    double gross = double.tryParse(_grossAmtCtrl.text) ?? 0;
-    double oth = double.tryParse(_othAmtCtrl.text) ?? 0;
-    double gstPerc = double.tryParse(_gstPercCtrl.text) ?? 0;
+    // Handle empty or invalid values gracefully
+    double gross = 0.0;
+    double oth = 0.0;
+    double gstPerc = 5.0;
 
-    double total = gross + oth;
-    double gstAmt = total * (gstPerc / 100);
-    double netAmt = total + gstAmt;
+    // Only parse if text is not empty
+    if (_grossAmtCtrl.text.isNotEmpty && _grossAmtCtrl.text != '-') {
+      gross = double.tryParse(_grossAmtCtrl.text) ?? 0;
+    }
 
-    _gstAmtCtrl.text = gstAmt.toStringAsFixed(2);
-    _netAmtCtrl.text = netAmt.toStringAsFixed(2);
+    if (_othAmtCtrl.text.isNotEmpty && _othAmtCtrl.text != '-') {
+      oth = double.tryParse(_othAmtCtrl.text) ?? 0;
+    }
+
+    if (_gstPercCtrl.text.isNotEmpty && _gstPercCtrl.text != '-') {
+      gstPerc = double.tryParse(_gstPercCtrl.text) ?? 5;
+    }
+
+    double totalBeforeGst = gross + oth;
+    double gstAmt = totalBeforeGst * (gstPerc / 100);
+    double netAmt = totalBeforeGst + gstAmt;
+
+    // Use setState to ensure UI updates
+    setState(() {
+      _gstAmtCtrl.text = gstAmt.toStringAsFixed(2);
+      _netAmtCtrl.text = netAmt.toStringAsFixed(2);
+    });
   }
 
   // ────────────────────── Validation Methods ──────────────────────
@@ -348,6 +435,8 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _estEndDtFocus.dispose();
     _actualStartDtFocus.dispose();
     _actualEndDtFocus.dispose();
+    _othAmtFocus.dispose();
+    _gstPercFocus.dispose();
     super.dispose();
   }
 
@@ -362,6 +451,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     if (result != null && mounted) {
       setState(() {
         _finishDetailsList.add(result);
+        _updateGrossAmount(); // Update gross amount when adding finish
       });
     }
   }
@@ -380,6 +470,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     if (result != null && mounted) {
       setState(() {
         _finishDetailsList[index] = result;
+        _updateGrossAmount(); // Update gross amount when editing finish
       });
     }
   }
@@ -387,10 +478,11 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   void _deleteFinishDetail(int index) {
     setState(() {
       _finishDetailsList.removeAt(index);
+      _updateGrossAmount(); // Update gross amount when deleting finish
     });
   }
 
-  void _saveJobOrder() {
+  void _saveJobOrder() async {
     // Final validation before save
     _validateEstDates();
     _validateActualDates();
@@ -407,41 +499,252 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
       return;
     }
 
-    final jobOrderData = {
-      'series': _seriesCtrl.text,
-      'lastCd': _lastCdCtrl.text,
-      'docNo': _docNoCtrl.text,
-      'docDt': _docDtCtrl.text,
-      'refNo': _refNoCtrl.text,
-      'expectedDlvDt': _expectedDlvDtCtrl.text,
-      'jobber': _selectedJobber?['name'],
-      'jobberKey': _selectedJobber?['key'],
-      'station': _selectedStation,
-      'orderType': _orderType,
-      'estStartDt': _estStartDtCtrl.text,
-      'estEndDt': _estEndDtCtrl.text,
-      'actualStartDt': _actualStartDtCtrl.text,
-      'actualEndDt': _actualEndDtCtrl.text,
-      'process': _selectedProcess,
-      'stockPickup': _stockPickup,
-      'receivedAsFinished': _receivedAsFinished,
-      'reProcess': _reProcess,
-      'grossAmt': double.tryParse(_grossAmtCtrl.text) ?? 0,
-      'othAmt': double.tryParse(_othAmtCtrl.text) ?? 0,
-      'gstPerc': double.tryParse(_gstPercCtrl.text) ?? 0,
-      'gstAmt': double.tryParse(_gstAmtCtrl.text) ?? 0,
-      'netAmt': double.tryParse(_netAmtCtrl.text) ?? 0,
-      'finishDetails': _finishDetailsList,
-      'status': 'Planned',
-      'createdBy': 'Current User',
-      'createdOn': _getCurrentDateTime(),
-      'updatedBy': 'Current User',
-      'updatedOn': _getCurrentDateTime(),
-      'totPcs': _calculateTotalPcs(),
-      'jobChgPc': double.tryParse(_jobRateCtrl.text) ?? 0,
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Get current date and time for various fields
+    final now = DateTime.now();
+    final currentDate = _formatDateTime(now);
+    final currentTime = _formatTimeOfDay(now);
+
+    // Transform finish details to jobOrderDetails format
+    final jobOrderDetails = _transformFinishDetailsToJobOrderDetailsForAPI();
+
+    final payload = {
+      // Header Fields (without number suffixes)
+      "CoBr_Id": UserSession.coBrId,
+      "FcYr_Id": UserSession.userFcYr,
+      "Doc_Sr": _seriesCtrl.text,
+      "Doc_Dt": _parseDateToISO(_docDtCtrl.text) ?? currentDate,
+      "Party_Key": _selectedJobber?['key'] ?? '',
+      "Stn_Key": _selectedStation?['key'] ?? '',
+      "Our_RefNo": _refNoCtrl.text,
+      "Exp_Dlv_dt": _parseDateToISO(_expectedDlvDtCtrl.text) ?? currentDate,
+      "TotPcs": _calculateTotalPcs(),
+      "Job_Rate": double.tryParse(_jobRateCtrl.text) ?? 0,
+      "Job_ANX": _remarkCtrl.text,
+      "Status": "1", // 1 = Active
+      "Remark": _remarkCtrl.text,
+      "Print_Doc": 0,
+      "Created_By": 1,
+      "Created_Time": currentTime,
+      "JobCard_From": _orderType == 'Open' ? "M" : "B",
+      "EstStart_Dt": _parseDateToISO(_estStartDtCtrl.text) ?? currentDate,
+      "EstEnd_Dt": _parseDateToISO(_estEndDtCtrl.text) ?? currentDate,
+      "ActStart_Dt": _parseDateToISO(_actualStartDtCtrl.text),
+      "ActEnd_Dt": _parseDateToISO(_actualEndDtCtrl.text),
+      "Dlv_Days": _calculateDeliveryDays(),
+      "ProStg_Id": 1,
+      "In_Out": "I",
+      "Gross_Amt": double.tryParse(_grossAmtCtrl.text) ?? 0,
+      "Oth_Amt": double.tryParse(_othAmtCtrl.text) ?? 0,
+      "GSTPerc": double.tryParse(_gstPercCtrl.text) ?? 0,
+      "Gst_Amt": double.tryParse(_gstAmtCtrl.text) ?? 0,
+      "Net_Amt": double.tryParse(_netAmtCtrl.text) ?? 0,
+      "Finish_Stk": _receivedAsFinished ? "1" : "0",
+      "ReProcess": _reProcess ? "1" : "0",
+      "StockPickFrom": _stockPickup == 'Partial' ? "P" : "R",
+      "Consperson_Id": 0,
+      "IsSemiProcess": "0",
+      "ProductPickAsPer": "C",
+
+      // Details
+      "jobOrderDetails": jobOrderDetails,
     };
 
-    Navigator.pop(context, jobOrderData);
+    // Call the API
+    final result = await ProductionService.insertJobOrder(payload);
+
+    // Hide loading indicator
+    Navigator.pop(context);
+
+    if (result['success']) {
+      // Show success message and return
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Job Order created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, payload);
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _transformFinishDetailsToJobOrderDetailsForAPI() {
+    List<Map<String, dynamic>> details = [];
+
+    for (int i = 0; i < _finishDetailsList.length; i++) {
+      final finish = _finishDetailsList[i];
+      final sizeDetailsMap =
+          finish['sizeDetails'] as Map<String, Map<String, dynamic>>? ?? {};
+      print('@@@@@@@@@@@@Size Details Map: $sizeDetailsMap');
+      sizeDetailsMap.forEach((sizeName, sizeData) {
+        print(
+          'Size: $sizeName, Data: $sizeData, StyleSize_Id: ${sizeData['StyleSize_Id']}',
+        );
+      });
+      final fabricsList =
+          finish['fabrics'] as List<Map<String, dynamic>>? ?? [];
+
+      // Transform size details
+      final sizeDetails = _transformSizeDetailsForAPI(sizeDetailsMap);
+
+      // Transform fabric details
+      final fabricDetails = _transformFabricDetailsForAPI(fabricsList);
+
+      details.add({
+        "Item_Key": finish['productKey'] ?? '',
+        "Style_Key": finish['designKey'] ?? '',
+        "Type_Key": finish['typeKey'] ?? '',
+        "Shade_Key": finish['shadeKey'] ?? '',
+        "TotalQty": finish['totalPcs'] ?? 0,
+        "Fab_Ratio": finish['avgRatio'] ?? 0,
+        "Fab_Qty": finish['cutMtr'] ?? 0,
+        "Description": finish['description'] ?? '',
+        "BomPrdStyle_Id": 0,
+        "SO_DocDtlId": 0,
+        "Merch_Key": finish['merchandiserKey'] ?? '',
+        "PP_DocDtlId": 0,
+        "JobRate": finish['jobRate'] ?? 0,
+        "JobAmt": finish['amount'] ?? 0,
+        "Var_Perc": finish['qtyValPerc'] ?? 0,
+        "Unit_Key": "011", // Default unit key
+        "InitDt": _getCurrentDateTimeISO(),
+        "InitQty": finish['totalPcs'] ?? 0,
+        "InitRemark": "Initial",
+        "DispShade_Key": finish['shadeKey'] ?? '',
+
+        "sizeDetails": sizeDetails,
+        "fabricDetails": fabricDetails,
+      });
+    }
+
+    return details;
+  }
+
+  List<Map<String, dynamic>> _transformSizeDetailsForAPI(
+    Map<String, Map<String, dynamic>> sizeDetailsMap,
+  ) {
+    List<Map<String, dynamic>> sizeDetails = [];
+
+    sizeDetailsMap.forEach((sizeName, sizeData) {
+      // Debug check (VERY IMPORTANT)
+      if (sizeData['StyleSize_Id'] == null) {
+        print("❌ ERROR: StyleSize_Id missing for size → $sizeName : $sizeData");
+      }
+
+      sizeDetails.add({
+        "StyleSize_Id": sizeData['StyleSize_Id'], // ✅ ONLY THIS KEY
+        "Qty": sizeData['aQty'] ?? 0,
+        "Fab_Qty": sizeData['aQty'] ?? 0,
+        "BalQty": 0,
+        "ProdnPlnDtlSz_ID": 0,
+        "InitDt": _getCurrentDateTimeISO(),
+        "InitQty": sizeData['aQty'] ?? 0,
+        "InitRemark": "Size Initial",
+      });
+    });
+
+    return sizeDetails;
+  }
+
+  List<Map<String, dynamic>> _transformFabricDetailsForAPI(
+    List<Map<String, dynamic>> fabricsList,
+  ) {
+    List<Map<String, dynamic>> fabricDetails = [];
+
+    for (int i = 0; i < fabricsList.length; i++) {
+      final fabric = fabricsList[i];
+
+      fabricDetails.add({
+        "BomPrdStyleDtl_Id": 0,
+        "ProdPlanFab_Id": 0,
+        "ItemSubGrp_key": fabric['itemSubGrpKey'] ?? '',
+        "Shade_Key": fabric['shadeKey'] ?? '',
+        "Brand_Key": fabric['brandKey'] ?? '',
+        "Ratio": fabric['ratio'] ?? 0,
+        "Req_Qty": fabric['reqQty'] ?? 0,
+        "WastePerc": fabric['wast'] ?? 0,
+        "Waste_Qty": fabric['wasteAmt'] ?? 0,
+        "Description": fabric['description'] ?? '',
+        "Placement": "",
+        "Item_Key": fabric['productKey'] ?? '',
+        "Style_Key": fabric['designKey'] ?? '',
+        // "Type_Key": fabric['typeKey'] ?? '',
+        "Type_Key": '',
+        "Act_Qty": fabric['actualQty'] ?? 0,
+        "BalQty": (fabric['reqQty'] ?? 0) - (fabric['actualQty'] ?? 0),
+        "Var_Perc": fabric['qtyVar'] ?? 0,
+      });
+    }
+
+    return fabricDetails;
+  }
+
+  // Helper method for time formatting
+  String _formatTimeOfDay(DateTime dateTime) {
+    int hour = dateTime.hour;
+    int minute = dateTime.minute;
+    String period = hour >= 12 ? 'PM' : 'AM';
+    int hour12 = hour % 12;
+    if (hour12 == 0) hour12 = 12;
+    return '${hour12.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+  }
+
+  // Helper methods for date formatting
+  String _formatDateTime(DateTime dateTime) {
+    return "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}T${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}";
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  String? _parseDateToISO(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    try {
+      final parts = dateStr.split('/');
+      if (parts.length == 3) {
+        final date = DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[1]),
+          int.parse(parts[0]),
+        );
+        return _formatDateTime(date);
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
+  String _getCurrentDateTimeISO() {
+    final now = DateTime.now();
+    return _formatDateTime(now);
+  }
+
+  int _calculateDeliveryDays() {
+    if (_expectedDlvDtCtrl.text.isEmpty) return 0;
+
+    final expectedDate = _parseDateToISO(_expectedDlvDtCtrl.text);
+    if (expectedDate == null) return 0;
+
+    final docDate = _parseDateToISO(_docDtCtrl.text);
+    if (docDate == null) return 0;
+
+    final expected = DateTime.parse(expectedDate);
+    final doc = DateTime.parse(docDate);
+
+    return expected.difference(doc).inDays;
   }
 
   void _saveOtherProcess() {
@@ -462,6 +765,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     final totalPcs = finish['totalPcs'] ?? 0;
     final avgRatio = finish['avgRatio'] ?? 0;
     final cutMtr = finish['cutMtr'] ?? 0;
+    final amount = finish['amount'] ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -554,7 +858,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Fabrics: ${fabrics.length}',
+                                'Amount: ₹${amount.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -679,6 +983,33 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                             ],
                           ),
                         ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: Colors.grey.shade300,
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Amount',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '₹${amount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -731,10 +1062,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           Expanded(
@@ -1020,8 +1348,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                               if (v != null &&
                                   v['station'] != null &&
                                   v['station'].isNotEmpty) {
-                                _selectedStation = v['station'];
-                                _stationCtrl.text = _selectedStation!;
+                                _selectedStation = {
+                                  "key": v['stationKey'], // ✅ ONLY KEY
+                                  "name": v['station'], // ✅ ONLY NAME
+                                };
+
+                                _stationCtrl.text =
+                                    _selectedStation?['name'] ?? '';
                               }
                             });
                           },
@@ -1043,7 +1376,10 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                padding: const EdgeInsets.only(
+                                  left: 4,
+                                  bottom: 8,
+                                ),
                                 child: Text(
                                   'Order Type',
                                   style: TextStyle(
@@ -1057,20 +1393,32 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 children: [
                                   Expanded(
                                     child: RadioListTile<String>(
-                                      title: const Text('Open', style: TextStyle(fontSize: 14)),
+                                      title: const Text(
+                                        'Open',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                       value: 'Open',
                                       groupValue: _orderType,
-                                      onChanged: (value) => setState(() => _orderType = value!),
+                                      onChanged:
+                                          (value) => setState(
+                                            () => _orderType = value!,
+                                          ),
                                       contentPadding: EdgeInsets.zero,
                                       dense: true,
                                     ),
                                   ),
                                   Expanded(
                                     child: RadioListTile<String>(
-                                      title: const Text('BOM', style: TextStyle(fontSize: 14)),
+                                      title: const Text(
+                                        'BOM',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                       value: 'BOM',
                                       groupValue: _orderType,
-                                      onChanged: (value) => setState(() => _orderType = value!),
+                                      onChanged:
+                                          (value) => setState(
+                                            () => _orderType = value!,
+                                          ),
                                       contentPadding: EdgeInsets.zero,
                                       dense: true,
                                     ),
@@ -1088,7 +1436,9 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 controller: _estStartDtCtrl,
                                 focusNode: _estStartDtFocus,
                                 onDateChanged: (date) => _validateEstDates(),
-                                onValidationError: (error) => setState(() => _estDateError = error),
+                                onValidationError:
+                                    (error) =>
+                                        setState(() => _estDateError = error),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1100,7 +1450,9 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 fromDate: _parseDate(_estStartDtCtrl.text),
                                 errorText: _estDateError,
                                 onDateChanged: (date) => _validateEstDates(),
-                                onValidationError: (error) => setState(() => _estDateError = error),
+                                onValidationError:
+                                    (error) =>
+                                        setState(() => _estDateError = error),
                               ),
                             ),
                           ],
@@ -1113,7 +1465,10 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 controller: _actualStartDtCtrl,
                                 focusNode: _actualStartDtFocus,
                                 onDateChanged: (date) => _validateActualDates(),
-                                onValidationError: (error) => setState(() => _actualDateError = error),
+                                onValidationError:
+                                    (error) => setState(
+                                      () => _actualDateError = error,
+                                    ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1125,7 +1480,10 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 fromDate: _parseDate(_actualStartDtCtrl.text),
                                 errorText: _actualDateError,
                                 onDateChanged: (date) => _validateActualDates(),
-                                onValidationError: (error) => setState(() => _actualDateError = error),
+                                onValidationError:
+                                    (error) => setState(
+                                      () => _actualDateError = error,
+                                    ),
                               ),
                             ),
                           ],
@@ -1133,9 +1491,20 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                         CustomSearchableDropdown(
                           label: 'Process',
                           controller: _processCtrl,
-                          items: _processes.map((p) => {'key': p, 'name': p}).toList(),
-                          selected: _selectedProcess != null ? {'key': _selectedProcess!, 'name': _selectedProcess!} : null,
-                          onChanged: (v) => setState(() => _selectedProcess = v?['name']),
+                          items:
+                              _processes
+                                  .map((p) => {'key': p, 'name': p})
+                                  .toList(),
+                          selected:
+                              _selectedProcess != null
+                                  ? {
+                                    'key': _selectedProcess!,
+                                    'name': _selectedProcess!,
+                                  }
+                                  : null,
+                          onChanged:
+                              (v) =>
+                                  setState(() => _selectedProcess = v?['name']),
                           focusNode: _processFocus,
                           showClearButton: true,
                           allowClear: true,
@@ -1146,7 +1515,10 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                padding: const EdgeInsets.only(
+                                  left: 4,
+                                  bottom: 8,
+                                ),
                                 child: Text(
                                   'Stock Pickup',
                                   style: TextStyle(
@@ -1160,20 +1532,32 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 children: [
                                   Expanded(
                                     child: RadioListTile<String>(
-                                      title: const Text('Partial', style: TextStyle(fontSize: 14)),
+                                      title: const Text(
+                                        'Partial',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                       value: 'Partial',
                                       groupValue: _stockPickup,
-                                      onChanged: (value) => setState(() => _stockPickup = value!),
+                                      onChanged:
+                                          (value) => setState(
+                                            () => _stockPickup = value!,
+                                          ),
                                       contentPadding: EdgeInsets.zero,
                                       dense: true,
                                     ),
                                   ),
                                   Expanded(
                                     child: RadioListTile<String>(
-                                      title: const Text('Ready', style: TextStyle(fontSize: 14)),
+                                      title: const Text(
+                                        'Ready',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                       value: 'Ready',
                                       groupValue: _stockPickup,
-                                      onChanged: (value) => setState(() => _stockPickup = value!),
+                                      onChanged:
+                                          (value) => setState(
+                                            () => _stockPickup = value!,
+                                          ),
                                       contentPadding: EdgeInsets.zero,
                                       dense: true,
                                     ),
@@ -1187,22 +1571,35 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                           children: [
                             Expanded(
                               child: CheckboxListTile(
-                                title: const Text('Received As Finished', style: TextStyle(fontSize: 13)),
+                                title: const Text(
+                                  'Received As Finished',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 value: _receivedAsFinished,
-                                onChanged: (value) => setState(() => _receivedAsFinished = value!),
+                                onChanged:
+                                    (value) => setState(
+                                      () => _receivedAsFinished = value!,
+                                    ),
                                 contentPadding: EdgeInsets.zero,
                                 dense: true,
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                               ),
                             ),
                             Expanded(
                               child: CheckboxListTile(
-                                title: const Text('ReProcess', style: TextStyle(fontSize: 13)),
+                                title: const Text(
+                                  'ReProcess',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 value: _reProcess,
-                                onChanged: (value) => setState(() => _reProcess = value!),
+                                onChanged:
+                                    (value) =>
+                                        setState(() => _reProcess = value!),
                                 contentPadding: EdgeInsets.zero,
                                 dense: true,
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                               ),
                             ),
                           ],
@@ -1237,7 +1634,11 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.checklist, color: AppColors.primaryColor, size: 20),
+                                  const Icon(
+                                    Icons.checklist,
+                                    color: AppColors.primaryColor,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   const Text(
                                     'FINISH DETAILS',
@@ -1249,9 +1650,14 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                   ),
                                   const SizedBox(width: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryColor.withOpacity(0.1),
+                                      color: AppColors.primaryColor.withOpacity(
+                                        0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -1268,10 +1674,16 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                               Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryColor.withOpacity(0.1),
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.1,
+                                  ),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.add, color: AppColors.primaryColor, size: 20),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: AppColors.primaryColor,
+                                  size: 20,
+                                ),
                               ),
                             ],
                           ),
@@ -1281,8 +1693,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                         Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
-                            children: List.generate(_finishDetailsList.length, (index) {
-                              return _buildFinishCard(index, _finishDetailsList[index]);
+                            children: List.generate(_finishDetailsList.length, (
+                              index,
+                            ) {
+                              return _buildFinishCard(
+                                index,
+                                _finishDetailsList[index],
+                              );
                             }),
                           ),
                         )
@@ -1296,7 +1713,10 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 SizedBox(height: 8),
                                 Text(
                                   'No finish details added',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1306,6 +1726,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Financial Details Card
                 // Financial Details Card
                 Container(
                   decoration: BoxDecoration(
@@ -1342,6 +1763,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                                 controller: _grossAmtCtrl,
                                 focusNode: FocusNode(),
                                 keyboardType: TextInputType.number,
+                                readOnly: true,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1349,8 +1771,12 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                               child: CustomTextField(
                                 label: 'Oth Amt',
                                 controller: _othAmtCtrl,
-                                focusNode: FocusNode(),
+                                focusNode:
+                                    _othAmtFocus, // Use the dedicated focus node
                                 keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _calculateNetAmt();
+                                },
                               ),
                             ),
                           ],
@@ -1362,8 +1788,12 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                               child: CustomTextField(
                                 label: 'GST Perc (%)',
                                 controller: _gstPercCtrl,
-                                focusNode: FocusNode(),
+                                focusNode:
+                                    _gstPercFocus, // Use the dedicated focus node
                                 keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  _calculateNetAmt();
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1378,16 +1808,36 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                           ],
                         ),
                         const SizedBox(height: 8),
+                        // Net Amount with maroon color bold
                         Container(
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
+                            color: const Color(0xFF800000).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                            border: Border.all(
+                              color: const Color(0xFF800000).withOpacity(0.3),
+                            ),
                           ),
-                          child: CustomTextField(
-                            label: 'Net Amt',
-                            controller: _netAmtCtrl,
-                            focusNode: FocusNode(),
-                            readOnly: true,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'NET AMOUNT',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF800000),
+                                ),
+                              ),
+                              Text(
+                                '₹${_netAmtCtrl.text}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF800000),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1414,7 +1864,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                       elevation: 0,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text('CANCEL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1430,7 +1886,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                       elevation: 0,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text('SAVE', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'SAVE',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1479,7 +1941,8 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                       controller: _otherProcessCtrl,
                       items: _otherProcessesList,
                       selected: _selectedOtherProcess,
-                      onChanged: (v) => setState(() => _selectedOtherProcess = v),
+                      onChanged:
+                          (v) => setState(() => _selectedOtherProcess = v),
                       focusNode: FocusNode(),
                       isRequired: true,
                       showClearButton: true,
@@ -1529,7 +1992,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                       elevation: 0,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text('CANCEL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1545,7 +2014,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                       elevation: 0,
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text('Confirm', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),

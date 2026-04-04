@@ -20,7 +20,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
   bool _isSearching = false;
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   late Animation<double> _opacityAnimation;
@@ -29,26 +29,28 @@ class _JobWorkScreenState extends State<JobWorkScreen>
   void initState() {
     super.initState();
     _searchController.addListener(_filterJobWorks);
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _widthAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
+
     _opacityAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
-    
+
     _searchFocusNode.addListener(() {
-      if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty && _isSearching) {
+      if (!_searchFocusNode.hasFocus &&
+          _searchController.text.isEmpty &&
+          _isSearching) {
         _toggleSearch();
       }
     });
-    
+
     _loadJobWorks();
   }
 
@@ -66,14 +68,14 @@ class _JobWorkScreenState extends State<JobWorkScreen>
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     final jobWorks = await ProductionService.getJobWorks();
-    
+
     setState(() {
       _jobWorks = jobWorks;
       _filteredJobWorks = List.from(jobWorks);
       _isLoading = false;
-      
+
       if (jobWorks.isEmpty) {
         _errorMessage = 'No job works found';
       }
@@ -86,11 +88,12 @@ class _JobWorkScreenState extends State<JobWorkScreen>
       if (query.isEmpty) {
         _filteredJobWorks = List.from(_jobWorks);
       } else {
-        _filteredJobWorks = _jobWorks.where((work) {
-          return work['docNo'].toString().toLowerCase().contains(query) ||
-              work['jobber'].toString().toLowerCase().contains(query) ||
-              work['station'].toString().toLowerCase().contains(query);
-        }).toList();
+        _filteredJobWorks =
+            _jobWorks.where((work) {
+              return work['docNo'].toString().toLowerCase().contains(query) ||
+                  work['jobber'].toString().toLowerCase().contains(query) ||
+                  work['station'].toString().toLowerCase().contains(query);
+            }).toList();
       }
     });
   }
@@ -129,11 +132,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
     if (jobWork == null) {
       final result = await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const CreateJobOrderScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const CreateJobOrderScreen()),
       );
-      
+
       if (result != null && mounted) {
         await _loadJobWorks(); // Reload the list
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,12 +149,10 @@ class _JobWorkScreenState extends State<JobWorkScreen>
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CreateJobOrderScreen(
-            jobWork: jobWork,
-          ),
+          builder: (context) => CreateJobOrderScreen(jobWork: jobWork),
         ),
       );
-      
+
       if (result != null && mounted) {
         await _loadJobWorks(); // Reload the list
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,10 +266,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 2),
               Text(
@@ -335,66 +331,109 @@ class _JobWorkScreenState extends State<JobWorkScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer:  DrawerScreen(),
+      drawer: DrawerScreen(),
       appBar: AppBar(
-        title: !_isSearching
-            ? const Text(
-                'Job Works',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              )
-            : null,
+        title:
+            !_isSearching
+                ? const Text(
+                  'Job Works',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                )
+                : null,
         backgroundColor: AppColors.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         titleSpacing: _isSearching ? 0 : null,
-        flexibleSpace: _isSearching
-            ? AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Container(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    alignment: Alignment.center,
-                    child: Opacity(
-                      opacity: _opacityAnimation.value,
-                      child: Transform.scale(
-                        scaleX: _widthAnimation.value,
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            focusNode: _searchFocusNode,
-                            autofocus: true,
-                            decoration: InputDecoration(
-                              hintText: 'Search by Doc No, Jobber, Station...',
-                              prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.close, size: 20, color: Colors.grey),
-                                      onPressed: _clearSearch,
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        flexibleSpace:
+            _isSearching
+                ? AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return SafeArea(
+                      child: Container(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 56),
+                            Expanded(
+                              child: Opacity(
+                                opacity: _opacityAnimation.value,
+                                child: Transform.scale(
+                                  scaleX: _widthAnimation.value,
+                                  child: Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: TextField(
+                                      controller: _searchController,
+                                      focusNode: _searchFocusNode,
+                                      autofocus: true,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
+                                      decoration: InputDecoration(
+                                        hintText: 'Search...',
+                                        hintStyle: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                        prefixIcon: const Icon(
+                                          Icons.search,
+                                          size: 20,
+                                          color: Colors.grey,
+                                        ),
+                                        prefixIconConstraints:
+                                            const BoxConstraints(
+                                              minWidth: 40,
+                                              minHeight: 40,
+                                            ),
+                                        suffixIcon:
+                                            _searchController.text.isNotEmpty
+                                                ? IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    size: 20,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  onPressed: _clearSearch,
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                )
+                                                : null,
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 0,
+                                              vertical: 0,
+                                            ),
+                                        isDense: true,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            style: const TextStyle(fontSize: 14, color: Colors.black87),
-                          ),
+                            const SizedBox(width: 56),
+                          ],
                         ),
                       ),
-                    ),
-                  );
-                },
-              )
-            : null,
+                    );
+                  },
+                )
+                : null,
         actions: [
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
@@ -413,12 +452,8 @@ class _JobWorkScreenState extends State<JobWorkScreen>
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-        ),
-        child: SafeArea(
-          child: _buildBody(),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade100),
+        child: SafeArea(child: _buildBody()),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToJobWorkDetail(null),
@@ -433,9 +468,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
           ),
         ),
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
@@ -456,28 +489,21 @@ class _JobWorkScreenState extends State<JobWorkScreen>
         ),
       );
     }
-    
+
     if (_errorMessage != null && _jobWorks.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     if (_filteredJobWorks.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.search_off, size: 80, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               'No results found for "${_searchController.text}"',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -491,7 +517,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
         ),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: _filteredJobWorks.length,
@@ -519,17 +545,14 @@ class _JobWorkScreenState extends State<JobWorkScreen>
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
+              side: BorderSide(color: Colors.grey.shade200, width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Theme(
-                data: Theme.of(context).copyWith(
-                  dividerColor: Colors.transparent,
-                ),
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   tilePadding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -548,10 +571,10 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                       status == 'Active'
                           ? Icons.check_circle_outline
                           : status == 'In Progress'
-                              ? Icons.engineering_outlined
-                              : status == 'Planned'
-                                  ? Icons.schedule_outlined
-                                  : Icons.warning_amber_outlined,
+                          ? Icons.engineering_outlined
+                          : status == 'Planned'
+                          ? Icons.schedule_outlined
+                          : Icons.warning_amber_outlined,
                       color: statusColor,
                       size: 24,
                     ),
@@ -658,9 +681,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         border: Border(
-                          top: BorderSide(
-                            color: Colors.grey.shade200,
-                          ),
+                          top: BorderSide(color: Colors.grey.shade200),
                         ),
                       ),
                       padding: const EdgeInsets.all(12),
@@ -695,9 +716,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.grey.shade200,
-                              ),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: Column(
                               children: [
@@ -706,7 +725,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                                     Expanded(
                                       child: _buildMetricItem(
                                         label: 'Total Pcs',
-                                        value: jobWork['totPcs']?.toString() ?? '0',
+                                        value:
+                                            jobWork['totPcs']?.toString() ??
+                                            '0',
                                         icon: Icons.shopping_bag,
                                       ),
                                     ),
@@ -718,7 +739,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                                     Expanded(
                                       child: _buildMetricItem(
                                         label: 'Job Charge/Pc',
-                                        value: _formatCurrency(jobWork['jobChgPc'] ?? 0),
+                                        value: _formatCurrency(
+                                          jobWork['jobChgPc'] ?? 0,
+                                        ),
                                         icon: Icons.currency_rupee,
                                       ),
                                     ),
@@ -735,9 +758,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.grey.shade200,
-                              ),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: Column(
                               children: [
@@ -746,7 +767,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                                     Expanded(
                                       child: _buildAuditItem(
                                         label: 'Created By',
-                                        value: jobWork['createdBy']?.toString() ?? '-',
+                                        value:
+                                            jobWork['createdBy']?.toString() ??
+                                            '-',
                                         icon: Icons.person_add,
                                       ),
                                     ),
@@ -754,23 +777,32 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                                     Expanded(
                                       child: _buildAuditItem(
                                         label: 'Created On',
-                                        value: jobWork['createdOn']?.toString() ?? '-',
+                                        value:
+                                            jobWork['createdOn']?.toString() ??
+                                            '-',
                                         icon: Icons.access_time,
                                       ),
                                     ),
                                   ],
                                 ),
-                                if ((jobWork['updatedBy']?.toString() ?? '').isNotEmpty ||
-                                    (jobWork['updatedOn']?.toString() ?? '').isNotEmpty)
+                                if ((jobWork['updatedBy']?.toString() ?? '')
+                                        .isNotEmpty ||
+                                    (jobWork['updatedOn']?.toString() ?? '')
+                                        .isNotEmpty)
                                   const SizedBox(height: 6),
-                                if ((jobWork['updatedBy']?.toString() ?? '').isNotEmpty ||
-                                    (jobWork['updatedOn']?.toString() ?? '').isNotEmpty)
+                                if ((jobWork['updatedBy']?.toString() ?? '')
+                                        .isNotEmpty ||
+                                    (jobWork['updatedOn']?.toString() ?? '')
+                                        .isNotEmpty)
                                   Row(
                                     children: [
                                       Expanded(
                                         child: _buildAuditItem(
                                           label: 'Updated By',
-                                          value: jobWork['updatedBy']?.toString() ?? '-',
+                                          value:
+                                              jobWork['updatedBy']
+                                                  ?.toString() ??
+                                              '-',
                                           icon: Icons.update,
                                         ),
                                       ),
@@ -778,7 +810,10 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                                       Expanded(
                                         child: _buildAuditItem(
                                           label: 'Updated On',
-                                          value: jobWork['updatedOn']?.toString() ?? '-',
+                                          value:
+                                              jobWork['updatedOn']
+                                                  ?.toString() ??
+                                              '-',
                                           icon: Icons.update,
                                         ),
                                       ),
@@ -794,11 +829,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => _navigateToJobWorkDetail(jobWork),
-                                  icon: const Icon(
-                                    Icons.visibility,
-                                    size: 16,
-                                  ),
+                                  onPressed:
+                                      () => _navigateToJobWorkDetail(jobWork),
+                                  icon: const Icon(Icons.visibility, size: 16),
                                   label: const Text(
                                     'VIEW DETAILS',
                                     style: TextStyle(fontSize: 12),
@@ -820,11 +853,9 @@ class _JobWorkScreenState extends State<JobWorkScreen>
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: () => _navigateToJobWorkDetail(jobWork),
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                  ),
+                                  onPressed:
+                                      () => _navigateToJobWorkDetail(jobWork),
+                                  icon: const Icon(Icons.edit, size: 16),
                                   label: const Text(
                                     'EDIT',
                                     style: TextStyle(fontSize: 12),
@@ -861,11 +892,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.work_outline,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.work_outline, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? 'No Job Works Found',
@@ -878,10 +905,7 @@ class _JobWorkScreenState extends State<JobWorkScreen>
           const SizedBox(height: 8),
           Text(
             'Tap the + button to create a new job order',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 24),
           if (_errorMessage != null)
@@ -892,7 +916,10 @@ class _JobWorkScreenState extends State<JobWorkScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -906,7 +933,10 @@ class _JobWorkScreenState extends State<JobWorkScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

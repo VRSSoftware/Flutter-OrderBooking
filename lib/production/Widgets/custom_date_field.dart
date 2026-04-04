@@ -37,18 +37,24 @@ class _CustomDateFieldState extends State<CustomDateField> {
   late DateTime _currentDate;
   String? _localErrorText;
 
-  @override
-  void initState() {
-    super.initState();
-    _currentDate = DateTime.now();
-    // Initialize from controller if exists
-    if (widget.controller.text.isNotEmpty) {
-      final parsedDate = _parseDate(widget.controller.text);
-      if (parsedDate != null) {
-        _currentDate = parsedDate;
-      }
+@override
+void initState() {
+  super.initState();
+  _currentDate = DateTime.now();
+  
+  // Initialize from controller if exists
+  if (widget.controller.text.isNotEmpty) {
+    final parsedDate = _parseDate(widget.controller.text);
+    if (parsedDate != null) {
+      _currentDate = parsedDate;
     }
+  } else {
+    // Set today's date as default if controller is empty
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateDate(DateTime.now());
+    });
   }
+}
 
   DateTime? _parseDate(String dateStr) {
     try {
@@ -100,15 +106,20 @@ class _CustomDateFieldState extends State<CustomDateField> {
       widget.onDateChanged?.call(date);
     }
   }
-
-  void _updateDate(DateTime newDate) {
-    setState(() {
-      _currentDate = newDate;
-      widget.controller.text = _formatDate(newDate);
-    });
-    _validateDate(newDate);
+void _updateDate(DateTime newDate) {
+  // Prevent updating if date is same
+  if (_currentDate.year == newDate.year && 
+      _currentDate.month == newDate.month && 
+      _currentDate.day == newDate.day) {
+    return;
   }
-
+  
+  setState(() {
+    _currentDate = newDate;
+    widget.controller.text = _formatDate(newDate);
+  });
+  _validateDate(newDate);
+}
   void _previousDate() {
     final newDate = DateTime(_currentDate.year, _currentDate.month, _currentDate.day - 1);
     _updateDate(newDate);

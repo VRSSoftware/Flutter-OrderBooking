@@ -123,6 +123,18 @@ class _FinishDetailScreenForJobWorkState
     setState(() => _isLoadingDesigns = true);
     _designNoList = await ProductionService.getDesignsByItemKey(itemKey);
     setState(() => _isLoadingDesigns = false);
+
+    if (_designNoList.isNotEmpty && _selectedDesign == null) {
+      setState(() {
+        _selectedDesign = _designNoList[0];
+        _designNoCtrl.text = _designNoList[0]['name'] ?? '';
+        if (_designNoList[0]['typeName'] != null) {
+          _typeCtrl.text = _designNoList[0]['typeName'];
+        }
+        _loadShades(_designNoList[0]['key']);
+        _loadSizes(_designNoList[0]['key']);
+      });
+    }
   }
 
   Future<void> _loadShades(String styleKey) async {
@@ -134,7 +146,9 @@ class _FinishDetailScreenForJobWorkState
   Future<void> _loadSizes(String styleKey) async {
     setState(() => _isLoadingSizes = true);
     _sizeList = await ProductionService.getStyleSizes(styleKey);
-    setState(() => _isLoadingSizes = false);
+    setState(() {
+      _isLoadingSizes = false;
+    });
   }
 
   Future<void> _loadOrders() async {
@@ -170,16 +184,23 @@ class _FinishDetailScreenForJobWorkState
     }
 
     _selectedShade =
-        data['shade'] != null ? {'key': '', 'name': data['shade']} : null;
+        data['shade'] != null
+            ? {'key': data['shadeKey'] ?? '', 'name': data['shade']}
+            : null;
     _shadeCtrl.text = data['shade'] ?? '';
 
     _selectedOrderNo =
-        data['orderNo'] != null ? {'key': '', 'name': data['orderNo']} : null;
+        data['orderNo'] != null
+            ? {'key': data['orderNoKey'] ?? '', 'name': data['orderNo']}
+            : null;
     _orderNoCtrl.text = data['orderNo'] ?? '';
 
     _selectedMerchandiser =
         data['merchandiser'] != null
-            ? {'key': '', 'name': data['merchandiser']}
+            ? {
+              'key': data['merchandiserKey'] ?? '',
+              'name': data['merchandiser'],
+            }
             : null;
     _merchandiserCtrl.text = data['merchandiser'] ?? '';
 
@@ -193,17 +214,32 @@ class _FinishDetailScreenForJobWorkState
       _fabricsList = List<Map<String, dynamic>>.from(data['fabrics']);
     }
 
-    // Load size details
+    // Load size details with null safety
     if (data['sizeDetails'] != null) {
       final sizeMap = data['sizeDetails'] as Map<String, dynamic>;
+
       sizeMap.forEach((key, value) {
-        _sizeDetails[key] = Map<String, dynamic>.from(value);
+        final cleaned = Map<String, dynamic>.from(value);
+
+        // 🚨 STRICT CHECK (do NOT default to 0)
+        if (cleaned['StyleSize_Id'] == null) {
+          print("❌ ERROR: Missing StyleSize_Id → Size: $key , Data: $cleaned");
+        }
+
+        // ✅ Ensure required fields exist (without touching StyleSize_Id)
+        cleaned['aQty'] = cleaned['aQty'] ?? 0;
+        cleaned['oQty'] = cleaned['oQty'] ?? 0;
+
+        // ✅ Store clean data
+        _sizeDetails[key] = cleaned;
       });
+
+      // ✅ Update totals
       _totalPcs = _calculateTotalFromSize();
       _sizeAdded = _totalPcs > 0;
       _totalPcsCtrl.text = _totalPcs.toString();
 
-      // Calculate totals from fabrics if they exist
+      // Optional recalculation
       if (_fabricsList.isNotEmpty) {
         _updateFinishTotals();
       }
@@ -225,8 +261,10 @@ class _FinishDetailScreenForJobWorkState
     double totalReqQty = 0;
 
     for (var fabric in _fabricsList) {
-      totalRatio += fabric['ratio'] as double? ?? 0;
-      totalReqQty += fabric['reqQty'] as double? ?? 0;
+      if (fabric != null) {
+        totalRatio += fabric['ratio'] as double? ?? 0;
+        totalReqQty += fabric['reqQty'] as double? ?? 0;
+      }
     }
 
     _avgRatioCtrl.text = totalRatio.toStringAsFixed(5);
@@ -249,7 +287,9 @@ class _FinishDetailScreenForJobWorkState
   int _calculateTotalFromSize() {
     int total = 0;
     for (var size in _sizeDetails.values) {
-      total += size['aQty'] as int? ?? 0;
+      if (size != null) {
+        total += size['aQty'] as int? ?? 0;
+      }
     }
     return total;
   }
@@ -344,12 +384,23 @@ class _FinishDetailScreenForJobWorkState
       await _loadSizes(_selectedDesign!['key']);
     }
 
-    // Initialize size details from API if empty
+    // Initialize size details from API with both name and ID
     if (_sizeDetails.isEmpty && _sizeList.isNotEmpty) {
       for (var size in _sizeList) {
-        final sizeName = size['name'];
-        if (!_sizeDetails.containsKey(sizeName)) {
-          _sizeDetails[sizeName] = {'aQty': 0, 'oQty': 0};
+        final sizeName = size['Size_Name'] ?? size['name'] ?? '';
+        final sizeId = size['StyleSize_Id'] ?? size['id']; // ✅ FIX HERE
+
+        if (sizeId == null) {
+          print("❌ ERROR: StyleSize_Id missing in API → $size");
+          continue;
+        }
+
+        if (sizeName.isNotEmpty && !_sizeDetails.containsKey(sizeName)) {
+          _sizeDetails[sizeName] = {
+            'aQty': 0,
+            'oQty': 0,
+            'StyleSize_Id': sizeId, // ✅ now correct
+          };
         }
       }
     }
@@ -373,6 +424,9 @@ class _FinishDetailScreenForJobWorkState
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
+        // Store focus nodes in a map to manage them properly
+        final Map<String, FocusNode> focusNodes = {};
+
         return SafeArea(
           child: StatefulBuilder(
             builder: (context, setSheetState) {
@@ -444,12 +498,28 @@ class _FinishDetailScreenForJobWorkState
                                             ],
                                           ),
                                           ..._sizeDetails.keys.map((size) {
+                                            // Create focus node for this row if not exists
+                                            if (!focusNodes.containsKey(
+                                              '$size-aQty',
+                                            )) {
+                                              focusNodes['$size-aQty'] =
+                                                  FocusNode();
+                                            }
+                                            if (!focusNodes.containsKey(
+                                              '$size-oQty',
+                                            )) {
+                                              focusNodes['$size-oQty'] =
+                                                  FocusNode();
+                                            }
+
                                             return TableRow(
                                               children: [
                                                 _cell(size),
                                                 _editableCellInSheet(
                                                   controller:
                                                       controllers['$size-aQty']!,
+                                                  focusNode:
+                                                      focusNodes['$size-aQty']!,
                                                   onChanged: (value) {
                                                     _sizeDetails[size]!['aQty'] =
                                                         int.tryParse(value) ??
@@ -470,6 +540,8 @@ class _FinishDetailScreenForJobWorkState
                                                 _editableCellInSheet(
                                                   controller:
                                                       controllers['$size-oQty']!,
+                                                  focusNode:
+                                                      focusNodes['$size-oQty']!,
                                                   onChanged: (value) {
                                                     _sizeDetails[size]!['oQty'] =
                                                         int.tryParse(value) ??
@@ -532,6 +604,10 @@ class _FinishDetailScreenForJobWorkState
                             ),
                           ),
                           onPressed: () {
+                            // Dispose all focus nodes before closing
+                            for (var node in focusNodes.values) {
+                              node.dispose();
+                            }
                             setState(() {
                               _totalPcs = currentTotal;
                               _sizeAdded = _totalPcs > 0;
@@ -589,12 +665,29 @@ class _FinishDetailScreenForJobWorkState
 
   Widget _editableCellInSheet({
     required TextEditingController controller,
+    required FocusNode focusNode,
     required ValueChanged<String> onChanged,
   }) {
+    // Add listener for focus changes
+    focusNode.addListener(() {
+      if (focusNode.hasFocus && controller.text.isNotEmpty) {
+        // Select all text when field gains focus
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (controller.text.isNotEmpty) {
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          }
+        });
+      }
+    });
+
     return Padding(
       padding: const EdgeInsets.all(6.0),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
@@ -714,6 +807,19 @@ class _FinishDetailScreenForJobWorkState
                             });
                             if (v != null) {
                               await _loadDesigns(v['key']);
+                              if (_designNoList.isNotEmpty && mounted) {
+                                setState(() {
+                                  _selectedDesign = _designNoList[0];
+                                  _designNoCtrl.text =
+                                      _designNoList[0]['name'] ?? '';
+                                  if (_designNoList[0]['typeName'] != null) {
+                                    _typeCtrl.text =
+                                        _designNoList[0]['typeName'];
+                                  }
+                                  _loadShades(_designNoList[0]['key']);
+                                  _loadSizes(_designNoList[0]['key']);
+                                });
+                              }
                             }
                           },
                           focusNode: _productFocus,
@@ -931,6 +1037,7 @@ class _FinishDetailScreenForJobWorkState
                                 controller: _jobRateCtrl,
                                 focusNode: _jobRateFocus,
                                 keyboardType: TextInputType.number,
+                                isRequired: true,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -1270,6 +1377,19 @@ class _FinishDetailScreenForJobWorkState
             onPressed:
                 _sizeAdded
                     ? () {
+                      // Clean up size details - only include sizes with aQty > 0
+                      final Map<String, Map<String, dynamic>>
+                      cleanedSizeDetails = {};
+                      _sizeDetails.forEach((sizeName, sizeData) {
+                        if ((sizeData['aQty'] as int? ?? 0) > 0) {
+                          cleanedSizeDetails[sizeName] = {
+                            'aQty': sizeData['aQty'] ?? 0,
+                            'oQty': sizeData['oQty'] ?? 0,
+                            'StyleSize_Id': sizeData['StyleSize_Id'] ?? 0,
+                          };
+                        }
+                      });
+
                       final finishData = {
                         'product': _selectedProduct?['name'],
                         'productKey': _selectedProduct?['key'],
@@ -1290,7 +1410,9 @@ class _FinishDetailScreenForJobWorkState
                         'amount': double.tryParse(_amountCtrl.text) ?? 0,
                         'qtyValPerc':
                             double.tryParse(_qtyValPercCtrl.text) ?? 0,
-                        'sizeDetails': _sizeDetails,
+                        'sizeDetails':
+                            cleanedSizeDetails, // Use cleaned version
+                        'typeKey': _selectedDesign?['typeKey'] ?? '',
                         'fabrics': _fabricsList,
                       };
                       Navigator.pop(context, finishData);

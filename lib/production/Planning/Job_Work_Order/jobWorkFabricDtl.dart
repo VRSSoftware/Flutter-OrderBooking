@@ -147,7 +147,7 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
   bool _validateReqQty() {
     double reqQty = double.tryParse(_reqQtyCtrl.text) ?? 0;
     if (reqQty <= 0) {
-      _showErrorDialog('Invalid Quantity Specified! Please enter a valid Req Qty greater than 0.');
+      _showErrorDialog('Invalid Quantity Specified!');
       return false;
     }
     return true;
@@ -158,7 +158,7 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
       context: context,
       builder: (context) => AlertDialog(
         title: const Text(
-          'Validation Error',
+          'Error',
           style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
         ),
         content: Text(message),
@@ -172,13 +172,41 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
     );
   }
   
-  Future<void> _loadInitialData() async {
-    await Future.wait([
-      _loadFabricTypes(),
-      _loadShades(),
-      _loadBrands(),
-    ]);
+Future<void> _loadInitialData() async {
+  await Future.wait([
+    _loadFabricTypes(),
+    _loadShades(),
+    _loadBrands(),
+  ]);
+  
+  // Set default type (0th index) after loading
+  if (_typeList.isNotEmpty && _selectedType == null) {
+    setState(() {
+      _selectedType = _typeList[0];
+      _typeCtrl.text = _typeList[0]['name'] ?? '';
+    });
+    // Load products for the default type
+    await _loadFabricProducts(_typeList[0]['key']);
+    
+    // Set default product (0th index) after products are loaded
+    if (_productList.isNotEmpty && _selectedProduct == null) {
+      setState(() {
+        _selectedProduct = _productList[0];
+        _productCtrl.text = _productList[0]['name'] ?? '';
+      });
+      // Load designs for the default product
+      await _loadDesigns(_productList[0]['key']);
+      
+      // Set default design (0th index) after designs are loaded
+      if (_designList.isNotEmpty && _selectedDesign == null) {
+        setState(() {
+          _selectedDesign = _designList[0];
+          _designCtrl.text = _designList[0]['name'] ?? '';
+        });
+      }
+    }
   }
+}
   
   Future<void> _loadFabricTypes() async {
     setState(() => _isLoadingTypes = true);
@@ -189,23 +217,40 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
     });
   }
   
-  Future<void> _loadFabricProducts(String itemGrpKey) async {
-    setState(() => _isLoadingProducts = true);
-    final products = await ProductionService.getFabricProducts(itemGrpKey);
-    setState(() {
-      _productList = products;
-      _isLoadingProducts = false;
-    });
-  }
+Future<void> _loadFabricProducts(String itemGrpKey) async {
+  setState(() => _isLoadingProducts = true);
+  final products = await ProductionService.getFabricProducts(itemGrpKey);
+  setState(() {
+    _productList = products;
+    _isLoadingProducts = false;
+  });
   
-  Future<void> _loadDesigns(String itemKey) async {
-    setState(() => _isLoadingDesigns = true);
-    final designs = await ProductionService.getDesignsByItemKey(itemKey);
+  // Set default product (0th index) after loading (only if not editing)
+  if (_productList.isNotEmpty && _selectedProduct == null && widget.fabricDetail == null) {
     setState(() {
-      _designList = designs;
-      _isLoadingDesigns = false;
+      _selectedProduct = _productList[0];
+      _productCtrl.text = _productList[0]['name'] ?? '';
+    });
+    await _loadDesigns(_productList[0]['key']);
+  }
+}
+  
+Future<void> _loadDesigns(String itemKey) async {
+  setState(() => _isLoadingDesigns = true);
+  final designs = await ProductionService.getDesignsByItemKey(itemKey);
+  setState(() {
+    _designList = designs;
+    _isLoadingDesigns = false;
+  });
+  
+  // Set default design (0th index) after loading (only if not editing)
+  if (_designList.isNotEmpty && _selectedDesign == null && widget.fabricDetail == null) {
+    setState(() {
+      _selectedDesign = _designList[0];
+      _designCtrl.text = _designList[0]['name'] ?? '';
     });
   }
+}
   
   Future<void> _loadShades() async {
     setState(() => _isLoadingShades = true);
@@ -588,6 +633,7 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
                           'typeCode': _selectedType?['type'],
                           'product': _selectedProduct?['name'],
                           'productKey': _selectedProduct?['key'],
+                          'itemSubGrpKey': _selectedProduct?['itemSubGrpKey'],
                           'design': _selectedDesign?['name'],
                           'designKey': _selectedDesign?['key'],
                           'shade': _selectedShade?['name'],
@@ -603,6 +649,7 @@ class _FabricDetailsScreenForJobWorkState extends State<FabricDetailsScreenForJo
                           'qtyVar': _qtyVar,
                           'description': _descriptionCtrl.text,
                           'remark': _remarkCtrl.text,
+                          
                         };
                         Navigator.pop(context, fabricData);
                       },
