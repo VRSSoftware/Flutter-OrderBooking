@@ -35,23 +35,24 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
   late FocusNode _internalFocusNode;
   OverlayEntry? _overlayEntry;
   final TextEditingController _searchController = TextEditingController();
-  bool _isFocused = false;
   bool _isDropdownOpen = false;
+  bool _hasContent = false;
 
   @override
   void initState() {
     super.initState();
     _internalFocusNode = widget.focusNode;
-    _internalFocusNode.addListener(_onFocusChange);
+    _hasContent = widget.controller.text.isNotEmpty;
+    widget.controller.addListener(_updateHasContent);
   }
 
-  void _onFocusChange() {
-    setState(() {
-      _isFocused = _internalFocusNode.hasFocus;
-      if (!_isFocused) {
-        _closeDropdown();
-      }
-    });
+  void _updateHasContent() {
+    final hasContent = widget.controller.text.isNotEmpty;
+    if (_hasContent != hasContent) {
+      setState(() {
+        _hasContent = hasContent;
+      });
+    }
   }
 
   void _toggleDropdown() {
@@ -77,10 +78,9 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
         ? (spaceBelow - 10).clamp(150.0, 350.0)
         : (spaceAbove - 10).clamp(150.0, 350.0);
     
-    // Remove all gaps - position exactly at the bottom/top edge
     final double topPosition = openBelow 
-        ? offset.dy + height  // Exactly at bottom edge (no gap)
-        : offset.dy - maxHeight; // Exactly at top edge (no gap)
+        ? offset.dy + height
+        : offset.dy - maxHeight;
 
     List<Map<String, dynamic>> filteredItems = List.from(widget.items);
 
@@ -123,16 +123,19 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                           autofocus: true,
                           decoration: InputDecoration(
                             hintText: 'Search ${widget.label}...',
-                            hintStyle: const TextStyle(fontSize: 13),
-                            prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.primaryColor),
+                            hintStyle: const TextStyle(fontSize: 12),
+                            prefixIcon: const Icon(Icons.search, size: 16, color: AppColors.primaryColor),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 10,
                             ),
+                            isDense: true,
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.close, size: 16),
+                                    icon: const Icon(Icons.close, size: 14),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
                                     onPressed: () {
                                       _searchController.clear();
                                       filteredItems = List.from(widget.items);
@@ -165,11 +168,12 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                         ),
                         child: ListTile(
                           dense: true,
-                          leading: const Icon(Icons.clear, size: 18, color: Colors.red),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: const Icon(Icons.clear, size: 16, color: Colors.red),
                           title: const Text(
                             'Clear Selection',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: Colors.red,
                             ),
                           ),
@@ -184,10 +188,10 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                       child: filteredItems.isEmpty
                           ? const Center(
                               child: Padding(
-                                padding: EdgeInsets.all(20),
+                                padding: EdgeInsets.all(16),
                                 child: Text(
                                   'No items found',
-                                  style: TextStyle(fontSize: 13),
+                                  style: TextStyle(fontSize: 12),
                                 ),
                               ),
                             )
@@ -210,7 +214,7 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                                   title: Text(
                                     item['name'],
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12,
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                       color: isSelected ? AppColors.primaryColor : Colors.black87,
                                     ),
@@ -218,12 +222,13 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                                   selected: isSelected,
                                   selectedTileColor: AppColors.primaryColor.withOpacity(0.1),
                                   trailing: isSelected
-                                      ? const Icon(Icons.check, size: 16, color: AppColors.primaryColor)
+                                      ? const Icon(Icons.check, size: 14, color: AppColors.primaryColor)
                                       : null,
                                   onTap: () {
                                     setState(() {
                                       widget.onChanged(item);
                                       widget.controller.text = item['name'];
+                                      _hasContent = true;
                                       _searchController.clear();
                                     });
                                     _closeDropdown();
@@ -235,11 +240,11 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
                     // Item count
                     if (filteredItems.length > 10)
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(6.0),
                         child: Text(
                           '${filteredItems.length} items',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: Colors.grey.shade500,
                           ),
                         ),
@@ -274,128 +279,164 @@ class _CustomSearchableDropdownState extends State<CustomSearchableDropdown> {
     setState(() {
       widget.onChanged(null);
       widget.controller.clear();
+      _hasContent = false;
     });
   }
 
   @override
   void dispose() {
-    _internalFocusNode.removeListener(_onFocusChange);
     _closeDropdown();
     _searchController.dispose();
+    widget.controller.removeListener(_updateHasContent);
+    // Do NOT dispose _internalFocusNode because it's passed from parent
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isFocused = _internalFocusNode.hasFocus;
+    final bool showLabel = isFocused || _hasContent;
+    final Color borderColor = isFocused
+        ? AppColors.primaryColor
+        : (_hasContent ? AppColors.primaryColor.withOpacity(0.5) : Colors.grey.shade300);
+    final double borderWidth = isFocused ? 1.5 : 1;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
+      child: widget.isLoading
+          ? Container(
+              height: 48,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300, width: 1),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                   ),
                 ),
-                if (widget.isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          widget.isLoading
-              ? Container(
-                  height: 44,
+              ),
+            )
+          : GestureDetector(
+              onTap: _toggleDropdown,
+              child: Focus(
+                focusNode: _internalFocusNode,
+                child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: const Center(
-                    child: SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                    border: Border.all(
+                      color: borderColor,
+                      width: borderWidth,
                     ),
                   ),
-                )
-              : GestureDetector(
-                  onTap: _toggleDropdown,
-                  child: Focus(
-                    focusNode: _internalFocusNode,
-                    child: Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _internalFocusNode.hasFocus 
-                              ? AppColors.primaryColor 
-                              : Colors.grey.shade300,
-                          width: _internalFocusNode.hasFocus ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.controller.text.isEmpty 
-                                  ? 'Select ${widget.label}' 
-                                  : widget.controller.text,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: widget.controller.text.isEmpty 
-                                    ? Colors.grey.shade400 
-                                    : Colors.black87,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Main content
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.controller.text.isEmpty 
+                                    ? '' 
+                                    : widget.controller.text,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
-                          if (widget.showClearButton && 
-                              widget.allowClear &&
-                              widget.selected != null && 
-                              _isFocused)
-                            GestureDetector(
-                              onTap: _clearSelection,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 18,
-                                  color: Colors.grey,
+                            if (widget.showClearButton && 
+                                widget.allowClear &&
+                                widget.selected != null && 
+                                isFocused)
+                              GestureDetector(
+                                onTap: _clearSelection,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
+                            const SizedBox(width: 4),
+                            AnimatedRotation(
+                              duration: const Duration(milliseconds: 200),
+                              turns: _isDropdownOpen ? 0.5 : 0.0,
+                              child: Icon(
+                                Icons.arrow_drop_down,
+                                size: 20,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
-                          const SizedBox(width: 4),
-                          AnimatedRotation(
-                            duration: const Duration(milliseconds: 200),
-                            turns: _isDropdownOpen ? 0.5 : 0.0,
-                            child: Icon(
-                              Icons.arrow_drop_down,
-                              size: 22,
-                              color: Colors.grey.shade600,
+                          ],
+                        ),
+                      ),
+                      
+                      // Floating label
+                      if (showLabel)
+                        Positioned(
+                          left: 12,
+                          top: -8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            color: Colors.white,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  widget.label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isFocused
+                                        ? AppColors.primaryColor
+                                        : (_hasContent
+                                            ? AppColors.primaryColor.withOpacity(0.7)
+                                            : Colors.grey.shade600),
+                                  ),
+                                ),
+                                if (widget.isRequired)
+                                  Text(
+                                    ' *',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red.shade400,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                        
+                      // Placeholder text when no selection and label not shown
+                      if (!showLabel && widget.controller.text.isEmpty)
+                        Positioned(
+                          left: 12,
+                          top: 10,
+                          child: Text(
+                            'Select ${widget.label}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-        ],
-      ),
+              ),
+            ),
     );
   }
 }

@@ -36,25 +36,46 @@ class CustomDateField extends StatefulWidget {
 class _CustomDateFieldState extends State<CustomDateField> {
   late DateTime _currentDate;
   String? _localErrorText;
+  bool _hasContent = false;
+  bool _isFocused = false;
 
-@override
-void initState() {
-  super.initState();
-  _currentDate = DateTime.now();
-  
-  // Initialize from controller if exists
-  if (widget.controller.text.isNotEmpty) {
-    final parsedDate = _parseDate(widget.controller.text);
-    if (parsedDate != null) {
-      _currentDate = parsedDate;
+  @override
+  void initState() {
+    super.initState();
+    _currentDate = DateTime.now();
+    widget.focusNode.addListener(_onFocusChange);
+    
+    // Initialize from controller if exists
+    if (widget.controller.text.isNotEmpty) {
+      final parsedDate = _parseDate(widget.controller.text);
+      if (parsedDate != null) {
+        _currentDate = parsedDate;
+        _hasContent = true;
+      }
+    } else {
+      // Set today's date as default if controller is empty
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateDate(DateTime.now());
+      });
     }
-  } else {
-    // Set today's date as default if controller is empty
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateDate(DateTime.now());
+    
+    widget.controller.addListener(_updateHasContent);
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isFocused = widget.focusNode.hasFocus;
     });
   }
-}
+
+  void _updateHasContent() {
+    final hasContent = widget.controller.text.isNotEmpty;
+    if (_hasContent != hasContent) {
+      setState(() {
+        _hasContent = hasContent;
+      });
+    }
+  }
 
   DateTime? _parseDate(String dateStr) {
     try {
@@ -106,20 +127,23 @@ void initState() {
       widget.onDateChanged?.call(date);
     }
   }
-void _updateDate(DateTime newDate) {
-  // Prevent updating if date is same
-  if (_currentDate.year == newDate.year && 
-      _currentDate.month == newDate.month && 
-      _currentDate.day == newDate.day) {
-    return;
+
+  void _updateDate(DateTime newDate) {
+    // Prevent updating if date is same
+    if (_currentDate.year == newDate.year && 
+        _currentDate.month == newDate.month && 
+        _currentDate.day == newDate.day) {
+      return;
+    }
+    
+    setState(() {
+      _currentDate = newDate;
+      widget.controller.text = _formatDate(newDate);
+      _hasContent = true;
+    });
+    _validateDate(newDate);
   }
-  
-  setState(() {
-    _currentDate = newDate;
-    widget.controller.text = _formatDate(newDate);
-  });
-  _validateDate(newDate);
-}
+
   void _previousDate() {
     final newDate = DateTime(_currentDate.year, _currentDate.month, _currentDate.day - 1);
     _updateDate(newDate);
@@ -154,108 +178,152 @@ void _updateDate(DateTime newDate) {
   }
 
   @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    widget.controller.removeListener(_updateHasContent);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final displayError = widget.errorText ?? _localErrorText;
-    
+    final bool showLabel = _isFocused || _hasContent;
+    final Color borderColor = _localErrorText != null || widget.errorText != null
+        ? Colors.red.shade400
+        : (_isFocused
+            ? AppColors.primaryColor
+            : (_hasContent ? AppColors.primaryColor.withOpacity(0.5) : Colors.grey.shade300));
+    final double borderWidth = _localErrorText != null || widget.errorText != null
+        ? 1.5
+        : (_isFocused ? 1.5 : 1);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (widget.isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
           Container(
-            height: 44,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: displayError != null
-                    ? Colors.red.shade400
-                    : widget.focusNode.hasFocus
-                        ? AppColors.primaryColor
-                        : Colors.grey.shade300,
-                width: displayError != null ? 1.5 : (widget.focusNode.hasFocus ? 2 : 1),
+                color: borderColor,
+                width: borderWidth,
               ),
             ),
-            child: Row(
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Previous Date Arrow
-                InkWell(
-                  onTap: _previousDate,
-                  child: Container(
-                    width: 36,
-                    height: 44,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.chevron_left,
-                      size: 20,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-                // Date Display (Clickable)
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.controller.text.isEmpty 
-                            ? 'Select' 
-                            : widget.controller.text,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: widget.controller.text.isEmpty 
-                              ? Colors.grey.shade500 
-                              : Colors.black87,
-                          fontWeight: FontWeight.w500,
+                // Main content
+                Row(
+                  children: [
+                    // Previous Date Arrow
+                    InkWell(
+                      onTap: _previousDate,
+                      child: Container(
+                        width: 36,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.chevron_left,
+                          size: 20,
+                          color: AppColors.primaryColor,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Date Display (Clickable)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _selectDate,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          alignment: Alignment.center,
+                          child: Text(
+                            widget.controller.text.isEmpty 
+                                ? '' 
+                                : widget.controller.text,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Next Date Arrow
+                    InkWell(
+                      onTap: _nextDate,
+                      child: Container(
+                        width: 36,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Floating label
+                if (showLabel)
+                  Positioned(
+                    left: 12,
+                    top: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      color: Colors.white,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _localErrorText != null || widget.errorText != null
+                                  ? Colors.red.shade400
+                                  : (_isFocused
+                                      ? AppColors.primaryColor
+                                      : (_hasContent
+                                          ? AppColors.primaryColor.withOpacity(0.7)
+                                          : Colors.grey.shade600)),
+                            ),
+                          ),
+                          if (widget.isRequired)
+                            Text(
+                              ' *',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.red.shade400,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                // Next Date Arrow
-                InkWell(
-                  onTap: _nextDate,
-                  child: Container(
-                    width: 36,
-                    height: 44,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: AppColors.primaryColor,
+                  
+                // Placeholder text when no selection and label not shown
+                if (!showLabel && widget.controller.text.isEmpty)
+                  Positioned(
+                    left: 12,
+                    top: 10,
+                    child: Text(
+                      'Select Date',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
-          if (displayError != null)
+          if (_localErrorText != null || widget.errorText != null)
             Padding(
               padding: const EdgeInsets.only(left: 4, top: 4),
               child: Row(
@@ -264,7 +332,7 @@ void _updateDate(DateTime newDate) {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      displayError,
+                      _localErrorText ?? widget.errorText!,
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.red.shade400,

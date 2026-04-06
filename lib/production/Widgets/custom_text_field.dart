@@ -32,23 +32,36 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
+  late FocusNode _internalFocusNode;
+  bool _hasContent = false;
+
   @override
   void initState() {
     super.initState();
-    // Add listener for focus changes
-    widget.focusNode.addListener(_handleFocusChange);
+    _internalFocusNode = widget.focusNode;
+    _internalFocusNode.addListener(_handleFocusChange);
+    _hasContent = widget.controller.text.isNotEmpty;
+    widget.controller.addListener(_updateHasContent);
   }
 
   @override
   void dispose() {
-    // Remove listener to prevent memory leaks
-    widget.focusNode.removeListener(_handleFocusChange);
+    _internalFocusNode.removeListener(_handleFocusChange);
+    widget.controller.removeListener(_updateHasContent);
     super.dispose();
   }
 
+  void _updateHasContent() {
+    final hasContent = widget.controller.text.isNotEmpty;
+    if (_hasContent != hasContent) {
+      setState(() {
+        _hasContent = hasContent;
+      });
+    }
+  }
+
   void _handleFocusChange() {
-    if (widget.focusNode.hasFocus && widget.controller.text.isNotEmpty) {
-      // Schedule selection after frame is built
+    if (_internalFocusNode.hasFocus && widget.controller.text.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (widget.controller.text.isNotEmpty) {
           widget.controller.selection = TextSelection(
@@ -58,85 +71,98 @@ class _CustomTextFieldState extends State<CustomTextField> {
         }
       });
     }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isFocused = _internalFocusNode.hasFocus;
+    final bool showLabel = isFocused || _hasContent;
+    final Color borderColor = isFocused
+        ? AppColors.primaryColor
+        : (_hasContent ? AppColors.primaryColor.withOpacity(0.5) : Colors.grey.shade300);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                if (widget.isRequired)
-                  Text(
-                    ' *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade400,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
+      child: TextFormField(
+        controller: widget.controller,
+        focusNode: _internalFocusNode,
+        readOnly: widget.readOnly,
+        keyboardType: widget.keyboardType,
+        maxLines: widget.maxLines,
+        onChanged: (value) {
+          _updateHasContent();
+          if (widget.onChanged != null) {
+            widget.onChanged!(value);
+          }
+        },
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        decoration: InputDecoration(
+          labelText: widget.isRequired ? '${widget.label} *' : widget.label,
+          labelStyle: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isFocused
+                ? AppColors.primaryColor
+                : (_hasContent
+                    ? AppColors.primaryColor.withOpacity(0.7)
+                    : Colors.grey.shade600),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          hintText: widget.hintText,
+          hintStyle: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade400,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1,
             ),
           ),
-          SizedBox(
-            height: 44,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color:
-                      widget.focusNode.hasFocus
-                          ? AppColors.primaryColor
-                          : Colors.grey.shade300,
-                  width: widget.focusNode.hasFocus ? 2 : 1,
-                ),
-              ),
-              child: TextField(
-                controller: widget.controller,
-                focusNode: widget.focusNode,
-                readOnly: widget.readOnly,
-                keyboardType: widget.keyboardType,
-                maxLines: widget.maxLines,
-                onChanged: widget.onChanged,
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  border: InputBorder.none,
-                  hintText: widget.hintText ?? widget.label,
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade400,
-                  ),
-                  suffixIcon:
-                      widget.onTap != null
-                          ? Icon(
-                            Icons.arrow_drop_down,
-                            size: 20,
-                            color: Colors.grey.shade600,
-                          )
-                          : null,
-                ),
-                onTap: widget.onTap,
-              ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1,
             ),
           ),
-        ],
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: AppColors.primaryColor,
+              width: 1.5,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Colors.red.shade400,
+              width: 1,
+            ),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Colors.red.shade400,
+              width: 1.5,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          isDense: true,
+          suffixIcon: widget.onTap != null
+              ? Icon(
+                  Icons.arrow_drop_down,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                )
+              : null,
+        ),
+        onTap: widget.onTap,
       ),
     );
   }

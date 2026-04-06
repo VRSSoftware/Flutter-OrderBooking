@@ -8,8 +8,8 @@ import 'package:vrs_erp/services/production_services.dart';
 
 class CreateJobOrderScreen extends StatefulWidget {
   final Map<String, dynamic>? jobWork;
-
-  const CreateJobOrderScreen({super.key, this.jobWork});
+  final bool isReadOnly; 
+  const CreateJobOrderScreen({super.key, this.jobWork ,   this.isReadOnly = false, });
 
   @override
   State<CreateJobOrderScreen> createState() => _CreateJobOrderScreenState();
@@ -20,6 +20,7 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   // ────────────────────── Tab Controller ──────────────────────
   late TabController _tabController;
   int _selectedTab = 0;
+  bool get isReadOnly => widget.isReadOnly;
 
   // ────────────────────── Job Order Controllers ──────────────────────
   final TextEditingController _seriesCtrl = TextEditingController(text: '');
@@ -77,6 +78,15 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
   final FocusNode _actualEndDtFocus = FocusNode();
   final FocusNode _othAmtFocus = FocusNode();
   final FocusNode _gstPercFocus = FocusNode();
+  final FocusNode _seriesFocus = FocusNode();
+  final FocusNode _lastCdFocus = FocusNode();
+  final FocusNode _docNoFocus = FocusNode();
+  final FocusNode _grossAmtFocus = FocusNode();
+  final FocusNode _gstAmtFocus = FocusNode();
+  final FocusNode _otherProcessFocus = FocusNode();
+  final FocusNode _jobRateFocus = FocusNode();
+  final FocusNode _jobAmtFocus = FocusNode();
+  final FocusNode _remarkFocus = FocusNode();
 
   // ────────────────────── Financial Controllers ──────────────────────
   final TextEditingController _grossAmtCtrl = TextEditingController(text: '0');
@@ -437,6 +447,15 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     _actualEndDtFocus.dispose();
     _othAmtFocus.dispose();
     _gstPercFocus.dispose();
+    _seriesFocus.dispose();
+    _lastCdFocus.dispose();
+    _docNoFocus.dispose();
+    _grossAmtFocus.dispose();
+    _gstAmtFocus.dispose();
+    _otherProcessFocus.dispose();
+    _jobRateFocus.dispose();
+    _jobAmtFocus.dispose();
+    _remarkFocus.dispose();
     super.dispose();
   }
 
@@ -777,13 +796,13 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
-            offset: const Offset(0, 1),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Card Header
+          // Card Header - With Background Color
           InkWell(
             onTap: () {
               setState(() {
@@ -794,25 +813,17 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                 }
               });
             },
-            child: Padding(
+            child: Container(
               padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withOpacity(0.08),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
               child: Row(
                 children: [
-                  // Icon
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.checklist,
-                      color: AppColors.primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   // Content
                   Expanded(
                     child: Column(
@@ -825,45 +836,71 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
+                            // Design No
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 2,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryColor.withOpacity(0.1),
+                                color: Colors.blue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                'PCS: $totalPcs',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.primaryColor,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.style,
+                                    size: 12,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    finish['designNo'] ?? '-',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            // PCS
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 2,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.green.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                'Amount: ₹${amount.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.green,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.production_quantity_limits,
+                                    size: 12,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'PCS: $totalPcs',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -916,131 +953,396 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  // Finish Summary
-                  _buildInfoRow('Design No:', finish['designNo'] ?? '-'),
-                  _buildInfoRow('Type:', finish['type'] ?? '-'),
-                  _buildInfoRow('Shade:', finish['shade'] ?? '-'),
-                  _buildInfoRow('Order No:', finish['orderNo'] ?? '-'),
-                  _buildInfoRow('Merchandiser:', finish['merchandiser'] ?? '-'),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // Info Grid - 2 Rows layout (Compact)
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
+                    child: Column(
+                      children: [
+                        // Row 1: Type & Shade
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildCompactInfoTile(
+                                icon: Icons.category,
+                                label: 'Type',
+                                value: finish['type'] ?? '-',
+                                color: Colors.purple,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildCompactInfoTile(
+                                icon: Icons.color_lens,
+                                label: 'Shade',
+                                value: finish['shade'] ?? '-',
+                                color: Colors.pink,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        // Row 2: Order No & Merchandiser
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildCompactInfoTile(
+                                icon: Icons.receipt,
+                                label: 'Order No',
+                                value: finish['orderNo'] ?? '-',
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildCompactInfoTile(
+                                icon: Icons.person,
+                                label: 'Merchandiser',
+                                value: finish['merchandiser'] ?? '-',
+                                color: Colors.teal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Stats Row - Compact, No Background
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
                         Expanded(
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Avg Ratio',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                avgRatio.toStringAsFixed(5),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
+                          child: _buildCompactStat(
+                            icon: Icons.calculate,
+                            label: 'Avg Ratio',
+                            value: avgRatio.toStringAsFixed(5),
+                            color: Colors.blue,
                           ),
                         ),
                         Container(
                           width: 1,
-                          height: 30,
+                          height: 35,
                           color: Colors.grey.shade300,
                         ),
                         Expanded(
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Cut Mtr',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                cutMtr.toStringAsFixed(3),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
+                          child: _buildCompactStat(
+                            icon: Icons.straighten,
+                            label: 'Cut Mtr',
+                            value: cutMtr.toStringAsFixed(3),
+                            color: Colors.orange,
                           ),
                         ),
                         Container(
                           width: 1,
-                          height: 30,
+                          height: 35,
                           color: Colors.grey.shade300,
                         ),
                         Expanded(
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Amount',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '₹${amount.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ],
+                          child: _buildCompactStat(
+                            icon: Icons.currency_rupee,
+                            label: 'Amount',
+                            value: '₹${amount.toStringAsFixed(2)}',
+                            color: Colors.green,
                           ),
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 12),
-                  // Fabrics Section
+
+                  // Fabrics Section - Table-like layout
                   if (fabrics.isNotEmpty) ...[
-                    const Text(
-                      'FABRICS DETAILS',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryColor,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 16,
+                            color: AppColors.primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'FABRICS DETAILS',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${fabrics.length} items',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ...fabrics.map((fabric) => _buildFabricCard(fabric)),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: fabrics.length,
+                      separatorBuilder:
+                          (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, fabricIndex) {
+                        var fabric = fabrics[fabricIndex];
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Fabric Header - With Background Color (Same as Finish Header)
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.08,
+                                  ),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(10),
+                                    topRight: Radius.circular(10),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryColor,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${fabricIndex + 1}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        fabric['product'] ?? 'Product',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.orange.withOpacity(0.3),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.trending_up,
+                                            size: 12,
+                                            color: Colors.orange,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Ratio: ${(fabric['ratio'] ?? 0).toStringAsFixed(4)}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.orange,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Fabric Details - Table Layout (Label: Value format)
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  children: [
+                                    // Row 1: Type and Design
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Type',
+                                            value: fabric['type'] ?? '-',
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Design',
+                                            value: fabric['design'] ?? '-',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Row 2: Shade and Req Qty
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Shade',
+                                            value: fabric['shade'] ?? '-',
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Req Qty',
+                                            value: (fabric['reqQty'] ?? 0)
+                                                .toStringAsFixed(3),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Row 3: Wast% and Actual Qty
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Wast%',
+                                            value: (fabric['wast'] ?? 0)
+                                                .toStringAsFixed(2),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _buildLabelValueRow(
+                                            label: 'Actual Qty',
+                                            value: (fabric['actualQty'] ?? 0)
+                                                .toStringAsFixed(3),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    // Waste Amount (if exists)
+                                    if ((fabric['wasteAmt'] ?? 0) > 0) ...[
+                                      const SizedBox(height: 10),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.05),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.red.withOpacity(0.2),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.warning_amber,
+                                              size: 14,
+                                              color: Colors.red,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            const Text(
+                                              'Waste Amount: ',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                            Text(
+                                              (fabric['wasteAmt'] ?? 0)
+                                                  .toStringAsFixed(3),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ] else
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: const Center(
-                        child: Text(
-                          'No fabrics added',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.inbox, size: 32, color: Colors.grey),
+                            SizedBox(height: 6),
+                            Text(
+                              'No fabrics added',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1052,157 +1354,123 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+  // Compact Info Tile for 2-row layout
+  Widget _buildCompactInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: color.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Compact Stat Widget - No background, minimal design
+  Widget _buildCompactStat({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+        ),
+      ],
+    );
+  }
+
+  // Simple Label-Value row widget (no colored boxes)
+  Widget _buildLabelValueRow({required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 65,
             child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              '$label:',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFabricCard(Map<String, dynamic> fabric) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  fabric['product'] ?? 'Product',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Ratio: ${(fabric['ratio'] ?? 0).toStringAsFixed(5)}',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.orange,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 6,
-            children: [
-              _buildFabricDetailChip(
-                'Type',
-                fabric['type'] ?? '-',
-                Colors.purple,
-              ),
-              _buildFabricDetailChip(
-                'Design',
-                fabric['design'] ?? '-',
-                Colors.teal,
-              ),
-              _buildFabricDetailChip(
-                'Shade',
-                fabric['shade'] ?? '-',
-                Colors.pink,
-              ),
-              _buildFabricDetailChip(
-                'Req Qty',
-                (fabric['reqQty'] ?? 0).toStringAsFixed(3),
-                Colors.blue,
-              ),
-              _buildFabricDetailChip(
-                'Wast%',
-                (fabric['wast'] ?? 0).toStringAsFixed(2),
-                Colors.red,
-              ),
-              _buildFabricDetailChip(
-                'Actual Qty',
-                (fabric['actualQty'] ?? 0).toStringAsFixed(3),
-                Colors.green,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFabricDetailChip(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              softWrap: true,
             ),
           ),
         ],
@@ -1243,739 +1511,653 @@ class _CreateJobOrderScreenState extends State<CreateJobOrderScreen>
     );
   }
 
-  Widget _buildJobOrderForm() {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Basic Information Card
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'BASIC INFORMATION',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        const Divider(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Series',
-                                controller: _seriesCtrl,
-                                focusNode: FocusNode(),
-                                readOnly: true,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Last Cd',
-                                controller: _lastCdCtrl,
-                                focusNode: FocusNode(),
-                                readOnly: true,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Doc No',
-                                controller: _docNoCtrl,
-                                focusNode: FocusNode(),
-                                readOnly: true,
-                                isRequired: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomDateField(
-                                label: 'Doc Dt',
-                                controller: _docDtCtrl,
-                                focusNode: _docDtFocus,
-                                maxDate: DateTime.now(),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Ref No',
-                                controller: _refNoCtrl,
-                                focusNode: _refNoFocus,
-                              ),
-                            ),
-                          ],
-                        ),
-                        CustomDateField(
-                          label: 'Expected Dlv Dt',
-                          controller: _expectedDlvDtCtrl,
-                          focusNode: _expectedDlvDtFocus,
-                          minDate: DateTime.now(),
-                        ),
-                        CustomSearchableDropdown(
-                          label: 'Jobber',
-                          controller: _jobberCtrl,
-                          items: _jobberList,
-                          selected: _selectedJobber,
-                          onChanged: (v) {
-                            setState(() {
-                              _selectedJobber = v;
-                              if (v != null &&
-                                  v['station'] != null &&
-                                  v['station'].isNotEmpty) {
-                                _selectedStation = {
-                                  "key": v['stationKey'], // ✅ ONLY KEY
-                                  "name": v['station'], // ✅ ONLY NAME
-                                };
 
-                                _stationCtrl.text =
-                                    _selectedStation?['name'] ?? '';
-                              }
-                            });
-                          },
-                          focusNode: _jobberFocus,
-                          isRequired: true,
-                          isLoading: _isLoadingJobbers,
-                          showClearButton: true,
-                          allowClear: true,
-                        ),
-                        CustomTextField(
-                          label: 'Station',
-                          controller: _stationCtrl,
-                          focusNode: _stationFocus,
-                          readOnly: true,
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 4,
-                                  bottom: 8,
-                                ),
-                                child: Text(
-                                  'Order Type',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      title: const Text(
-                                        'Open',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      value: 'Open',
-                                      groupValue: _orderType,
-                                      onChanged:
-                                          (value) => setState(
-                                            () => _orderType = value!,
-                                          ),
-                                      contentPadding: EdgeInsets.zero,
-                                      dense: true,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      title: const Text(
-                                        'BOM',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      value: 'BOM',
-                                      groupValue: _orderType,
-                                      onChanged:
-                                          (value) => setState(
-                                            () => _orderType = value!,
-                                          ),
-                                      contentPadding: EdgeInsets.zero,
-                                      dense: true,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomDateField(
-                                label: 'Est Start Dt',
-                                controller: _estStartDtCtrl,
-                                focusNode: _estStartDtFocus,
-                                onDateChanged: (date) => _validateEstDates(),
-                                onValidationError:
-                                    (error) =>
-                                        setState(() => _estDateError = error),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomDateField(
-                                label: 'Est End Dt',
-                                controller: _estEndDtCtrl,
-                                focusNode: _estEndDtFocus,
-                                fromDate: _parseDate(_estStartDtCtrl.text),
-                                errorText: _estDateError,
-                                onDateChanged: (date) => _validateEstDates(),
-                                onValidationError:
-                                    (error) =>
-                                        setState(() => _estDateError = error),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomDateField(
-                                label: 'Actual Start Dt',
-                                controller: _actualStartDtCtrl,
-                                focusNode: _actualStartDtFocus,
-                                onDateChanged: (date) => _validateActualDates(),
-                                onValidationError:
-                                    (error) => setState(
-                                      () => _actualDateError = error,
-                                    ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomDateField(
-                                label: 'Actual End Dt',
-                                controller: _actualEndDtCtrl,
-                                focusNode: _actualEndDtFocus,
-                                fromDate: _parseDate(_actualStartDtCtrl.text),
-                                errorText: _actualDateError,
-                                onDateChanged: (date) => _validateActualDates(),
-                                onValidationError:
-                                    (error) => setState(
-                                      () => _actualDateError = error,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        CustomSearchableDropdown(
-                          label: 'Process',
-                          controller: _processCtrl,
-                          items:
-                              _processes
-                                  .map((p) => {'key': p, 'name': p})
-                                  .toList(),
-                          selected:
-                              _selectedProcess != null
-                                  ? {
-                                    'key': _selectedProcess!,
-                                    'name': _selectedProcess!,
-                                  }
-                                  : null,
-                          onChanged:
-                              (v) =>
-                                  setState(() => _selectedProcess = v?['name']),
-                          focusNode: _processFocus,
-                          showClearButton: true,
-                          allowClear: true,
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 4,
-                                  bottom: 8,
-                                ),
-                                child: Text(
-                                  'Stock Pickup',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      title: const Text(
-                                        'Partial',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      value: 'Partial',
-                                      groupValue: _stockPickup,
-                                      onChanged:
-                                          (value) => setState(
-                                            () => _stockPickup = value!,
-                                          ),
-                                      contentPadding: EdgeInsets.zero,
-                                      dense: true,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      title: const Text(
-                                        'Ready',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      value: 'Ready',
-                                      groupValue: _stockPickup,
-                                      onChanged:
-                                          (value) => setState(
-                                            () => _stockPickup = value!,
-                                          ),
-                                      contentPadding: EdgeInsets.zero,
-                                      dense: true,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text(
-                                  'Received As Finished',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                value: _receivedAsFinished,
-                                onChanged:
-                                    (value) => setState(
-                                      () => _receivedAsFinished = value!,
-                                    ),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                            Expanded(
-                              child: CheckboxListTile(
-                                title: const Text(
-                                  'ReProcess',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                value: _reProcess,
-                                onChanged:
-                                    (value) =>
-                                        setState(() => _reProcess = value!),
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+Widget _buildJobOrderForm() {
+  return Column(
+    children: [
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Basic Information Card
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                // Finish Details Section
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      InkWell(
-                        onTap: _addFinishDetail,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.checklist,
-                                    color: AppColors.primaryColor,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'FINISH DETAILS',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF2C3E50),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryColor.withOpacity(
-                                        0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${_finishDetailsList.length}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor.withOpacity(
-                                    0.1,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: AppColors.primaryColor,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
-                          ),
+                      const Text(
+                        'BASIC INFORMATION',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor,
                         ),
                       ),
-                      if (_finishDetailsList.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            children: List.generate(_finishDetailsList.length, (
-                              index,
-                            ) {
-                              return _buildFinishCard(
-                                index,
-                                _finishDetailsList[index],
-                              );
-                            }),
+                      const Divider(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Series',
+                              controller: _seriesCtrl,
+                              focusNode: _seriesFocus,
+                              readOnly: true,
+                            ),
                           ),
-                        )
-                      else
-                        const Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(
-                            child: Column(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Last Cd',
+                              controller: _lastCdCtrl,
+                              focusNode: _lastCdFocus,
+                              readOnly: true,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Doc No',
+                              controller: _docNoCtrl,
+                              focusNode: _docNoFocus,
+                              readOnly: true,
+                              isRequired: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomDateField(
+                              label: 'Doc Dt',
+                              controller: _docDtCtrl,
+                              focusNode: _docDtFocus,
+                              maxDate: DateTime.now(),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Ref No',
+                              controller: _refNoCtrl,
+                              focusNode: _refNoFocus,
+                            ),
+                          ),
+                        ],
+                      ),
+                      CustomDateField(
+                        label: 'Expected Dlv Dt',
+                        controller: _expectedDlvDtCtrl,
+                        focusNode: _expectedDlvDtFocus,
+                        minDate: DateTime.now(),
+                      ),
+                      CustomSearchableDropdown(
+                        label: 'Jobber',
+                        controller: _jobberCtrl,
+                        items: _jobberList,
+                        selected: _selectedJobber,
+                        onChanged: (v) {
+                          setState(() {
+                            _selectedJobber = v;
+                            if (v != null &&
+                                v['station'] != null &&
+                                v['station'].isNotEmpty) {
+                              _selectedStation = {
+                                "key": v['stationKey'],
+                                "name": v['station'],
+                              };
+                              _stationCtrl.text = _selectedStation?['name'] ?? '';
+                            }
+                          });
+                        },
+                        focusNode: _jobberFocus,
+                        isRequired: true,
+                        isLoading: _isLoadingJobbers,
+                        showClearButton: true,
+                        allowClear: true,
+                      ),
+                      CustomTextField(
+                        label: 'Station',
+                        controller: _stationCtrl,
+                        focusNode: _stationFocus,
+                        readOnly: true,
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Order Type',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                            Row(
                               children: [
-                                Icon(Icons.inbox, size: 48, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text(
-                                  'No finish details added',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
+                                Expanded(
+                                  child: RadioListTile<String>(
+                                    title: const Text('Open', style: TextStyle(fontSize: 14)),
+                                    value: 'Open',
+                                    groupValue: _orderType,
+                                    onChanged: (value) => setState(() => _orderType = value!),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RadioListTile<String>(
+                                    title: const Text('BOM', style: TextStyle(fontSize: 14)),
+                                    value: 'BOM',
+                                    groupValue: _orderType,
+                                    onChanged: (value) => setState(() => _orderType = value!),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Financial Details Card
-                // Financial Details Card
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomDateField(
+                              label: 'Est Start Dt',
+                              controller: _estStartDtCtrl,
+                              focusNode: _estStartDtFocus,
+                              onDateChanged: (date) => _validateEstDates(),
+                              onValidationError: (error) => setState(() => _estDateError = error),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomDateField(
+                              label: 'Est End Dt',
+                              controller: _estEndDtCtrl,
+                              focusNode: _estEndDtFocus,
+                              fromDate: _parseDate(_estStartDtCtrl.text),
+                              errorText: _estDateError,
+                              onDateChanged: (date) => _validateEstDates(),
+                              onValidationError: (error) => setState(() => _estDateError = error),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomDateField(
+                              label: 'Actual Start Dt',
+                              controller: _actualStartDtCtrl,
+                              focusNode: _actualStartDtFocus,
+                              onDateChanged: (date) => _validateActualDates(),
+                              onValidationError: (error) => setState(() => _actualDateError = error),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomDateField(
+                              label: 'Actual End Dt',
+                              controller: _actualEndDtCtrl,
+                              focusNode: _actualEndDtFocus,
+                              fromDate: _parseDate(_actualStartDtCtrl.text),
+                              errorText: _actualDateError,
+                              onDateChanged: (date) => _validateActualDates(),
+                              onValidationError: (error) => setState(() => _actualDateError = error),
+                            ),
+                          ),
+                        ],
+                      ),
+                      CustomSearchableDropdown(
+                        label: 'Process',
+                        controller: _processCtrl,
+                        items: _processes.map((p) => {'key': p, 'name': p}).toList(),
+                        selected: _selectedProcess != null
+                            ? {'key': _selectedProcess!, 'name': _selectedProcess!}
+                            : null,
+                        onChanged: (v) => setState(() => _selectedProcess = v?['name']),
+                        focusNode: _processFocus,
+                        showClearButton: true,
+                        allowClear: true,
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Stock Pickup',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RadioListTile<String>(
+                                    title: const Text('Partial', style: TextStyle(fontSize: 14)),
+                                    value: 'Partial',
+                                    groupValue: _stockPickup,
+                                    onChanged: (value) => setState(() => _stockPickup = value!),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RadioListTile<String>(
+                                    title: const Text('Ready', style: TextStyle(fontSize: 14)),
+                                    value: 'Ready',
+                                    groupValue: _stockPickup,
+                                    onChanged: (value) => setState(() => _stockPickup = value!),
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Received As Finished', style: TextStyle(fontSize: 13)),
+                              value: _receivedAsFinished,
+                              onChanged: (value) => setState(() => _receivedAsFinished = value!),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('ReProcess', style: TextStyle(fontSize: 13)),
+                              value: _reProcess,
+                              onChanged: (value) => setState(() => _reProcess = value!),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'FINANCIAL DETAILS',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        const Divider(height: 20),
-                        Row(
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Finish Details Section
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    InkWell(
+                      onTap: _addFinishDetail,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Gross Amt',
-                                controller: _grossAmtCtrl,
-                                focusNode: FocusNode(),
-                                keyboardType: TextInputType.number,
-                                readOnly: true,
-                              ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.checklist,
+                                  color: AppColors.primaryColor,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'FINISH DETAILS',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2C3E50),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_finishDetailsList.length}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'Oth Amt',
-                                controller: _othAmtCtrl,
-                                focusNode:
-                                    _othAmtFocus, // Use the dedicated focus node
-                                keyboardType: TextInputType.number,
-                                onChanged: (value) {
-                                  _calculateNetAmt();
-                                },
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: AppColors.primaryColor,
+                                size: 20,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'GST Perc (%)',
-                                controller: _gstPercCtrl,
-                                focusNode:
-                                    _gstPercFocus, // Use the dedicated focus node
-                                keyboardType: TextInputType.number,
-                                onChanged: (value) {
-                                  _calculateNetAmt();
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomTextField(
-                                label: 'GST Amt',
-                                controller: _gstAmtCtrl,
-                                focusNode: FocusNode(),
-                                readOnly: true,
-                              ),
-                            ),
-                          ],
+                      ),
+                    ),
+                    if (_finishDetailsList.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: List.generate(_finishDetailsList.length, (index) {
+                            return _buildFinishCard(index, _finishDetailsList[index]);
+                          }),
                         ),
-                        const SizedBox(height: 8),
-                        // Net Amount with maroon color bold
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF800000).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF800000).withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: Column(
                             children: [
-                              const Text(
-                                'NET AMOUNT',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF800000),
-                                ),
-                              ),
+                              Icon(Icons.inbox, size: 48, color: Colors.grey),
+                              SizedBox(height: 8),
                               Text(
-                                '₹${_netAmtCtrl.text}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF800000),
-                                ),
+                                'No finish details added',
+                                style: TextStyle(fontSize: 14, color: Colors.grey),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 40,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      shape: const RoundedRectangleBorder(),
-                      side: const BorderSide(color: Colors.grey, width: 0.5),
-                      backgroundColor: Colors.grey.shade50,
-                      foregroundColor: Colors.black87,
-                      elevation: 0,
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text(
-                      'CANCEL',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ),
+                  ],
                 ),
               ),
-              Expanded(
-                child: SizedBox(
-                  height: 40,
-                  child: ElevatedButton(
-                    onPressed: _saveJobOrder,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(),
-                      elevation: 0,
-                      padding: EdgeInsets.zero,
+              const SizedBox(height: 12),
+              // Financial Details Card
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                    child: const Text(
-                      'SAVE',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'FINANCIAL DETAILS',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor,
+                        ),
                       ),
-                    ),
+                      const Divider(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Gross Amt',
+                              controller: _grossAmtCtrl,
+                              focusNode: _grossAmtFocus, // ✅ FIXED - using declared FocusNode
+                              keyboardType: TextInputType.number,
+                              readOnly: true,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'Oth Amt',
+                              controller: _othAmtCtrl,
+                              focusNode: _othAmtFocus,
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                _calculateNetAmt();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'GST Perc (%)',
+                              controller: _gstPercCtrl,
+                              focusNode: _gstPercFocus,
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                _calculateNetAmt();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: CustomTextField(
+                              label: 'GST Amt',
+                              controller: _gstAmtCtrl,
+                              focusNode: _gstAmtFocus, // ✅ FIXED - using declared FocusNode
+                              readOnly: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Net Amount with maroon color bold
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF800000).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF800000).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'NET AMOUNT',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF800000),
+                              ),
+                            ),
+                            Text(
+                              '₹${_netAmtCtrl.text}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF800000),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildOtherProcessForm() {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+      ),
+      SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 40,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(),
+                    side: const BorderSide(color: Colors.grey, width: 0.5),
+                    backgroundColor: Colors.grey.shade50,
+                    foregroundColor: Colors.black87,
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text(
+                    'CANCEL',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SizedBox(
+                height: 40,
+                child: ElevatedButton(
+                  onPressed: _saveJobOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(),
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text(
+                    'SAVE',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+Widget _buildOtherProcessForm() {
+  return Column(
+    children: [
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'OTHER PROCESS DETAILS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                  const Divider(height: 20),
+                  CustomSearchableDropdown(
+                    label: 'Process',
+                    controller: _otherProcessCtrl,
+                    items: _otherProcessesList,
+                    selected: _selectedOtherProcess,
+                    onChanged: (v) => setState(() => _selectedOtherProcess = v),
+                    focusNode: _otherProcessFocus, // ✅ Fixed
+                    isRequired: true,
+                    showClearButton: true,
+                    allowClear: true,
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    label: 'Job Rate',
+                    controller: _jobRateCtrl,
+                    focusNode: _jobRateFocus, // ✅ Fixed
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    label: 'Job Amt',
+                    controller: _jobAmtCtrl,
+                    focusNode: _jobAmtFocus, // ✅ Fixed
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    label: 'Remark',
+                    controller: _remarkCtrl,
+                    focusNode: _remarkFocus, // ✅ Fixed
+                    keyboardType: TextInputType.multiline,
+                    maxLines: 3,
                   ),
                 ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'OTHER PROCESS DETAILS',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                    const Divider(height: 20),
-                    CustomSearchableDropdown(
-                      label: 'Process',
-                      controller: _otherProcessCtrl,
-                      items: _otherProcessesList,
-                      selected: _selectedOtherProcess,
-                      onChanged:
-                          (v) => setState(() => _selectedOtherProcess = v),
-                      focusNode: FocusNode(),
-                      isRequired: true,
-                      showClearButton: true,
-                      allowClear: true,
-                    ),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      label: 'Job Rate',
-                      controller: _jobRateCtrl,
-                      focusNode: FocusNode(),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      label: 'Job Amt',
-                      controller: _jobAmtCtrl,
-                      focusNode: FocusNode(),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      label: 'Remark',
-                      controller: _remarkCtrl,
-                      focusNode: FocusNode(),
-                      keyboardType: TextInputType.multiline,
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
         ),
+      ),
         SafeArea(
           child: Row(
             children: [

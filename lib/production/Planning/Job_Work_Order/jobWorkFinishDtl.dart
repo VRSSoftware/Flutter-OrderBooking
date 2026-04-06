@@ -1419,7 +1419,7 @@ class _FinishDetailScreenForJobWorkState
                     }
                     : null,
             child: const Text(
-              'Save',
+              'Confirm Finish',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
