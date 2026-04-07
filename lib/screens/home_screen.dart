@@ -401,12 +401,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.teal[700]!,
           Colors.teal[50]!,
         );
-           case 'Ask VRS AI':
+      case 'Ask VRS AI':
         return IconStyle(
           Icons.account_balance_wallet,
           Colors.teal[700]!,
           Colors.teal[50]!,
         );
+
+      case 'Accounts':
+        return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
       // case 'Web':
       //   return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
 
@@ -703,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/production');
       }, buttonWidth),
     );
-     buttons.add(
+    buttons.add(
       _buildFeatureButton(context, 'Ask VRS AI', () {
         Navigator.pushNamed(context, '/vrsai');
       }, buttonWidth),
@@ -724,6 +727,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
+    buttons.add(
+      _buildFeatureButton(context, 'Accounts', () {
+        Navigator.pushNamed(context, '/accountDashboard');
+      }, buttonWidth),
+    );
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {

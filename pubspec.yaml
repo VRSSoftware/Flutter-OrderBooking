@@ -77,6 +77,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   fl_chart: ^0.66.0
   advanced_searchable_dropdown: ^2.1.0
+  speech_to_text: ^7.0.0
+  multi_dropdown: ^3.1.1 
 
  # android_intent_plus: ^4.0.2
   #device_apps: ^2.2.0

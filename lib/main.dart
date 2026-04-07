@@ -6,6 +6,10 @@ import 'package:vrs_erp/AI/AI_Home_Screen.dart';
 import 'package:vrs_erp/AI/AI_Test.dart';
 import 'package:vrs_erp/AI/AI_chat_report_web.dart/ai_chat_report_web.dart';
 import 'package:vrs_erp/AI/AI_Image.dart';
+import 'package:vrs_erp/Accounts_Reports/Accounts_Dashboard.dart';
+import 'package:vrs_erp/Accounts_Reports/Cash_Book/cash_book.dart';
+import 'package:vrs_erp/Accounts_Reports/Day_Book/day_book.dart';
+import 'package:vrs_erp/Accounts_Reports/Group_Summary/group_summary.dart';
 import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/Masters/Design/Design_Master.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
@@ -151,6 +155,20 @@ class MyApp extends StatelessWidget {
         '/payable': (context) => PayableReport(),
         '/receivable': (context) => ReceivableReport(),
         '/ledger': (context) => LedgerReport(),
+
+        '/accountDashboard': (context) => AccountDashboard(),
+
+        //account book
+       // '/cashBook': (context) => CashBookPage(),
+        // '/bankBook': (context) => const BankBookPage(),
+         '/groupSummary': (context) => const GroupSummaryPage(),
+        // '/groupVoucher': (context) => const GroupVoucherPage(),
+        '/dayBook': (context) => const DayBookPage(),
+        // '/trialBalance': (context) => const TrialBalancePage(),
+        // '/receivable': (context) => const ReceivablePage(),
+        // '/payable': (context) => const PayablePage(),
+        // '/profitLoss': (context) => const ProfitLossPage(),
+        // '/balanceSheet': (context) => const BalanceSheetPage(),
       },
 
       // home: SalesOrderInvoicePage(),
