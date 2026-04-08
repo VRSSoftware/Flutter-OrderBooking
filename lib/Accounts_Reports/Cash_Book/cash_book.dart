@@ -20,10 +20,10 @@ class _CashBookPageState extends State<CashBookPage> {
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
-  // Selected values - MULTI SELECT
-  List<KeyName> selectedLedgers = [];
-  String selectedReportType = 'summary';
-  bool showNarration = false;
+  // Selected values - OPTIONAL FILTERS
+  List<KeyName> selectedLedgers = [];  // Optional - if empty, all ledgers
+  String selectedReportType = 'summary';  // Optional - default summary
+  bool showNarration = false;  // Optional - default false
 
   // Lists
   List<KeyName> ledgers = [];
@@ -281,26 +281,16 @@ class _CashBookPageState extends State<CashBookPage> {
       return;
     }
 
-    if (selectedLedgers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one ledger'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isLoadingReport = true);
 
     try {
-      // Get first selected ledger key (or join multiple if API supports)
-      final ledKey = selectedLedgers.first.key;
+      // Get all selected ledger keys (optional - can be empty)
+      final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
 
       final pdfBytes = await AccountReportService.generateCashBookReport(
         fromDate: fromDateController.text,
         toDate: toDateController.text,
-        ledKey: ledKey,
+        ledgerKeys: ledgerKeys,  // Can be empty list for all ledgers
         reportType: selectedReportType,
         showNarration: showNarration,
       );
@@ -380,26 +370,13 @@ class _CashBookPageState extends State<CashBookPage> {
                                 showNarration = value ?? false;
                               });
                             },
-                            onApply: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Filters applied'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                            onApply: () {},
                             onClear: () {
                               setState(() {
                                 selectedLedgers = [];
                                 selectedReportType = 'summary';
                                 showNarration = false;
                               });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('All filters cleared'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
                             },
                           ),
                     ),

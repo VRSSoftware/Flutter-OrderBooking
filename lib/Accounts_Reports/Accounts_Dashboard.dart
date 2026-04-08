@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vrs_erp/Accounts_Reports/BalanceSheet/BalanceSheet.dart';
+import 'package:vrs_erp/Accounts_Reports/Bank_Book/bank_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Cash_Book/cash_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Group_Summary/group_summary.dart';
 import 'package:vrs_erp/Accounts_Reports/Group_Voucher/group_voucher.dart';
+import 'package:vrs_erp/Accounts_Reports/Ledger/ledger.dart';
+import 'package:vrs_erp/Accounts_Reports/Payable/payable.dart';
 import 'package:vrs_erp/Accounts_Reports/Profit_Loss/Profit_Loss.dart';
+import 'package:vrs_erp/Accounts_Reports/Receivables/receivables.dart';
 import 'package:vrs_erp/Accounts_Reports/Trial_Balance/trial_balance.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/Accounts_Reports/Day_Book/day_book.dart';
@@ -50,6 +54,12 @@ class _AccountDashboardState extends State<AccountDashboard> {
       "icon": Icons.account_balance,
       "category": "Accounts Book",
       "route": "/bankBook",
+    },
+    {
+      "title": "Ledger",
+      "icon": Icons.book,
+      "category": "Accounts Book",  // CHANGED: Changed from "Ledger" to "Accounts Book"
+      "route": "/ledger",
     },
     {
       "title": "Group Summary",
@@ -170,14 +180,18 @@ class _AccountDashboardState extends State<AccountDashboard> {
         );
         break;
       case '/bankBook':
-        // TODO: Navigate to BankBookPage
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening Bank Book...'),
-            duration: Duration(seconds: 1),
-          ),
+            Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BankBookPage()),
         );
         break;
+      case '/ledger':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LedgerPage()),
+        );
+        break;
+
       case '/groupSummary':
         Navigator.push(
           context,
@@ -196,7 +210,6 @@ class _AccountDashboardState extends State<AccountDashboard> {
           context,
           MaterialPageRoute(builder: (context) => const DayBookPage()),
         );
-
         break;
       case '/trialBalance':
         Navigator.push(
@@ -205,21 +218,15 @@ class _AccountDashboardState extends State<AccountDashboard> {
         );
         break;
       case '/receivable':
-        // TODO: Navigate to ReceivablePage
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening Receivable...'),
-            duration: Duration(seconds: 1),
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ReceivablePage()),
         );
         break;
       case '/payable':
-        // TODO: Navigate to PayablePage
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening Payable...'),
-            duration: Duration(seconds: 1),
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PayablePage()),
         );
         break;
       case '/profitLoss':

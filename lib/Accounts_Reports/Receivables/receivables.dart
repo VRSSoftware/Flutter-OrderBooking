@@ -6,40 +6,41 @@ import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/keyName.dart';
 import 'package:vrs_erp/services/AccountReport_Services.dart';
 
-class BankBookPage extends StatefulWidget {
-  const BankBookPage({super.key});
+class ReceivablePage extends StatefulWidget {
+  const ReceivablePage({super.key});
 
   @override
-  State<BankBookPage> createState() => _BankBookPageState();
+  State<ReceivablePage> createState() => _ReceivablePageState();
 }
 
-class _BankBookPageState extends State<BankBookPage> {
+class _ReceivablePageState extends State<ReceivablePage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
+  // Date Controllers
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
-  // Selected values - OPTIONAL FILTERS
-  List<KeyName> selectedLedgers = [];  // Optional - if empty, all ledgers
-  String selectedReportType = 'summary';  // Optional - default summary
-  bool showNarration = false;  // Optional - default false
+  // Selected Filters
+  List<KeyName> selectedLedgers = [];
+  String selectedReportType = 'summary'; // 'summary' or 'detail'
+  bool isOverdueOnly = false;
+  bool isAgeWise = false;
 
   // Lists
   List<KeyName> ledgers = [];
 
-  // Loading states
+  // Loading
   bool _isLoadingLedgers = false;
   bool _isLoadingReport = false;
 
-  // Validation error message
   String? _dateRangeError;
 
   int get _filterCount {
     int count = 0;
     if (selectedLedgers.isNotEmpty) count++;
     if (selectedReportType != 'summary') count++;
-    if (showNarration) count++;
+    if (isOverdueOnly) count++;
+    if (isAgeWise) count++;
     return count;
   }
 
@@ -49,7 +50,7 @@ class _BankBookPageState extends State<BankBookPage> {
   void initState() {
     super.initState();
     _initializeDates();
-    fetchBankBookLedgers();
+    fetchLedgers();
   }
 
   @override
@@ -66,34 +67,12 @@ class _BankBookPageState extends State<BankBookPage> {
     _dateRangeError = null;
   }
 
-  Future<void> fetchBankBookLedgers() async {
-    setState(() => _isLoadingLedgers = true);
-    try {
-      final fetchedLedgers = await AccountReportService.fetchBankBookLedgers();
-      if (mounted) {
-        setState(() {
-          ledgers = fetchedLedgers;
-          _isLoadingLedgers = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingLedgers = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load ledgers: $e')));
-      }
-    }
-  }
-
   void _validateDateRange() {
     setState(() {
       if (fromDateController.text.isNotEmpty &&
           toDateController.text.isNotEmpty) {
         try {
-          final fromDate = DateFormat(
-            'dd/MM/yyyy',
-          ).parse(fromDateController.text);
+          final fromDate = DateFormat('dd/MM/yyyy').parse(fromDateController.text);
           final toDate = DateFormat('dd/MM/yyyy').parse(toDateController.text);
 
           if (toDate.isBefore(fromDate)) {
@@ -253,14 +232,44 @@ class _BankBookPageState extends State<BankBookPage> {
     return null;
   }
 
-  String _getSubtitle() {
-    if (selectedLedgers.isNotEmpty) {
-      if (selectedLedgers.length == 1) {
-        return selectedLedgers.first.name;
-      }
-      return '${selectedLedgers.length} Ledgers';
+  Future<void> fetchLedgers() async {
+    setState(() => _isLoadingLedgers = true);
+    try {
+      final data = await AccountReportService.fetchReceivablesLedgers();
+      setState(() => ledgers = data);
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingLedgers = false);
     }
-    return 'All Ledgers';
+  }
+
+  void _showError(e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+    );
+  }
+
+  String _getSubtitle() {
+    List<String> parts = [];
+    
+    if (selectedLedgers.isNotEmpty) {
+      parts.add('${selectedLedgers.length} Ledger(s)');
+    }
+    if (selectedReportType == 'detail') {
+      parts.add('Detailed');
+    }
+    if (isOverdueOnly) {
+      parts.add('Overdue Only');
+    }
+    if (isAgeWise) {
+      parts.add('Age Wise');
+    }
+    
+    if (parts.isEmpty) {
+      return 'All Receivables';
+    }
+    return parts.join(' • ');
   }
 
   Future<void> _viewReport() async {
@@ -281,56 +290,52 @@ class _BankBookPageState extends State<BankBookPage> {
       return;
     }
 
-    // No validation for selectedLedgers - it's optional
-    // If empty, it means all ledgers
-
     setState(() => _isLoadingReport = true);
 
     try {
-      // Get all selected ledger keys (optional - can be empty)
+      // Get all selected ledger keys
       final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
 
-      final pdfBytes = await AccountReportService.generateBankBookReport(
+      debugPrint('From Date: ${fromDateController.text}');
+      debugPrint('To Date: ${toDateController.text}');
+      debugPrint('Ledger Keys: $ledgerKeys');
+      debugPrint('Report Type: $selectedReportType');
+      debugPrint('Overdue Only: $isOverdueOnly');
+      debugPrint('Age Wise: $isAgeWise');
+
+      final pdfBytes = await AccountReportService.generateReceivableReport(
         fromDate: fromDateController.text,
         toDate: toDateController.text,
-        ledgerKeys: ledgerKeys,  // Can be empty list for all ledgers
+        ledgerKeys: ledgerKeys,  // Changed from ledgerIds to ledgerKeys
         reportType: selectedReportType,
-        showNarration: showNarration,
+        isOverdueOnly: isOverdueOnly,
+        isAgeWise: isAgeWise,
       );
 
-      if (mounted && pdfBytes != null) {
-        final fileName =
-            'BankBook_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = await AccountReportService.savePdfToTemp(
+      if (pdfBytes != null && mounted) {
+        final path = await AccountReportService.savePdfToTemp(
           pdfBytes,
-          fileName,
+          'Receivable_${DateTime.now().millisecondsSinceEpoch}.pdf',
         );
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => CommonPdfViewer(
-                  pdfPath: filePath,
-                  title: 'Bank Book',
-                  subtitle: _getSubtitle(),
-                  fromDate: fromDateController.text,
-                  toDate: toDateController.text,
-                  reportType: selectedReportType,
-                ),
+            builder: (_) => CommonPdfViewer(
+              pdfPath: path,
+              title: 'Receivable Report',
+              subtitle: _getSubtitle(),
+              fromDate: fromDateController.text,
+              toDate: toDateController.text,
+              reportType: selectedReportType,
+            ),
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _showError(e);
     } finally {
-      if (mounted) {
-        setState(() => _isLoadingReport = false);
-      }
+      setState(() => _isLoadingReport = false);
     }
   }
 
@@ -339,7 +344,7 @@ class _BankBookPageState extends State<BankBookPage> {
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
       appBar: CommonAppBar(
-        title: 'Bank Book',
+        title: 'Receivable',
         showBackButton: true,
         actions: [
           Stack(
@@ -350,38 +355,28 @@ class _BankBookPageState extends State<BankBookPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) => CommonFilterPage(
-                            title: 'Bank Book Filters',
-                            reportType: 'BankBook',
-                            ledgers: ledgers,
-                            initialLedgers: selectedLedgers,
-                            initialReportType: selectedReportType,
-                            initialShowNarration: showNarration,
-                            onLedgersChanged: (value) {
-                              setState(() {
-                                selectedLedgers = value ?? [];
-                              });
-                            },
-                            onReportTypeChanged: (value) {
-                              setState(() {
-                                selectedReportType = value ?? 'summary';
-                              });
-                            },
-                            onNarrationChanged: (value) {
-                              setState(() {
-                                showNarration = value ?? false;
-                              });
-                            },
-                            onApply: () {},
-                            onClear: () {
-                              setState(() {
-                                selectedLedgers = [];
-                                selectedReportType = 'summary';
-                                showNarration = false;
-                              });
-                            },
-                          ),
+                      builder: (_) => CommonFilterPage(
+                        title: 'Receivable Filters',
+                        reportType: 'Receivable',
+                        ledgers: ledgers,
+                        initialLedgers: selectedLedgers,
+                        initialReportType: selectedReportType,
+                        initialShowOverdueOnly: isOverdueOnly,
+                        initialShowAgeWise: isAgeWise,
+                        onLedgersChanged: (v) => setState(() => selectedLedgers = v ?? []),
+                        onReportTypeChanged: (v) => setState(() => selectedReportType = v ?? 'summary'),
+                        onOverdueOnlyChanged: (v) => setState(() => isOverdueOnly = v ?? false),
+                        onAgeWiseChanged: (v) => setState(() => isAgeWise = v ?? false),
+                        onApply: () {},
+                        onClear: () {
+                          setState(() {
+                            selectedLedgers = [];
+                            selectedReportType = 'summary';
+                            isOverdueOnly = false;
+                            isAgeWise = false;
+                          });
+                        },
+                      ),
                     ),
                   );
                 },
@@ -416,12 +411,13 @@ class _BankBookPageState extends State<BankBookPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(14.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Date Range Section
               CommonCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,10 +450,9 @@ class _BankBookPageState extends State<BankBookPage> {
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        _dateRangeError != null
-                                            ? Colors.red
-                                            : AppColors.slateBorder,
+                                    color: _dateRangeError != null
+                                        ? Colors.red
+                                        : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -481,9 +476,7 @@ class _BankBookPageState extends State<BankBookPage> {
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap:
-                                            () =>
-                                                _selectDate(fromDateController),
+                                        onTap: () => _selectDate(fromDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,
@@ -542,10 +535,9 @@ class _BankBookPageState extends State<BankBookPage> {
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        _dateRangeError != null
-                                            ? Colors.red
-                                            : AppColors.slateBorder,
+                                    color: _dateRangeError != null
+                                        ? Colors.red
+                                        : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -569,8 +561,7 @@ class _BankBookPageState extends State<BankBookPage> {
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap:
-                                            () => _selectDate(toDateController),
+                                        onTap: () => _selectDate(toDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,

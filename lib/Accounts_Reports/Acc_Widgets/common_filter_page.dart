@@ -29,10 +29,9 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
     FilterFieldId.checkBoxNarration,
   ],
   'BankBook': [
-    FilterFieldId.customerVendorLedgerRadio,
+    FilterFieldId.ledger,
     FilterFieldId.radioSummaryDetail,
     FilterFieldId.checkBoxNarration,
-    FilterFieldId.checkBoxBillWise,
   ],
   'Ledger': [
     FilterFieldId.customerVendorLedgerRadio,
@@ -41,6 +40,7 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
     FilterFieldId.group,
     FilterFieldId.subGroup,
     FilterFieldId.radioSummaryDetail,
+    FilterFieldId.ledger,
     FilterFieldId.checkBoxBillWise,
     FilterFieldId.checkBoxNarration,
   ],
@@ -60,18 +60,16 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
     FilterFieldId.checkBoxDueOnly,
   ],
   'Receivable': [
-    FilterFieldId.customerVendorLedgerRadio,
+    FilterFieldId.ledger,
     FilterFieldId.radioSummaryDetail,
-    FilterFieldId.checkBoxBillWise,
-    FilterFieldId.checkBoxAgeWise,           // Added for Receivable
-    FilterFieldId.checkBoxShowOverdueOnly,   // Added for Receivable
+    FilterFieldId.checkBoxShowOverdueOnly,
+    FilterFieldId.checkBoxAgeWise,
   ],
   'Payable': [
-    FilterFieldId.customerVendorLedgerRadio,
+    FilterFieldId.ledger,
     FilterFieldId.radioSummaryDetail,
-    FilterFieldId.checkBoxBillWise,
-    FilterFieldId.checkBoxAgeWise,           // Added for Payable
-    FilterFieldId.checkBoxShowOverdueOnly,   // Added for Payable
+    FilterFieldId.checkBoxShowOverdueOnly,
+    FilterFieldId.checkBoxAgeWise,
   ],
   'DayBook': [
     FilterFieldId.radioSummaryDetail,
@@ -82,29 +80,13 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
   'BalanceSheet': [FilterFieldId.checkBoxLedgerWise],
 };
 
-// Radio type for customer/vendor/ledger/bank
-enum RadioType { customer, vendor, ledger, bank }
-
-// Radio options for 1st field
-const Map<RadioType, List<Map<String, dynamic>>>
-customerVendorLedgerRadioOptions = {
-  RadioType.customer: [
-    {'value': 'all_customers', 'label': 'All Customers'},
-    {'value': 'single_customer', 'label': 'Single Customer'},
-  ],
-  RadioType.vendor: [
-    {'value': 'all_vendors', 'label': 'All Vendors'},
-    {'value': 'single_vendor', 'label': 'Single Vendor'},
-  ],
-  RadioType.ledger: [
-    {'value': 'all_ledgers', 'label': 'All Ledgers'},
-    {'value': 'single_ledger', 'label': 'Single Ledger'},
-  ],
-  RadioType.bank: [
-    {'value': 'all_banks', 'label': 'All Banks'},
-    {'value': 'single_bank', 'label': 'Single Bank'},
-  ],
-};
+// Radio options for ledger type selection
+const List<Map<String, dynamic>> ledgerTypeRadioOptions = [
+  {'value': 'customer', 'label': 'Customer'},
+  {'value': 'vendor', 'label': 'Vendor'},
+  {'value': 'ledger', 'label': 'Ledger'},
+  {'value': 'all', 'label': 'All'},
+];
 
 class CommonFilterPage extends StatefulWidget {
   final String title;
@@ -122,8 +104,8 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? groups;
   final List<KeyName>? subGroups;
 
-  // Initial selected values (for single select - radio)
-  final String? initialCustomerVendorType;
+  // Initial selected values
+  final String? initialLedgerType;
   final KeyName? initialCustomer;
   final KeyName? initialVendor;
   final KeyName? initialLedger;
@@ -136,7 +118,7 @@ class CommonFilterPage extends StatefulWidget {
   final bool? initialShowAgeWise;
   final bool? initialShowOverdueOnly;
 
-  // For multi-select - ALL DROPDOWNS NOW MULTI-SELECT
+  // For multi-select
   final List<KeyName>? initialStates;
   final List<KeyName>? initialCities;
   final List<KeyName>? initialGroups;
@@ -146,8 +128,8 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? initialVendors;
   final List<KeyName>? initialBanks;
 
-  // Callbacks - ALL MULTI-SELECT
-  final Function(String?)? onCustomerVendorTypeChanged;
+  // Callbacks
+  final Function(String?)? onLedgerTypeChanged;
   final Function(List<KeyName>?)? onCustomersChanged;
   final Function(List<KeyName>?)? onVendorsChanged;
   final Function(List<KeyName>?)? onLedgersChanged;
@@ -161,8 +143,8 @@ class CommonFilterPage extends StatefulWidget {
   final Function(bool?)? onNarrationChanged;
   final Function(bool?)? onLedgerWiseChanged;
   final Function(bool?)? onDueOnlyChanged;
-  final Function(bool?)? onAgeWiseChanged;      // Fixed naming consistency
-  final Function(bool?)? onOverdueOnlyChanged;  // Fixed naming consistency
+  final Function(bool?)? onAgeWiseChanged;
+  final Function(bool?)? onOverdueOnlyChanged;
 
   const CommonFilterPage({
     super.key,
@@ -178,7 +160,7 @@ class CommonFilterPage extends StatefulWidget {
     this.cities,
     this.groups,
     this.subGroups,
-    this.initialCustomerVendorType,
+    this.initialLedgerType,
     this.initialCustomer,
     this.initialVendor,
     this.initialLedger,
@@ -198,7 +180,7 @@ class CommonFilterPage extends StatefulWidget {
     this.initialCustomers,
     this.initialVendors,
     this.initialBanks,
-    this.onCustomerVendorTypeChanged,
+    this.onLedgerTypeChanged,
     this.onCustomersChanged,
     this.onVendorsChanged,
     this.onLedgersChanged,
@@ -221,10 +203,8 @@ class CommonFilterPage extends StatefulWidget {
 }
 
 class _CommonFilterPageState extends State<CommonFilterPage> {
-  late RadioType _radioType;
-
-  // Local state for all filter values - ALL MULTI-SELECT
-  late String? _selectedCustomerVendorType;
+  // Local state for all filter values
+  late String? _selectedLedgerType;
   late List<KeyName> _selectedCustomers;
   late List<KeyName> _selectedVendors;
   late List<KeyName> _selectedLedgers;
@@ -240,14 +220,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   late bool _showDueOnly;
   late bool _showAgeWise;
   late bool _showOverdueOnly;
+  
+  // Track which dropdown is currently open
+  String? _openDropdownId;
 
   @override
   void initState() {
     super.initState();
-    _setRadioType();
 
-    // Initialize local state from widget props - ALL MULTI-SELECT
-    _selectedCustomerVendorType = widget.initialCustomerVendorType;
+    // Initialize local state from widget props
+    _selectedLedgerType = widget.initialLedgerType ?? 'all';
     _selectedCustomers = List.from(widget.initialCustomers ?? []);
     _selectedVendors = List.from(widget.initialVendors ?? []);
     _selectedLedgers = List.from(widget.initialLedgers ?? []);
@@ -265,93 +247,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _showOverdueOnly = widget.initialShowOverdueOnly ?? false;
   }
 
-  void _setRadioType() {
-    switch (widget.reportType) {
-      case 'Receivable':
-        _radioType = RadioType.customer;
-        break;
-      case 'Payable':
-        _radioType = RadioType.vendor;
-        break;
-      case 'BankBook':
-        _radioType = RadioType.bank;
-        break;
-      default:
-        _radioType = RadioType.ledger;
-    }
-  }
-
-  List<Map<String, dynamic>> _getRadioOptions() {
-    return customerVendorLedgerRadioOptions[_radioType] ?? [];
-  }
-
-  String _getRadioLabel() {
-    switch (_radioType) {
-      case RadioType.customer:
-        return 'Customer';
-      case RadioType.vendor:
-        return 'Vendor';
-      case RadioType.bank:
-        return 'Bank';
-      case RadioType.ledger:
-        return 'Ledger';
-    }
-  }
-
-  bool _showSingleDropdown() {
-    return _selectedCustomerVendorType == 'single_customer' ||
-        _selectedCustomerVendorType == 'single_vendor' ||
-        _selectedCustomerVendorType == 'single_ledger' ||
-        _selectedCustomerVendorType == 'single_bank';
-  }
-
-  List<KeyName> _getDropdownItems() {
-    switch (_radioType) {
-      case RadioType.customer:
-        return widget.customers ?? [];
-      case RadioType.vendor:
-        return widget.vendors ?? [];
-      case RadioType.bank:
-        return widget.banks ?? [];
-      case RadioType.ledger:
-        return widget.ledgers ?? [];
-    }
-  }
-
-  List<KeyName> _getSelectedDropdownValues() {
-    switch (_radioType) {
-      case RadioType.customer:
-        return _selectedCustomers;
-      case RadioType.vendor:
-        return _selectedVendors;
-      case RadioType.bank:
-        return _selectedBanks;
-      case RadioType.ledger:
-        return _selectedLedgers;
-    }
-  }
-
-  String _getDropdownLabel() {
-    switch (_radioType) {
-      case RadioType.customer:
-        return 'Select Customers';
-      case RadioType.vendor:
-        return 'Select Vendors';
-      case RadioType.bank:
-        return 'Select Banks';
-      case RadioType.ledger:
-        return 'Select Ledgers';
-    }
+  void _closeAllDropdowns() {
+    setState(() {
+      _openDropdownId = null;
+    });
   }
 
   bool _hasActiveFilter(FilterFieldId field) {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
-        return _selectedCustomerVendorType != null &&
-            _selectedCustomerVendorType != 'all_customers' &&
-            _selectedCustomerVendorType != 'all_vendors' &&
-            _selectedCustomerVendorType != 'all_ledgers' &&
-            _selectedCustomerVendorType != 'all_banks';
+        return _selectedLedgerType != 'all';
       case FilterFieldId.ledger:
         return _selectedLedgers.isNotEmpty;
       case FilterFieldId.radioSummaryDetail:
@@ -392,7 +297,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
 
   void _applyFilters() {
     // Call all the callbacks with current local state
-    widget.onCustomerVendorTypeChanged?.call(_selectedCustomerVendorType);
+    widget.onLedgerTypeChanged?.call(_selectedLedgerType);
     widget.onCustomersChanged?.call(_selectedCustomers);
     widget.onVendorsChanged?.call(_selectedVendors);
     widget.onLedgersChanged?.call(_selectedLedgers);
@@ -414,7 +319,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
 
   void _clearAll() {
     setState(() {
-      _selectedCustomerVendorType = null;
+      _selectedLedgerType = 'all';
       _selectedCustomers = [];
       _selectedVendors = [];
       _selectedLedgers = [];
@@ -476,7 +381,6 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
                 ),
               ),
             ),
-
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -637,7 +541,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   String _getCardTitle(FilterFieldId field) {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
-        return 'Select ${_getRadioLabel()}';
+        return 'Select Ledger Type';
       case FilterFieldId.state:
         return 'Select States';
       case FilterFieldId.city:
@@ -670,67 +574,30 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   Widget _buildFilterField(FilterFieldId field) {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              children:
-                  _getRadioOptions().map((option) {
-                    return SizedBox(
-                      width: MediaQuery.of(context).size.width / 2.5,
-                      child: RadioListTile<String>(
-                        title: Text(
-                          option['label'],
-                          style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                        ),
-                        value: option['value'],
-                        groupValue: _selectedCustomerVendorType,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCustomerVendorType = value;
-                          });
-                        },
-                        activeColor: AppColors.primaryColor,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      ),
-                    );
-                  }).toList(),
-            ),
-
-            if (_showSingleDropdown())
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: CommonMultiSelectDropdown<KeyName>(
-                  config: MultiSelectConfig<KeyName>(
-                    items: _getDropdownItems(),
-                    selectedItems: _getSelectedDropdownValues(),
-                    onChanged: (items) {
-                      setState(() {
-                        switch (_radioType) {
-                          case RadioType.customer:
-                            _selectedCustomers = items;
-                            break;
-                          case RadioType.vendor:
-                            _selectedVendors = items;
-                            break;
-                          case RadioType.bank:
-                            _selectedBanks = items;
-                            break;
-                          case RadioType.ledger:
-                            _selectedLedgers = items;
-                            break;
-                        }
-                      });
-                    },
-                    displayName: (keyName) => keyName.name ?? '',
-                    hintText: _getDropdownLabel(),
-                    searchHintText: 'Search ${_getDropdownLabel()}',
-                    primaryColor: AppColors.primaryColor,
-                  ),
+        return Wrap(
+          children: ledgerTypeRadioOptions.map((option) {
+            return SizedBox(
+              width: MediaQuery.of(context).size.width / 2.5,
+              child: RadioListTile<String>(
+                title: Text(
+                  option['label'],
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
                 ),
+                value: option['value'],
+                groupValue: _selectedLedgerType,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLedgerType = value;
+                  });
+                  // CRITICAL: Call the callback to notify parent
+                  widget.onLedgerTypeChanged?.call(value);
+                },
+                activeColor: AppColors.primaryColor,
+                contentPadding: EdgeInsets.zero,
+                dense: true,
               ),
-          ],
+            );
+          }).toList(),
         );
 
       case FilterFieldId.state:
@@ -749,6 +616,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             searchHintText: 'Search States',
             primaryColor: AppColors.primaryColor,
           ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'state';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
         );
 
       case FilterFieldId.city:
@@ -767,6 +644,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             searchHintText: 'Search Cities',
             primaryColor: AppColors.primaryColor,
           ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'city';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
         );
 
       case FilterFieldId.group:
@@ -785,6 +672,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             searchHintText: 'Search Groups',
             primaryColor: AppColors.primaryColor,
           ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'group';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
         );
 
       case FilterFieldId.subGroup:
@@ -803,6 +700,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             searchHintText: 'Search Sub Groups',
             primaryColor: AppColors.primaryColor,
           ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'subgroup';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
         );
 
       case FilterFieldId.ledger:
@@ -821,6 +728,16 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             searchHintText: 'Search Ledgers',
             primaryColor: AppColors.primaryColor,
           ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'ledger';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
         );
 
       case FilterFieldId.radioSummaryDetail:
