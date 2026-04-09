@@ -7,13 +7,21 @@ import 'package:vrs_erp/AI/AI_Test.dart';
 import 'package:vrs_erp/AI/AI_chat_report_web.dart/ai_chat_report_web.dart';
 import 'package:vrs_erp/AI/AI_Image.dart';
 import 'package:vrs_erp/Accounts_Reports/Accounts_Dashboard.dart';
+import 'package:vrs_erp/Accounts_Reports/BalanceSheet/BalanceSheet.dart';
+import 'package:vrs_erp/Accounts_Reports/Bank_Book/bank_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Cash_Book/cash_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Day_Book/day_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Group_Summary/group_summary.dart';
+import 'package:vrs_erp/Accounts_Reports/Group_Voucher/group_voucher.dart';
+import 'package:vrs_erp/Accounts_Reports/Payable/payable.dart';
+import 'package:vrs_erp/Accounts_Reports/Profit_Loss/Profit_Loss.dart';
+import 'package:vrs_erp/Accounts_Reports/Receivables/receivables.dart';
+import 'package:vrs_erp/Accounts_Reports/Trial_Balance/trial_balance.dart';
 import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/Masters/Design/Design_Master.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
+import 'package:vrs_erp/Outstanding_Reports/OutstandingMainScreen.dart';
 import 'package:vrs_erp/Reports/Customer/customer.dart';
 import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
 import 'package:vrs_erp/Reports/Order/Order.dart';
@@ -159,16 +167,21 @@ class MyApp extends StatelessWidget {
         '/accountDashboard': (context) => AccountDashboard(),
 
         //account book
-       // '/cashBook': (context) => CashBookPage(),
-        // '/bankBook': (context) => const BankBookPage(),
+       '/cashBook': (context) => CashBookPage(),
+         '/bankBook': (context) => const BankBookPage(),
          '/groupSummary': (context) => const GroupSummaryPage(),
-        // '/groupVoucher': (context) => const GroupVoucherPage(),
+         '/groupVoucher': (context) => const GroupVoucherPage(),
         '/dayBook': (context) => const DayBookPage(),
-        // '/trialBalance': (context) => const TrialBalancePage(),
-        // '/receivable': (context) => const ReceivablePage(),
-        // '/payable': (context) => const PayablePage(),
-        // '/profitLoss': (context) => const ProfitLossPage(),
-        // '/balanceSheet': (context) => const BalanceSheetPage(),
+        '/trialBalance': (context) => const TrialBalancePage(),
+        '/receivable': (context) => const ReceivablePage(),
+        '/payable': (context) => const PayablePage(),
+        '/profitLoss': (context) => const ProfitLossPage(),
+        '/balanceSheet': (context) => const BalanceSheetPage(),
+
+
+        //outstanding Reports
+        '/outstandingMainScreen': (context) => const OutstandingMainScreen(),
+
       },
 
       // home: SalesOrderInvoicePage(),
