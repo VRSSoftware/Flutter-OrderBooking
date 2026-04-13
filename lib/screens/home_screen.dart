@@ -631,3 +631,656 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+
+// import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+// import 'package:google_fonts/google_fonts.dart';
+// import 'package:vrs_erp/constants/app_constants.dart';
+// import 'package:vrs_erp/screens/MyWebViewPage.dart';
+// import 'package:vrs_erp/screens/drawer_screen.dart';
+// import 'package:vrs_erp/widget/bottom_navbar.dart';
+
+// class HomeScreen extends StatefulWidget {
+//   @override
+//   _HomeScreenState createState() => _HomeScreenState();
+// }
+
+// class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+//   // Animation controllers for each button
+//   final List<AnimationController> _animationControllers = [];
+
+//   // Financial metrics data
+//   final List<Map<String, dynamic>> financialMetrics = [
+//     {"title": "Sales", "amount": "12,50,000", "icon": Icons.trending_up, "color": Color(0xFF4CAF50), "change": "+8.2%"},
+//     {"title": "Receipt", "amount": "4,50,000", "icon": Icons.attach_money, "color": Color(0xFF2196F3), "change": "+5.1%"},
+//     {"title": "Bank", "amount": "8,75,000", "icon": Icons.account_balance, "color": Color(0xFF3F51B5), "change": "+12.3%"},
+//     {"title": "Bills Rec.", "amount": "2,50,000", "icon": Icons.receipt, "color": Color(0xFFFF9800), "change": "-2.4%"},
+//     {"title": "Purchase", "amount": "6,80,000", "icon": Icons.shopping_cart, "color": Color(0xFFF44336), "change": "+15.7%"},
+//     {"title": "Payment", "amount": "5,20,000", "icon": Icons.payment, "color": Color(0xFF9C27B0), "change": "-3.2%"},
+//     {"title": "Bill Pay.", "amount": "1,80,000", "icon": Icons.receipt_long, "color": Color(0xFF009688), "change": "+2.1%"},
+//   ];
+
+//   @override
+//   void initState() {
+//     super.initState();
+//   }
+
+//   @override
+//   void dispose() {
+//     for (var controller in _animationControllers) {
+//       controller.dispose();
+//     }
+//     _animationControllers.clear();
+//     super.dispose();
+//   }
+
+//   // Simple icon color mapping
+//   Color _getIconColor(String label) {
+//     switch (label) {
+//       case 'Order Booking':
+//         return AppColors.primaryBlue;
+//       case 'Catalog':
+//         return Colors.green[700]!;
+//       case 'Order Register':
+//         return AppColors.deepPurple;
+//       case 'Packing':
+//         return Colors.orange[700]!;
+//       case 'Sale Bill':
+//         return AppColors.red;
+//       case 'Packing Register':
+//         return Colors.cyan[700]!;
+//       case 'Sale Bill Register':
+//         return Colors.teal[700]!;
+//       case 'Stock Report':
+//         return Colors.amber[800]!;
+//       case 'Dashboard':
+//         return Colors.indigo[700]!;
+//       case 'Production':
+//         return AppColors.pink;
+//       case 'Report':
+//         return AppColors.maroon;
+//       case 'Ask VRS AI':
+//         return AppColors.primaryColor;
+//       case 'Accounts':
+//         return AppColors.accentColor;
+//       case 'Outstanding Report':
+//         return AppColors.mutedPink;
+//       default:
+//         return AppColors.slate600;
+//     }
+//   }
+
+//   // Scrollable Financial Metrics Cards
+//   Widget _buildFinancialMetrics() {
+//     return Container(
+//       margin: const EdgeInsets.only(bottom: 16, top: 8),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//             child: Row(
+//               children: [
+//                 Container(
+//                   width: 4,
+//                   height: 20,
+//                   decoration: BoxDecoration(
+//                     color: AppColors.primaryColor[500],
+//                     borderRadius: BorderRadius.circular(2),
+//                   ),
+//                 ),
+//                 const SizedBox(width: 8),
+//                 Text(
+//                   "Financial Overview",
+//                   style: GoogleFonts.poppins(
+//                     fontSize: 16,
+//                     fontWeight: FontWeight.w600,
+//                     color: AppColors.primaryColor[700],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           SizedBox(
+//             height: 110,
+//             child: ListView.builder(
+//               scrollDirection: Axis.horizontal,
+//               padding: const EdgeInsets.symmetric(horizontal: 16),
+//               itemCount: financialMetrics.length,
+//               itemBuilder: (context, index) {
+//                 final metric = financialMetrics[index];
+//                 return Container(
+//                   width: 150,
+//                   margin: const EdgeInsets.only(right: 12),
+//                   decoration: BoxDecoration(
+//                     color: Colors.white,
+//                     borderRadius: BorderRadius.circular(20),
+//                     boxShadow: [
+//                       BoxShadow(
+//                         color: Colors.black.withOpacity(0.06),
+//                         blurRadius: 10,
+//                         offset: const Offset(0, 4),
+//                       ),
+//                     ],
+//                     border: Border.all(
+//                       color: (metric['color'] as Color).withOpacity(0.15),
+//                       width: 1,
+//                     ),
+//                   ),
+//                   child: Padding(
+//                     padding: const EdgeInsets.all(12),
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                       children: [
+//                         Row(
+//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                           children: [
+//                             Container(
+//                               padding: const EdgeInsets.all(8),
+//                               decoration: BoxDecoration(
+//                                 color: (metric['color'] as Color).withOpacity(0.1),
+//                                 borderRadius: BorderRadius.circular(12),
+//                               ),
+//                               child: Icon(
+//                                 metric['icon'] as IconData,
+//                                 color: metric['color'] as Color,
+//                                 size: 20,
+//                               ),
+//                             ),
+//                             Container(
+//                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//                               decoration: BoxDecoration(
+//                                 color: (metric['change'] as String).startsWith('+') 
+//                                     ? Colors.green.withOpacity(0.1)
+//                                     : Colors.red.withOpacity(0.1),
+//                                 borderRadius: BorderRadius.circular(12),
+//                               ),
+//                               child: Row(
+//                                 children: [
+//                                   Icon(
+//                                     (metric['change'] as String).startsWith('+') 
+//                                         ? Icons.arrow_upward
+//                                         : Icons.arrow_downward,
+//                                     size: 10,
+//                                     color: (metric['change'] as String).startsWith('+') 
+//                                         ? Colors.green[700]
+//                                         : Colors.red[700],
+//                                   ),
+//                                   const SizedBox(width: 2),
+//                                   Text(
+//                                     metric['change'] as String,
+//                                     style: TextStyle(
+//                                       fontSize: 10,
+//                                       fontWeight: FontWeight.w600,
+//                                       color: (metric['change'] as String).startsWith('+') 
+//                                           ? Colors.green[700]
+//                                           : Colors.red[700],
+//                                     ),
+//                                   ),
+//                                 ],
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                         const SizedBox(height: 8),
+//                         Text(
+//                           metric['title'] as String,
+//                           style: GoogleFonts.poppins(
+//                             fontSize: 11,
+//                             fontWeight: FontWeight.w500,
+//                             color: AppColors.slate600,
+//                           ),
+//                         ),
+//                         Text(
+//                           '₹${metric['amount']}',
+//                           style: GoogleFonts.poppins(
+//                             fontSize: 15,
+//                             fontWeight: FontWeight.bold,
+//                             color: metric['color'] as Color,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 );
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   // Beautiful button with reduced width between items
+//   Widget _buildSimpleButton(BuildContext context, String label, IconData icon, VoidCallback onTap) {
+//     final iconColor = _getIconColor(label);
+    
+//     final animationController = AnimationController(
+//       vsync: this,
+//       duration: const Duration(milliseconds: 150),
+//     );
+//     _animationControllers.add(animationController);
+
+//     return GestureDetector(
+//       onTapDown: (_) => animationController.forward(),
+//       onTapUp: (_) => animationController.reverse().then((_) => onTap()),
+//       onTapCancel: () => animationController.reverse(),
+//       child: AnimatedBuilder(
+//         animation: animationController,
+//         builder: (context, child) {
+//           return Transform.scale(
+//             scale: 1.0 - (animationController.value * 0.03),
+//             child: Container(
+//               width: 80,
+//               margin: const EdgeInsets.only(right: 8),
+//               child: Column(
+//                 mainAxisAlignment: MainAxisAlignment.center,
+//                 children: [
+//                   Container(
+//                     padding: const EdgeInsets.all(12),
+//                     decoration: BoxDecoration(
+//                       color: Colors.white,
+//                       borderRadius: BorderRadius.circular(14),
+//                       boxShadow: [
+//                         BoxShadow(
+//                           color: iconColor.withOpacity(0.15),
+//                           blurRadius: 8,
+//                           offset: const Offset(0, 3),
+//                         ),
+//                       ],
+//                     ),
+//                     child: Icon(icon, color: iconColor, size: 26),
+//                   ),
+//                   const SizedBox(height: 6),
+//                   Text(
+//                     label,
+//                     textAlign: TextAlign.center,
+//                     style: GoogleFonts.poppins(
+//                       fontSize: 10,
+//                       fontWeight: FontWeight.w600,
+//                       color: AppColors.primaryColor[800],
+//                     ),
+//                     maxLines: 2,
+//                     overflow: TextOverflow.ellipsis,
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+
+//   // Section widget as a beautiful card (without icon in title)
+//   Widget _buildSectionCard({
+//     required String title,
+//     required List<Widget> buttons,
+//     required Color accentColor,
+//   }) {
+//     if (buttons.isEmpty) return const SizedBox.shrink();
+    
+//     return Container(
+//       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         borderRadius: BorderRadius.circular(20),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(0.04),
+//             blurRadius: 15,
+//             offset: const Offset(0, 5),
+//           ),
+//         ],
+//         border: Border.all(
+//           color: accentColor.withOpacity(0.15),
+//           width: 1,
+//         ),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Card Header (without icon)
+//           Container(
+//             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+//             decoration: BoxDecoration(
+//               gradient: LinearGradient(
+//                 begin: Alignment.topLeft,
+//                 end: Alignment.bottomRight,
+//                 colors: [
+//                   accentColor.withOpacity(0.05),
+//                   Colors.white,
+//                 ],
+//               ),
+//               borderRadius: const BorderRadius.only(
+//                 topLeft: Radius.circular(24),
+//                 topRight: Radius.circular(24),
+//               ),
+//             ),
+//             child: Row(
+//               children: [
+//                 Container(
+//                   width: 4,
+//                   height: 20,
+//                   decoration: BoxDecoration(
+//                     color: accentColor,
+//                     borderRadius: BorderRadius.circular(2),
+//                   ),
+//                 ),
+//                 const SizedBox(width: 10),
+//                 Expanded(
+//                   child: Text(
+//                     title,
+//                     style: GoogleFonts.poppins(
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w700,
+//                       color: AppColors.primaryColor[700],
+//                       letterSpacing: 0.3,
+//                     ),
+//                   ),
+//                 ),
+//                 Container(
+//                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+//                   decoration: BoxDecoration(
+//                     color: accentColor.withOpacity(0.1),
+//                     borderRadius: BorderRadius.circular(20),
+//                   ),
+//                   child: Text(
+//                     '${buttons.length}',
+//                     style: GoogleFonts.poppins(
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.w700,
+//                       color: accentColor,
+//                     ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+          
+//           // Divider
+//           Container(
+//             height: 1,
+//             color: accentColor.withOpacity(0.1),
+//             margin: const EdgeInsets.symmetric(horizontal: 20),
+//           ),
+          
+//           // Buttons
+//           Padding(
+//             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+//             child: SingleChildScrollView(
+//               scrollDirection: Axis.horizontal,
+//               child: Row(
+//                 mainAxisAlignment: MainAxisAlignment.start,
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: buttons,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return PopScope(
+//       canPop: false,
+//       onPopInvoked: (didPop) async {
+//         if (didPop) return;
+
+//         bool shouldExit = await showDialog(
+//           context: context,
+//           barrierDismissible: false,
+//           builder: (context) => AlertDialog(
+//             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+//             elevation: 0,
+//             backgroundColor: Colors.transparent,
+//             contentPadding: EdgeInsets.zero,
+//             content: Container(
+//               decoration: BoxDecoration(
+//                 color: Colors.white,
+//                 borderRadius: BorderRadius.circular(24),
+//               ),
+//               child: Column(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   Container(
+//                     width: double.infinity,
+//                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+//                     decoration: BoxDecoration(
+//                       gradient: LinearGradient(
+//                         colors: [AppColors.red, AppColors.red.withOpacity(0.8)],
+//                         begin: Alignment.topLeft,
+//                         end: Alignment.bottomRight,
+//                       ),
+//                       borderRadius: const BorderRadius.only(
+//                         topLeft: Radius.circular(24),
+//                         topRight: Radius.circular(24),
+//                       ),
+//                     ),
+//                     child: Column(
+//                       children: [
+//                         Container(
+//                           padding: const EdgeInsets.all(14),
+//                           decoration: BoxDecoration(
+//                             color: Colors.white.withOpacity(0.2),
+//                             shape: BoxShape.circle,
+//                           ),
+//                           child: const Icon(Icons.exit_to_app, color: Colors.white, size: 32),
+//                         ),
+//                         const SizedBox(height: 14),
+//                         const Text('Exit App', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+//                         const SizedBox(height: 8),
+//                         const Text('Are you sure you want to close the app?', style: TextStyle(fontSize: 14, color: Colors.white), textAlign: TextAlign.center),
+//                       ],
+//                     ),
+//                   ),
+//                   Padding(
+//                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+//                     child: Row(
+//                       children: [
+//                         Expanded(
+//                           child: OutlinedButton(
+//                             onPressed: () => Navigator.pop(context, false),
+//                             style: OutlinedButton.styleFrom(
+//                               foregroundColor: AppColors.slate600,
+//                               side: BorderSide(color: AppColors.slateBorder),
+//                               padding: const EdgeInsets.symmetric(vertical: 12),
+//                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+//                             ),
+//                             child: const Text('No', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+//                           ),
+//                         ),
+//                         const SizedBox(width: 12),
+//                         Expanded(
+//                           child: ElevatedButton(
+//                             onPressed: () => SystemNavigator.pop(),
+//                             style: ElevatedButton.styleFrom(
+//                               backgroundColor: AppColors.red,
+//                               foregroundColor: Colors.white,
+//                               padding: const EdgeInsets.symmetric(vertical: 12),
+//                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+//                               elevation: 0,
+//                             ),
+//                             child: const Text('Yes', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         );
+
+//         if (shouldExit == true) {
+//           Navigator.pop(context);
+//         }
+//       },
+//       child: Scaffold(
+//         backgroundColor: Colors.grey[50],
+//         drawer: DrawerScreen(),
+//         appBar: AppBar(
+//           toolbarHeight: 56,
+//           title: Text(
+//             'VRS Software',
+//             style: GoogleFonts.roboto(
+//               color: Colors.white,
+//               fontWeight: FontWeight.bold,
+//               fontSize: 20,
+//               letterSpacing: 0.5,
+//             ),
+//           ),
+//           backgroundColor: AppColors.primaryColor[500],
+//           elevation: 0,
+//           centerTitle: true,
+//           leading: Builder(
+//             builder: (context) => IconButton(
+//               icon: const Icon(Icons.menu, color: Colors.white, size: 26),
+//               onPressed: () => Scaffold.of(context).openDrawer(),
+//             ),
+//           ),
+//           actions: [
+//             Container(
+//               margin: const EdgeInsets.only(right: 12),
+//               child: CircleAvatar(
+//                 radius: 16,
+//                 backgroundColor: Colors.white.withOpacity(0.2),
+//                 child: Icon(Icons.person, color: Colors.white, size: 18),
+//               ),
+//             ),
+//           ],
+//         ),
+//         body: Container(
+//           decoration: BoxDecoration(
+//             gradient: LinearGradient(
+//               begin: Alignment.topCenter,
+//               end: Alignment.bottomCenter,
+//               colors: [
+//                 Colors.grey[50]!,
+//                 Colors.white,
+//               ],
+//             ),
+//           ),
+//           child: SingleChildScrollView(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 const SizedBox(height: 8),
+//                 _buildFinancialMetrics(),
+                
+//                 // Order Management Card
+//                 _buildSectionCard(
+//                   title: "Order Management",
+//                   accentColor: AppColors.primaryBlue,
+//                   buttons: [
+//                     _buildSimpleButton(context, 'Order Booking', Icons.shopping_cart_checkout, () {
+//                       Navigator.pushNamedAndRemoveUntil(
+//                         context,
+//                         '/orderbooking',
+//                         (Route<dynamic> route) => false,
+//                       );
+//                     }),
+//                     _buildSimpleButton(context, 'Catalog', Icons.style, () {
+//                       Navigator.pushNamedAndRemoveUntil(
+//                         context,
+//                         '/catalog',
+//                         (Route<dynamic> route) => false,
+//                       );
+//                     }),
+//                     _buildSimpleButton(context, 'Order Register', Icons.app_registration, () {
+//                       Navigator.pushNamed(context, '/registerOrders');
+//                     }),
+//                   ],
+//                 ),
+                
+//                 // Packing & Billing Card
+//                 _buildSectionCard(
+//                   title: "Packing & Billing",
+//                   accentColor: Colors.orange[700]!,
+//                   buttons: [
+//                     _buildSimpleButton(context, 'Packing', Icons.inventory_2, () {
+//                       Navigator.pushNamed(context, '/packingBooking');
+//                     }),
+//                     _buildSimpleButton(context, 'Sale Bill', Icons.receipt_long, () {
+//                       Navigator.pushNamed(context, '/SaleBillBookingScreen');
+//                     }),
+//                     _buildSimpleButton(context, 'Packing Register', Icons.checklist, () {
+//                       Navigator.pushNamed(context, '/packingOrders');
+//                     }),
+//                     _buildSimpleButton(context, 'Sale Bill Register', Icons.receipt, () {
+//                       Navigator.pushNamed(context, '/saleBillRegister');
+//                     }),
+//                   ],
+//                 ),
+                
+//                 // Production & AI Card
+//                 _buildSectionCard(
+//                   title: "Production & AI",
+//                   accentColor: AppColors.pink,
+//                   buttons: [
+//                     _buildSimpleButton(context, 'Production', Icons.precision_manufacturing, () {
+//                       Navigator.pushNamed(context, '/production');
+//                     }),
+//                     _buildSimpleButton(context, 'Ask VRS AI', Icons.auto_awesome, () {
+//                       Navigator.pushNamed(context, '/vrsai');
+//                     }),
+//                   ],
+//                 ),
+                
+//                 // Reports & Analytics Card
+//                 _buildSectionCard(
+//                   title: "Reports & Analytics",
+//                   accentColor: AppColors.maroon,
+//                   buttons: [
+//                     _buildSimpleButton(context, 'Report', Icons.account_balance_wallet, () {
+//                       Navigator.pushNamed(context, '/reportHomeScreen');
+//                     }),
+//                     _buildSimpleButton(context, 'Accounts', Icons.account_balance, () {
+//                       Navigator.pushNamed(context, '/accountDashboard');
+//                     }),
+//                     _buildSimpleButton(context, 'Outstanding Report', Icons.assessment, () {
+//                       Navigator.pushNamed(context, '/outstandingMainScreen');
+//                     }),
+//                   ],
+//                 ),
+                
+//                 // Additional Features Card (Conditional)
+//                 if (UserSession.userType == 'A' || UserSession.userType == 'C')
+//                   _buildSectionCard(
+//                     title: "Additional Features",
+//                     accentColor: Colors.amber[700]!,
+//                     buttons: [
+//                       if (UserSession.userType == 'A')
+//                         _buildSimpleButton(context, 'Stock Report', Icons.assessment, () {
+//                           Navigator.pushNamedAndRemoveUntil(
+//                             context,
+//                             '/stockReport',
+//                             (Route<dynamic> route) => false,
+//                           );
+//                         }),
+//                       if (UserSession.userType == 'A' || UserSession.userType == 'C')
+//                         _buildSimpleButton(context, 'Dashboard', Icons.dashboard, () {
+//                           Navigator.pushNamedAndRemoveUntil(
+//                             context,
+//                             '/dashboard',
+//                             (Route<dynamic> route) => false,
+//                           );
+//                         }),
+//                     ],
+//                   ),
+                
+//                 const SizedBox(height: 30),
+//               ],
+//             ),
+//           ),
+//         ),
+//         bottomNavigationBar: BottomNavigationWidget(currentScreen: '/home'),
+//       ),
+//     );
+//   }
+// }

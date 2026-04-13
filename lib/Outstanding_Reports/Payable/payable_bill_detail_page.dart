@@ -1,4 +1,4 @@
-// bill_detail_page.dart
+// payable_bill_detail_page.dart
 import 'dart:typed_data';
 import 'dart:io';
 
@@ -11,11 +11,11 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 
-class BillDetailPage extends StatelessWidget {
+class PayableBillDetailPage extends StatelessWidget {
   final Map<String, dynamic> bill;
   final String ledgerName;
 
-  const BillDetailPage({
+  const PayableBillDetailPage({
     super.key,
     required this.bill,
     required this.ledgerName,
@@ -110,9 +110,6 @@ class BillDetailPage extends StatelessWidget {
       if (result.type != ResultType.done) {
         throw Exception('Could not open file');
       }
-      
-      // Show success message
-      // You can add a snackbar or toast here
     } catch (e) {
       // Fallback to share if download fails
       await _generateAndSharePDF();
@@ -152,22 +149,22 @@ class BillDetailPage extends StatelessWidget {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // Row 1: TAX INVOICE and Voucher Type
+                // Row 1: PURCHASE INVOICE and Voucher Type
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text(
-                      'TAX INVOICE',
+                      'PURCHASE INVOICE',
                       style: pw.TextStyle(
                         fontSize: 24,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.brown,
+                        color: PdfColors.orange,
                       ),
                     ),
                     pw.Container(
                       padding: pw.EdgeInsets.all(8),
                       decoration: pw.BoxDecoration(
-                        color: PdfColors.brown,
+                        color: PdfColors.orange,
                         borderRadius: pw.BorderRadius.circular(5),
                       ),
                       child: pw.Text(
@@ -215,7 +212,7 @@ class BillDetailPage extends StatelessWidget {
                 
                 pw.SizedBox(height: 16),
                 
-                // Customer Details
+                // Vendor Details
                 if (mobile.isNotEmpty)
                   pw.Text(
                     'Phone: $mobile',
@@ -334,8 +331,8 @@ class BillDetailPage extends StatelessWidget {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Net Amount', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.brown)),
-                    pw.Text('₹ ${netAmount.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.brown)),
+                    pw.Text('Net Amount', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.orange)),
+                    pw.Text('₹ ${netAmount.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.orange)),
                   ],
                 ),
                 pw.SizedBox(height: 12),
@@ -348,7 +345,7 @@ class BillDetailPage extends StatelessWidget {
                     pw.Text('₹ ${pendingAmount.toStringAsFixed(2)}', style: pw.TextStyle(
                       fontSize: 14,
                       fontWeight: pw.FontWeight.bold,
-                      color: overdueDays > 0 ? PdfColors.red : PdfColors.brown,
+                      color: overdueDays > 0 ? PdfColors.red : PdfColors.orange,
                     )),
                   ],
                 ),
@@ -486,7 +483,7 @@ class BillDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      "TAX INVOICE",
+                                      "PURCHASE INVOICE",
                                       style: GoogleFonts.poppins(
                                         color: Colors.white,
                                         fontSize: 20,
@@ -549,7 +546,7 @@ class BillDetailPage extends StatelessWidget {
 
                                 const SizedBox(height: 16),
 
-                                // Customer Details below
+                                // Vendor Details below
                                 if (mobile.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),

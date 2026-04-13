@@ -39,7 +39,7 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.secondaryColor,
+      backgroundColor: const Color.fromRGBO(249, 249, 250, 1),
       appBar: AppBar(
         title: Text(
           'Outstanding',
@@ -52,6 +52,10 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
         centerTitle: false,
+
+        // 👇 This fixes back icon color
+        iconTheme: const IconThemeData(color: Colors.white),
+
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list_outlined, color: Colors.white),
@@ -72,18 +76,16 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
           children: [
             // Date Filter Row
             _buildDateFilterRow(),
-            
+
             const SizedBox(height: 8),
-            
+
             // Items and Party Info Row
             _buildInfoRow(),
-            
+
             const SizedBox(height: 16),
-            
+
             // Outstanding Options List
-            Expanded(
-              child: _buildOutstandingList(),
-            ),
+            Expanded(child: _buildOutstandingList()),
           ],
         ),
       ),
@@ -91,49 +93,62 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
   }
 
   Widget _buildDateFilterRow() {
-    final List<String> filterOptions = ['Today', 'This Week', 'This Month', 'Custom'];
-    
+    final List<String> filterOptions = [
+      'Today',
+      'This Week',
+      'This Month',
+      'Custom',
+    ];
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Colors.white,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: filterOptions.map((filter) {
-            final isSelected = _selectedFilter == filter;
-            return Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: FilterChip(
-                label: Text(
-                  filter,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+          children:
+              filterOptions.map((filter) {
+                final isSelected = _selectedFilter == filter;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: FilterChip(
+                    label: Text(
+                      filter,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected ? Colors.white : Colors.grey.shade700,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                      if (filter == 'Custom') {
+                        _selectCustomDateRange();
+                      } else {
+                        _fetchDataByFilter(filter);
+                      }
+                    },
+                    backgroundColor: Colors.grey.shade100,
+                    selectedColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color:
+                            isSelected
+                                ? AppColors.primaryColor
+                                : Colors.grey.shade300,
+                      ),
+                    ),
                   ),
-                ),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedFilter = filter;
-                  });
-                  if (filter == 'Custom') {
-                    _selectCustomDateRange();
-                  } else {
-                    _fetchDataByFilter(filter);
-                  }
-                },
-                backgroundColor: Colors.grey.shade100,
-                selectedColor: AppColors.primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: StadiumBorder(
-                  side: BorderSide(
-                    color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+                );
+              }).toList(),
         ),
       ),
     );
@@ -318,11 +333,7 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
             color: (option['iconColor'] as Color).withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            option['icon'],
-            color: option['iconColor'],
-            size: 24,
-          ),
+          child: Icon(option['icon'], color: option['iconColor'], size: 24),
         ),
         title: Text(
           option['title'],
@@ -334,21 +345,13 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
         ),
         subtitle: Text(
           option['subtitle'],
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: Colors.grey.shade400,
-        ),
+        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => option['page'],
-            ),
+            MaterialPageRoute(builder: (context) => option['page']),
           );
         },
       ),
@@ -426,10 +429,7 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
   Widget _buildFilterOption(String title, IconData icon) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primaryColor),
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(fontSize: 14),
-      ),
+      title: Text(title, style: GoogleFonts.poppins(fontSize: 14)),
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: () {
         Navigator.pop(context);
@@ -468,7 +468,9 @@ class _OutstandingMainScreenState extends State<OutstandingMainScreen> {
   }
 
   void _fetchDataByDateRange(DateTime start, DateTime end) {
-    print('Fetching data from ${DateFormat('dd/MM/yyyy').format(start)} to ${DateFormat('dd/MM/yyyy').format(end)}');
+    print(
+      'Fetching data from ${DateFormat('dd/MM/yyyy').format(start)} to ${DateFormat('dd/MM/yyyy').format(end)}',
+    );
     setState(() {
       // Update values based on API response
     });

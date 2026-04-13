@@ -1,17 +1,18 @@
-// outstanding_receivable_detail_page.dart
+// outstanding_payable_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:vrs_erp/Outstanding_Reports/Receivable/bill_detail_page.dart';
+import 'package:vrs_erp/Outstanding_Reports/Payable/payable_bill_detail_page.dart';
+
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-class OutstandingReceivableDetailPage extends StatefulWidget {
+class OutstandingPayableDetailPage extends StatefulWidget {
   final String ledgerName;
   final List<Map<String, dynamic>> bills;
   final double totalAmount;
   final Map<String, dynamic>? customerDetails;
 
-  const OutstandingReceivableDetailPage({
+  const OutstandingPayableDetailPage({
     super.key,
     required this.ledgerName,
     required this.bills,
@@ -20,12 +21,12 @@ class OutstandingReceivableDetailPage extends StatefulWidget {
   });
 
   @override
-  State<OutstandingReceivableDetailPage> createState() =>
-      _OutstandingReceivableDetailPageState();
+  State<OutstandingPayableDetailPage> createState() =>
+      _OutstandingPayableDetailPageState();
 }
 
-class _OutstandingReceivableDetailPageState
-    extends State<OutstandingReceivableDetailPage> {
+class _OutstandingPayableDetailPageState
+    extends State<OutstandingPayableDetailPage> {
   bool _isSelectionMode = false;
   Set<int> _selectedIndexes = {};
   double _selectedTotalAmount = 0;
@@ -263,7 +264,7 @@ class _OutstandingReceivableDetailPageState
                         children: [
                           _buildInfoCard(
                             icon: Icons.business,
-                            label: "Contact Name",
+                            label: "Vendor Name",
                             value: customer['Co_Name'] ?? '',
                           ),
                           const SizedBox(height: 12),
@@ -421,7 +422,7 @@ class _OutstandingReceivableDetailPageState
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'customer_info',
-                child: Text('Customer Information'),
+                child: Text('Vendor Information'),
               ),
               const PopupMenuItem(
                 value: 'ledger_report',
@@ -561,131 +562,130 @@ class _OutstandingReceivableDetailPageState
 
           const Divider(height: 1, thickness: 0.5, color: AppColors.slateBorder),
 
-          // Bills List
-         // Bills List - Updated with onTap navigation
-Expanded(
-  child: _filteredBills.isEmpty
-      ? Center(
-          child: Text(
-            "No bills found",
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppColors.slate600,
-            ),
-          ),
-        )
-      : ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: _filteredBills.length,
-          separatorBuilder: (_, __) => const Divider(
-            height: 1,
-            thickness: 0.5,
-            color: AppColors.slateBorder,
-          ),
-          itemBuilder: (context, index) {
-            final bill = _filteredBills[index];
-            String docNo = bill['Doc_No'] ?? '';
-            String docDt = bill['Doc_Dt'] ?? '';
-            double amount = bill['Amount'] is int
-                ? (bill['Amount'] as int).toDouble()
-                : bill['Amount'] as double;
-            final isSelected = _selectedIndexes.contains(index);
+          // Bills List with onTap navigation
+          Expanded(
+            child: _filteredBills.isEmpty
+                ? Center(
+                    child: Text(
+                      "No bills found",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: AppColors.slate600,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _filteredBills.length,
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: AppColors.slateBorder,
+                    ),
+                    itemBuilder: (context, index) {
+                      final bill = _filteredBills[index];
+                      String docNo = bill['Doc_No'] ?? '';
+                      String docDt = bill['Doc_Dt'] ?? '';
+                      double amount = bill['Amount'] is int
+                          ? (bill['Amount'] as int).toDouble()
+                          : bill['Amount'] as double;
+                      final isSelected = _selectedIndexes.contains(index);
 
-            return GestureDetector(
-              onTap: () {
-                if (_isSelectionMode) {
-                  _toggleSelection(index);
-                } else {
-                  // Navigate to bill detail page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BillDetailPage(
-                        bill: bill,
-                        ledgerName: widget.ledgerName,
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: Container(
-                color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_isSelectionMode) ...[
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: (_) => _toggleSelection(index),
-                        activeColor: AppColors.primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            docNo,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDate(docDt),
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppColors.slate600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          "₹ ${amount.toStringAsFixed(2)}",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green,
+                      return GestureDetector(
+                        onTap: () {
+                          if (_isSelectionMode) {
+                            _toggleSelection(index);
+                          } else {
+                            // Navigate to bill detail page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PayableBillDetailPage(
+                                  bill: bill,
+                                  ledgerName: widget.ledgerName,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_isSelectionMode) ...[
+                                Checkbox(
+                                  value: isSelected,
+                                  onChanged: (_) => _toggleSelection(index),
+                                  activeColor: AppColors.primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      docNo,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatDate(docDt),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: AppColors.slate600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "₹ ${amount.toStringAsFixed(2)}",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      bill['Vchr_Type'] ?? 'Purchase',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            bill['Vchr_Type'] ?? 'Sales',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: AppColors.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
   }
 
- void _showSimpleGraphBottomSheet(BuildContext context) {
+void _showSimpleGraphBottomSheet(BuildContext context) {
   // Calculate data
   DateTime now = DateTime.now();
   DateTime today = DateTime(now.year, now.month, now.day);
@@ -791,7 +791,7 @@ Expanded(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Total Outstanding",
+                              "Total Payable",
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -857,4 +857,3 @@ Expanded(
     return "${now.day.toString().padLeft(2, '0')} ${_getMonthAbbreviation(now.month)} ${now.year.toString().substring(2)}";
   }
 }
-
