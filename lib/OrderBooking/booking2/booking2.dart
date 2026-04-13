@@ -417,8 +417,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 "fcYrId": UserSession.userFcYr ?? '',
                 "data": {
                   "designcode": styleCode,
-                  "mrp": matrixData[0],
-                  "WSP": matrixData.length > 2 ? matrixData[2] : matrixData[0],
+                  "mrp": matrixData[0], // Keep MRP as is
+                  "WSP":
+                      matrixData.length > 1
+                          ? matrixData[1]
+                          : matrixData[0], // Use WSP from index 1
                   "size": size,
                   "TotQty":
                       _calculateCatalogQuantity(catalog.styleKey).toString(),
@@ -517,7 +520,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   actions: [
                     TextButton(
                       onPressed: () {
-                        
                         Navigator.pop(context);
                         Navigator.pop(context);
                         // Navigator.pushReplacement(
@@ -860,9 +862,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         for (var size in quantities[styleKey]![shade]!.keys) {
           final sizeIndex = matrix.sizes.indexOf(size.trim());
           if (sizeIndex == -1) continue;
+          // Change from index 0 (MRP) to index 1 (WSP)
           final rate =
               double.tryParse(
-                matrix.matrix[shadeIndex][sizeIndex].split(',')[0],
+                matrix.matrix[shadeIndex][sizeIndex].split(',')[1],
               ) ??
               0;
           final quantity = quantities[styleKey]![shade]![size]!;
@@ -2103,8 +2106,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     for (var size in quantities[styleKey]?[shade]?.keys ?? []) {
       final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
       if (sizeIndex == -1) continue;
+      // Change from index 0 (MRP) to index 1 (WSP)
       final rate =
-          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[0]) ??
+          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[1]) ??
           0;
       final quantity = quantities[styleKey]![shade]![size]!;
       total += rate * quantity;

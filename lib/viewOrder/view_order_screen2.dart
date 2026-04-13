@@ -473,7 +473,6 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   //   }
   // }
 
- 
   Future<void> _saveOrderLocally() async {
     if (_isSaving) return;
 
@@ -536,29 +535,33 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
             _additionalInfo['salesman'] ??
             _orderControllers.salesPersonKey ??
             '',
-            "usertype":UserSession.userType
+        "usertype": UserSession.userType,
       };
       final orderDataJson = jsonEncode(orderData);
       print("Saved Order Data:");
       print(orderDataJson);
 
-
       final response = await insertFinalSalesOrder(orderDataJson);
       if (response != null && response != "fail") {
         Provider.of<CartModel>(context, listen: false).clearAddedItems();
 
+        String docNo = '';
+        String docId = '';
+        try {
+          final responseMap = jsonDecode(response);
+          docNo =
+              responseMap['docNo']?.toString() ??
+              responseMap['orderNo']?.toString() ??
+              response;
+          docId =
+              responseMap['docId']?.toString() ??
+              responseMap['docId']?.toString() ??
+              response;
+        } catch (e) {
+          docNo = response.toString();
+        }
 
-   String docNo = '';
-   String docId = '';
-      try {
-        final responseMap = jsonDecode(response);
-        docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
-           docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
-      } catch (e) {
-        docNo = response.toString();
-      }
-      
-      final formattedOrderNo = "$docNo";
+        final formattedOrderNo = "$docNo";
 
         showDialog(
           context: context,
@@ -608,17 +611,17 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
                                 ),
                                 children: [
                                   const TextSpan(text: 'Order '),
-                                    TextSpan(
-                              text: formattedOrderNo,
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.blue.shade300,
-                                decorationThickness: 2,
-                              ),
-                            ),
+                                  TextSpan(
+                                    text: formattedOrderNo,
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Colors.blue.shade300,
+                                      decorationThickness: 2,
+                                    ),
+                                  ),
                                   const TextSpan(text: ' saved successfully'),
                                 ],
                               ),
@@ -730,8 +733,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
             orElse: () => {},
           );
           if (item.isNotEmpty) {
-            final mrp = (item['mrp'] as num?)?.toDouble() ?? 0.0;
-            total += qty * mrp;
+            // Change from mrp to wsp
+            final wsp = (item['wsp'] as num?)?.toDouble() ?? 0.0;
+            total += qty * wsp;
           }
         });
       });
@@ -775,8 +779,9 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
           );
 
           if (item.isNotEmpty) {
-            final mrp = (item['mrp'] as num?)?.toDouble() ?? 0.0;
-            totalAmt += qty * mrp;
+            // Change from mrp to wsp
+            final wsp = (item['wsp'] as num?)?.toDouble() ?? 0.0;
+            totalAmt += qty * wsp;
           }
         });
       });
@@ -1062,7 +1067,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
               children: [
                 Flexible(
                   child: Text(
-                    'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}',
+                    'Total: ₹${_calculateTotalAmount().toStringAsFixed(2)}', // This now uses WSP
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1906,12 +1911,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                 color: Colors.white,
                 child: Column(
                   children: [
-                    _buildColorSection(
-                      catalogOrder,
-                      shade,
-                      styleKey,
-                      items,
-                    ),
+                    _buildColorSection(catalogOrder, shade, styleKey, items),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1949,9 +1949,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                           ),
                         ),
                         const SizedBox(width: 12.0),
-                        Expanded(
-                          child: _buildUpdateButton(styleKey, context),
-                        ),
+                        Expanded(child: _buildUpdateButton(styleKey, context)),
                       ],
                     ),
                     const SizedBox(height: 15),
@@ -1968,11 +1966,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
             SliverToBoxAdapter(
               child: Container(
                 color: Colors.white,
-                child: _buildAddShadeButton(
-                  styleKey,
-                  catalogOrder,
-                  context,
-                ),
+                child: _buildAddShadeButton(styleKey, catalogOrder, context),
               ),
             ),
           );
@@ -1989,16 +1983,10 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
         );
 
         // Wrap each style's slivers in SliverMainAxisGroup
-        allSlivers.add(
-          SliverMainAxisGroup(
-            slivers: styleSlivers,
-          ),
-        );
+        allSlivers.add(SliverMainAxisGroup(slivers: styleSlivers));
       }
 
-      return CustomScrollView(
-        slivers: allSlivers,
-      );
+      return CustomScrollView(slivers: allSlivers);
     }
   }
 
@@ -2058,7 +2046,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                         //         ? catalog.fullImagePath
                         //         : '${AppConstants.BASE_URL}/images${catalog.fullImagePath}';
                         final imageUrl = catalog.fullImagePath;
-                               
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -2074,7 +2062,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                         fit: StackFit.expand,
                         children: [
                           Image.network(
-                             catalog.fullImagePath,
+                            catalog.fullImagePath,
                             // "https://api.vrsretail.in/vrs_erp2/api/v1/images/NW001.jpg",
                             fit: BoxFit.contain,
                             loadingBuilder: (context, child, loadingProgress) {
@@ -2328,9 +2316,10 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
     for (var item in items) {
       final shade = item['shadeName']?.toString() ?? '';
       final size = item['sizeName']?.toString() ?? '';
-      final mrp = (item['mrp'] as num?)?.toDouble() ?? 0.0;
+      // Change from mrp to wsp
+      final wsp = (item['wsp'] as num?)?.toDouble() ?? 0.0;
       final qty = styleQuantities[shade]?[size] ?? 0;
-      total += mrp * qty;
+      total += wsp * qty;
     }
     return total;
   }
@@ -2954,7 +2943,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
       final qty = shadeQuantities[size] ?? 0;
       shadeTotalQty += qty;
 
-      // Find MRP for this size
+      // Find WSP for this size (use wsp instead of mrp)
       final sizeIndex = sizes.indexOf(size);
       if (sizeIndex != -1) {
         final shadeIndex = catalogOrder.orderMatrix.shades.indexOf(shade);
@@ -2963,8 +2952,13 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
               .orderMatrix
               .matrix[shadeIndex][sizeIndex]
               .split(',');
-          final mrp = double.tryParse(matrixData[0]) ?? 0;
-          shadeTotalPrice += mrp * qty;
+          // Use wsp (second value in matrix) instead of mrp (first value)
+          final wsp =
+              double.tryParse(
+                matrixData.length > 1 ? matrixData[1] : matrixData[0],
+              ) ??
+              0;
+          shadeTotalPrice += wsp * qty;
         }
       }
     }
@@ -3868,215 +3862,215 @@ class _OrderForm2State extends State<_OrderForm2> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-    padding: const EdgeInsets.only(bottom:30), 
-    physics: const BouncingScrollPhysics(),
-    child:
-     Column(
-      children: [
-        buildTextField2(
-          context,
-          "Select Date",
-          widget.controllers.date,
-          isDate: true,
-          onTap: () => _selectDate2(context, widget.controllers.date),
-        ),
-
-        _buildPartyDropdownRow(context),
-        _buildDropdown(
-          "Broker",
-          "B",
-          widget.controllers.selectedBroker,
-          (val, key) async {
-            widget.controllers.selectedBrokerKey = key;
-            if (key != null) {
-              final commission = await widget.dropdownData
-                  .fetchCommissionPercentage(key);
-              widget.controllers.comm.text = commission;
-            }
-          },
-          isEnabled: UserSession.userType != 'C',
-        ),
-
-        if (UserSession.userType == 'A')
-          buildTextField2(context, "Comm (%)", widget.controllers.comm),
-
-        _buildDropdown(
-          "Transporter",
-          "T",
-          widget.controllers.selectedTransporter,
-          (val, key) => widget.controllers.selectedTransporterKey = key,
-        ),
-        _buildResponsiveRow(
-          context,
+      padding: const EdgeInsets.only(bottom: 30),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
           buildTextField2(
             context,
-            "Delivery Days",
-            widget.controllers.deliveryDays,
-            readOnly: true,
-          ),
-          buildTextField2(
-            context,
-            "Delivery Date",
-            widget.controllers.deliveryDate,
+            "Select Date",
+            widget.controllers.date,
             isDate: true,
-            onTap: () async {
-              final today = DateTime.now();
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: today,
-                firstDate: today,
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                final difference = picked.difference(today).inDays;
-                widget
-                    .controllers
-                    .deliveryDate
-                    .text = _OrderControllers2.formatDate(picked);
-                widget.controllers.deliveryDays.text = difference.toString();
+            onTap: () => _selectDate2(context, widget.controllers.date),
+          ),
+
+          _buildPartyDropdownRow(context),
+          _buildDropdown(
+            "Broker",
+            "B",
+            widget.controllers.selectedBroker,
+            (val, key) async {
+              widget.controllers.selectedBrokerKey = key;
+              if (key != null) {
+                final commission = await widget.dropdownData
+                    .fetchCommissionPercentage(key);
+                widget.controllers.comm.text = commission;
               }
             },
+            isEnabled: UserSession.userType != 'C',
           ),
-        ),
-        buildFullField2(context, "Remark", widget.controllers.remark, true),
-        _buildResponsiveRow(
-          context,
-          buildTextField2(
-            context,
-            "Total Item",
-            widget.controllers.totalItem,
-            readOnly: true,
-          ),
-          buildTextField2(
-            context,
-            "Total Quantity",
-            widget.controllers.totalQty,
-            readOnly: true,
-          ),
-        ),
-        buildTextField2(
-          context,
-          "Total Amount (₹)",
-          widget.controllers.totalAmt,
-          readOnly: true,
-        ),
 
-        // Row(
-        //   children: [
-        //     Expanded(
-        //       child: ElevatedButton(
-        //         onPressed: () async {
-        //           if (UserSession.userType == 'S' &&
-        //               (widget.controllers.selectedPartyKey == null ||
-        //                   widget.controllers.selectedPartyKey!.isEmpty)) {
-        //             showDialog(
-        //               context: context,
-        //               builder:
-        //                   (context) => AlertDialog(
-        //                     title: Text('Party Selection Required'),
-        //                     content: Text(
-        //                       'Please select a party before adding more information.',
-        //                     ),
-        //                     actions: [
-        //                       TextButton(
-        //                         onPressed: () => Navigator.pop(context),
-        //                         child: Text('OK'),
-        //                       ),
-        //                     ],
-        //                   ),
-        //             );
-        //             return;
-        //           }
-        //           final salesPersonList = widget.dropdownData.salesPersonList;
-        //           final partyLedKey = widget.controllers.selectedPartyKey;
-        //           final result = await showDialog(
-        //             context: context,
-        //             builder:
-        //                 (context) => AddMoreInfoDialog2(
-        //                   salesPersonList: salesPersonList,
-        //                   partyLedKey: partyLedKey,
-        //                   pytTermDiscKey: widget.controllers.pytTermDiscKey,
-        //                   salesPersonKey: widget.controllers.salesPersonKey,
-        //                   creditPeriod: widget.controllers.creditPeriod,
-        //                   salesLedKey: widget.controllers.salesLedKey,
-        //                   ledgerName: widget.controllers.ledgerName,
-        //                   additionalInfo: widget.additionalInfo,
-        //                   consignees: widget.consignees,
-        //                   paymentTerms: widget.paymentTerms,
-        //                   bookingTypes: widget.bookingTypes,
-        //                   onValueChanged: (newInfo) {
-        //                     widget.onAdditionalInfoUpdated(newInfo);
-        //                   },
-        //                   isSalesmanDropdownEnabled:
-        //                       UserSession.userType != 'S',
-        //                 ),
-        //           );
-        //           if (result != null) {
-        //             widget.onAdditionalInfoUpdated(result);
-        //           }
-        //         },
-        //         style: ElevatedButton.styleFrom(
-        //           backgroundColor: primaryBlue.withOpacity(0.1),
-        //           foregroundColor: primaryBlue,
-        //           elevation: 0,
-        //           padding: const EdgeInsets.symmetric(vertical: 16),
-        //           shape: RoundedRectangleBorder(
-        //             borderRadius: BorderRadius.circular(8),
-        //           ),
-        //         ),
-        //         child: const Text(
-        //           'Add More Info',
-        //           style: TextStyle(fontWeight: FontWeight.bold),
-        //         ),
-        //       ),
-        //     ),
-        //     const SizedBox(width: 10),
-        //     Expanded(
-        //       child: ElevatedButton(
-        //         onPressed: widget.isSaving ? null : widget.saveOrder,
-        //         style: ElevatedButton.styleFrom(
-        //           backgroundColor: primaryBlue,
-        //           foregroundColor: Colors.white,
-        //           padding: const EdgeInsets.symmetric(vertical: 16),
-        //           shape: RoundedRectangleBorder(
-        //             borderRadius: BorderRadius.circular(8),
-        //           ),
-        //         ),
-        //         child:
-        //             widget.isSaving
-        //                 ? Row(
-        //                   mainAxisAlignment: MainAxisAlignment.center,
-        //                   mainAxisSize: MainAxisSize.min,
-        //                   children: [
-        //                     const Text(
-        //                       'Saving...',
-        //                       style: TextStyle(
-        //                         fontSize: 16,
-        //                         fontWeight: FontWeight.w500,
-        //                         color: Colors.white,
-        //                       ),
-        //                     ),
-        //                     const SizedBox(width: 12),
-        //                     const SizedBox(
-        //                       width: 20,
-        //                       height: 20,
-        //                       child: CircularProgressIndicator(
-        //                         strokeWidth: 2.5,
-        //                         color: Colors.white,
-        //                       ),
-        //                     ),
-        //                   ],
-        //                 )
-        //                 : const Text(
-        //                   'Save',
-        //                   style: TextStyle(fontWeight: FontWeight.bold),
-        //                 ),
-        //       ),
-        //     ),
-        //   ],
-        // ),
-      ],
-    ),);
+          if (UserSession.userType == 'A')
+            buildTextField2(context, "Comm (%)", widget.controllers.comm),
+
+          _buildDropdown(
+            "Transporter",
+            "T",
+            widget.controllers.selectedTransporter,
+            (val, key) => widget.controllers.selectedTransporterKey = key,
+          ),
+          _buildResponsiveRow(
+            context,
+            buildTextField2(
+              context,
+              "Delivery Days",
+              widget.controllers.deliveryDays,
+              readOnly: true,
+            ),
+            buildTextField2(
+              context,
+              "Delivery Date",
+              widget.controllers.deliveryDate,
+              isDate: true,
+              onTap: () async {
+                final today = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: today,
+                  firstDate: today,
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  final difference = picked.difference(today).inDays;
+                  widget
+                      .controllers
+                      .deliveryDate
+                      .text = _OrderControllers2.formatDate(picked);
+                  widget.controllers.deliveryDays.text = difference.toString();
+                }
+              },
+            ),
+          ),
+          buildFullField2(context, "Remark", widget.controllers.remark, true),
+          _buildResponsiveRow(
+            context,
+            buildTextField2(
+              context,
+              "Total Item",
+              widget.controllers.totalItem,
+              readOnly: true,
+            ),
+            buildTextField2(
+              context,
+              "Total Quantity",
+              widget.controllers.totalQty,
+              readOnly: true,
+            ),
+          ),
+          buildTextField2(
+            context,
+            "Total Amount (₹)",
+            widget.controllers.totalAmt,
+            readOnly: true,
+          ),
+
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: ElevatedButton(
+          //         onPressed: () async {
+          //           if (UserSession.userType == 'S' &&
+          //               (widget.controllers.selectedPartyKey == null ||
+          //                   widget.controllers.selectedPartyKey!.isEmpty)) {
+          //             showDialog(
+          //               context: context,
+          //               builder:
+          //                   (context) => AlertDialog(
+          //                     title: Text('Party Selection Required'),
+          //                     content: Text(
+          //                       'Please select a party before adding more information.',
+          //                     ),
+          //                     actions: [
+          //                       TextButton(
+          //                         onPressed: () => Navigator.pop(context),
+          //                         child: Text('OK'),
+          //                       ),
+          //                     ],
+          //                   ),
+          //             );
+          //             return;
+          //           }
+          //           final salesPersonList = widget.dropdownData.salesPersonList;
+          //           final partyLedKey = widget.controllers.selectedPartyKey;
+          //           final result = await showDialog(
+          //             context: context,
+          //             builder:
+          //                 (context) => AddMoreInfoDialog2(
+          //                   salesPersonList: salesPersonList,
+          //                   partyLedKey: partyLedKey,
+          //                   pytTermDiscKey: widget.controllers.pytTermDiscKey,
+          //                   salesPersonKey: widget.controllers.salesPersonKey,
+          //                   creditPeriod: widget.controllers.creditPeriod,
+          //                   salesLedKey: widget.controllers.salesLedKey,
+          //                   ledgerName: widget.controllers.ledgerName,
+          //                   additionalInfo: widget.additionalInfo,
+          //                   consignees: widget.consignees,
+          //                   paymentTerms: widget.paymentTerms,
+          //                   bookingTypes: widget.bookingTypes,
+          //                   onValueChanged: (newInfo) {
+          //                     widget.onAdditionalInfoUpdated(newInfo);
+          //                   },
+          //                   isSalesmanDropdownEnabled:
+          //                       UserSession.userType != 'S',
+          //                 ),
+          //           );
+          //           if (result != null) {
+          //             widget.onAdditionalInfoUpdated(result);
+          //           }
+          //         },
+          //         style: ElevatedButton.styleFrom(
+          //           backgroundColor: primaryBlue.withOpacity(0.1),
+          //           foregroundColor: primaryBlue,
+          //           elevation: 0,
+          //           padding: const EdgeInsets.symmetric(vertical: 16),
+          //           shape: RoundedRectangleBorder(
+          //             borderRadius: BorderRadius.circular(8),
+          //           ),
+          //         ),
+          //         child: const Text(
+          //           'Add More Info',
+          //           style: TextStyle(fontWeight: FontWeight.bold),
+          //         ),
+          //       ),
+          //     ),
+          //     const SizedBox(width: 10),
+          //     Expanded(
+          //       child: ElevatedButton(
+          //         onPressed: widget.isSaving ? null : widget.saveOrder,
+          //         style: ElevatedButton.styleFrom(
+          //           backgroundColor: primaryBlue,
+          //           foregroundColor: Colors.white,
+          //           padding: const EdgeInsets.symmetric(vertical: 16),
+          //           shape: RoundedRectangleBorder(
+          //             borderRadius: BorderRadius.circular(8),
+          //           ),
+          //         ),
+          //         child:
+          //             widget.isSaving
+          //                 ? Row(
+          //                   mainAxisAlignment: MainAxisAlignment.center,
+          //                   mainAxisSize: MainAxisSize.min,
+          //                   children: [
+          //                     const Text(
+          //                       'Saving...',
+          //                       style: TextStyle(
+          //                         fontSize: 16,
+          //                         fontWeight: FontWeight.w500,
+          //                         color: Colors.white,
+          //                       ),
+          //                     ),
+          //                     const SizedBox(width: 12),
+          //                     const SizedBox(
+          //                       width: 20,
+          //                       height: 20,
+          //                       child: CircularProgressIndicator(
+          //                         strokeWidth: 2.5,
+          //                         color: Colors.white,
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 )
+          //                 : const Text(
+          //                   'Save',
+          //                   style: TextStyle(fontWeight: FontWeight.bold),
+          //                 ),
+          //       ),
+          //     ),
+          //   ],
+          // ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPartyDropdownRow(BuildContext context) {
@@ -4898,6 +4892,7 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
     Navigator.pop(context, newInfo);
   }
 }
+
 class _CardHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double minHeight;
   final double maxHeight;
