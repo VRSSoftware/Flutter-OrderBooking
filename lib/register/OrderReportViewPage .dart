@@ -21,6 +21,7 @@ class OrderReportViewPage extends StatefulWidget {
   final dynamic orderData;
   final bool showOnlyWithImage; // Controls whether to show image column
   final bool fromRegisterPage;
+   final String? defaultWhatsAppMobileNo; 
 
   const OrderReportViewPage({
     Key? key,
@@ -28,6 +29,7 @@ class OrderReportViewPage extends StatefulWidget {
     this.orderData,
     this.showOnlyWithImage = false,
     this.fromRegisterPage = false,
+        this.defaultWhatsAppMobileNo, 
   }) : super(key: key);
 
   @override
@@ -1117,7 +1119,8 @@ pw.Widget _buildPDFFooter() {
 Future<void> _shareViaWhatsApp() async {
   try {
     // Get the mobile number from order data (passed from RegisterPage)
-    String? defaultMobileNo = widget.orderData?.whatsAppMobileNo ?? 
+    String? defaultMobileNo = widget.defaultWhatsAppMobileNo ?? 
+                              widget.orderData?.whatsAppMobileNo ?? 
                               headerData['WhatsAppMobileNo']?.toString();
     
     // Show dialog with pre-filled number if available
