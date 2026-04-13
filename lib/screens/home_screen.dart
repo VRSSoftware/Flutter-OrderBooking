@@ -409,25 +409,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //    buttons.add(_buildFeatureButton(context, 'Packing', () {
     //     Navigator.pushNamed(context, '/packingBooking');
     //   }, buttonWidth));
+
     //   _buildFeatureButton(context, 'Sale Bill', () {
     //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
     //   }, buttonWidth);
+
     //  buttons.add(_buildFeatureButton(context, 'Packing Register', () {
     //     Navigator.pushNamed(context, '/packingOrders');
     //   }, buttonWidth));
+
     //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
     //     Navigator.pushNamed(context, '/saleBillRegister');
     //   }, buttonWidth));
-    buttons.add(
-      _buildFeatureButton(context, 'Production', () {
-        Navigator.pushNamed(context, '/production');
-      }, buttonWidth),
-    );
-    buttons.add(
-      _buildFeatureButton(context, 'Ask VRS AI', () {
-        Navigator.pushNamed(context, '/vrsai');
-      }, buttonWidth),
-    );
+
+
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Production', () {
+    //     Navigator.pushNamed(context, '/production');
+    //   }, buttonWidth),
+    // );
+
+
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Ask VRS AI', () {
+    //     Navigator.pushNamed(context, '/vrsai');
+    //   }, buttonWidth),
+    // );
 
     // buttons.add(
     //   _buildFeatureButton(context, 'Web', () {
@@ -438,23 +445,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth),
     // );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Report', () {
-        Navigator.pushNamed(context, '/reportHomeScreen');
-      }, buttonWidth),
-    );
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Report', () {
+    //     Navigator.pushNamed(context, '/reportHomeScreen');
+    //   }, buttonWidth),
+    // );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Accounts', () {
-        Navigator.pushNamed(context, '/accountDashboard');
-      }, buttonWidth),
-    );
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Accounts', () {
+    //     Navigator.pushNamed(context, '/accountDashboard');
+    //   }, buttonWidth),
+    // );
 
-        buttons.add(
-      _buildFeatureButton(context, 'Outstanding Report', () {
-        Navigator.pushNamed(context, '/outstandingMainScreen');
-      }, buttonWidth),
-    );
+    //     buttons.add(
+    //   _buildFeatureButton(context, 'Outstanding Report', () {
+    //     Navigator.pushNamed(context, '/outstandingMainScreen');
+    //   }, buttonWidth),
+    // );
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
@@ -631,6 +638,121 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // import 'package:flutter/material.dart';

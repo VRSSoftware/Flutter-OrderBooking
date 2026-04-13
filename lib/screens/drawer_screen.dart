@@ -301,6 +301,8 @@
 //   }
 // }
 //-----------------------------------------------------------------------------
+
+
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/login_screen.dart';
@@ -873,7 +875,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                   Text(
                   'Change Order Type to ${AppConstants.bookingType == '1' ? '2' : '1'}',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: isHovered ? Colors.red : Colors.grey.shade300,
                     ),
