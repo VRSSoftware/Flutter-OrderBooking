@@ -3867,7 +3867,11 @@ class _OrderForm2State extends State<_OrderForm2> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return SingleChildScrollView(
+    padding: const EdgeInsets.only(bottom:30), 
+    physics: const BouncingScrollPhysics(),
+    child:
+     Column(
       children: [
         buildTextField2(
           context,
@@ -4072,7 +4076,7 @@ class _OrderForm2State extends State<_OrderForm2> {
         //   ],
         // ),
       ],
-    );
+    ),);
   }
 
   Widget _buildPartyDropdownRow(BuildContext context) {

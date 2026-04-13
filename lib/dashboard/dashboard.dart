@@ -328,8 +328,7 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
 
   @override
   Widget build(BuildContext context) {
-
-     return PopScope(
+    return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
@@ -340,218 +339,222 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
         );
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Text(
-          'Dashboard',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: Colors.white.withOpacity(0.2),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.filter_list,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder:
-                          (context, animation, secondaryAnimation) =>
-                              DashboardFilterPage(
-                                ledgerList: ledgerList,
-                                salespersonList: salespersonList,
-                                onApplyFilters: ({
-                                  KeyName? selectedLedger,
-                                  KeyName? selectedSalesperson,
-                                  DateTime? fromDate,
-                                  DateTime? toDate,
-                                  KeyName? selectedState,
-                                  KeyName? selectedCity,
-                                }) {
-                                  setState(() {
-                                    this.selectedLedger = selectedLedger;
-                                    this.selectedSalesperson =
-                                        selectedSalesperson;
-                                    this.fromDate = fromDate ?? this.fromDate;
-                                    this.toDate = toDate ?? this.toDate;
-                                    this.selectedCity =
-                                        selectedCity ??
-                                        KeyName(key: '', name: 'All Cities');
-                                  });
-                                  setState(() {
-                                    selectedRange =
-                                        FilterData.selectedDateRange ?? 'Today';
-                                    fromDate = FilterData.fromDate;
-                                    toDate = FilterData.toDate;
-                                    _showCustomDatePicker =
-                                        (selectedRange == 'Custom');
-                                  });
-
-                                  _fetchOrderSummary();
-                                },
-                              ),
-                      settings: RouteSettings(
-                        arguments: {
-                          'ledgerList': ledgerList,
-                          'salespersonList': salespersonList,
-                          'statesList': statesList,
-                          'citiesList': citiesList,
-                          'fromDate': fromDate,
-                          'toDate': toDate,
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
+        backgroundColor: const Color(0xFFF8FAFC),
+        drawer: DrawerScreen(),
+        appBar: AppBar(
+          title: Text(
+            'Dashboard',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
             ),
           ),
-        ],
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Stack(
-        children: [
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Horizontal Date Range Scroll
-                    _buildHorizontalDateRange(),
+          backgroundColor: AppColors.primaryColor,
+          elevation: 0,
+          leading: Builder(
+            builder:
+                (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+          ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.filter_list,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder:
+                            (context, animation, secondaryAnimation) =>
+                                DashboardFilterPage(
+                                  ledgerList: ledgerList,
+                                  salespersonList: salespersonList,
+                                  onApplyFilters: ({
+                                    KeyName? selectedLedger,
+                                    KeyName? selectedSalesperson,
+                                    DateTime? fromDate,
+                                    DateTime? toDate,
+                                    KeyName? selectedState,
+                                    KeyName? selectedCity,
+                                  }) {
+                                    setState(() {
+                                      this.selectedLedger = selectedLedger;
+                                      this.selectedSalesperson =
+                                          selectedSalesperson;
+                                      this.fromDate = fromDate ?? this.fromDate;
+                                      this.toDate = toDate ?? this.toDate;
+                                      this.selectedCity =
+                                          selectedCity ??
+                                          KeyName(key: '', name: 'All Cities');
+                                    });
+                                    setState(() {
+                                      selectedRange =
+                                          FilterData.selectedDateRange ??
+                                          'Today';
+                                      fromDate = FilterData.fromDate;
+                                      toDate = FilterData.toDate;
+                                      _showCustomDatePicker =
+                                          (selectedRange == 'Custom');
+                                    });
 
-                    if (_showCustomDatePicker) ...[
-                      const SizedBox(height: 16),
-                      _buildCustomDatePicker(),
-                    ],
+                                    _fetchOrderSummary();
+                                  },
+                                ),
+                        settings: RouteSettings(
+                          arguments: {
+                            'ledgerList': ledgerList,
+                            'salespersonList': salespersonList,
+                            'statesList': statesList,
+                            'citiesList': citiesList,
+                            'fromDate': fromDate,
+                            'toDate': toDate,
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: Stack(
+          children: [
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Horizontal Date Range Scroll
+                      _buildHorizontalDateRange(),
 
-                    const SizedBox(height: 20),
+                      if (_showCustomDatePicker) ...[
+                        const SizedBox(height: 16),
+                        _buildCustomDatePicker(),
+                      ],
 
-                    // Key Metrics - Total Orders
-                    _buildKeyMetricsSection(),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // Order Status Section
-                    _buildOrderStatusSection(),
-                    const SizedBox(height: 20),
+                      // Key Metrics - Total Orders
+                      _buildKeyMetricsSection(),
+                      const SizedBox(height: 20),
 
-                    // Inventory Summary
-                    if (UserSession.userType != 'C') ...[
-                      _buildInventorySection(),
+                      // Order Status Section
+                      _buildOrderStatusSection(),
+                      const SizedBox(height: 20),
+
+                      // Inventory Summary
+                      if (UserSession.userType != 'C') ...[
+                        _buildInventorySection(),
+                        const SizedBox(height: 20),
+                      ],
                       const SizedBox(height: 20),
                     ],
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-
-          if (isLoadingOrderDetails)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                   ),
-                  child: const CircularProgressIndicator(),
+                ),
+
+            if (isLoadingOrderDetails)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const CircularProgressIndicator(),
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
-      // floatingActionButton: FloatingActionButton.extended(
-      //   onPressed: () async {
-      //     await Navigator.push(
-      //       context,
-      //       PageRouteBuilder(
-      //         pageBuilder:
-      //             (context, animation, secondaryAnimation) =>
-      //                 DashboardFilterPage(
-      //                   ledgerList: ledgerList,
-      //                   salespersonList: salespersonList,
-      //                   onApplyFilters: ({
-      //                     KeyName? selectedLedger,
-      //                     KeyName? selectedSalesperson,
-      //                     DateTime? fromDate,
-      //                     DateTime? toDate,
-      //                     KeyName? selectedState,
-      //                     KeyName? selectedCity,
-      //                   }) {
-      //                     setState(() {
-      //                       this.selectedLedger = selectedLedger;
-      //                       this.selectedSalesperson = selectedSalesperson;
-      //                       this.fromDate = fromDate ?? this.fromDate;
-      //                       this.toDate = toDate ?? this.toDate;
-      //                       this.selectedCity =
-      //                           selectedCity ??
-      //                           KeyName(key: '', name: 'All Cities');
-      //                     });
-      //                     setState(() {
-      //                       selectedRange =
-      //                           FilterData.selectedDateRange ?? 'Today';
-      //                       fromDate = FilterData.fromDate;
-      //                       toDate = FilterData.toDate;
-      //                       _showCustomDatePicker = (selectedRange == 'Custom');
-      //                     });
+          ],
+        ),
+        // floatingActionButton: FloatingActionButton.extended(
+        //   onPressed: () async {
+        //     await Navigator.push(
+        //       context,
+        //       PageRouteBuilder(
+        //         pageBuilder:
+        //             (context, animation, secondaryAnimation) =>
+        //                 DashboardFilterPage(
+        //                   ledgerList: ledgerList,
+        //                   salespersonList: salespersonList,
+        //                   onApplyFilters: ({
+        //                     KeyName? selectedLedger,
+        //                     KeyName? selectedSalesperson,
+        //                     DateTime? fromDate,
+        //                     DateTime? toDate,
+        //                     KeyName? selectedState,
+        //                     KeyName? selectedCity,
+        //                   }) {
+        //                     setState(() {
+        //                       this.selectedLedger = selectedLedger;
+        //                       this.selectedSalesperson = selectedSalesperson;
+        //                       this.fromDate = fromDate ?? this.fromDate;
+        //                       this.toDate = toDate ?? this.toDate;
+        //                       this.selectedCity =
+        //                           selectedCity ??
+        //                           KeyName(key: '', name: 'All Cities');
+        //                     });
+        //                     setState(() {
+        //                       selectedRange =
+        //                           FilterData.selectedDateRange ?? 'Today';
+        //                       fromDate = FilterData.fromDate;
+        //                       toDate = FilterData.toDate;
+        //                       _showCustomDatePicker = (selectedRange == 'Custom');
+        //                     });
 
-      //                     _fetchOrderSummary();
-      //                   },
-      //                 ),
-      //         settings: RouteSettings(
-      //           arguments: {
-      //             'ledgerList': ledgerList,
-      //             'salespersonList': salespersonList,
-      //             'statesList': statesList,
-      //             'citiesList': citiesList,
-      //             'fromDate': fromDate,
-      //             'toDate': toDate,
-      //           },
-      //         ),
-      //       ),
-      //     );
-      //   },
-      //   backgroundColor: AppColors.primaryColor,
-      //   icon: const Icon(Icons.filter_list, color: Colors.white),
-      //   label: Text(
-      //     'Filter',
-      //     style: GoogleFonts.poppins(
-      //       color: Colors.white,
-      //       fontWeight: FontWeight.w500,
-      //     ),
-      //   ),
-      // ),
-      bottomNavigationBar: BottomNavigationWidget(currentScreen: '/dashboard'),
-     ));
+        //                     _fetchOrderSummary();
+        //                   },
+        //                 ),
+        //         settings: RouteSettings(
+        //           arguments: {
+        //             'ledgerList': ledgerList,
+        //             'salespersonList': salespersonList,
+        //             'statesList': statesList,
+        //             'citiesList': citiesList,
+        //             'fromDate': fromDate,
+        //             'toDate': toDate,
+        //           },
+        //         ),
+        //       ),
+        //     );
+        //   },
+        //   backgroundColor: AppColors.primaryColor,
+        //   icon: const Icon(Icons.filter_list, color: Colors.white),
+        //   label: Text(
+        //     'Filter',
+        //     style: GoogleFonts.poppins(
+        //       color: Colors.white,
+        //       fontWeight: FontWeight.w500,
+        //     ),
+        //   ),
+        // ),
+        bottomNavigationBar: BottomNavigationWidget(
+          currentScreen: '/dashboard',
+        ),
+      ),
+    );
   }
 
   Widget _buildHorizontalDateRange() {
@@ -862,6 +865,81 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
     );
   }
 
+  // Widget _buildCompactStatusCard({
+  //   required String title,
+  //   required String count,
+  //   required String qty,
+  //   required Color color,
+  //   required IconData icon,
+  //   required VoidCallback onTap,
+  // }) {
+  //   return GestureDetector(
+  //     onTap: onTap,
+  //     child: Container(
+  //       padding: const EdgeInsets.all(12),
+  //       decoration: BoxDecoration(
+  //         color: color.withOpacity(0.1),
+  //         borderRadius: BorderRadius.circular(16),
+  //         border: Border.all(color: color.withOpacity(0.2)),
+  //       ),
+  //       child: Row(
+  //         children: [
+  //           Container(
+  //             padding: const EdgeInsets.all(8),
+  //             decoration: BoxDecoration(
+  //               color: color.withOpacity(0.2),
+  //               shape: BoxShape.circle,
+  //             ),
+  //             child: Icon(icon, color: color, size: 18),
+  //           ),
+  //           const SizedBox(width: 10),
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 Text(
+  //                   title,
+  //                   style: GoogleFonts.poppins(
+  //                     fontSize: 13,
+  //                     fontWeight: FontWeight.w600,
+  //                     color: Colors.black87,
+  //                   ),
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                 ),
+  //                 const SizedBox(height: 2),
+  //                 Row(
+  //                   children: [
+  //                     Text(
+  //                       count,
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize: 16,
+  //                         fontWeight: FontWeight.bold,
+  //                         color: color,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 4),
+  //                     Text(
+  //                       '(${double.parse(qty).toStringAsFixed(0)})',
+  //                       style: GoogleFonts.poppins(
+  //                         fontSize: 11,
+  //                         color: Colors.grey.shade600,
+  //                       ),
+  //                       maxLines: 1,
+  //                       overflow: TextOverflow.ellipsis,
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildCompactStatusCard({
     required String title,
     required String count,
@@ -879,23 +957,22 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withOpacity(0.2)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
                     title,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
@@ -905,31 +982,62 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Row(
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        'Orders',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
                       Text(
                         count,
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: color,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                    ],
+                  ),
+                ),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
                       Text(
-                        '(${double.parse(qty).toStringAsFixed(0)})',
+                        'Quantity',
                         style: GoogleFonts.poppins(
-                          fontSize: 11,
+                          fontSize: 10,
                           color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        double.parse(qty).toStringAsFixed(0),
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

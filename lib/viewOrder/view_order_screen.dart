@@ -183,48 +183,39 @@ void dispose() {
     }
   }
 
-  Future<String> insertFinalSalesOrder(String orderDataJson) async {
-    final Map<String, dynamic> body = {
-      'userId': UserSession.userName ?? '',
-      'coBrId': UserSession.coBrId ?? '',
-      'fcYrId': UserSession.userFcYr ?? '',
-      'data2': orderDataJson.toString(),
-      'barcode': barcodeMode.toString(),
-    };
-    try {
-      final response = await http.post(
-        Uri.parse(
-          AppConstants.seprateBarcodeWiseBooking == "1"
-              ? '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
-              : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-      print("response body:${response.body}");
-      if (response.statusCode == 200) {
-        print('Success: ${response.body}');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Order saved successfully')));
-        return response.body;
-      } else {
-        print('Error: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save order: ${response.statusCode}'),
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+ Future<String> insertFinalSalesOrder(String orderDataJson) async {
+  final Map<String, dynamic> body = {
+    'userId': UserSession.userName ?? '',
+    'coBrId': UserSession.coBrId ?? '',
+    'fcYrId': UserSession.userFcYr ?? '',
+    'data2': orderDataJson.toString(),
+    'barcode': barcodeMode.toString(),
+  };
+  try {
+    final response = await http.post(
+      Uri.parse(
+        AppConstants.seprateBarcodeWiseBooking == "1"
+            ? '${AppConstants.BASE_URL}/orderBooking/InsertFinalsalesorder'
+            : '${AppConstants.BASE_URL}/orderBooking/InsertAllsalesorder',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    print("response body:${response.body}");
+    if (response.statusCode == 200) {
+      print('Success: ${response.body}');
+      // Remove the SnackBar from here - let the calling method handle UI
+      return response.body;
+    } else {
+      print('Error: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      return "fail";
     }
+  } catch (e) {
+    print('Error: $e');
     return "fail";
   }
+}
 
   void _setInitialDates() {
     final today = DateTime.now();
@@ -294,6 +285,9 @@ void dispose() {
 Future<void> _saveOrderLocally() async {
   if (!_formKey.currentState!.validate()) return;
 
+  // Check if widget is still mounted before proceeding
+  if (!mounted) return;
+
   String? consigneeLedKey = '';
   String? stationStnKey = '';
   final selectedConsigneeName = _additionalInfo['consignee']?.toString();
@@ -335,182 +329,216 @@ Future<void> _saveOrderLocally() async {
     "date": getTodayWithZeroTime(),
     "bookingtype": _additionalInfo['bookingtype'] ?? '',
     "salesman": _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-    "usertype":UserSession.userType
+    "usertype": UserSession.userType
   };
   final orderDataJson = jsonEncode(orderData);
   print("Saved Order Data:");
   print(orderDataJson);
 
+  // Show loading indicator
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
+
   try {
     final response = await insertFinalSalesOrder(orderDataJson);
+    
+    // Close loading indicator if still mounted
+    if (mounted) {
+      Navigator.pop(context);
+    }
+    
     if (response != null && response != "fail") {
       Provider.of<CartModel>(context, listen: false).clearAddedItems();
       
       // Parse the response to extract docNo
       String docNo = '';
-      String docId='';
+      String docId = '';
       try {
         final responseMap = jsonDecode(response);
         docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
-         docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
+        docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
       } catch (e) {
         docNo = response.toString();
       }
       
-      final formattedOrderNo = "SO$docNo";
+      final formattedOrderNo = "$docNo";
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 4,
-          contentPadding: EdgeInsets.zero,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header with background color
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.green.shade100),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green.shade700,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green.shade800,
-                          ),
-                          children: [
-                            const TextSpan(text: 'Order '),
-                            TextSpan(
-                              text: formattedOrderNo,
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.blue.shade300,
-                                decorationThickness: 2,
-                              ),
-                            ),
-                            const TextSpan(text: ' saved successfully'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderReportViewPage(
-                                orderNo: docId,
-                                orderData: null,
-                                showOnlyWithImage: false,
-                              ),
-                            ),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryColor,
-                          side: BorderSide(color: AppColors.primaryColor),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'View Report',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderBookingScreen(),
-                            ),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      // Use a short delay to ensure the loading dialog is fully dismissed
+      await Future.delayed(Duration(milliseconds: 100));
+      
+      // Check if widget is still mounted before showing success dialog
+      if (mounted) {
+        _showSuccessDialog(docId, formattedOrderNo);
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save order. Please try again.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save order. Please try again.')),
+        );
+      }
     }
   } catch (e) {
-    print('Error during order saving: $e');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+    // Close loading indicator if still showing and widget is mounted
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+    }
   }
 }
+
+void _showSuccessDialog(String docId, String formattedOrderNo) {
+  // Double check mounted before showing dialog
+  if (!mounted) return;
   
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext dialogContext) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 4,
+      contentPadding: EdgeInsets.zero,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header with background color
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 20,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              border: Border(
+                bottom: BorderSide(color: Colors.green.shade100),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: Colors.green.shade700,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green.shade800,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Order '),
+                        TextSpan(
+                          text: formattedOrderNo,
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.blue.shade300,
+                            decorationThickness: 2,
+                          ),
+                        ),
+                        const TextSpan(text: ' saved successfully'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // Close dialog first
+                      Navigator.pop(dialogContext);
+                      // Navigate to report
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderReportViewPage(
+                            orderNo: docId,
+                            orderData: null,
+                            showOnlyWithImage: false,
+                          ),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryColor,
+                      side: BorderSide(color: AppColors.primaryColor),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'View Report',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderBookingScreen(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
   
   void _updateTotals() {
     int totalQty = 0;
