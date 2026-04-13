@@ -1113,10 +1113,15 @@ pw.Widget _buildPDFFooter() {
 }
  
 
+// Replace the existing _shareViaWhatsApp method with this version
 Future<void> _shareViaWhatsApp() async {
   try {
-    // Show mobile number dialog
-    final result = await _showMobileNumberDialog();
+    // Get the mobile number from order data (passed from RegisterPage)
+    String? defaultMobileNo = widget.orderData?.whatsAppMobileNo ?? 
+                              headerData['WhatsAppMobileNo']?.toString();
+    
+    // Show dialog with pre-filled number if available
+    final result = await _showMobileNumberDialog(defaultMobileNo: defaultMobileNo);
     
     if (result == null) return; // User cancelled
     
@@ -1182,7 +1187,6 @@ Future<void> _shareViaWhatsApp() async {
     }
   }
 }
-
 // Rename existing method to _shareViaWhatsAppNode
 Future<void> _shareViaWhatsAppNode(String mobileNo) async {
   try {
@@ -1276,8 +1280,9 @@ Future<void> _shareViaWhatsAppNode(String mobileNo) async {
   }
 }
 // Mobile number dialog method
-Future<Map<String, String>?> _showMobileNumberDialog() {
-  TextEditingController mobileController = TextEditingController();
+// Replace the existing _showMobileNumberDialog method with this version
+Future<Map<String, String>?> _showMobileNumberDialog({String? defaultMobileNo}) {
+  TextEditingController mobileController = TextEditingController(text: defaultMobileNo ?? '');
   
   return showDialog<Map<String, String>?>(
     context: context,
@@ -1394,7 +1399,6 @@ Future<Map<String, String>?> _showMobileNumberDialog() {
     },
   );
 }
-
 // Prepare caption for order report
 String _prepareOrderReportCaption() {
   String orderNo = widget.orderNo;
@@ -1531,6 +1535,8 @@ Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
     rethrow;
   }
 }
+
+
   @override
   Widget build(BuildContext context) {
     return PopScope(

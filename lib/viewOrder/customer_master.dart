@@ -64,6 +64,15 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
           transporters = List<KeyName>.from(results[3]['result']);
           salesPersons = List<KeyName>.from(results[4]['result']);
           paymentTerms = List<KeyName>.from(results[5]['result']);
+          
+          // Set default values for compulsory fields (0th index)
+          if (salesTypes.isNotEmpty && selectedSalesType == null) {
+            selectedSalesType = salesTypes[0];
+          }
+          if (stations.isNotEmpty && selectedStation == null) {
+            selectedStation = stations[0];
+          }
+          
           _isLoading = false;
         });
       }
@@ -79,8 +88,6 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
 
   @override
   Widget build(BuildContext context) {
-   
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
@@ -98,7 +105,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
               child: Column(
                 children: [
                   Text(
-                    "Customer Master",
+                    "Customer Master2",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
                   ),
                   const SizedBox(height: 4),
@@ -134,14 +141,14 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                               ],
                             ),
                             
-                            buildDropdown("Sales Type", salesTypes, selectedSalesType, (val) {
+                            buildCompulsoryDropdown("Sales Type", salesTypes, selectedSalesType, (val) {
                               setState(() => selectedSalesType = val);
                             }),
                             
                             buildTextField("GST No", gstController, validator: (val) => val!.length > 15 ? "Max 15 characters" : null),
                             buildTextField("Address", addressController, maxLines: 2),
                             
-                            buildDropdown("Station", stations, selectedStation, (val) {
+                            buildCompulsoryDropdown("Station", stations, selectedStation, (val) {
                               setState(() => selectedStation = val);
                             }),
                             
@@ -153,7 +160,7 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                               setState(() => selectedTransporter = val);
                             }),
                             
-                            UserSession.userType == 'S' ? Container() :  buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
+                            UserSession.userType == 'S' ? Container() : buildDropdown("SalesPerson", salesPersons, selectedSalesPerson, (val) {
                               setState(() => selectedSalesPerson = val);
                             }),
                             
@@ -243,6 +250,94 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
     );
   }
 
+  // New method for compulsory dropdown with asterisk
+  Widget buildCompulsoryDropdown(
+    String label,
+    List<KeyName> items,
+    KeyName? selected,
+    Function(KeyName?) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: DropdownSearch<KeyName>(
+        items: items,
+        selectedItem: selected,
+        onChanged: onChanged,
+        validator: (value) {
+          if (value == null) {
+            return '$label is required';
+          }
+          return null;
+        },
+        popupProps: PopupProps.menu(
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: InputDecoration(
+              hintText: "Search $label",
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              isDense: true,
+            ),
+          ),
+          itemBuilder: (context, item, isSelected) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(item.name, style: const TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          constraints: const BoxConstraints(maxHeight: 300),
+        ),
+        dropdownDecoratorProps: DropDownDecoratorProps(
+          dropdownSearchDecoration: InputDecoration(
+            labelText: "$label *",
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            labelStyle: const TextStyle(color: Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+        dropdownButtonProps: const DropdownButtonProps(icon: Icon(Icons.keyboard_arrow_down)),
+        dropdownBuilder: (context, selectedItem) {
+          if (selectedItem == null) {
+            return Text("Select $label", style: const TextStyle(fontSize: 13, color: Colors.grey));
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(selectedItem.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            ],
+          );
+        },
+        filterFn: (item, filter) {
+          if (filter.isEmpty) return true;
+          final searchTerm = filter.toLowerCase();
+          return item.name.toLowerCase().contains(searchTerm) || item.key.toLowerCase().contains(searchTerm);
+        },
+        compareFn: (item, selectedItem) => item.key == selectedItem?.key,
+      ),
+    );
+  }
+
   Widget buildDropdown(
     String label,
     List<KeyName> items,
@@ -276,7 +371,6 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(item.name, style: const TextStyle(fontSize: 13)),
-                     //   Text("Code: ${item.key}", style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                       ],
                     ),
                   ),
@@ -312,7 +406,6 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(selectedItem.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-           //   Text(selectedItem.key, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
             ],
           );
         },
@@ -326,88 +419,103 @@ class _CustomerMasterDialogState extends State<CustomerMasterDialog> {
     );
   }
 
-Future<void> onSave() async {
-  if (_formKey.currentState!.validate()) {
-    setState(() => _isLoading = true);
-
-    final data = {
-      "partyname": partyNameController.text,
-      "contactperson": contactPersonController.text,
-      "whatsappno": whatsappController.text,
-      "salestypeDDL": selectedSalesType?.key ?? '',
-      "gstno": gstController.text,
-      "address": addressController.text,
-      "stationDDL": selectedStation?.key ?? '',
-      "brokerDDL": selectedBroker?.key ?? '',
-      "transportDDL": selectedTransporter?.key ?? '',
-      "salespersonDDL": UserSession.userType == 'S' ? UserSession.userLedKey: selectedSalesPerson?.key ?? '',
-      "paymenttermsDDL": selectedPaymentTerms?.key ?? '',
-      "creditdays": creditDaysController.text,
-      "createddate": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/orderBooking/InsertCust'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "coBrId": UserSession.coBrId ?? '',
-          "userId": UserSession.userName ?? '',
-          "fcYrId": UserSession.userFcYr ?? '',
-          "data2": jsonEncode(data),
-        }),
+  Future<void> onSave() async {
+    // Validate compulsory fields
+    if (selectedSalesType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sales Type is required'), backgroundColor: Colors.red),
       );
+      return;
+    }
+    
+    if (selectedStation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Station is required'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
+      final data = {
+        "partyname": partyNameController.text,
+        "contactperson": contactPersonController.text,
+        "whatsappno": whatsappController.text,
+        "salestypeDDL": selectedSalesType?.key ?? '',
+        "gstno": gstController.text,
+        "address": addressController.text,
+        "stationDDL": selectedStation?.key ?? '',
+        "brokerDDL": selectedBroker?.key ?? '',
+        "transportDDL": selectedTransporter?.key ?? '',
+        "salespersonDDL": UserSession.userType == 'S' ? UserSession.userLedKey : selectedSalesPerson?.key ?? '',
+        "paymenttermsDDL": selectedPaymentTerms?.key ?? '',
+        "creditdays": creditDaysController.text,
+        "createddate": DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
+      };
 
-        if (response.statusCode == 200) {
-          // Try to parse the response to get the new customer key
-          String? newCustomerKey;
-          try {
-            final responseData = jsonDecode(response.body);
-            if (responseData is Map) {
-              newCustomerKey = responseData['ledKey']?.toString() ?? 
-                              responseData['key']?.toString();
-            } else if (responseData is String) {
-              newCustomerKey = responseData;
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.BASE_URL}/orderBooking/InsertCust'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            "coBrId": UserSession.coBrId ?? '',
+            "userId": UserSession.userName ?? '',
+            "fcYrId": UserSession.userFcYr ?? '',
+            "data2": jsonEncode(data),
+          }),
+        );
+
+        if (mounted) {
+          setState(() => _isLoading = false);
+
+          if (response.statusCode == 200) {
+            // Try to parse the response to get the new customer key
+            String? newCustomerKey;
+            try {
+              final responseData = jsonDecode(response.body);
+              if (responseData is Map) {
+                newCustomerKey = responseData['ledKey']?.toString() ?? 
+                                responseData['key']?.toString();
+              } else if (responseData is String) {
+                newCustomerKey = responseData;
+              }
+            } catch (e) {
+              print('Error parsing response: $e');
             }
-          } catch (e) {
-            print('Error parsing response: $e');
-          }
 
-          // Return both success status and customer data
-          Navigator.of(context).pop({
-            'success': true,
-            'customerKey': newCustomerKey,
-            'customerName': partyNameController.text,
-          });
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Customer added successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          Navigator.of(context).pop({'success': false});
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed: ${response.body}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+            // Return both success status and customer data
+            Navigator.of(context).pop({
+              'success': true,
+              'customerKey': newCustomerKey,
+              'customerName': partyNameController.text,
+            });
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Customer added successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            Navigator.of(context).pop({'success': false});
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed: ${response.body}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.of(context).pop({'success': false});
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.of(context).pop({'success': false});
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     }
   }
-}
 }
