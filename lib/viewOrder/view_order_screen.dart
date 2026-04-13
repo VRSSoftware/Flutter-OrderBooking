@@ -281,7 +281,6 @@ void dispose() {
   }
 
 
-  
 Future<void> _saveOrderLocally() async {
   if (!_formKey.currentState!.validate()) return;
 
@@ -355,13 +354,16 @@ Future<void> _saveOrderLocally() async {
     if (response != null && response != "fail") {
       Provider.of<CartModel>(context, listen: false).clearAddedItems();
       
-      // Parse the response to extract docNo
+      // Parse the response to extract docNo, docId, and mobile number
       String docNo = '';
       String docId = '';
+      String mobileNo = '';  // Add this
+      
       try {
         final responseMap = jsonDecode(response);
         docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
         docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
+        mobileNo = responseMap['mobile']?.toString() ?? '';  // Extract mobile number
       } catch (e) {
         docNo = response.toString();
       }
@@ -373,7 +375,7 @@ Future<void> _saveOrderLocally() async {
       
       // Check if widget is still mounted before showing success dialog
       if (mounted) {
-        _showSuccessDialog(docId, formattedOrderNo);
+        _showSuccessDialog(docId, formattedOrderNo, mobileNo: mobileNo);  // Pass mobile number
       }
     } else {
       if (mounted) {
@@ -392,8 +394,7 @@ Future<void> _saveOrderLocally() async {
     }
   }
 }
-
-void _showSuccessDialog(String docId, String formattedOrderNo) {
+void _showSuccessDialog(String docId, String formattedOrderNo, {String? mobileNo}) {
   // Double check mounted before showing dialog
   if (!mounted) return;
   
@@ -474,7 +475,7 @@ void _showSuccessDialog(String docId, String formattedOrderNo) {
                     onPressed: () {
                       // Close dialog first
                       Navigator.pop(dialogContext);
-                      // Navigate to report
+                      // Navigate to report - PASS THE MOBILE NUMBER
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -482,6 +483,7 @@ void _showSuccessDialog(String docId, String formattedOrderNo) {
                             orderNo: docId,
                             orderData: null,
                             showOnlyWithImage: false,
+                            defaultWhatsAppMobileNo: mobileNo, // Add this parameter
                           ),
                         ),
                       );
@@ -538,8 +540,7 @@ void _showSuccessDialog(String docId, String formattedOrderNo) {
       ),
     ),
   );
-}
-  
+} 
   void _updateTotals() {
     int totalQty = 0;
     double totalAmt = 0.0;

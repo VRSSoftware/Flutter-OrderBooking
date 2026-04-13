@@ -473,252 +473,237 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   //   }
   // }
 
-  Future<void> _saveOrderLocally() async {
-    if (_isSaving) return;
+Future<void> _saveOrderLocally() async {
+  if (_isSaving) return;
 
-    setState(() => _isSaving = true);
+  setState(() => _isSaving = true);
 
-    try {
-      if (!_formKey.currentState!.validate()) {
-        setState(() => _isSaving = false);
-        return;
+  try {
+    if (!_formKey.currentState!.validate()) {
+      setState(() => _isSaving = false);
+      return;
+    }
+
+    String? consigneeLedKey = '';
+    String? stationStnKey = '';
+    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+      final selectedConsignee = consignees.firstWhere(
+        (consignee) => consignee.ledName == selectedConsigneeName,
+        orElse: () => Consignee(
+          ledKey: '',
+          ledName: '',
+          stnKey: '',
+          stnName: '',
+          paymentTermsKey: '',
+          paymentTermsName: '',
+          pytTermDiscdays: '0',
+        ),
+      );
+      consigneeLedKey = selectedConsignee.ledKey;
+      stationStnKey = selectedConsignee.stnKey;
+    }
+
+    final orderData = {
+      "saleorderno": _orderControllers.orderNo.text,
+      "orderdate": formatDate(_orderControllers.date.text, true),
+      "customer": _orderControllers.selectedPartyKey ?? '',
+      "broker": _orderControllers.selectedBrokerKey ?? '',
+      "comission": _orderControllers.comm.text,
+      "transporter": _orderControllers.selectedTransporterKey ?? '',
+      "delivaryday": _orderControllers.deliveryDays.text,
+      "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+      "totitem": _orderControllers.totalItem.text,
+      "totqty": _orderControllers.totalQty.text,
+      "remark": _orderControllers.remark.text,
+      "consignee": consigneeLedKey,
+      "station": stationStnKey,
+      "paymentterms": _additionalInfo['paymentterms'] ?? _orderControllers.pytTermDiscKey ?? '',
+      "paymentdays": _additionalInfo['paymentdays'] ?? _orderControllers.creditPeriod?.toString() ?? '0',
+      "duedate": calculateDueDate(),
+      "refno": _additionalInfo['refno'] ?? '',
+      "date": getTodayWithZeroTime(),
+      "bookingtype": _additionalInfo['bookingtype'] ?? '',
+      "salesman": _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+      "usertype": UserSession.userType,
+    };
+    final orderDataJson = jsonEncode(orderData);
+    print("Saved Order Data:");
+    print(orderDataJson);
+
+    final response = await insertFinalSalesOrder(orderDataJson);
+    if (response != null && response != "fail") {
+      Provider.of<CartModel>(context, listen: false).clearAddedItems();
+
+      String docNo = '';
+      String docId = '';
+      String mobileNo = '';  // Add this variable to store mobile number
+      
+      try {
+        final responseMap = jsonDecode(response);
+        docNo = responseMap['docNo']?.toString() ?? responseMap['orderNo']?.toString() ?? response;
+        docId = responseMap['docId']?.toString() ?? responseMap['docId']?.toString() ?? response;
+        mobileNo = responseMap['mobile']?.toString() ?? '';  // Extract mobile number from response
+      } catch (e) {
+        docNo = response.toString();
       }
 
-      String? consigneeLedKey = '';
-      String? stationStnKey = '';
-      final selectedConsigneeName = _additionalInfo['consignee']?.toString();
-      if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-        final selectedConsignee = consignees.firstWhere(
-          (consignee) => consignee.ledName == selectedConsigneeName,
-          orElse:
-              () => Consignee(
-                ledKey: '',
-                ledName: '',
-                stnKey: '',
-                stnName: '',
-                paymentTermsKey: '',
-                paymentTermsName: '',
-                pytTermDiscdays: '0',
-              ),
-        );
-        consigneeLedKey = selectedConsignee.ledKey;
-        stationStnKey = selectedConsignee.stnKey;
-      }
+      final formattedOrderNo = "$docNo";
 
-      final orderData = {
-        "saleorderno": _orderControllers.orderNo.text,
-        "orderdate": formatDate(_orderControllers.date.text, true),
-        "customer": _orderControllers.selectedPartyKey ?? '',
-        "broker": _orderControllers.selectedBrokerKey ?? '',
-        "comission": _orderControllers.comm.text,
-        "transporter": _orderControllers.selectedTransporterKey ?? '',
-        "delivaryday": _orderControllers.deliveryDays.text,
-        "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-        "totitem": _orderControllers.totalItem.text,
-        "totqty": _orderControllers.totalQty.text,
-        "remark": _orderControllers.remark.text,
-        "consignee": consigneeLedKey,
-        "station": stationStnKey,
-        "paymentterms":
-            _additionalInfo['paymentterms'] ??
-            _orderControllers.pytTermDiscKey ??
-            '',
-        "paymentdays":
-            _additionalInfo['paymentdays'] ??
-            _orderControllers.creditPeriod?.toString() ??
-            '0',
-        "duedate": calculateDueDate(),
-        "refno": _additionalInfo['refno'] ?? '',
-        "date": getTodayWithZeroTime(),
-        "bookingtype": _additionalInfo['bookingtype'] ?? '',
-        "salesman":
-            _additionalInfo['salesman'] ??
-            _orderControllers.salesPersonKey ??
-            '',
-        "usertype": UserSession.userType,
-      };
-      final orderDataJson = jsonEncode(orderData);
-      print("Saved Order Data:");
-      print(orderDataJson);
-
-      final response = await insertFinalSalesOrder(orderDataJson);
-      if (response != null && response != "fail") {
-        Provider.of<CartModel>(context, listen: false).clearAddedItems();
-
-        String docNo = '';
-        String docId = '';
-        try {
-          final responseMap = jsonDecode(response);
-          docNo =
-              responseMap['docNo']?.toString() ??
-              responseMap['orderNo']?.toString() ??
-              response;
-          docId =
-              responseMap['docId']?.toString() ??
-              responseMap['docId']?.toString() ??
-              response;
-        } catch (e) {
-          docNo = response.toString();
-        }
-
-        final formattedOrderNo = "$docNo";
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 4,
+          contentPadding: EdgeInsets.zero,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with background color
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
                 ),
-                elevation: 4,
-                contentPadding: EdgeInsets.zero,
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.green.shade100),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    // Header with background color
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 20,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                        border: Border(
-                          bottom: BorderSide(color: Colors.green.shade100),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green.shade700,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.green.shade800,
-                                ),
-                                children: [
-                                  const TextSpan(text: 'Order '),
-                                  TextSpan(
-                                    text: formattedOrderNo,
-                                    style: TextStyle(
-                                      color: Colors.blue.shade700,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: Colors.blue.shade300,
-                                      decorationThickness: 2,
-                                    ),
-                                  ),
-                                  const TextSpan(text: ' saved successfully'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade700,
+                      size: 22,
                     ),
-
-                    // Buttons
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => OrderReportViewPage(
-                                          orderNo: docId,
-                                          orderData: null,
-                                          showOnlyWithImage: false,
-                                        ),
-                                  ),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primaryColor,
-                                side: BorderSide(color: AppColors.primaryColor),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'View Report',
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade800,
+                          ),
+                          children: [
+                            const TextSpan(text: 'Order '),
+                            TextSpan(
+                              text: formattedOrderNo,
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.blue.shade300,
+                                decorationThickness: 2,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => OrderBookingScreen(),
-                                  ),
-                                  (Route<dynamic> route) => false,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Done',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ),
-                        ],
+                            const TextSpan(text: ' saved successfully'),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save order. Please try again.')),
-        );
-      }
-    } catch (e) {
-      print('Error during order saving: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
-    } finally {
-      setState(() => _isSaving = false);
-    }
-  }
 
+              // Buttons
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderReportViewPage(
+                                orderNo: docId,
+                                orderData: null,
+                                showOnlyWithImage: false,
+                                defaultWhatsAppMobileNo: mobileNo,  // Pass mobile number
+                              ),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryColor,
+                          side: BorderSide(color: AppColors.primaryColor),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'View Report',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderBookingScreen(),
+                            ),
+                            (Route<dynamic> route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save order. Please try again.')),
+      );
+    }
+  } catch (e) {
+    print('Error during order saving: $e');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error saving order: $e')));
+  } finally {
+    setState(() => _isSaving = false);
+  }
+}
   double _calculateTotalAmount() {
     double total = 0.0;
     _styleManager.controllers.forEach((style, shades) {
