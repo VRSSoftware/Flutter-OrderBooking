@@ -340,8 +340,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Dashboard': 'assets/images/dashboard.png',
     'Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
-    'Production': 'assets/images/production.png',
-    'Analytics Report': 'assets/images/analyticsReport.png',
+    // 'Production': 'assets/images/production.png',
+    // 'Analytics Report': 'assets/images/analyticsReport.png',
     'Design': 'assets/images/design.png',
     'Customer': 'assets/images/customer.png',
   };
