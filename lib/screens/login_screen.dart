@@ -69,8 +69,34 @@ class _LoginPageState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        // Initialize SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        Map<String, dynamic>? selectedCompany;
+        bool shouldUpdateState = false;
+
+        if (data.isNotEmpty && data.length == 1) {
+          selectedCompany = data[0] as Map<String, dynamic>;
+
+          // Save basic company info
+          prefs.setString('coBrId', selectedCompany["coBrId"] ?? '');
+          prefs.setString('coBrName', selectedCompany["coBr_name"] ?? '');
+
+          // Safe logo handling - check if logo exists and is not empty
+          String? logoBase64 = selectedCompany["logo"];
+          if (logoBase64 != null && logoBase64.isNotEmpty) {
+            UserSession.logo = logoBase64;
+            await prefs.setString('companyLogo', logoBase64);
+          } else {
+            // No logo provided, clear any existing logo
+            UserSession.logo = null;
+            await prefs.remove('companyLogo');
+          }
+
+          UserSession.coBrId = selectedCompany["coBrId"];
+          UserSession.coBrName = selectedCompany["coBr_name"];
+          shouldUpdateState = true;
+        }
+
         setState(() {
           _companies.clear();
           _companies.addAll(
@@ -78,25 +104,18 @@ class _LoginPageState extends State<LoginScreen> {
           );
           _isLoadingCompanies = false;
 
-          if (_companies.isNotEmpty && _companies.length == 1) {
-            _selectedCompany = _companies[0];
-            // Save to SharedPreferences and UserSession
-            prefs.setString('coBrId', _selectedCompany?["coBrId"] ?? '');
-            prefs.setString('coBrName', _selectedCompany?["coBr_name"] ?? '');
-            UserSession.coBrId = _selectedCompany?["coBrId"];
-            UserSession.coBrName = _selectedCompany?["coBr_name"];
+          if (shouldUpdateState) {
+            _selectedCompany = selectedCompany;
           }
         });
       } else if (response.statusCode == 404) {
         await Future.delayed(const Duration(seconds: 2));
-        _fetchCompanies(); // Retry on 404
+        _fetchCompanies();
       }
     } on SocketException catch (_) {
-      // Retry on no internet
       await Future.delayed(const Duration(seconds: 2));
       _fetchCompanies();
     } on TimeoutException catch (_) {
-      // Retry on request timeout
       await Future.delayed(const Duration(seconds: 2));
       _fetchCompanies();
     } catch (e) {
@@ -237,7 +256,29 @@ class _LoginPageState extends State<LoginScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     if (isRegistered == '1' || true) {
-      if (_formKey.currentState?.validate() ?? false) {
+      // Fix: Use == true instead of just using the nullable value
+      if (_formKey.currentState?.validate() == true) {
+        // Save selected company logo safely before login
+        if (_selectedCompany != null) {
+          String? logoBase64 = _selectedCompany?["logo"];
+          if (logoBase64 != null && logoBase64.isNotEmpty) {
+            try {
+              // Validate base64 before saving
+              base64Decode(logoBase64);
+              UserSession.logo = logoBase64;
+              await prefs.setString('companyLogo', logoBase64);
+            } catch (e) {
+              print("Invalid logo base64: $e");
+              UserSession.logo = null;
+              await prefs.remove('companyLogo');
+            }
+          } else {
+            // No logo provided, clear any existing logo
+            UserSession.logo = null;
+            await prefs.remove('companyLogo');
+          }
+        }
+
         final url = '${AppConstants.BASE_URL}/users/login';
         final Map<String, String> headers = {
           'Content-Type': 'application/json',
@@ -245,7 +286,7 @@ class _LoginPageState extends State<LoginScreen> {
         final Map<String, String> body = {
           'userName': _usernameController.text.trim(),
           'userPwd': _passwordController.text.trim(),
-          'firebaseToken': AppConstants.firebase_token ?? ''
+          'firebaseToken': AppConstants.firebase_token ?? '',
         };
 
         try {
@@ -255,16 +296,23 @@ class _LoginPageState extends State<LoginScreen> {
             body: json.encode(body),
           );
           print("response body :${response.body}");
+
           if (response.statusCode == 200) {
             final Map<String, dynamic> responseData = json.decode(
               response.body,
             );
 
             await prefs.setInt('userId', responseData["userId"]);
-            await prefs.setString('coBrId', _selectedCompany?["coBrId"]);
-            await prefs.setString('userType', responseData["userType"]);
-            await prefs.setString('userName', responseData["userName"]);
-            await prefs.setString('userLedKey', responseData["ledKey"]);
+            await prefs.setString('coBrId', _selectedCompany?["coBrId"] ?? '');
+            await prefs.setString('userType', responseData["userType"] ?? '');
+            await prefs.setString('userName', responseData["userName"] ?? '');
+            await prefs.setString('userLedKey', responseData["ledKey"] ?? '');
+
+            // Save company name
+            await prefs.setString(
+              'coBrName',
+              _selectedCompany?["coBr_name"] ?? '',
+            );
 
             UserSession.userId = responseData["userId"];
             UserSession.coBrId = _selectedCompany?["coBrId"];
@@ -273,6 +321,7 @@ class _LoginPageState extends State<LoginScreen> {
             UserSession.userName = responseData["userName"];
             UserSession.userLedKey = responseData["ledKey"];
             UserSession.name = responseData["name"];
+            UserSession.coBrName = _selectedCompany?["coBr_name"] ?? '';
 
             if ((responseData['userName'] as String).trim() ==
                 _usernameController.text.trim()) {
@@ -282,10 +331,8 @@ class _LoginPageState extends State<LoginScreen> {
               AppConstants.whatsappKey = await fetchAppSetting('541');
               AppConstants.bookingType = await fetchAppSetting('731');
               AppConstants.whatsappType = await fetchAppSetting('732');
-              //  AppConstants.bookingType = await fetchAppSetting('633');
               await fetchDatabaseCredentials();
-              // print("Whatsapp Key: ${AppConstants.whatsappKey}");
-              // print("RPT Path: ${UserSession.rptPath}");
+
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -313,6 +360,7 @@ class _LoginPageState extends State<LoginScreen> {
           _showPopupMessage(context, "An error occurred. Please try again.");
         }
       } else {
+        // Fix: Remove dead code - this else block is now reachable
         if (_usernameController.text.isEmpty) {
           _usernameFocus.requestFocus();
         } else if (_passwordController.text.isEmpty) {

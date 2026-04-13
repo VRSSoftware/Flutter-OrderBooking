@@ -46,6 +46,7 @@ import 'package:vrs_erp/register/packingRegisterScreen.dart';
 import 'package:vrs_erp/register/register.dart';
 import 'package:vrs_erp/catalog/catalog_screen.dart';
 import 'package:vrs_erp/register/saleBillRegister.dart';
+import 'package:vrs_erp/screens/app_settings_screen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 
 import 'package:vrs_erp/screens/home_screen.dart';
@@ -124,6 +125,7 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/splash': (context) => SplashScreen(),
+        '/appSettings': (context) => const AppSettingsScreen(),
         '/login': (context) => LoginScreen(),
         '/home': (context) => HomeScreen(),
         '/catalog': (context) => CatalogScreen(),

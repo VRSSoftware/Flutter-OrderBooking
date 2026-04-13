@@ -89,6 +89,7 @@ class UserSession {
   static String? dbSource;
   static String? dbSourceForRpt;
   static String? coBrName;
+   static String? logo;
 
   // static int? userId=1;
   // static String? coBrId='01';

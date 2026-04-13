@@ -302,6 +302,8 @@
 // }
 //-----------------------------------------------------------------------------
 
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -315,6 +317,20 @@ class DrawerScreen extends StatefulWidget {
 class _DrawerScreenState extends State<DrawerScreen> {
   String? selectedSection;
   String? hoveredSection;
+  final ValueNotifier<Uint8List?> _logoNotifier = ValueNotifier(null);
+
+void _loadLogo() {
+  if (UserSession.logo != null && UserSession.logo!.isNotEmpty) {
+    try {
+      _logoNotifier.value = base64Decode(UserSession.logo!);
+    } catch (e) {
+      print("Error decoding logo: $e");
+      _logoNotifier.value = null;
+    }
+  } else {
+    _logoNotifier.value = null;
+  }
+}
 
   // Color palette for menu items
   final Map<String, Color> _menuColors = {
@@ -327,7 +343,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Customer': Color(0xFF3F51B5),
     'Design': Color(0xFF3F51B5),
     'Analytics Report': Color(0xFFE91E63),
-    'Setting': Color(0xFF607D8B), // Blue Grey
+    'Privacy & Term': Color(0xFF607D8B), // Blue Grey
+    'App Setting': Color(0xFF607D8B), 
     'Delete Account': Color(0xFFF44336), // Red
   };
 
@@ -338,12 +355,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Order Register': 'assets/images/register.png',
     'Stock Report': 'assets/images/report.png',
     'Dashboard': 'assets/images/dashboard.png',
-    'Setting': 'assets/images/setting.png',
+    'Privacy & Term': 'assets/images/privacy&Term.png',
+     'App Setting': 'assets/images/setting.png',
     'Delete Account': 'assets/images/deleteAccount.png',
     // 'Production': 'assets/images/production.png',
     // 'Analytics Report': 'assets/images/analyticsReport.png',
     'Design': 'assets/images/design.png',
     'Customer': 'assets/images/customer.png',
+   
   };
 
   final Map<String, IconData> _fallbackIcons = {
@@ -358,11 +377,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
     'Sale Bill Register': Icons.menu_book,
     'Dashboard': Icons.dashboard_customize,
     'Production': Icons.precision_manufacturing,
-    'Setting': Icons.settings,
+    'Privacy & Term': Icons.description,
     'Delete Account': Icons.delete_forever,
     'Analytics Report': Icons.analytics,
     'Customer': Icons.supervisor_account,
     'Design': Icons.auto_awesome,
+    'App Setting': Icons.settings,
   };
 
   @override
@@ -376,6 +396,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
     setState(() {
       selectedSection = _getSectionFromRoute(route);
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogo();
   }
 
   String? _getSectionFromRoute(String? route) {
@@ -409,9 +435,11 @@ class _DrawerScreenState extends State<DrawerScreen> {
       case '/design':
         return 'Design';
       case '/setting':
-        return 'Setting';
+        return 'Privacy & Term';
       case '/deleteAccount':
         return 'Delete Account';
+         case '/appSettings':
+        return 'App Setting';
       default:
         return null;
     }
@@ -499,8 +527,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           if (title == 'Stock Report' || title == 'Dashboard') {
                             return UserSession.userType == 'A';
                           }
-                          return title != 'Setting' &&
-                              title != 'Delete Account';
+                          return title != 'Privacy & Term' &&
+                              title != 'Delete Account' &&
+                              title != 'App Setting';;
                         })
                         .map(
                           (title) => _buildDrawerItem(
@@ -515,13 +544,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                     _buildSectionHeader('ACCOUNT'),
                     const SizedBox(height: 5),
 
-                    _buildDrawerItem('Setting', '/setting'),
+                    _buildDrawerItem('Privacy & Term', '/setting'),
+                     _buildDrawerItem('App Setting', '/appSettings'),
                     _buildDrawerItem('Delete Account', '/deleteAccount'),
 
-                    const SizedBox(height: 20),
-                    _buildOrderTypeChangeWidget(),
+                    // const SizedBox(height: 20),
+                    // _buildOrderTypeChangeWidget(),
 
-                    const SizedBox(height: 20),
+                    // const SizedBox(height: 20),
 
                     // Logout Button
                     _buildLogoutButton(),
@@ -599,92 +629,106 @@ class _DrawerScreenState extends State<DrawerScreen> {
         return '/customer';
       case 'Design':
         return '/design';
-      case 'Setting':
+      case 'Privacy & Term':
         return '/setting';
       case 'Delete Account':
         return '/deleteAccount';
+              case 'App Setting':
+        return '/appSettings';
       default:
         return '/home';
     }
   }
 
   Widget _buildProfileContent() {
-    return Row(
-      children: [
-        // Profile Image
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-          ),
-          child: const CircleAvatar(
-            radius: 28,
-            backgroundImage: AssetImage('assets/images/logo.png'),
-            backgroundColor: Colors.white,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Company Name at the top
-              Text(
-                UserSession.coBrName?.toUpperCase() ?? '',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.lightBlue,
-                  letterSpacing: 0.3,
+    return ValueListenableBuilder(
+      valueListenable: _logoNotifier,
+      builder: (context, logoBytes, child) {
+        return Row(
+          children: [
+            // Profile Image - Dynamic
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 2,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              // User Name
-              Text(
-                UserSession.userName ?? '',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: CircleAvatar(
+                radius: 28,
+                backgroundImage:
+                    logoBytes != null
+                        ? MemoryImage(logoBytes)
+                        : const AssetImage('assets/images/logo.png')
+                            as ImageProvider,
+                backgroundColor: Colors.white,
               ),
-              const SizedBox(height: 2),
-              // User Type
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color:
-                      UserSession.userType == 'A'
-                          ? Colors.amber.withOpacity(0.2)
-                          : Colors.blue.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  UserSession.userType == 'C'
-                      ? 'CUSTOMER'
-                      : UserSession.userType == 'A'
-                      ? 'ADMIN'
-                      : 'SALESMAN',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        UserSession.userType == 'A'
-                            ? Colors.amber
-                            : Colors.blue.shade300,
-                    letterSpacing: 0.5,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    UserSession.coBrName?.toUpperCase() ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.lightBlue,
+                      letterSpacing: 0.3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    UserSession.userName ?? '',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          UserSession.userType == 'A'
+                              ? Colors.amber.withOpacity(0.2)
+                              : Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      UserSession.userType == 'C'
+                          ? 'CUSTOMER'
+                          : UserSession.userType == 'A'
+                          ? 'ADMIN'
+                          : 'SALESMAN',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            UserSession.userType == 'A'
+                                ? Colors.amber
+                                : Colors.blue.shade300,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -836,56 +880,56 @@ class _DrawerScreenState extends State<DrawerScreen> {
     );
   }
 
-  Widget _buildOrderTypeChangeWidget() {
-    final isHovered = hoveredSection == 'Change Order Type';
+  // Widget _buildOrderTypeChangeWidget() {
+  //   final isHovered = hoveredSection == 'Change Order Type';
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => hoveredSection = 'Change Order Type'),
-      onExit: (_) => setState(() => hoveredSection = null),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: isHovered ? Colors.red.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              AppConstants.bookingType =
-                  AppConstants.bookingType == '1' ? '2' : '1';
-              Navigator.pop(context);
-            },
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.swap_horiz,
-                      size: 18,
-                      color: isHovered ? Colors.red : Colors.grey.shade400,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                  'Change Order Type to ${AppConstants.bookingType == '1' ? '2' : '1'}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: isHovered ? Colors.red : Colors.grey.shade300,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  //   return MouseRegion(
+  //     onEnter: (_) => setState(() => hoveredSection = 'Change Order Type'),
+  //     onExit: (_) => setState(() => hoveredSection = null),
+  //     child: Container(
+  //       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+  //       decoration: BoxDecoration(
+  //         color: isHovered ? Colors.red.withOpacity(0.15) : Colors.transparent,
+  //         borderRadius: BorderRadius.circular(10),
+  //       ),
+  //       child: Material(
+  //         color: Colors.transparent,
+  //         child: InkWell(
+  //           onTap: () {
+  //             AppConstants.bookingType =
+  //                 AppConstants.bookingType == '1' ? '2' : '1';
+  //             Navigator.pop(context);
+  //           },
+  //           borderRadius: BorderRadius.circular(10),
+  //           child: Padding(
+  //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+  //             child: Row(
+  //               children: [
+  //                 Container(
+  //                   width: 28,
+  //                   height: 28,
+  //                   alignment: Alignment.center,
+  //                   child: Icon(
+  //                     Icons.swap_horiz,
+  //                     size: 18,
+  //                     color: isHovered ? Colors.red : Colors.grey.shade400,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+  //                 Text(
+  //                   'Change Order Type to ${AppConstants.bookingType == '1' ? '2' : '1'}',
+  //                   style: TextStyle(
+  //                     fontSize: 11,
+  //                     fontWeight: FontWeight.w500,
+  //                     color: isHovered ? Colors.red : Colors.grey.shade300,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

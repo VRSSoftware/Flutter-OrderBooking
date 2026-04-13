@@ -2711,9 +2711,9 @@ Future<void> _sendPDFViaBackendAPI(
     // Create multipart request for backend API
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf'), // Your backend endpoint
+      Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf-stock-report'), 
     );
-    
+    request.fields['mobile_no'] = mobileNo;
     // Add PDF file to request - MUST use 'file' as parameter name
     request.files.add(
       await http.MultipartFile.fromPath(
