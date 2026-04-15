@@ -18,6 +18,7 @@ import 'package:vrs_erp/Accounts_Reports/Profit_Loss/Profit_Loss.dart';
 import 'package:vrs_erp/Accounts_Reports/Receivables/receivables.dart';
 import 'package:vrs_erp/Accounts_Reports/Trial_Balance/trial_balance.dart';
 import 'package:vrs_erp/Masters/Customer/Customer.dart';
+import 'package:vrs_erp/Masters/Customer/CustomerList.dart';
 import 'package:vrs_erp/Masters/Design/Design_Master.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
@@ -160,7 +161,7 @@ class MyApp extends StatelessWidget {
         '/vrsai': (context) => AIHomeScreen(),
         '/testAI': (context) => FashionDesignerScreen(),
         '/design': (context) => DesignMaster(),
-        '/customer': (context) => CustomerMaster(),
+        '/customer': (context) => CustomerList(),
         '/ai_chat_reports': (context) => aiChatReportWeb(),
         '/payable': (context) => PayableReport(),
         '/receivable': (context) => ReceivableReport(),

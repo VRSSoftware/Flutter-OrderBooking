@@ -918,4 +918,407 @@ class ApiService {
       throw Exception('Error fetching order report data: $e');
     }
   }
+
+
+  //customer apis 
+ static Future<Map<String, dynamic>> createLedger(Map<String, dynamic> payload) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/createLedger'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Success response
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {
+          'message': response.body,
+          'success': true,
+        };
+      }
+    } else {
+      // Error response - try to extract meaningful message
+      String errorMessage = 'Something went wrong';
+      
+      try {
+        final errorData = jsonDecode(response.body);
+        
+        // Check for DUPLICATE_KEY error
+        if (errorData['errorCode'] == 'DUPLICATE_KEY' || 
+            errorData['message']?.contains('DUPLICATE_KEY') == true ||
+            errorData['error']?.contains('Duplicate') == true) {
+          
+          // Extract ledger name from error if possible
+          if (errorData['dynamicMessage'] != null) {
+            errorMessage = errorData['dynamicMessage'];
+          } else if (errorData['message'] != null) {
+            errorMessage = errorData['message'];
+          } else {
+            errorMessage = 'Customer with this name already exists';
+          }
+        } 
+        // Handle other application exceptions
+        else if (errorData['message'] != null) {
+          errorMessage = errorData['message'];
+        } 
+        else if (errorData['error'] != null) {
+          errorMessage = errorData['error'];
+        }
+        
+      } catch (e) {
+        // If response is not JSON, check if it contains duplicate key message
+        if (response.body.contains('Duplicate') || 
+            response.body.contains('duplicate') ||
+            response.body.contains('already exists')) {
+          errorMessage = 'Customer with this name already exists';
+        } else {
+          errorMessage = response.body;
+        }
+      }
+      
+      throw Exception(errorMessage);
+    }
+  } catch (e) {
+    // Handle network errors
+    if (e.toString().contains('SocketException') || 
+        e.toString().contains('Connection refused') ||
+        e.toString().contains('Network is unreachable')) {
+      throw Exception('No response from server. Please check your internet connection.');
+    }
+    rethrow;
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getBrandForCust() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getBrand'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        print('Unexpected response format for brands: $data');
+        return [];
+      }
+    } else {
+      print('Error fetching brands: ${response.statusCode}');
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching brands: $error');
+    return [];
+  }
+}
+
+
+static Future<List<Map<String, dynamic>>> getCustomerGroups() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getCustomerGrp'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        print('Unexpected response format for customer groups: $data');
+        return [];
+      }
+    } else {
+      print('Error fetching customer groups: ${response.statusCode}');
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching customer groups: $error');
+    return [];
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getAccountSubGroups() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccLGrp'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        print('Unexpected response format for account subgroups: $data');
+        return [];
+      }
+    } else {
+      print('Error fetching account subgroups: ${response.statusCode}');
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching account subgroups: $error');
+    return [];
+  }
+}
+static Future<List<Map<String, dynamic>>> getCardType() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getCardTypes'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching card types: $error');
+    return [];
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getCurrency() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getCurrency'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching currencies: $error');
+    return [];
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getPaymentDiscount() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getPaymentTermsDisc'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching payment discounts: $error');
+    return [];
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getQuality() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getQuality'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching quality: $error');
+    return [];
+  }
+}
+
+static Future<List<Map<String, dynamic>>> getTerms() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getTerms'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching terms: $error');
+    return [];
+  }
+}
+
+// Add to ApiService class
+
+static Future<List<Map<String, dynamic>>> getCustomers() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedger'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else if (data['data'] != null && data['data'] is List) {
+        return List<Map<String, dynamic>>.from(data['data']);
+      }
+      return [];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    print('Error fetching customers: $error');
+    return [];
+  }
+}
+
+static Future<Map<String, dynamic>> deleteLedger(String ledKey) async {
+  try {
+    final response = await http.delete(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/deleteLedger'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({ "@Led_Key_1": ledKey }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {'message': 'Customer deleted successfully', 'success': true};
+      }
+    } else {
+      String errorMessage = 'Failed to delete customer';
+      try {
+        final errorData = jsonDecode(response.body);
+        errorMessage = errorData['message'] ?? errorData['error'] ?? response.body;
+      } catch (e) {
+        errorMessage = response.body;
+      }
+      throw Exception(errorMessage);
+    }
+  } catch (e) {
+    if (e.toString().contains('SocketException') || 
+        e.toString().contains('Connection refused') ||
+        e.toString().contains('Network is unreachable')) {
+      throw Exception('No response from server. Please check your internet connection.');
+    }
+    rethrow;
+  }
+}
+
+static Future<Map<String, dynamic>> getLedgerByLedKey(String ledKey) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerByLedKey/$ledKey'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List && data.isNotEmpty) {
+        return data[0]; // Return the first customer object
+      }
+      return {};
+    } else {
+      throw Exception('Failed to fetch customer data');
+    }
+  } catch (e) {
+    if (e.toString().contains('SocketException') || 
+        e.toString().contains('Connection refused')) {
+      throw Exception('No response from server. Please check your internet connection.');
+    }
+    rethrow;
+  }
+}
+
+static Future<Map<String, dynamic>> updateLedger(Map<String, dynamic> payload) async {
+  try {
+    final response = await http.put(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/updateLedger'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {'message': response.body, 'success': true};
+      }
+    } else {
+      String errorMessage = 'Failed to update customer';
+      try {
+        final errorData = jsonDecode(response.body);
+        errorMessage = errorData['message'] ?? errorData['error'] ?? response.body;
+      } catch (e) {
+        errorMessage = response.body;
+      }
+      throw Exception(errorMessage);
+    }
+  } catch (e) {
+    if (e.toString().contains('SocketException') || 
+        e.toString().contains('Connection refused')) {
+      throw Exception('No response from server. Please check your internet connection.');
+    }
+    rethrow;
+  }
+}
+
+
 }

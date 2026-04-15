@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/register/OrderReportViewPage .dart'; // Note: there's a space in the filename
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -17,7 +18,7 @@ import 'package:vrs_erp/screens/home_screen.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/Pdf_viewer_screen.dart';
 import 'package:vrs_erp/viewOrder/add_more_info.dart';
-import 'package:vrs_erp/viewOrder/customer_master.dart';
+// import 'package:vrs_erp/viewOrder/customer_master.dart';
 import 'package:vrs_erp/viewOrder/style_card.dart';
 import 'package:vrs_erp/models/consignee.dart';
 import 'package:vrs_erp/models/PytTermDisc.dart';
@@ -1791,7 +1792,7 @@ class _OrderFormState extends State<_OrderForm> {
                       // Show dialog and wait for result
                       final result = await showDialog(
                         context: context,
-                        builder: (_) => CustomerMasterDialog(),
+                        builder: (_) => CustomerForm(),
                       );
 
                       // Handle the result

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -19,7 +20,7 @@ import 'package:vrs_erp/screens/home_screen.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/Pdf_viewer_screen.dart';
 import 'package:vrs_erp/viewOrder/add_more_info.dart';
-import 'package:vrs_erp/viewOrder/customer_master.dart';
+//import 'package:vrs_erp/viewOrder/customer_master.dart';
 import 'package:vrs_erp/viewOrder/style_card.dart';
 import 'package:vrs_erp/models/consignee.dart';
 import 'package:vrs_erp/models/PytTermDisc.dart';
@@ -4088,7 +4089,7 @@ class _OrderForm2State extends State<_OrderForm2> {
                       // Show dialog and wait for result
                       final result = await showDialog(
                         context: context,
-                        builder: (_) => CustomerMasterDialog(),
+                        builder: (_) => CustomerForm(),
                       );
 
                       // Handle the result
