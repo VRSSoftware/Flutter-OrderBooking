@@ -451,17 +451,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth),
     // );
 
-    // buttons.add(
-    //   _buildFeatureButton(context, 'Accounts', () {
-    //     Navigator.pushNamed(context, '/accountDashboard');
-    //   }, buttonWidth),
-    // );
+    buttons.add(
+      _buildFeatureButton(context, 'Accounts', () {
+        Navigator.pushNamed(context, '/accountDashboard');
+      }, buttonWidth),
+    );
 
-    //     buttons.add(
-    //   _buildFeatureButton(context, 'Outstanding Report', () {
-    //     Navigator.pushNamed(context, '/outstandingMainScreen');
-    //   }, buttonWidth),
-    // );
+        buttons.add(
+      _buildFeatureButton(context, 'Outstanding Report', () {
+        Navigator.pushNamed(context, '/outstandingMainScreen');
+      }, buttonWidth),
+    );
 
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
