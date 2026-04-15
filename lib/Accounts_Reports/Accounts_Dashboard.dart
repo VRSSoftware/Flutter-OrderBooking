@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:vrs_erp/Accounts_Reports/BalanceSheet/BalanceSheet.dart';
-import 'package:vrs_erp/Accounts_Reports/Bank_Book/bank_book.dart';
-import 'package:vrs_erp/Accounts_Reports/Cash_Book/cash_book.dart';
-import 'package:vrs_erp/Accounts_Reports/Group_Summary/group_summary.dart';
-import 'package:vrs_erp/Accounts_Reports/Group_Voucher/group_voucher.dart';
-import 'package:vrs_erp/Accounts_Reports/Ledger/ledger.dart';
-import 'package:vrs_erp/Accounts_Reports/Payable/payable.dart';
-import 'package:vrs_erp/Accounts_Reports/Profit_Loss/Profit_Loss.dart';
-import 'package:vrs_erp/Accounts_Reports/Receivables/receivables.dart';
-import 'package:vrs_erp/Accounts_Reports/Trial_Balance/trial_balance.dart';
+import 'package:vrs_erp/Accounts_Reports/Ledger/Customer_Ac_BillWise/CustomerAcBillwise.dart';
+import 'package:vrs_erp/Accounts_Reports/Ledger/Customer_Ledger/CustomerLedger.dart';
+import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/BalanceSheet/BalanceSheet.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Bank_Book/bank_book.dart';
+import 'package:vrs_erp/Accounts_Reports/Misc_Report/Broker_Comm_Rcpt_Billwise/Broker_comm_Rcpt_Billwise.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Cash_Book/cash_book.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Group_Summary/group_summary.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Group_Voucher/group_voucher.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Ledger/ledger.dart';
+import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Payable/payable.dart';
+import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Profit_Loss/Profit_Loss.dart';
+import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Receivables/receivables.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Trial_Balance/trial_balance.dart';
+import 'package:vrs_erp/Accounts_Reports/Remainder/OutStanding_Remainder/OustandingRemainder.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/Accounts_Reports/Day_Book/day_book.dart';
+import 'package:vrs_erp/Accounts_Reports/AccountBook/Day_Book/day_book.dart';
+
+
 
 class AccountDashboard extends StatefulWidget {
   const AccountDashboard({super.key});
@@ -58,8 +64,20 @@ class _AccountDashboardState extends State<AccountDashboard> {
     {
       "title": "Ledger",
       "icon": Icons.book,
-      "category": "Accounts Book",  // CHANGED: Changed from "Ledger" to "Accounts Book"
+      "category": "Accounts Book",
       "route": "/ledger",
+    },
+    {
+      "title": "Customer Ledger",
+      "icon": Icons.people,
+      "category": "Ledger",
+      "route": "/customerLedger",
+    },
+    {
+      "title": "Customer A/c (Billwise)",
+      "icon": Icons.receipt,
+      "category": "Ledger",
+      "route": "/customerBillwise",
     },
     {
       "title": "Group Summary",
@@ -110,6 +128,20 @@ class _AccountDashboardState extends State<AccountDashboard> {
       "category": "Outstanding Analysis",
       "route": "/balanceSheet",
     },
+    // Misc Report Items
+    {
+      "title": "Broker Commission Receipt (Bill Wise)",
+      "icon": Icons.attach_money,
+      "category": "Misc Report",
+      "route": "/brokerCommission",
+    },
+    // Remainder Items
+    {
+      "title": "Outstanding Remainder",
+      "icon": Icons.notifications_active,
+      "category": "Remainder",
+      "route": "/outstandingRemainder",
+    },
   ];
 
   // Get filtered menu items based on search query
@@ -143,10 +175,63 @@ class _AccountDashboardState extends State<AccountDashboard> {
         .toList();
   }
 
+  List<Map<String, dynamic>> get filteredLedgerItems {
+    if (searchQuery.isEmpty) {
+      return allMenuItems
+          .where((item) => item['category'] == 'Ledger')
+          .toList();
+    }
+    return allMenuItems
+        .where(
+          (item) =>
+              item['category'] == 'Ledger' &&
+              item['title'].toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  List<Map<String, dynamic>> get filteredMiscReportItems {
+    if (searchQuery.isEmpty) {
+      return allMenuItems
+          .where((item) => item['category'] == 'Misc Report')
+          .toList();
+    }
+    return allMenuItems
+        .where(
+          (item) =>
+              item['category'] == 'Misc Report' &&
+              item['title'].toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  List<Map<String, dynamic>> get filteredRemainderItems {
+    if (searchQuery.isEmpty) {
+      return allMenuItems
+          .where((item) => item['category'] == 'Remainder')
+          .toList();
+    }
+    return allMenuItems
+        .where(
+          (item) =>
+              item['category'] == 'Remainder' &&
+              item['title'].toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
   // Check if any section has items to show
   bool get hasAccountsBookItems => filteredAccountsBookItems.isNotEmpty;
   bool get hasOutstandingItems => filteredOutstandingItems.isNotEmpty;
-  bool get hasSearchResults => hasAccountsBookItems || hasOutstandingItems;
+  bool get hasLedgerItems => filteredLedgerItems.isNotEmpty;
+  bool get hasMiscReportItems => filteredMiscReportItems.isNotEmpty;
+  bool get hasRemainderItems => filteredRemainderItems.isNotEmpty;
+  bool get hasSearchResults => 
+      hasAccountsBookItems || 
+      hasOutstandingItems || 
+      hasLedgerItems || 
+      hasMiscReportItems || 
+      hasRemainderItems;
 
   // Helper method to add item to recently viewed
   void addToRecentlyViewed(String title, IconData icon) {
@@ -180,7 +265,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
         );
         break;
       case '/bankBook':
-            Navigator.push(
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const BankBookPage()),
         );
@@ -191,14 +276,24 @@ class _AccountDashboardState extends State<AccountDashboard> {
           MaterialPageRoute(builder: (context) => const LedgerPage()),
         );
         break;
-
+      case '/customerLedger':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CustomerLedgerPage()),
+        );
+       break;
+      case '/customerBillwise':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CustomerAcBillwisePage()),
+        );
+        break;
       case '/groupSummary':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const GroupSummaryPage()),
         );
         break;
-
       case '/groupVoucher':
         Navigator.push(
           context,
@@ -239,6 +334,18 @@ class _AccountDashboardState extends State<AccountDashboard> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const BalanceSheetPage()),
+        );
+        break;
+      case '/brokerCommission':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BrokerCommissionReceiptPage()),
+        );
+        break;
+      case '/outstandingRemainder':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OutstandingRemainderPage()),
         );
         break;
       default:
@@ -494,8 +601,14 @@ class _AccountDashboardState extends State<AccountDashboard> {
                       _buildNoResultsFound(),
 
                     if (hasAccountsBookItems) _buildAccountsBook(),
-
+                    
+                    if (hasLedgerItems) _buildLedgerSection(),
+                    
                     if (hasOutstandingItems) _buildOutstandingAnalysis(),
+                    
+                    if (hasMiscReportItems) _buildMiscReportSection(),
+                    
+                    if (hasRemainderItems) _buildRemainderSection(),
                   ],
                 ),
               ),
@@ -637,6 +750,30 @@ class _AccountDashboardState extends State<AccountDashboard> {
     return _buildSection(
       title: "Outstanding Analysis",
       items: filteredOutstandingItems,
+    );
+  }
+
+  // 📒 Ledger Section
+  Widget _buildLedgerSection() {
+    return _buildSection(
+      title: "Ledger",
+      items: filteredLedgerItems,
+    );
+  }
+
+  // 📋 Misc Report Section
+  Widget _buildMiscReportSection() {
+    return _buildSection(
+      title: "Misc Report",
+      items: filteredMiscReportItems,
+    );
+  }
+
+  // 🔔 Remainder Section
+  Widget _buildRemainderSection() {
+    return _buildSection(
+      title: "Remainder",
+      items: filteredRemainderItems,
     );
   }
 

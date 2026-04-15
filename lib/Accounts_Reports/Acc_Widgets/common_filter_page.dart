@@ -12,6 +12,7 @@ enum FilterFieldId {
   group,
   subGroup,
   ledger,
+  broker, // Added broker field
   radioSummaryDetail,
   checkBoxBillWise,
   checkBoxNarration,
@@ -78,6 +79,27 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
   ],
   'ProfitLoss': [FilterFieldId.checkBoxLedgerWise],
   'BalanceSheet': [FilterFieldId.checkBoxLedgerWise],
+  'BrokerCommReceipt': [
+    FilterFieldId.broker, // Changed from state, city, ledger to broker
+    FilterFieldId.state,
+    FilterFieldId.city,
+    FilterFieldId.ledger,
+  ],
+   'OutstandingRemainder': [
+    FilterFieldId.state,
+    FilterFieldId.city,
+    FilterFieldId.ledger,
+  ],
+     'CustomerLedger': [
+    FilterFieldId.state,
+    FilterFieldId.city,
+    FilterFieldId.ledger,
+  ],
+    'CustomerLedgerBillWise': [
+    FilterFieldId.state,
+    FilterFieldId.city,
+    FilterFieldId.ledger,
+  ],
 };
 
 // Radio options for ledger type selection
@@ -103,6 +125,7 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? cities;
   final List<KeyName>? groups;
   final List<KeyName>? subGroups;
+  final List<KeyName>? brokers; // Added brokers data
 
   // Initial selected values
   final String? initialLedgerType;
@@ -127,6 +150,7 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? initialCustomers;
   final List<KeyName>? initialVendors;
   final List<KeyName>? initialBanks;
+  final List<KeyName>? initialBrokers; // Added initial brokers
 
   // Callbacks
   final Function(String?)? onLedgerTypeChanged;
@@ -138,6 +162,7 @@ class CommonFilterPage extends StatefulWidget {
   final Function(List<KeyName>?)? onCitiesChanged;
   final Function(List<KeyName>?)? onGroupsChanged;
   final Function(List<KeyName>?)? onSubGroupsChanged;
+  final Function(List<KeyName>?)? onBrokersChanged; // Added brokers callback
   final Function(String?)? onReportTypeChanged;
   final Function(bool?)? onBillWiseChanged;
   final Function(bool?)? onNarrationChanged;
@@ -160,6 +185,7 @@ class CommonFilterPage extends StatefulWidget {
     this.cities,
     this.groups,
     this.subGroups,
+    this.brokers, // Added brokers
     this.initialLedgerType,
     this.initialCustomer,
     this.initialVendor,
@@ -180,6 +206,7 @@ class CommonFilterPage extends StatefulWidget {
     this.initialCustomers,
     this.initialVendors,
     this.initialBanks,
+    this.initialBrokers, // Added initial brokers
     this.onLedgerTypeChanged,
     this.onCustomersChanged,
     this.onVendorsChanged,
@@ -189,6 +216,7 @@ class CommonFilterPage extends StatefulWidget {
     this.onCitiesChanged,
     this.onGroupsChanged,
     this.onSubGroupsChanged,
+    this.onBrokersChanged, // Added brokers callback
     this.onReportTypeChanged,
     this.onBillWiseChanged,
     this.onNarrationChanged,
@@ -213,6 +241,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   late List<KeyName> _selectedCities;
   late List<KeyName> _selectedGroups;
   late List<KeyName> _selectedSubGroups;
+  late List<KeyName> _selectedBrokers; // Added brokers state
   late String? _selectedReportType;
   late bool _showBillWise;
   late bool _showNarration;
@@ -238,6 +267,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _selectedCities = List.from(widget.initialCities ?? []);
     _selectedGroups = List.from(widget.initialGroups ?? []);
     _selectedSubGroups = List.from(widget.initialSubGroups ?? []);
+    _selectedBrokers = List.from(widget.initialBrokers ?? []); // Added brokers initialization
     _selectedReportType = widget.initialReportType ?? 'summary';
     _showBillWise = widget.initialShowBillWise ?? false;
     _showNarration = widget.initialShowNarration ?? false;
@@ -259,6 +289,8 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         return _selectedLedgerType != 'all';
       case FilterFieldId.ledger:
         return _selectedLedgers.isNotEmpty;
+      case FilterFieldId.broker: // Added broker case
+        return _selectedBrokers.isNotEmpty;
       case FilterFieldId.radioSummaryDetail:
         return _selectedReportType != 'summary';
       case FilterFieldId.checkBoxBillWise:
@@ -306,6 +338,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     widget.onCitiesChanged?.call(_selectedCities);
     widget.onGroupsChanged?.call(_selectedGroups);
     widget.onSubGroupsChanged?.call(_selectedSubGroups);
+    widget.onBrokersChanged?.call(_selectedBrokers); // Added brokers callback
     widget.onReportTypeChanged?.call(_selectedReportType);
     widget.onBillWiseChanged?.call(_showBillWise);
     widget.onNarrationChanged?.call(_showNarration);
@@ -328,6 +361,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       _selectedCities = [];
       _selectedGroups = [];
       _selectedSubGroups = [];
+      _selectedBrokers = []; // Added brokers clear
       _selectedReportType = 'summary';
       _showBillWise = false;
       _showNarration = false;
@@ -552,6 +586,8 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         return 'Select Sub Groups';
       case FilterFieldId.ledger:
         return 'Select Ledgers';
+      case FilterFieldId.broker: // Added broker title
+        return 'Select Brokers';
       case FilterFieldId.radioSummaryDetail:
         return 'Report Type';
       case FilterFieldId.checkBoxBillWise:
@@ -731,6 +767,34 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
           onDropdownOpen: () {
             setState(() {
               _openDropdownId = 'ledger';
+            });
+          },
+          onDropdownClose: () {
+            setState(() {
+              _openDropdownId = null;
+            });
+          },
+        );
+
+      case FilterFieldId.broker: // Added broker dropdown
+        return CommonMultiSelectDropdown<KeyName>(
+          config: MultiSelectConfig<KeyName>(
+            items: widget.brokers ?? [],
+            selectedItems: _selectedBrokers,
+            onChanged: (items) {
+              setState(() {
+                _selectedBrokers = items;
+              });
+              widget.onBrokersChanged?.call(items);
+            },
+            displayName: (keyName) => keyName.name ?? '',
+            hintText: 'Select Brokers',
+            searchHintText: 'Search Brokers',
+            primaryColor: AppColors.primaryColor,
+          ),
+          onDropdownOpen: () {
+            setState(() {
+              _openDropdownId = 'broker';
             });
           },
           onDropdownClose: () {

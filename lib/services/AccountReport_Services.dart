@@ -902,4 +902,433 @@ static Future<Uint8List?> generateReceivableReport({
     throw Exception('Error generating receivable report: $e');
   }
 }
+
+//broker commissin apis
+// Fetch brokers list
+static Future<List<KeyName>> fetchBrokers() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getBroker'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((item) {
+        return KeyName(
+          key: item['Broker_Key'].toString(),
+          name: item['Broker_Name'],
+        );
+      }).toList();
+    } else {
+      throw Exception('Failed to load brokers');
+    }
+  } catch (e) {
+    debugPrint('Error fetching brokers: $e');
+    throw Exception('Error fetching brokers: $e');
+  }
+}
+
+static Future<List<KeyName>> fetchLedgersByCategory(String category) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerByCategory'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'led_cat': category,  // 'B' for Broker, 'C' for Customer, 'ALL' for all
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final List<KeyName> ledgers = data.map((item) {
+        return KeyName(
+          key: item['Led_Key'].toString(),
+          name: item['Led_Name'].toString(),
+        );
+      }).toList();
+      return ledgers;
+    } else {
+      throw Exception('Failed to load ledgers for category: $category');
+    }
+  } catch (e) {
+    debugPrint('Error fetching ledgers for category $category: $e');
+    throw Exception('Error fetching ledgers for category $category: $e');
+  }
+}
+
+// Fetch ledgers for broker commission
+static Future<List<KeyName>> fetchBrokerCommissionLedgers() async {
+  return fetchLedgersByCategory('B');
+}
+
+// Generate Broker Commission Receipt Report (Bill Wise)
+static Future<Uint8List?> generateBrokerCommissionReceiptReport({
+  required String fromDate,
+  required String toDate,
+  required List<String> brokerKeys,    // Empty list = all brokers
+  required List<String> stateKeys,     // Empty list = all states
+  required List<String> cityKeys,      // Empty list = all cities
+  required List<String> ledgerKeys,    // Empty list = all ledgers
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+    
+    // Build the request body
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": "broker_commission_receipt_billwise",  // Report name for broker commission
+      "report_type": "detail",  // Always detail for bill-wise report
+    };
+
+    // Add broker keys if provided (format as "['01100','01110']")
+    if (brokerKeys.isNotEmpty) {
+      final formattedBrokerKeys = brokerKeys.map((key) => "'$key'").join(',');
+      requestBody["broker_keys"] = "[$formattedBrokerKeys]";
+    }
+
+    // Add state keys if provided
+    if (stateKeys.isNotEmpty) {
+      final formattedStateKeys = stateKeys.map((key) => "'$key'").join(',');
+      requestBody["state_keys"] = "[$formattedStateKeys]";
+    }
+
+    // Add city keys if provided
+    if (cityKeys.isNotEmpty) {
+      final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+      requestBody["city_keys"] = "[$formattedCityKeys]";
+    }
+
+    // Add ledger keys if provided
+    if (ledgerKeys.isNotEmpty) {
+      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+      requestBody["led_keys"] = "[$formattedLedgerKeys]";
+    }
+
+    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+    debugPrint('Report Name: broker_commission_receipt_billwise');
+    debugPrint('Broker Keys: $brokerKeys');
+    debugPrint('State Keys: $stateKeys');
+    debugPrint('City Keys: $cityKeys');
+    debugPrint('Ledger Keys: $ledgerKeys');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),  // Same API endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null && contentType.contains('application/pdf')) {
+        debugPrint('PDF received successfully, size: ${response.bodyBytes.length} bytes');
+        return response.bodyBytes;
+      } else {
+        // Try to parse error message from response
+        try {
+          final responseData = jsonDecode(response.body);
+          throw Exception(responseData['message'] ?? 'Failed to generate broker commission receipt report');
+        } catch (e) {
+          throw Exception('Failed to generate broker commission receipt report');
+        }
+      }
+    } else {
+      throw Exception('Failed to load broker commission receipt report: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error generating broker commission receipt report: $e');
+    throw Exception('Error generating broker commission receipt report: $e');
+  }
+}
+
+//Outstanding Remainder Api
+// Fetch ledgers for outstanding remainder
+static Future<List<KeyName>> fetchOutstandingRemainderLedgers() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerForOutstandingRemainder'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final List<KeyName> ledgers = data.map((item) {
+        return KeyName(
+          key: item['Led_Key'].toString(),
+          name: item['Led_Name'].toString(),
+        );
+      }).toList();
+      return ledgers;
+    } else {
+      throw Exception('Failed to load outstanding remainder ledgers');
+    }
+  } catch (e) {
+    debugPrint('Error fetching outstanding remainder ledgers: $e');
+    throw Exception('Error fetching outstanding remainder ledgers: $e');
+  }
+}
+
+// Generate Outstanding Remainder Report
+static Future<Uint8List?> generateOutstandingRemainderReport({
+  required String fromDate,
+  required String toDate,
+  required List<String> stateKeys,     // Empty list = all states
+  required List<String> cityKeys,      // Empty list = all cities
+  required List<String> ledgerKeys,    // Empty list = all ledgers
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+    
+    // Build the request body
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": "outstanding_remainder",  // Report name for outstanding remainder
+      "report_type": "detail",
+    };
+
+    // Add state keys if provided (format as "['01100','01110']")
+    if (stateKeys.isNotEmpty) {
+      final formattedStateKeys = stateKeys.map((key) => "'$key'").join(',');
+      requestBody["state_keys"] = "[$formattedStateKeys]";
+    }
+
+    // Add city keys if provided
+    if (cityKeys.isNotEmpty) {
+      final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+      requestBody["city_keys"] = "[$formattedCityKeys]";
+    }
+
+    // Add ledger keys if provided
+    if (ledgerKeys.isNotEmpty) {
+      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+      requestBody["led_keys"] = "[$formattedLedgerKeys]";
+    }
+
+    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+    debugPrint('Report Name: outstanding_remainder');
+    debugPrint('State Keys: $stateKeys');
+    debugPrint('City Keys: $cityKeys');
+    debugPrint('Ledger Keys: $ledgerKeys');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),  // Same API endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null && contentType.contains('application/pdf')) {
+        debugPrint('PDF received successfully, size: ${response.bodyBytes.length} bytes');
+        return response.bodyBytes;
+      } else {
+        // Try to parse error message from response
+        try {
+          final responseData = jsonDecode(response.body);
+          throw Exception(responseData['message'] ?? 'Failed to generate outstanding remainder report');
+        } catch (e) {
+          throw Exception('Failed to generate outstanding remainder report');
+        }
+      }
+    } else {
+      throw Exception('Failed to load outstanding remainder report: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error generating outstanding remainder report: $e');
+    throw Exception('Error generating outstanding remainder report: $e');
+  }
+}
+
+//customer Ledger Api
+// Fetch customer ledgers
+static Future<List<KeyName>> fetchCustomerLedgers() async {
+  return fetchLedgersByCategory('C');
+}
+
+
+// Generate Customer Ledger Report
+static Future<Uint8List?> generateCustomerLedgerReport({
+  required String fromDate,
+  required String toDate,
+  required List<String> stateKeys,     // Empty list = all states
+  required List<String> cityKeys,      // Empty list = all cities
+  required List<String> ledgerKeys,    // Empty list = all ledgers
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+    
+    // Build the request body
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": "customer_ledger",  // Report name for customer ledger
+      "report_type": "detail",
+    };
+
+    // Add state keys if provided (format as "['01100','01110']")
+    if (stateKeys.isNotEmpty) {
+      final formattedStateKeys = stateKeys.map((key) => "'$key'").join(',');
+      requestBody["state_keys"] = "[$formattedStateKeys]";
+    }
+
+    // Add city keys if provided
+    if (cityKeys.isNotEmpty) {
+      final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+      requestBody["city_keys"] = "[$formattedCityKeys]";
+    }
+
+    // Add ledger keys if provided
+    if (ledgerKeys.isNotEmpty) {
+      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+      requestBody["led_keys"] = "[$formattedLedgerKeys]";
+    }
+
+    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+    debugPrint('Report Name: customer_ledger');
+    debugPrint('State Keys: $stateKeys');
+    debugPrint('City Keys: $cityKeys');
+    debugPrint('Ledger Keys: $ledgerKeys');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),  // Same API endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null && contentType.contains('application/pdf')) {
+        debugPrint('PDF received successfully, size: ${response.bodyBytes.length} bytes');
+        return response.bodyBytes;
+      } else {
+        // Try to parse error message from response
+        try {
+          final responseData = jsonDecode(response.body);
+          throw Exception(responseData['message'] ?? 'Failed to generate customer ledger report');
+        } catch (e) {
+          throw Exception('Failed to generate customer ledger report');
+        }
+      }
+    } else {
+      throw Exception('Failed to load customer ledger report: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error generating customer ledger report: $e');
+    throw Exception('Error generating customer ledger report: $e');
+  }
+}
+
+//customer Ac Billwise Api
+// Fetch customer billwise ledgers
+static Future<List<KeyName>> fetchCustomerBillwiseLedgers() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getCustomerBillwiseLedgers'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final List<KeyName> ledgers = data.map((item) {
+        return KeyName(
+          key: item['Led_Key'].toString(),
+          name: item['Led_Name'].toString(),
+        );
+      }).toList();
+      return ledgers;
+    } else {
+      throw Exception('Failed to load customer billwise ledgers');
+    }
+  } catch (e) {
+    debugPrint('Error fetching customer billwise ledgers: $e');
+    throw Exception('Error fetching customer billwise ledgers: $e');
+  }
+}
+
+// Generate Customer Billwise Report
+static Future<Uint8List?> generateCustomerBillwiseReport({
+  required String fromDate,
+  required String toDate,
+  required List<String> stateKeys,     // Empty list = all states
+  required List<String> cityKeys,      // Empty list = all cities
+  required List<String> ledgerKeys,    // Empty list = all ledgers
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+    
+    // Build the request body
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": "customer_ledger_billwise",  // Report name for customer billwise
+      "report_type": "detail",
+    };
+
+    // Add state keys if provided (format as "['01100','01110']")
+    if (stateKeys.isNotEmpty) {
+      final formattedStateKeys = stateKeys.map((key) => "'$key'").join(',');
+      requestBody["state_keys"] = "[$formattedStateKeys]";
+    }
+
+    // Add city keys if provided
+    if (cityKeys.isNotEmpty) {
+      final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+      requestBody["city_keys"] = "[$formattedCityKeys]";
+    }
+
+    // Add ledger keys if provided
+    if (ledgerKeys.isNotEmpty) {
+      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+      requestBody["led_keys"] = "[$formattedLedgerKeys]";
+    }
+
+    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+    debugPrint('Report Name: customer_ledger_billwise');
+    debugPrint('State Keys: $stateKeys');
+    debugPrint('City Keys: $cityKeys');
+    debugPrint('Ledger Keys: $ledgerKeys');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),  // Same API endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null && contentType.contains('application/pdf')) {
+        debugPrint('PDF received successfully, size: ${response.bodyBytes.length} bytes');
+        return response.bodyBytes;
+      } else {
+        // Try to parse error message from response
+        try {
+          final responseData = jsonDecode(response.body);
+          throw Exception(responseData['message'] ?? 'Failed to generate customer billwise report');
+        } catch (e) {
+          throw Exception('Failed to generate customer billwise report');
+        }
+      }
+    } else {
+      throw Exception('Failed to load customer billwise report: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error generating customer billwise report: $e');
+    throw Exception('Error generating customer billwise report: $e');
+  }
+}
+
 }
