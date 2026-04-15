@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:vrs_erp/Outstanding_Reports/Payable/outstanding_payable.dart';
+import 'package:vrs_erp/Outstanding_Reports/Receivable/outstanding_receivable.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/screens/MyWebViewPage.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
+import 'package:vrs_erp/services/Outstanding_Services.dart';
 import 'package:vrs_erp/widget/bottom_navbar.dart';
 
 const Color kPrimaryColor = Color(0xFF3B82F6);
@@ -36,6 +40,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Animation controllers for each button
   final List<AnimationController> _animationControllers = [];
   late AnimationController _shimmerController;
+  // Dashboard summary data
+  Map<String, double> _dashboardData = {
+    'Bank': 0.0,
+    'Bill Receivable': 0.0,
+    'Purchase': 0.0,
+    'Payment': 0.0,
+    'Bill Payable': 0.0,
+    'Sales': 0.0,
+    'Receipt': 0.0,
+    'Cash': 0.0,
+  };
+  bool _isLoadingCards = true;
+
+  Future<void> _fetchDashboardSummary() async {
+    setState(() {
+      _isLoadingCards = true;
+    });
+
+    try {
+      final response = await OutstandingService.getDashboardSummary();
+
+      setState(() {
+        _dashboardData = {
+          'Bank': (response['bankAmt'] ?? 0.0).toDouble(),
+          'Bill Receivable': (response['receivableBillAmt'] ?? 0.0).toDouble(),
+          'Purchase': (response['purchaseAmt'] ?? 0.0).toDouble(),
+          'Payment': (response['paymentAmt'] ?? 0.0).toDouble(),
+          'Bill Payable': (response['payableTotalAmt'] ?? 0.0).toDouble(),
+          'Sales': (response['salesAmt'] ?? 0.0).toDouble(),
+          'Receipt': (response['receiptAmt'] ?? 0.0).toDouble(),
+          'Cash': (response['cashAmt'] ?? 0.0).toDouble(),
+        };
+        _isLoadingCards = false;
+      });
+    } catch (e) {
+      print('Error fetching dashboard summary: $e');
+      setState(() {
+        _isLoadingCards = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -44,6 +89,193 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: false);
+
+    // Fetch dashboard summary
+    _fetchDashboardSummary();
+  }
+
+  Widget _buildDashboardCards() {
+    final List<Map<String, dynamic>> cardData = [
+      {
+        'title': 'Bank',
+        'icon': Icons.account_balance,
+        'color': Colors.blue,
+        'page': null,
+      },
+      {
+        'title': 'Bill Receivable',
+        'icon': Icons.receipt,
+        'color': Colors.green,
+        'page': OutstandingReceivablePage(),
+      },
+      {
+        'title': 'Purchase',
+        'icon': Icons.shopping_cart,
+        'color': Colors.orange,
+        'page': null,
+      },
+      {
+        'title': 'Payment',
+        'icon': Icons.payment,
+        'color': Colors.red,
+        'page': null,
+      },
+      {
+        'title': 'Bill Payable',
+        'icon': Icons.receipt_long,
+        'color': Colors.purple,
+        'page': OutstandingPayablePage(),
+      },
+      {
+        'title': 'Sales',
+        'icon': Icons.trending_up,
+        'color': Colors.teal,
+        'page': null,
+      },
+      {
+        'title': 'Receipt',
+        'icon': Icons.receipt,
+        'color': Colors.indigo,
+        'page': null,
+      },
+      {
+        'title': 'Cash',
+        'icon': Icons.currency_rupee,
+        'color': Colors.amber,
+        'page': null,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Financial Summary',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 70,
+          child:
+              _isLoadingCards
+                  ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryColor,
+                    ),
+                  )
+                  : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: cardData.length,
+                    itemBuilder: (context, index) {
+                      final card = cardData[index];
+                      final amount = _dashboardData[card['title']] ?? 0.0;
+                      return GestureDetector(
+                        onTap: () {
+                          if (card['page'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => card['page'],
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${card['title']} page coming soon',
+                                ),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 160,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border(
+                              left: BorderSide(
+                                color: card['color'] as Color,
+                                width: 4,
+                              ),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (card['color'] as Color).withOpacity(
+                                      0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    card['icon'],
+                                    size: 22,
+                                    color: card['color'],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        card['title'],
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '₹ ${NumberFormat('#,##,###').format(amount)}',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: card['color'],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   @override
@@ -121,12 +353,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
-        case 'Outstanding Report':
-        return IconStyle(
-          Icons.app_registration,
-          Colors.purple[700]!,
-          Colors.purple[50]!,
-        );
+    
+
       // case 'Web':
       //   return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
 
@@ -338,6 +566,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: IntrinsicHeight(
                       child: Column(
                         children: [
+                          _buildDashboardCards(),
                           _buildMainButtons(context, constraints.maxWidth),
                         ],
                       ),
@@ -422,13 +651,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //     Navigator.pushNamed(context, '/saleBillRegister');
     //   }, buttonWidth));
 
-
     // buttons.add(
     //   _buildFeatureButton(context, 'Production', () {
     //     Navigator.pushNamed(context, '/production');
     //   }, buttonWidth),
     // );
-
 
     // buttons.add(
     //   _buildFeatureButton(context, 'Ask VRS AI', () {
@@ -445,11 +672,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth),
     // );
 
-    // buttons.add(
-    //   _buildFeatureButton(context, 'Report', () {
-    //     Navigator.pushNamed(context, '/reportHomeScreen');
-    //   }, buttonWidth),
-    // );
+    buttons.add(
+      _buildFeatureButton(context, 'Report', () {
+        Navigator.pushNamed(context, '/reportHomeScreen');
+      }, buttonWidth),
+    );
 
     buttons.add(
       _buildFeatureButton(context, 'Accounts', () {
@@ -457,12 +684,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
-        buttons.add(
-      _buildFeatureButton(context, 'Outstanding Report', () {
-        Navigator.pushNamed(context, '/outstandingMainScreen');
-      }, buttonWidth),
-    );
-
+  
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
       buttons.add(

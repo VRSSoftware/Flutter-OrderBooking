@@ -23,6 +23,8 @@ import 'package:vrs_erp/Masters/Design/Design_Master.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/Outstanding_Reports/OutstandingMainScreen.dart';
+import 'package:vrs_erp/Outstanding_Reports/Payable/outstanding_payable.dart';
+import 'package:vrs_erp/Outstanding_Reports/Receivable/outstanding_receivable.dart';
 import 'package:vrs_erp/Reports/Customer/customer.dart';
 import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
 import 'package:vrs_erp/Reports/Order/Order.dart';
@@ -170,21 +172,21 @@ class MyApp extends StatelessWidget {
         '/accountDashboard': (context) => AccountDashboard(),
 
         //account book
-       '/cashBook': (context) => CashBookPage(),
-         '/bankBook': (context) => const BankBookPage(),
-         '/groupSummary': (context) => const GroupSummaryPage(),
-         '/groupVoucher': (context) => const GroupVoucherPage(),
+        '/cashBook': (context) => CashBookPage(),
+        '/bankBook': (context) => const BankBookPage(),
+        '/groupSummary': (context) => const GroupSummaryPage(),
+        '/groupVoucher': (context) => const GroupVoucherPage(),
         '/dayBook': (context) => const DayBookPage(),
         '/trialBalance': (context) => const TrialBalancePage(),
         '/receivable': (context) => const ReceivablePage(),
+        '/receivableDash': (context) => const OutstandingReceivablePage(),
         '/payable': (context) => const PayablePage(),
+        '/payableDash': (context) => const OutstandingPayablePage(),
         '/profitLoss': (context) => const ProfitLossPage(),
         '/balanceSheet': (context) => const BalanceSheetPage(),
 
-
         //outstanding Reports
         '/outstandingMainScreen': (context) => const OutstandingMainScreen(),
-
       },
 
       // home: SalesOrderInvoicePage(),
