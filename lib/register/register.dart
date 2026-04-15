@@ -1433,6 +1433,7 @@ Future<void> _selectDateForCustom(bool isFromDate) async {
             builder:
                 (context) => OrderReportViewPage(
                   orderNo: registerOrder.orderId,
+                  orderStatus: registerOrder.deliveryType,
                   orderData: registerOrder,
                   showOnlyWithImage:
                       checkedOrders[registerOrder.orderNo] ?? false,

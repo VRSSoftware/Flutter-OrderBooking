@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +17,7 @@ import 'dart:io';
 
 class OrderReportViewPage extends StatefulWidget {
   final String orderNo;
+  final String orderStatus;
   final dynamic orderData;
   final bool showOnlyWithImage; // Controls whether to show image column
   final bool fromRegisterPage;
@@ -26,10 +26,11 @@ class OrderReportViewPage extends StatefulWidget {
   const OrderReportViewPage({
     Key? key,
     required this.orderNo,
+    this.orderStatus = 'Draft',
     this.orderData,
     this.showOnlyWithImage = false,
     this.fromRegisterPage = false,
-        this.defaultWhatsAppMobileNo, 
+    this.defaultWhatsAppMobileNo, 
   }) : super(key: key);
 
   @override
@@ -52,7 +53,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
   Future<void> _fetchReportData() async {
     try {
-      final data = await ApiService.fetchOrderReportData(widget.orderNo);
+      final data = await ApiService.fetchOrderReportDataPost(widget.orderNo, widget.orderStatus);
       setState(() {
         reportData = data;
         headerData = data['headerData'] ?? {};
