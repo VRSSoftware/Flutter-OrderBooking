@@ -3,13 +3,14 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/keyName.dart';
 import 'package:vrs_erp/services/AccountReport_Services.dart';
 import 'package:vrs_erp/services/app_services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart';   
 
 class DayBookPage extends StatefulWidget {
   const DayBookPage({super.key});
@@ -234,86 +235,119 @@ class _DayBookPageState extends State<DayBookPage> {
     return null;
   }
 
-  Future<void> _viewReport() async {
-    setState(() {
-      _dateRangeError = null;
-    });
-
-    if (!_formKey.currentState!.validate()) return;
-
-    final dateError = _validateFormDateRange();
-    if (dateError != null) {
-      setState(() {
-        _dateRangeError = dateError;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() => _isLoadingReport = true);
-
-    try {
-      // Determine report type based on showBillWise
-      String reportType;
-      if (showBillWise) {
-        reportType = 'daybook_billWise';
-      } else {
-        reportType = 'daybook';
-      }
-
-      // Prepare additional parameters for Day Book
-      final Map<String, dynamic> additionalParams = {
-        "report_type": selectedReportType,
-        "showNarration": showNarration,
-      };
-
-      // Use the common service to generate report
-      final pdfBytes = await AccountReportService.generateDayBookReport(
-        reportType: reportType,
-        fromDate: fromDateController.text,
-        toDate: toDateController.text,
-        additionalParams: additionalParams,
-      );
-
-      if (mounted && pdfBytes != null) {
-        final fileName =
-            'DayBook_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = await AccountReportService.savePdfToTemp(
-          pdfBytes,
-          fileName,
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => CommonPdfViewer(
-                  pdfPath: filePath,
-                  title: 'Day Book',
-                  subtitle:
-                      showBillWise ? 'Bill Wise Report' : 'Standard Report',
-                  fromDate: fromDateController.text,
-                  toDate: toDateController.text,
-                  reportType: selectedReportType,
-                ),
+  Future<void> _openPdfDirectly(String pdfPath) async {
+  try {
+    final file = File(pdfPath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file not found'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingReport = false);
-      }
+      return;
+    }
+
+    final result = await OpenFile.open(pdfPath);
+
+    if (!mounted) return;
+
+    if (result.type == ResultType.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening PDF...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (result.type == ResultType.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No PDF viewer app found on your device'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error opening PDF: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open PDF: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
 
+Future<void> _viewReport() async {
+  setState(() {
+    _dateRangeError = null;
+  });
+
+  if (!_formKey.currentState!.validate()) return;
+
+  final dateError = _validateFormDateRange();
+  if (dateError != null) {
+    setState(() {
+      _dateRangeError = dateError;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+    );
+    return;
+  }
+
+  setState(() => _isLoadingReport = true);
+
+  try {
+    // Determine report type based on showBillWise
+    String reportType;
+    if (showBillWise) {
+      reportType = 'daybook_billWise';
+    } else {
+      reportType = 'daybook';
+    }
+
+    // Prepare additional parameters for Day Book
+    final Map<String, dynamic> additionalParams = {
+      "report_type": selectedReportType,
+      "showNarration": showNarration,
+    };
+
+    // Use the common service to generate report
+    final pdfBytes = await AccountReportService.generateDayBookReport(
+      reportType: reportType,
+      fromDate: fromDateController.text,
+      toDate: toDateController.text,
+      additionalParams: additionalParams,
+    );
+
+    if (mounted && pdfBytes != null) {
+      final fileName =
+          'DayBook_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+      final filePath = await AccountReportService.savePdfToTemp(
+        pdfBytes,
+        fileName,
+      );
+
+      // Directly open PDF without navigation
+      await _openPdfDirectly(filePath);
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoadingReport = false);
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

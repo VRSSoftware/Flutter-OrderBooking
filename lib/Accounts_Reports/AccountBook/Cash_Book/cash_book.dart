@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -21,9 +24,9 @@ class _CashBookPageState extends State<CashBookPage> {
   final TextEditingController toDateController = TextEditingController();
 
   // Selected values - OPTIONAL FILTERS
-  List<KeyName> selectedLedgers = [];  // Optional - if empty, all ledgers
-  String selectedReportType = 'summary';  // Optional - default summary
-  bool showNarration = false;  // Optional - default false
+  List<KeyName> selectedLedgers = []; // Optional - if empty, all ledgers
+  String selectedReportType = 'summary'; // Optional - default summary
+  bool showNarration = false; // Optional - default false
 
   // Lists
   List<KeyName> ledgers = [];
@@ -263,6 +266,55 @@ class _CashBookPageState extends State<CashBookPage> {
     return 'All Ledgers';
   }
 
+  Future<void> _openPdfDirectly(String pdfPath) async {
+    try {
+      // Check if file exists
+      final file = File(pdfPath);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Open with external app - no permission needed for temp files
+      final result = await OpenFile.open(pdfPath);
+
+      if (!mounted) return;
+
+      if (result.type == ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening PDF...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else if (result.type == ResultType.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No PDF viewer app found on your device'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error opening PDF: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open PDF: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _viewReport() async {
     setState(() {
       _dateRangeError = null;
@@ -284,13 +336,12 @@ class _CashBookPageState extends State<CashBookPage> {
     setState(() => _isLoadingReport = true);
 
     try {
-      // Get all selected ledger keys (optional - can be empty)
       final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
 
       final pdfBytes = await AccountReportService.generateCashBookReport(
         fromDate: fromDateController.text,
         toDate: toDateController.text,
-        ledgerKeys: ledgerKeys,  // Can be empty list for all ledgers
+        ledgerKeys: ledgerKeys,
         reportType: selectedReportType,
         showNarration: showNarration,
       );
@@ -303,20 +354,8 @@ class _CashBookPageState extends State<CashBookPage> {
           fileName,
         );
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => CommonPdfViewer(
-                  pdfPath: filePath,
-                  title: 'Cash Book',
-                  subtitle: _getSubtitle(),
-                  fromDate: fromDateController.text,
-                  toDate: toDateController.text,
-                  reportType: selectedReportType,
-                ),
-          ),
-        );
+        // Directly open PDF without any permission checks
+        await _openPdfDirectly(filePath);
       }
     } catch (e) {
       if (mounted) {

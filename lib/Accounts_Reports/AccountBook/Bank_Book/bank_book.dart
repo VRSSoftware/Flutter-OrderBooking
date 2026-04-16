@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -263,77 +266,107 @@ class _BankBookPageState extends State<BankBookPage> {
     return 'All Ledgers';
   }
 
-  Future<void> _viewReport() async {
-    setState(() {
-      _dateRangeError = null;
-    });
-
-    if (!_formKey.currentState!.validate()) return;
-
-    final dateError = _validateFormDateRange();
-    if (dateError != null) {
-      setState(() {
-        _dateRangeError = dateError;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    // No validation for selectedLedgers - it's optional
-    // If empty, it means all ledgers
-
-    setState(() => _isLoadingReport = true);
-
-    try {
-      // Get all selected ledger keys (optional - can be empty)
-      final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
-
-      final pdfBytes = await AccountReportService.generateBankBookReport(
-        fromDate: fromDateController.text,
-        toDate: toDateController.text,
-        ledgerKeys: ledgerKeys,  // Can be empty list for all ledgers
-        reportType: selectedReportType,
-        showNarration: showNarration,
-      );
-
-      if (mounted && pdfBytes != null) {
-        final fileName =
-            'BankBook_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = await AccountReportService.savePdfToTemp(
-          pdfBytes,
-          fileName,
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => CommonPdfViewer(
-                  pdfPath: filePath,
-                  title: 'Bank Book',
-                  subtitle: _getSubtitle(),
-                  fromDate: fromDateController.text,
-                  toDate: toDateController.text,
-                  reportType: selectedReportType,
-                ),
+  Future<void> _openPdfDirectly(String pdfPath) async {
+  try {
+    final file = File(pdfPath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file not found'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingReport = false);
-      }
+      return;
+    }
+
+    final result = await OpenFile.open(pdfPath);
+
+    if (!mounted) return;
+
+    if (result.type == ResultType.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening PDF...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (result.type == ResultType.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No PDF viewer app found on your device'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error opening PDF: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open PDF: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
 
+ Future<void> _viewReport() async {
+  setState(() {
+    _dateRangeError = null;
+  });
+
+  if (!_formKey.currentState!.validate()) return;
+
+  final dateError = _validateFormDateRange();
+  if (dateError != null) {
+    setState(() {
+      _dateRangeError = dateError;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+    );
+    return;
+  }
+
+  setState(() => _isLoadingReport = true);
+
+  try {
+    final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
+
+    final pdfBytes = await AccountReportService.generateBankBookReport(
+      fromDate: fromDateController.text,
+      toDate: toDateController.text,
+      ledgerKeys: ledgerKeys,
+      reportType: selectedReportType,
+      showNarration: showNarration,
+    );
+
+    if (mounted && pdfBytes != null) {
+      final fileName =
+          'BankBook_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+      final filePath = await AccountReportService.savePdfToTemp(
+        pdfBytes,
+        fileName,
+      );
+
+      // Directly open PDF without navigation
+      await _openPdfDirectly(filePath);
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoadingReport = false);
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

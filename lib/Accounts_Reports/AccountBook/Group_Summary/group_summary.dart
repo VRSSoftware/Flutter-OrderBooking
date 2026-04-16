@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -270,6 +273,54 @@ class _GroupSummaryPageState extends State<GroupSummaryPage> {
       return 'All Groups';
     }
   }
+
+Future<void> _openPdfDirectly(String pdfPath) async {
+  try {
+    final file = File(pdfPath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file not found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await OpenFile.open(pdfPath);
+
+    if (!mounted) return;
+
+    if (result.type == ResultType.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening PDF...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (result.type == ResultType.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No PDF viewer app found on your device'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error opening PDF: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open PDF: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
 Future<void> _viewReport() async {
   setState(() {
     _dateRangeError = null;
@@ -291,9 +342,7 @@ Future<void> _viewReport() async {
   setState(() => _isLoadingReport = true);
 
   try {
-    // CHANGE: Get ALL selected group keys (not just first)
     final groupKeys = selectedGroups.map((e) => e.key).toList();
-    // CHANGE: Get ALL selected sub group keys (not just first)
     final subGroupKeys = selectedSubGroups.map((e) => e.key).toList();
 
     debugPrint('Selected Group Keys: $groupKeys');
@@ -302,8 +351,8 @@ Future<void> _viewReport() async {
     final pdfBytes = await AccountReportService.generateGroupSummaryReport(
       fromDate: fromDateController.text,
       toDate: toDateController.text,
-      groupKeys: groupKeys,        // CHANGE: Pass the list
-      subGroupKeys: subGroupKeys,  // CHANGE: Pass the list
+      groupKeys: groupKeys,
+      subGroupKeys: subGroupKeys,
       reportType: selectedReportType,
     );
 
@@ -313,19 +362,8 @@ Future<void> _viewReport() async {
         'GroupSummary_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CommonPdfViewer(
-            pdfPath: path,
-            title: 'Group Summary',
-            subtitle: _getSubtitle(),
-            fromDate: fromDateController.text,
-            toDate: toDateController.text,
-            reportType: selectedReportType,
-          ),
-        ),
-      );
+      // Directly open PDF without navigation
+      await _openPdfDirectly(path);
     }
   } catch (e) {
     _showError(e);
@@ -333,7 +371,6 @@ Future<void> _viewReport() async {
     setState(() => _isLoadingReport = false);
   }
 }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

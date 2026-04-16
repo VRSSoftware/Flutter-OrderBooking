@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Ledger/LedgerFilterPage.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -452,74 +454,110 @@ class _LedgerPageState extends State<LedgerPage> {
     return parts.join(' • ');
   }
 
-  Future<void> _viewReport() async {
-    setState(() {
-      _dateRangeError = null;
-    });
 
-    if (!_formKey.currentState!.validate()) return;
-
-    final dateError = _validateFormDateRange();
-    if (dateError != null) {
-      setState(() {
-        _dateRangeError = dateError;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() => _isLoadingReport = true);
-
-    try {
-      final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
-      final stateIds = selectedStates.map((e) => e.key).toList();
-      final cityIds = selectedCities.map((e) => e.key).toList();
-      final groupIds = selectedGroups.map((e) => e.key).toList();
-      final subGroupIds = selectedSubGroups.map((e) => e.key).toList();
-
-      final pdfBytes = await AccountReportService.generateLedgerReport(
-        fromDate: fromDateController.text,
-        toDate: toDateController.text,
-        ledgerType: selectedLedgerType,
-        ledgerKeys: ledgerKeys,
-        stateIds: stateIds,
-        cityIds: cityIds,
-        groupIds: groupIds,
-        subGroupIds: subGroupIds,
-        reportType: selectedReportType,
-        isBillWise: isBillWise,
-        isNarration: isNarration,
-      );
-
-      if (pdfBytes != null && mounted) {
-        final path = await AccountReportService.savePdfToTemp(
-          pdfBytes,
-          'Ledger_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CommonPdfViewer(
-              pdfPath: path,
-              title: 'Ledger Report',
-              subtitle: _getSubtitle(),
-              fromDate: fromDateController.text,
-              toDate: toDateController.text,
-              reportType: selectedReportType,
-            ),
+  Future<void> _openPdfDirectly(String pdfPath) async {
+  try {
+    final file = File(pdfPath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file not found'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      _showError(e);
-    } finally {
-      setState(() => _isLoadingReport = false);
+      return;
+    }
+
+    final result = await OpenFile.open(pdfPath);
+
+    if (!mounted) return;
+
+    if (result.type == ResultType.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening PDF...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (result.type == ResultType.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No PDF viewer app found on your device'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error opening PDF: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open PDF: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
 
+Future<void> _viewReport() async {
+  setState(() {
+    _dateRangeError = null;
+  });
+
+  if (!_formKey.currentState!.validate()) return;
+
+  final dateError = _validateFormDateRange();
+  if (dateError != null) {
+    setState(() {
+      _dateRangeError = dateError;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+    );
+    return;
+  }
+
+  setState(() => _isLoadingReport = true);
+
+  try {
+    final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
+    final stateIds = selectedStates.map((e) => e.key).toList();
+    final cityIds = selectedCities.map((e) => e.key).toList();
+    final groupIds = selectedGroups.map((e) => e.key).toList();
+    final subGroupIds = selectedSubGroups.map((e) => e.key).toList();
+
+    final pdfBytes = await AccountReportService.generateLedgerReport(
+      fromDate: fromDateController.text,
+      toDate: toDateController.text,
+      ledgerType: selectedLedgerType,
+      ledgerKeys: ledgerKeys,
+      stateIds: stateIds,
+      cityIds: cityIds,
+      groupIds: groupIds,
+      subGroupIds: subGroupIds,
+      reportType: selectedReportType,
+      isBillWise: isBillWise,
+      isNarration: isNarration,
+    );
+
+    if (pdfBytes != null && mounted) {
+      final path = await AccountReportService.savePdfToTemp(
+        pdfBytes,
+        'Ledger_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+
+      // Directly open PDF without navigation
+      await _openPdfDirectly(path);
+    }
+  } catch (e) {
+    _showError(e);
+  } finally {
+    setState(() => _isLoadingReport = false);
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

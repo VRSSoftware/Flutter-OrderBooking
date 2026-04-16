@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -337,73 +340,108 @@ class _OutstandingRemainderPageState extends State<OutstandingRemainderPage> {
     return filters.join(' • ');
   }
 
-  Future<void> _viewReport() async {
-    setState(() {
-      _dateRangeError = null;
-    });
-
-    if (!_formKey.currentState!.validate()) return;
-
-    final dateError = _validateFormDateRange();
-    if (dateError != null) {
-      setState(() {
-        _dateRangeError = dateError;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-      );
+  Future<void> _openPdfDirectly(String pdfPath) async {
+  try {
+    final file = File(pdfPath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF file not found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
-    setState(() => _isLoadingReport = true);
+    final result = await OpenFile.open(pdfPath);
 
-    try {
-      // Get all selected filter keys
-      final stateKeys = selectedStates.map((e) => e.key).toList();
-      final cityKeys = selectedCities.map((e) => e.key).toList();
-      final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
+    if (!mounted) return;
 
-      final pdfBytes = await AccountReportService.generateOutstandingRemainderReport(
-        fromDate: fromDateController.text,
-        toDate: toDateController.text,
-        stateKeys: stateKeys,
-        cityKeys: cityKeys,
-        ledgerKeys: ledgerKeys,
+    if (result.type == ResultType.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening PDF...'),
+          duration: Duration(seconds: 1),
+        ),
       );
-
-      if (mounted && pdfBytes != null) {
-        final fileName = 'Outstanding_Remainder_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = await AccountReportService.savePdfToTemp(pdfBytes, fileName);
-
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CommonPdfViewer(
-                pdfPath: filePath,
-                title: 'Outstanding Remainder',
-                subtitle: _getSubtitle(),
-                fromDate: fromDateController.text,
-                toDate: toDateController.text,
-                reportType: 'detail',
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingReport = false);
-      }
+    } else if (result.type == ResultType.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No PDF viewer app found on your device'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Error opening PDF: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open PDF: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
 
+Future<void> _viewReport() async {
+  setState(() {
+    _dateRangeError = null;
+  });
+
+  if (!_formKey.currentState!.validate()) return;
+
+  final dateError = _validateFormDateRange();
+  if (dateError != null) {
+    setState(() {
+      _dateRangeError = dateError;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+    );
+    return;
+  }
+
+  setState(() => _isLoadingReport = true);
+
+  try {
+    // Get all selected filter keys
+    final stateKeys = selectedStates.map((e) => e.key).toList();
+    final cityKeys = selectedCities.map((e) => e.key).toList();
+    final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
+
+    final pdfBytes = await AccountReportService.generateOutstandingRemainderReport(
+      fromDate: fromDateController.text,
+      toDate: toDateController.text,
+      stateKeys: stateKeys,
+      cityKeys: cityKeys,
+      ledgerKeys: ledgerKeys,
+    );
+
+    if (mounted && pdfBytes != null) {
+      final fileName = 'Outstanding_Remainder_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+      final filePath = await AccountReportService.savePdfToTemp(pdfBytes, fileName);
+
+      if (mounted) {
+        // Directly open PDF without navigation
+        await _openPdfDirectly(filePath);
+      }
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoadingReport = false);
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -718,79 +756,6 @@ class _OutstandingRemainderPageState extends State<OutstandingRemainderPage> {
                   ],
                 ),
               ),
-
-              // Selected Filters Summary Card
-              if (_hasFilters) ...[
-                const SizedBox(height: 12),
-                CommonCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.filter_list,
-                            size: 18,
-                            color: AppColors.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Active Filters',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (selectedStates.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedStates.length == 1
-                                  ? 'State: ${selectedStates.first.name}'
-                                  : '${selectedStates.length} States',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedStates = [];
-                                });
-                              },
-                            ),
-                          if (selectedCities.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedCities.length == 1
-                                  ? 'City: ${selectedCities.first.name}'
-                                  : '${selectedCities.length} Cities',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedCities = [];
-                                });
-                              },
-                            ),
-                          if (selectedLedgers.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedLedgers.length == 1
-                                  ? 'Ledger: ${selectedLedgers.first.name}'
-                                  : '${selectedLedgers.length} Ledgers',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedLedgers = [];
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
               // View Report Button
               CommonButton(
                 text: 'View Report',

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
@@ -10,10 +13,12 @@ class BrokerCommissionReceiptPage extends StatefulWidget {
   const BrokerCommissionReceiptPage({super.key});
 
   @override
-  State<BrokerCommissionReceiptPage> createState() => _BrokerCommissionReceiptPageState();
+  State<BrokerCommissionReceiptPage> createState() =>
+      _BrokerCommissionReceiptPageState();
 }
 
-class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPage> {
+class _BrokerCommissionReceiptPageState
+    extends State<BrokerCommissionReceiptPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -21,10 +26,10 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
   final TextEditingController toDateController = TextEditingController();
 
   // Selected values - OPTIONAL FILTERS
-  List<KeyName> selectedBrokers = [];  // Optional - if empty, all brokers
-  List<KeyName> selectedStates = [];   // Optional - if empty, all states
-  List<KeyName> selectedCities = [];   // Optional - if empty, all cities
-  List<KeyName> selectedLedgers = [];  // Optional - if empty, all ledgers
+  List<KeyName> selectedBrokers = []; // Optional - if empty, all brokers
+  List<KeyName> selectedStates = []; // Optional - if empty, all states
+  List<KeyName> selectedCities = []; // Optional - if empty, all cities
+  List<KeyName> selectedLedgers = []; // Optional - if empty, all ledgers
 
   // Lists for dropdowns
   List<KeyName> brokers = [];
@@ -96,9 +101,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingBrokers = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load brokers: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load brokers: $e')));
       }
     }
   }
@@ -116,9 +121,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingStates = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load states: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load states: $e')));
       }
     }
   }
@@ -136,9 +141,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingCities = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load cities: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load cities: $e')));
       }
     }
   }
@@ -146,7 +151,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
   Future<void> fetchBrokerCommissionLedgers() async {
     setState(() => _isLoadingLedgers = true);
     try {
-      final fetchedLedgers = await AccountReportService.fetchBrokerCommissionLedgers();
+      final fetchedLedgers = await AccountReportService.fetchBrokerLedgers();
       if (mounted) {
         setState(() {
           ledgers = fetchedLedgers;
@@ -156,9 +161,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingLedgers = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load ledgers: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load ledgers: $e')));
       }
     }
   }
@@ -168,7 +173,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
       if (fromDateController.text.isNotEmpty &&
           toDateController.text.isNotEmpty) {
         try {
-          final fromDate = DateFormat('dd/MM/yyyy').parse(fromDateController.text);
+          final fromDate = DateFormat(
+            'dd/MM/yyyy',
+          ).parse(fromDateController.text);
           final toDate = DateFormat('dd/MM/yyyy').parse(toDateController.text);
 
           if (toDate.isBefore(fromDate)) {
@@ -330,7 +337,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
 
   String _getSubtitle() {
     List<String> filters = [];
-    
+
     if (selectedBrokers.isNotEmpty) {
       if (selectedBrokers.length == 1) {
         filters.add('Broker: ${selectedBrokers.first.name}');
@@ -338,7 +345,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
         filters.add('${selectedBrokers.length} Brokers');
       }
     }
-    
+
     if (selectedStates.isNotEmpty) {
       if (selectedStates.length == 1) {
         filters.add('State: ${selectedStates.first.name}');
@@ -346,7 +353,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
         filters.add('${selectedStates.length} States');
       }
     }
-    
+
     if (selectedCities.isNotEmpty) {
       if (selectedCities.length == 1) {
         filters.add('City: ${selectedCities.first.name}');
@@ -354,7 +361,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
         filters.add('${selectedCities.length} Cities');
       }
     }
-    
+
     if (selectedLedgers.isNotEmpty) {
       if (selectedLedgers.length == 1) {
         filters.add('Ledger: ${selectedLedgers.first.name}');
@@ -362,12 +369,59 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
         filters.add('${selectedLedgers.length} Ledgers');
       }
     }
-    
+
     if (filters.isEmpty) {
       return 'All Brokers';
     }
-    
+
     return filters.join(' • ');
+  }
+
+  Future<void> _openPdfDirectly(String pdfPath) async {
+    try {
+      final file = File(pdfPath);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final result = await OpenFile.open(pdfPath);
+
+      if (!mounted) return;
+
+      if (result.type == ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening PDF...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else if (result.type == ResultType.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No PDF viewer app found on your device'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error opening PDF: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open PDF: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _viewReport() async {
@@ -397,33 +451,27 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
       final cityKeys = selectedCities.map((e) => e.key).toList();
       final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
 
-      final pdfBytes = await AccountReportService.generateBrokerCommissionReceiptReport(
-        fromDate: fromDateController.text,
-        toDate: toDateController.text,
-        brokerKeys: brokerKeys,
-        stateKeys: stateKeys,
-        cityKeys: cityKeys,
-        ledgerKeys: ledgerKeys,
-      );
+      final pdfBytes =
+          await AccountReportService.generateBrokerCommissionReceiptReport(
+            fromDate: fromDateController.text,
+            toDate: toDateController.text,
+            brokerKeys: brokerKeys,
+            stateKeys: stateKeys,
+            cityKeys: cityKeys,
+            ledgerKeys: ledgerKeys,
+          );
 
       if (mounted && pdfBytes != null) {
-        final fileName = 'Broker_Commission_Receipt_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
-        final filePath = await AccountReportService.savePdfToTemp(pdfBytes, fileName);
+        final fileName =
+            'Broker_Commission_Receipt_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+        final filePath = await AccountReportService.savePdfToTemp(
+          pdfBytes,
+          fileName,
+        );
 
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CommonPdfViewer(
-                pdfPath: filePath,
-                title: 'Broker Commission Receipt',
-                subtitle: _getSubtitle(),
-                fromDate: fromDateController.text,
-                toDate: toDateController.text,
-                reportType: 'detail',
-              ),
-            ),
-          );
+          // Directly open PDF without navigation
+          await _openPdfDirectly(filePath);
         }
       }
     } catch (e) {
@@ -455,47 +503,48 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CommonFilterPage(
-                        title: 'Broker Commission Receipt Filters',
-                        reportType: 'BrokerCommReceipt',
-                        brokers: brokers,
-                        states: states,
-                        cities: cities,
-                        ledgers: ledgers,
-                        initialBrokers: selectedBrokers,
-                        initialStates: selectedStates,
-                        initialCities: selectedCities,
-                        initialLedgers: selectedLedgers,
-                        onBrokersChanged: (value) {
-                          setState(() {
-                            selectedBrokers = value ?? [];
-                          });
-                        },
-                        onStatesChanged: (value) {
-                          setState(() {
-                            selectedStates = value ?? [];
-                          });
-                        },
-                        onCitiesChanged: (value) {
-                          setState(() {
-                            selectedCities = value ?? [];
-                          });
-                        },
-                        onLedgersChanged: (value) {
-                          setState(() {
-                            selectedLedgers = value ?? [];
-                          });
-                        },
-                        onApply: () {},
-                        onClear: () {
-                          setState(() {
-                            selectedBrokers = [];
-                            selectedStates = [];
-                            selectedCities = [];
-                            selectedLedgers = [];
-                          });
-                        },
-                      ),
+                      builder:
+                          (context) => CommonFilterPage(
+                            title: 'Broker Commission Receipt Filters',
+                            reportType: 'BrokerCommReceipt',
+                            brokers: brokers,
+                            states: states,
+                            cities: cities,
+                            ledgers: ledgers,
+                            initialBrokers: selectedBrokers,
+                            initialStates: selectedStates,
+                            initialCities: selectedCities,
+                            initialLedgers: selectedLedgers,
+                            onBrokersChanged: (value) {
+                              setState(() {
+                                selectedBrokers = value ?? [];
+                              });
+                            },
+                            onStatesChanged: (value) {
+                              setState(() {
+                                selectedStates = value ?? [];
+                              });
+                            },
+                            onCitiesChanged: (value) {
+                              setState(() {
+                                selectedCities = value ?? [];
+                              });
+                            },
+                            onLedgersChanged: (value) {
+                              setState(() {
+                                selectedLedgers = value ?? [];
+                              });
+                            },
+                            onApply: () {},
+                            onClear: () {
+                              setState(() {
+                                selectedBrokers = [];
+                                selectedStates = [];
+                                selectedCities = [];
+                                selectedLedgers = [];
+                              });
+                            },
+                          ),
                     ),
                   );
                 },
@@ -569,9 +618,10 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: _dateRangeError != null
-                                        ? Colors.red
-                                        : AppColors.slateBorder,
+                                    color:
+                                        _dateRangeError != null
+                                            ? Colors.red
+                                            : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -595,7 +645,9 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap: () => _selectDate(fromDateController),
+                                        onTap:
+                                            () =>
+                                                _selectDate(fromDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,
@@ -654,9 +706,10 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: _dateRangeError != null
-                                        ? Colors.red
-                                        : AppColors.slateBorder,
+                                    color:
+                                        _dateRangeError != null
+                                            ? Colors.red
+                                            : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -680,7 +733,8 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap: () => _selectDate(toDateController),
+                                        onTap:
+                                            () => _selectDate(toDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,
@@ -761,90 +815,6 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
                   ],
                 ),
               ),
-
-              // Selected Filters Summary Card
-              if (_hasFilters) ...[
-                const SizedBox(height: 12),
-                CommonCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.filter_list,
-                            size: 18,
-                            color: AppColors.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Active Filters',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (selectedBrokers.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedBrokers.length == 1
-                                  ? 'Broker: ${selectedBrokers.first.name}'
-                                  : '${selectedBrokers.length} Brokers',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedBrokers = [];
-                                });
-                              },
-                            ),
-                          if (selectedStates.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedStates.length == 1
-                                  ? 'State: ${selectedStates.first.name}'
-                                  : '${selectedStates.length} States',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedStates = [];
-                                });
-                              },
-                            ),
-                          if (selectedCities.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedCities.length == 1
-                                  ? 'City: ${selectedCities.first.name}'
-                                  : '${selectedCities.length} Cities',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedCities = [];
-                                });
-                              },
-                            ),
-                          if (selectedLedgers.isNotEmpty)
-                            _buildFilterChip(
-                              label: selectedLedgers.length == 1
-                                  ? 'Ledger: ${selectedLedgers.first.name}'
-                                  : '${selectedLedgers.length} Ledgers',
-                              onDeleted: () {
-                                setState(() {
-                                  selectedLedgers = [];
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
               // View Report Button
               CommonButton(
                 text: 'View Report',
@@ -868,9 +838,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
       decoration: BoxDecoration(
         color: AppColors.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primaryColor.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -886,11 +854,7 @@ class _BrokerCommissionReceiptPageState extends State<BrokerCommissionReceiptPag
           const SizedBox(width: 6),
           GestureDetector(
             onTap: onDeleted,
-            child: Icon(
-              Icons.close,
-              size: 14,
-              color: AppColors.primaryColor,
-            ),
+            child: Icon(Icons.close, size: 14, color: AppColors.primaryColor),
           ),
         ],
       ),
