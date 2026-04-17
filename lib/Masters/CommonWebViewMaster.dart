@@ -29,9 +29,7 @@ class WebViewMaster extends StatelessWidget {
         backgroundColor: AppColors.primaryColor,
         elevation: 3,
         centerTitle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-        ),
+      
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,

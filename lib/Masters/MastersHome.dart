@@ -573,10 +573,10 @@ class _MastersHomeState extends State<MastersHome> {
                       ),
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
+                      // border: OutlineInputBorder(
+                      //   borderRadius: BorderRadius.circular(8),
+                      //   borderSide: BorderSide.none,
+                      // ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                   ),
