@@ -17,9 +17,12 @@ import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Payable/payable.dar
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Profit_Loss/Profit_Loss.dart';
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Receivables/receivables.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Trial_Balance/trial_balance.dart';
+
 import 'package:vrs_erp/Masters/Customer/Customer.dart';
 import 'package:vrs_erp/Masters/Customer/CustomerList.dart';
-import 'package:vrs_erp/Masters/Design/Design_Master.dart';
+import 'package:vrs_erp/Masters/Customer/CustomerMaster.dart';
+
+import 'package:vrs_erp/Masters/MastersHome.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/Outstanding_Reports/OutstandingMainScreen.dart';
@@ -162,8 +165,6 @@ class MyApp extends StatelessWidget {
         '/image': (context) => FabricToGarmentGenerator(),
         '/vrsai': (context) => AIHomeScreen(),
         '/testAI': (context) => FashionDesignerScreen(),
-        '/design': (context) => DesignMaster(),
-        '/customer': (context) => CustomerList(),
         '/ai_chat_reports': (context) => aiChatReportWeb(),
         '/payable': (context) => PayableReport(),
         '/receivable': (context) => ReceivableReport(),
@@ -187,6 +188,10 @@ class MyApp extends StatelessWidget {
 
         //outstanding Reports
         '/outstandingMainScreen': (context) => const OutstandingMainScreen(),
+
+        //Masters
+        '/masters': (context) => const MastersHome(),
+        '/customer': (context) => CustomerMaster(),
       },
 
       // home: SalesOrderInvoicePage(),

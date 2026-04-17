@@ -353,6 +353,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
+         case 'Masters':
+        return IconStyle(Icons.receipt, Colors.brown[700]!, Colors.red[50]!);
+
+
     
 
       // case 'Web':
@@ -683,6 +687,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/accountDashboard');
       }, buttonWidth),
     );
+
+     buttons.add(
+      _buildFeatureButton(context, 'Masters', () {
+        Navigator.pushNamed(context, '/masters');
+      }, buttonWidth),
+    );
+
 
   
     // --- Your Existing UserSession Logic ---
