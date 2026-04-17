@@ -150,7 +150,7 @@ class MyApp extends StatelessWidget {
         '/setting': (context) => PrivacyPolicyPage(),
         '/drawer': (context) => DrawerScreen(),
         '/packingOrders': (context) => PackingPage(),
-        '/packingBooking': (context) => PackingBookingScreen(),
+        '/packingList': (context) => PackingListScreen(),
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),

@@ -639,9 +639,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
-    //    buttons.add(_buildFeatureButton(context, 'Packing', () {
-    //     Navigator.pushNamed(context, '/packingBooking');
-    //   }, buttonWidth));
+       buttons.add(_buildFeatureButton(context, 'Packing', () {
+        Navigator.pushNamed(context, '/packingList');
+      }, buttonWidth));
 
     //   _buildFeatureButton(context, 'Sale Bill', () {
     //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
