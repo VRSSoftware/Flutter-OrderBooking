@@ -1206,134 +1206,248 @@ class _PackingListScreenState extends State<PackingListScreen> {
           scrollDirection: Axis.horizontal,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Colors.grey.shade200),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: DataTable(
-              columnSpacing: 10,
-              headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
-              columns: const [
-                DataColumn(
-                  label: Text(
-                    'Size',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
+            child: Table(
+              border: TableBorder(
+                horizontalInside: BorderSide(color: Colors.grey.shade100),
+                verticalInside: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 0.5,
                 ),
-                DataColumn(
-                  label: Text(
-                    'Qty',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Ord Qty',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Stock',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Rate',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'MRP',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Net Rate',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  ),
-                ),
-              ],
-              rows:
-                  sizes.map<DataRow>((size) {
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          Text(
-                            size['size'] ?? 'N/A',
-                            style: const TextStyle(fontSize: 11),
-                          ),
+              ),
+              columnWidths: const {
+                0: FixedColumnWidth(50),
+                1: FixedColumnWidth(55),
+                2: FixedColumnWidth(55),
+                3: FixedColumnWidth(50),
+                4: FixedColumnWidth(60),
+                5: FixedColumnWidth(60),
+                6: FixedColumnWidth(60),
+              },
+              children: [
+                // Header Row
+                TableRow(
+                  decoration: BoxDecoration(color: Colors.grey.shade50),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Size',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
                         ),
-                        DataCell(
-                          SizedBox(
-                            width: 60,
-                            child: TextFormField(
-                              initialValue:
-                                  (size['qty'] as int? ?? 0).toString(),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
-                                ),
-                                border: OutlineInputBorder(),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Qty',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Ord Qty',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Stock',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Rate',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'MRP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Text(
+                        'Net Rate',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: AppColors.primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+                // Data Rows
+                ...sizes.map((size) {
+                  return TableRow(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
+                        child: Text(
+                          size['size'] ?? 'N/A',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 4,
+                        ),
+                        child: SizedBox(
+                          width: 50,
+                          child: TextFormField(
+                            initialValue: (size['qty'] as int? ?? 0).toString(),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
                               ),
-                              style: const TextStyle(fontSize: 11),
-                              onChanged: (val) {
-                                final int qty = int.tryParse(val) ?? 0;
-                                setState(() {
-                                  size['qty'] = qty;
-                                  int total = 0;
-                                  for (var s in sizes) {
-                                    total += (s['qty'] as int? ?? 0);
-                                  }
-                                  item['selectedQty'] = total.toDouble();
-                                  item['itemAmt'] =
-                                      (item['selectedQty'] as double? ?? 0) *
-                                      (item['rate'] as double? ?? 0);
-                                });
-                              },
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
                             ),
+                            style: const TextStyle(fontSize: 10),
+                            onChanged: (val) {
+                              final int qty = int.tryParse(val) ?? 0;
+                              setState(() {
+                                size['qty'] = qty;
+                                int total = 0;
+                                for (var s in sizes) {
+                                  total += (s['qty'] as int? ?? 0);
+                                }
+                                item['selectedQty'] = total.toDouble();
+                                item['itemAmt'] =
+                                    (item['selectedQty'] as double? ?? 0) *
+                                    (item['rate'] as double? ?? 0);
+                              });
+                            },
                           ),
                         ),
-                        DataCell(
-                          Text(
-                            (size['ordQty'] as int? ?? 0).toString(),
-                            style: const TextStyle(fontSize: 11),
-                          ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
                         ),
-                        DataCell(
-                          Text(
-                            (size['stock'] as int? ?? 0).toString(),
-                            style: const TextStyle(fontSize: 11),
+                        child: Text(
+                          (size['ordQty'] as int? ?? 0).toString(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        DataCell(
-                          Text(
-                            (size['rate'] as double? ?? 0).toStringAsFixed(2),
-                            style: const TextStyle(fontSize: 11),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
+                        child: Text(
+                          (size['stock'] as int? ?? 0).toString(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        DataCell(
-                          Text(
-                            (size['mrp'] as double? ?? 0).toStringAsFixed(2),
-                            style: const TextStyle(fontSize: 11),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
+                        child: Text(
+                          (size['rate'] as double? ?? 0).toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        DataCell(
-                          Text(
-                            (size['netRate'] as double? ?? 0).toStringAsFixed(
-                              2,
-                            ),
-                            style: const TextStyle(fontSize: 11),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
+                        child: Text(
+                          (size['mrp'] as double? ?? 0).toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                      ],
-                    );
-                  }).toList(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
+                        ),
+                        child: Text(
+                          (size['netRate'] as double? ?? 0).toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ],
             ),
           ),
         ),
