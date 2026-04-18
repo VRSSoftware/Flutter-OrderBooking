@@ -41,7 +41,9 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.BASE_URL}/packing/getPendingPackingListAgainstSO'),
+        Uri.parse(
+          '${AppConstants.BASE_URL}/packing/getPendingPackingListAgainstSO',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "custKey": widget.custKey,
@@ -63,27 +65,30 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     }
   }
 
-  Future<List<dynamic>> _fetchSizeQty(List<Map<String, dynamic>> selectedItems) async {
+  Future<List<dynamic>> _fetchSizeQty(
+    List<Map<String, dynamic>> selectedItems,
+  ) async {
     try {
       List<int> docDtlIds = [];
       String shadeKey = '';
       String shadeName = '';
-      
+
       for (var item in selectedItems) {
         docDtlIds.add(item['docDtlId'] as int);
-        if (item['shadeKey'] != null && item['shadeKey'].toString().isNotEmpty) {
+        if (item['shadeKey'] != null &&
+            item['shadeKey'].toString().isNotEmpty) {
           shadeKey = item['shadeKey'].toString();
           shadeName = item['shadeName'].toString();
         }
       }
-      
+
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/packing/getSOSizeQty'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "docDtl_Id": docDtlIds,
           "shadeKey": shadeKey,
-          "shadeName": shadeName
+          "shadeName": shadeName,
         }),
       );
 
@@ -107,8 +112,9 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
         _selectedOrdersMap.remove(uniqueId);
       } else {
         final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
-        final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
-        
+        final double rate =
+            double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
+
         _selectedOrderIds.add(uniqueId);
         _selectedOrdersMap[uniqueId] = {
           'docId': item['Doc_Id'],
@@ -140,12 +146,13 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
   }
 
   Future<void> _addSelectedItems() async {
-    final List<Map<String, dynamic>> selectedItems = _selectedOrdersMap.values.toList();
-    
+    final List<Map<String, dynamic>> selectedItems =
+        _selectedOrdersMap.values.toList();
+
     if (selectedItems.isEmpty) return;
-    
+
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -154,29 +161,36 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
 
     try {
       final List<dynamic> sizeData = await _fetchSizeQty(selectedItems);
-      
+
       for (int i = 0; i < selectedItems.length && i < sizeData.length; i++) {
         final sizeInfo = sizeData[i];
         if (sizeInfo != null && sizeInfo['sizeQty'] != null) {
           final List<dynamic> sizeQtyList = sizeInfo['sizeQty'];
           final List<Map<String, dynamic>> updatedSizes = [];
-          
+
           for (var sizeQty in sizeQtyList) {
             updatedSizes.add({
               'size': sizeQty['Size_Name'] ?? 'N/A',
               'qty': 0,
               'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
-              'stock': int.tryParse(sizeQty['stockQty']?.toString() ?? '0') ?? 0,
-              'rate': (sizeQty['rate'] as num?)?.toDouble() ?? selectedItems[i]['rate'],
-              'mrp': (sizeQty['mrp'] as num?)?.toDouble() ?? selectedItems[i]['mrp'],
-              'netRate': (sizeQty['nettRate'] as num?)?.toDouble() ?? selectedItems[i]['rate'],
+              'stock':
+                  int.tryParse(sizeQty['stockQty']?.toString() ?? '0') ?? 0,
+              'rate':
+                  (sizeQty['rate'] as num?)?.toDouble() ??
+                  selectedItems[i]['rate'],
+              'mrp':
+                  (sizeQty['mrp'] as num?)?.toDouble() ??
+                  selectedItems[i]['mrp'],
+              'netRate':
+                  (sizeQty['nettRate'] as num?)?.toDouble() ??
+                  selectedItems[i]['rate'],
               'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
             });
           }
           selectedItems[i]['sizes'] = updatedSizes;
         }
       }
-      
+
       if (mounted) {
         Navigator.pop(context);
         Navigator.pop(context, selectedItems);
@@ -202,61 +216,113 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: _onCancel),
-        title: const Text('Sales Orders', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 18)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: _onCancel,
+        ),
+        title: const Text(
+          'Sales Orders',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _orders.isEmpty
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _orders.isEmpty
               ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.inbox, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('No orders found', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: _orders.length,
-                  itemBuilder: (context, index) {
-                    final item = _orders[index];
-                    final String uniqueId = '${item['Doc_Id']}_${item['docDtl_Id']}';
-                    final bool isSelected = _selectedOrderIds.contains(uniqueId);
-                    return _buildOrderCard(item, isSelected);
-                  },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inbox, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No orders found',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
                 ),
+              )
+              : ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: _orders.length,
+                itemBuilder: (context, index) {
+                  final item = _orders[index];
+                  final String uniqueId =
+                      '${item['Doc_Id']}_${item['docDtl_Id']}';
+                  final bool isSelected = _selectedOrderIds.contains(uniqueId);
+                  return _buildOrderCard(item, isSelected);
+                },
+              ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, -2))]),
+        padding: EdgeInsets.zero,
+        margin: EdgeInsets.zero,
+        decoration: const BoxDecoration(color: Colors.transparent),
         child: SafeArea(
+          top: false,
+          bottom: true,
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: _onCancel,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    onPressed: _onCancel,
+                    icon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'CANCEL',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
                   ),
-                  child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
-              const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: _selectedOrderIds.isEmpty ? null : _addSelectedItems,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        _selectedOrderIds.isEmpty ? null : _addSelectedItems,
+                    icon: const Icon(
+                      Icons.add_shopping_cart,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      'ADD SO (${_selectedOrderIds.length})',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
                   ),
-                  child: Text('ADD SO (${_selectedOrderIds.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],
@@ -268,44 +334,67 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
 
   Widget _buildOrderCard(dynamic item, bool isSelected) {
     final statusColor = isSelected ? AppColors.primaryColor : Colors.grey;
-    final statusBgColor = isSelected ? AppColors.primaryColor.withOpacity(0.1) : Colors.grey.shade50;
-    
+    final statusBgColor =
+        isSelected
+            ? AppColors.primaryColor.withOpacity(0.1)
+            : Colors.grey.shade50;
+
     final double amount = double.tryParse(item['amt']?.toString() ?? '0') ?? 0;
     final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
     final double mrp = double.tryParse(item['mrp']?.toString() ?? '0') ?? 0;
     final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
-    final double freeQty = double.tryParse(item['freeQty']?.toString() ?? '0') ?? 0;
-    
+    final double freeQty =
+        double.tryParse(item['freeQty']?.toString() ?? '0') ?? 0;
+
     final String styleCode = item['Style_Code'] ?? item['Style_Key'] ?? 'N/A';
-    final String shadeName = (item['shade_name'] != null && item['shade_name'].toString().isNotEmpty) 
-        ? item['shade_name'].toString() : 'N/A';
-    final String brandName = (item['Brand_Name'] != null && item['Brand_Name'].toString().isNotEmpty) 
-        ? item['Brand_Name'].toString() : 'N/A';
-    final String typeName = (item['Type_Name'] != null && item['Type_Name'].toString().isNotEmpty) 
-        ? item['Type_Name'].toString() : 'N/A';
+    final String shadeName =
+        (item['shade_name'] != null && item['shade_name'].toString().isNotEmpty)
+            ? item['shade_name'].toString()
+            : 'N/A';
+    final String brandName =
+        (item['Brand_Name'] != null && item['Brand_Name'].toString().isNotEmpty)
+            ? item['Brand_Name'].toString()
+            : 'N/A';
+    final String typeName =
+        (item['Type_Name'] != null && item['Type_Name'].toString().isNotEmpty)
+            ? item['Type_Name'].toString()
+            : 'N/A';
     final String unitName = item['unit_name'] ?? 'PCS';
     final String docDate = item['Doc_Dt']?.toString().split('T')[0] ?? 'N/A';
     final String dlvDate = item['DlvDate']?.toString().split('T')[0] ?? 'N/A';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 2, offset: const Offset(0, 1))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Card(
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isSelected ? AppColors.primaryColor : Colors.grey.shade200, width: isSelected ? 2 : 1),
+          side: BorderSide(
+            color: isSelected ? AppColors.primaryColor : Colors.grey.shade200,
+            width: isSelected ? 2 : 1,
+          ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
               childrenPadding: EdgeInsets.zero,
               leading: GestureDetector(
                 onTap: () => _toggleSelection(item),
@@ -317,7 +406,9 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                    isSelected
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
                     color: statusColor,
                     size: 22,
                   ),
@@ -340,11 +431,16 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                       ),
                       if (isSelected)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.green.withOpacity(0.3)),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.3),
+                            ),
                           ),
                           child: Text(
                             'SELECTED',
@@ -363,11 +459,18 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(Icons.inventory, size: 12, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.inventory,
+                              size: 12,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               item['item_name'] ?? 'N/A',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -376,11 +479,18 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 12,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               docDate,
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ],
                         ),
@@ -407,7 +517,9 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
-                    border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
+                    ),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -424,40 +536,88 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                           children: [
                             Row(
                               children: [
-                                Expanded(child: _buildDetailRow(Icons.code, 'Design', styleCode)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.code,
+                                    'Design',
+                                    styleCode,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildDetailRow(Icons.color_lens, 'Shade', shadeName)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.color_lens,
+                                    'Shade',
+                                    shadeName,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(child: _buildDetailRow(Icons.branding_watermark, 'Brand', brandName)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.branding_watermark,
+                                    'Brand',
+                                    brandName,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildDetailRow(Icons.category, 'Type', typeName)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.category,
+                                    'Type',
+                                    typeName,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(child: _buildDetailRow(Icons.calendar_today, 'Date', docDate)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.calendar_today,
+                                    'Date',
+                                    docDate,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildDetailRow(Icons.local_shipping, 'Delivery', dlvDate)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.local_shipping,
+                                    'Delivery',
+                                    dlvDate,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(child: _buildDetailRow(Icons.inventory, 'Unit', unitName)),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.inventory,
+                                    'Unit',
+                                    unitName,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildDetailRow(Icons.sell, 'Free Qty', '${freeQty.toStringAsFixed(0)} $unitName')),
+                                Expanded(
+                                  child: _buildDetailRow(
+                                    Icons.sell,
+                                    'Free Qty',
+                                    '${freeQty.toStringAsFixed(0)} $unitName',
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
-                      
+
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -474,7 +634,11 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                                 '₹${mrp.toStringAsFixed(2)}',
                               ),
                             ),
-                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Container(
+                              width: 1,
+                              height: 30,
+                              color: Colors.grey.shade300,
+                            ),
                             Expanded(
                               child: _buildMetricRow(
                                 Icons.price_change,
@@ -482,7 +646,11 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                                 '₹${rate.toStringAsFixed(2)}',
                               ),
                             ),
-                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Container(
+                              width: 1,
+                              height: 30,
+                              color: Colors.grey.shade300,
+                            ),
                             Expanded(
                               child: _buildMetricRow(
                                 Icons.attach_money,
@@ -494,7 +662,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(

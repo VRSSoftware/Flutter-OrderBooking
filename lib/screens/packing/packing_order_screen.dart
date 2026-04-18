@@ -581,7 +581,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
                                       ),
                                     ],
                                   ),
-                                  
                                 ],
                               ),
                             ),
@@ -1345,58 +1344,70 @@ class _PackingListScreenState extends State<PackingListScreen> {
   Widget _buildBottomButtons() {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.zero,
+      margin: EdgeInsets.zero,
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
+        bottom: true,
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 42,
+                child: ElevatedButton.icon(
                   onPressed: _showAddMoreInfoDialog,
+                  icon: const Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    "Add More Info",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
                     ),
-                  ),
-                  child: const Text(
-                    "Add More Info",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
+            ),
+            Expanded(
+              child: SizedBox(
+                height: 42,
+                child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _savePackingList,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child:
+                  icon:
                       _isSaving
                           ? const SizedBox(
-                            height: 20,
-                            width: 20,
+                            height: 18,
+                            width: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Icon(
+                            Icons.save,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                  label:
+                      _isSaving
+                          ? const Text(
+                            "Saving...",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
                               color: Colors.white,
                             ),
                           )
@@ -1404,21 +1415,59 @@ class _PackingListScreenState extends State<PackingListScreen> {
                             "Save",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 12,
+                              color: Colors.white,
                             ),
                           ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-Widget _buildFloatingActionButton() {
-  // If "With SO" is selected, show single button
-  if (_selectedSOOption == 'with_so') {
+  Widget _buildFloatingActionButton() {
+    // If "With SO" is selected, show single button
+    if (_selectedSOOption == 'with_so') {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 80),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildFABButton(
+                Icons.receipt_long,
+                'View Sales Orders',
+                _openOrderListPage,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If "Without SO" is selected or no selection, show Add Item | Barcode buttons
     return Container(
       margin: const EdgeInsets.only(bottom: 80),
       child: Container(
@@ -1436,49 +1485,24 @@ Widget _buildFloatingActionButton() {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildFABButton(Icons.receipt_long, 'View Sales Orders', _openOrderListPage),
+            _buildFABButton(Icons.add, 'Add Item', () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Add Item feature coming soon')),
+              );
+            }),
+            Container(width: 1, height: 35, color: Colors.grey.shade300),
+            _buildFABButton(Icons.qr_code_scanner, 'Barcode', () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Barcode scanning feature coming soon'),
+                ),
+              );
+            }),
           ],
         ),
       ),
     );
   }
-  
-  // If "Without SO" is selected or no selection, show Add Item | Barcode buttons
-  return Container(
-    margin: const EdgeInsets.only(bottom: 80),
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildFABButton(Icons.add, 'Add Item', () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Add Item feature coming soon')),
-            );
-          }),
-          Container(width: 1, height: 35, color: Colors.grey.shade300),
-          _buildFABButton(Icons.qr_code_scanner, 'Barcode', () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Barcode scanning feature coming soon'),
-              ),
-            );
-          }),
-        ],
-      ),
-    ),
-  );
-}
 
   Widget _buildFABButton(IconData icon, String label, VoidCallback onPressed) {
     return Material(
