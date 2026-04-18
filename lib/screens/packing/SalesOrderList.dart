@@ -150,7 +150,6 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
         _selectedOrdersMap.values.toList();
 
     if (selectedItems.isEmpty) return;
-
     if (!mounted) return;
 
     showDialog(
@@ -173,8 +172,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
               'size': sizeQty['Size_Name'] ?? 'N/A',
               'qty': 0,
               'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
-              'stock':
-                  int.tryParse(sizeQty['stockQty']?.toString() ?? '0') ?? 0,
+              'stock': (sizeQty['stockQty'] as num?)?.toInt() ?? 0,
               'rate':
                   (sizeQty['rate'] as num?)?.toDouble() ??
                   selectedItems[i]['rate'],
@@ -185,6 +183,10 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                   (sizeQty['nettRate'] as num?)?.toDouble() ??
                   selectedItems[i]['rate'],
               'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
+              'docDtlSzId': sizeQty['docDtlSzId'] ?? 0, // Add this
+              'stkId': sizeQty['stkId'] ?? 0, // Add this
+              'balQty':
+                  (sizeQty['balQty'] as num?)?.toDouble() ?? 0, // Add this
             });
           }
           selectedItems[i]['sizes'] = updatedSizes;

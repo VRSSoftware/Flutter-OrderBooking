@@ -1351,4 +1351,24 @@ class ApiService {
       throw Exception('Error fetching order report data: $e');
     }
   }
+
+  // Add this method to your existing ApiService class
+static Future<Map<String, dynamic>> insertPacking(Map<String, dynamic> payload) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/insertPacking'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Failed to save packing'};
+    }
+  } catch (e) {
+    print('Error inserting packing: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
 }

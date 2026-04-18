@@ -122,7 +122,7 @@ class MyApp extends StatelessWidget {
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
               return AppColors
-                  .primaryColor; // your desired background color when checked
+                  .primaryColor; 
             }
             return Colors.grey.shade300; // color when unchecked
           }),
@@ -149,7 +149,7 @@ class MyApp extends StatelessWidget {
         '/deleteAccount': (context) => DeleteAccountPage(),
         '/setting': (context) => PrivacyPolicyPage(),
         '/drawer': (context) => DrawerScreen(),
-        '/packingOrders': (context) => PackingPage(),
+        '/packingRegister': (context) => PackingPage(),
         '/packingList': (context) => PackingListScreen(),
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
