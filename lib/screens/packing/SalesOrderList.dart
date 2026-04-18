@@ -106,7 +106,6 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
         _selectedOrderIds.remove(uniqueId);
         _selectedOrdersMap.remove(uniqueId);
       } else {
-        final sizeList = _buildSizeList(item);
         final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
         final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
         
@@ -134,23 +133,10 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           'discAmt': 0.0,
           'amtRemark': '',
           'itemAmt': balQty * rate,
-          'sizes': sizeList,
+          'sizes': [],
         };
       }
     });
-  }
-
-  List<Map<String, dynamic>> _buildSizeList(dynamic item) {
-    final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
-    final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
-    final double mrp = double.tryParse(item['mrp']?.toString() ?? '0') ?? 0;
-    
-    return [
-      {'size': 'S', 'qty': 0, 'ordQty': ((balQty * 0.25)).toInt(), 'stock': 50, 'rate': rate, 'mrp': mrp, 'netRate': rate},
-      {'size': 'M', 'qty': 0, 'ordQty': ((balQty * 0.35)).toInt(), 'stock': 45, 'rate': rate, 'mrp': mrp, 'netRate': rate},
-      {'size': 'L', 'qty': 0, 'ordQty': ((balQty * 0.25)).toInt(), 'stock': 30, 'rate': rate, 'mrp': mrp, 'netRate': rate},
-      {'size': 'XL', 'qty': 0, 'ordQty': ((balQty * 0.15)).toInt(), 'stock': 20, 'rate': rate, 'mrp': mrp, 'netRate': rate},
-    ];
   }
 
   Future<void> _addSelectedItems() async {
@@ -286,8 +272,20 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     
     final double amount = double.tryParse(item['amt']?.toString() ?? '0') ?? 0;
     final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
+    final double mrp = double.tryParse(item['mrp']?.toString() ?? '0') ?? 0;
     final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
     final double freeQty = double.tryParse(item['freeQty']?.toString() ?? '0') ?? 0;
+    
+    final String styleCode = item['Style_Code'] ?? item['Style_Key'] ?? 'N/A';
+    final String shadeName = (item['shade_name'] != null && item['shade_name'].toString().isNotEmpty) 
+        ? item['shade_name'].toString() : 'N/A';
+    final String brandName = (item['Brand_Name'] != null && item['Brand_Name'].toString().isNotEmpty) 
+        ? item['Brand_Name'].toString() : 'N/A';
+    final String typeName = (item['Type_Name'] != null && item['Type_Name'].toString().isNotEmpty) 
+        ? item['Type_Name'].toString() : 'N/A';
+    final String unitName = item['unit_name'] ?? 'PCS';
+    final String docDate = item['Doc_Dt']?.toString().split('T')[0] ?? 'N/A';
+    final String dlvDate = item['DlvDate']?.toString().split('T')[0] ?? 'N/A';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -309,17 +307,20 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               childrenPadding: EdgeInsets.zero,
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  isSelected ? Icons.check_circle_outline : Icons.shopping_cart,
-                  color: statusColor,
-                  size: 22,
+              leading: GestureDetector(
+                onTap: () => _toggleSelection(item),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                    color: statusColor,
+                    size: 22,
+                  ),
                 ),
               ),
               title: Column(
@@ -378,7 +379,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                             Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 2),
                             Text(
-                              item['Doc_Dt']?.toString().split('T')[0] ?? 'N/A',
+                              docDate,
                               style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                             ),
                           ],
@@ -412,31 +413,6 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(child: _buildDetailChip(Icons.code, 'Style Code', item['Style_Code'] ?? item['Style_Key'] ?? 'N/A')),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildDetailChip(Icons.color_lens, 'Shade', (item['shade_name']?.toString().isNotEmpty == true) ? item['shade_name'].toString() : 'N/A')),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(child: _buildDetailChip(Icons.branding_watermark, 'Brand', (item['Brand_Name']?.toString().isNotEmpty == true) ? item['Brand_Name'].toString() : 'N/A')),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildDetailChip(Icons.category, 'Type', (item['Type_Name']?.toString().isNotEmpty == true) ? item['Type_Name'].toString() : 'N/A')),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(child: _buildDetailChip(Icons.local_shipping, 'Delivery Date', item['DlvDate']?.toString().split('T')[0] ?? 'N/A')),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildDetailChip(Icons.inventory, 'Unit', item['unit_name'] ?? 'PCS')),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -448,21 +424,33 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                           children: [
                             Row(
                               children: [
-                                Expanded(child: _buildMetricItem(Icons.currency_rupee, 'MRP', '₹${double.tryParse(item['mrp']?.toString() ?? '0')?.toStringAsFixed(2) ?? '0.00'}')),
-                                Container(width: 1, height: 30, color: Colors.grey.shade300),
-                                Expanded(child: _buildMetricItem(Icons.price_change, 'Rate', '₹${rate.toStringAsFixed(2)}')),
-                                Container(width: 1, height: 30, color: Colors.grey.shade300),
-                                Expanded(child: _buildMetricItem(Icons.inventory_2, 'Balance Qty', '${balQty.toStringAsFixed(0)} ${item['unit_name'] ?? ''}')),
+                                Expanded(child: _buildDetailRow(Icons.code, 'Design', styleCode)),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildDetailRow(Icons.color_lens, 'Shade', shadeName)),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(child: _buildMetricItem(Icons.card_giftcard, 'Free Qty', '${freeQty.toStringAsFixed(0)} ${item['unit_name'] ?? ''}')),
-                                Container(width: 1, height: 30, color: Colors.grey.shade300),
-                                Expanded(child: _buildMetricItem(Icons.attach_money, 'Amount', '₹${amount.toStringAsFixed(2)}')),
-                                Container(width: 1, height: 30, color: Colors.grey.shade300),
-                                Expanded(child: _buildMetricItem(Icons.shopping_cart, 'Order Qty', '${balQty.toStringAsFixed(0)} ${item['unit_name'] ?? ''}')),
+                                Expanded(child: _buildDetailRow(Icons.branding_watermark, 'Brand', brandName)),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildDetailRow(Icons.category, 'Type', typeName)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: _buildDetailRow(Icons.calendar_today, 'Date', docDate)),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildDetailRow(Icons.local_shipping, 'Delivery', dlvDate)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: _buildDetailRow(Icons.inventory, 'Unit', unitName)),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildDetailRow(Icons.sell, 'Free Qty', '${freeQty.toStringAsFixed(0)} $unitName')),
                               ],
                             ),
                           ],
@@ -470,22 +458,61 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _toggleSelection(item),
-                              icon: Icon(isSelected ? Icons.check_circle : Icons.add_circle, size: 16),
-                              label: Text(isSelected ? 'SELECTED' : 'SELECT ITEM'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isSelected ? Colors.green : AppColors.primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricRow(
+                                Icons.currency_rupee,
+                                'MRP',
+                                '₹${mrp.toStringAsFixed(2)}',
                               ),
                             ),
-                          ),
-                        ],
+                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Expanded(
+                              child: _buildMetricRow(
+                                Icons.price_change,
+                                'Rate',
+                                '₹${rate.toStringAsFixed(2)}',
+                              ),
+                            ),
+                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Expanded(
+                              child: _buildMetricRow(
+                                Icons.attach_money,
+                                'Amount',
+                                '₹${amount.toStringAsFixed(2)}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricRow(
+                                Icons.inventory_2,
+                                'Balance Qty',
+                                '${balQty.toStringAsFixed(0)} $unitName',
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -498,33 +525,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     );
   }
 
-  Widget _buildDetailChip(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: Colors.grey.shade600),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
-                Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF2C3E50)), overflow: TextOverflow.ellipsis, maxLines: 1),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricItem(IconData icon, String label, String value) {
+  Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
         Icon(icon, size: 14, color: Colors.grey.shade600),
@@ -533,8 +534,50 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
-              Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                label,
+                style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF2C3E50),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
