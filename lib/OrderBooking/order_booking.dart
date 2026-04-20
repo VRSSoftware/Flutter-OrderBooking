@@ -765,8 +765,9 @@ import 'package:vrs_erp/widget/filterdailogwidget.dart';
 
 class OrderBookingScreen extends StatefulWidget {
   final bool startWithBarcode;
+  final bool editMode;
 
-  const OrderBookingScreen({Key? key, this.startWithBarcode = false})
+  const OrderBookingScreen({Key? key, this.startWithBarcode = false, this.editMode = false})
     : super(key: key);
 
   @override
@@ -1290,6 +1291,7 @@ class _OrderBookingScreenState extends State<OrderBookingScreen>
                                   selectedParty: selectedParty,
                                   type: Constants.SALE_BILL,
                                   isMultiSelect: true,
+                                  isEdit:  widget.editMode, // Pass edit mode to OrderPage
                                 ),
                           ),
                         ).then((_) {

@@ -671,6 +671,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/CatalogOrderData.dart';
 import 'package:vrs_erp/models/OrderMatrix.dart';
@@ -680,7 +681,9 @@ import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/addMoreItemsForEdit.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/customer_details_tab.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab2.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab3.dart';
+import 'package:vrs_erp/viewOrder/editViewOrder/transaction_tab_sticky.dart';
 
 enum ActiveTab { transaction, customerDetails }
 
@@ -1433,7 +1436,7 @@ void _showSuccessDialog() {
                             });
                           },
                           children: [
-                            TransactionTab3(onUpdate: calculateTotals),
+                            TransactionTabSticky(onUpdate: calculateTotals),
                             const CustomerDetailTab(),
                           ],
                         )
@@ -1450,7 +1453,8 @@ void _showSuccessDialog() {
   void _handleAddAction() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddMoreItemsForEdit()),
+      // MaterialPageRoute(builder: (context) => AddMoreItemsForEdit()),
+      MaterialPageRoute(builder: (context) => OrderBookingScreen(editMode: true)),
     ).then((result) {
       if (result != null && result is List<Map<String, dynamic>>) {
         setState(() {
