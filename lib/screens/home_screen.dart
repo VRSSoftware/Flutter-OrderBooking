@@ -314,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       case 'Sale Bill':
         return IconStyle(Icons.receipt_long, Colors.red[700]!, Colors.red[50]!);
+
       case 'Packing Register':
         return IconStyle(Icons.checklist, Colors.cyan[700]!, Colors.cyan[50]!);
       case 'Sale Bill Register':
@@ -353,11 +354,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
-         case 'Masters':
+      case 'Masters':
         return IconStyle(Icons.receipt, Colors.brown[700]!, Colors.red[50]!);
-
-
-    
 
       // case 'Web':
       //   return IconStyle(Icons.public, Colors.brown[700]!, Colors.brown[50]!);
@@ -639,17 +637,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
-       buttons.add(_buildFeatureButton(context, 'Packing', () {
+    buttons.add(
+      _buildFeatureButton(context, 'Packing', () {
         Navigator.pushNamed(context, '/packingList');
-      }, buttonWidth));
+      }, buttonWidth),
+    );
 
-    //   _buildFeatureButton(context, 'Sale Bill', () {
-    //     Navigator.pushNamed(context, '/SaleBillBookingScreen');
-    //   }, buttonWidth);
-
-     buttons.add(_buildFeatureButton(context, 'Packing Register', () {
+    buttons.add(
+      _buildFeatureButton(context, 'Sale Bill', () {
+        Navigator.pushNamed(context, '/SaleBillBookingScreen');
+      }, buttonWidth),
+    );
+    
+    buttons.add(
+      _buildFeatureButton(context, 'Packing Register', () {
         Navigator.pushNamed(context, '/packingRegister');
-      }, buttonWidth));
+      }, buttonWidth),
+    );
 
     //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
     //     Navigator.pushNamed(context, '/saleBillRegister');
@@ -688,14 +692,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
-     buttons.add(
+    buttons.add(
       _buildFeatureButton(context, 'Masters', () {
         Navigator.pushNamed(context, '/masters');
       }, buttonWidth),
     );
 
-
-  
     // --- Your Existing UserSession Logic ---
     if (UserSession.userType == 'A') {
       buttons.add(

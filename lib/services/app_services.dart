@@ -1371,4 +1371,69 @@ static Future<Map<String, dynamic>> insertPacking(Map<String, dynamic> payload) 
     return {'status': 'error', 'message': e.toString()};
   }
 }
+
+static Future<Map<String, dynamic>> deletePacking({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/deletePacking'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docId': docId,
+        'coBrId': coBrId,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {'status': 'error', 'message': 'Failed to delete packing order'};
+  } catch (e) {
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+// Fetch packing by ID for update
+static Future<Map<String, dynamic>> fetchPackingById({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/getPackingById'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docId': docId,
+        'coBrId': coBrId,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {'status': 'error', 'message': 'Failed to fetch packing data'};
+  } catch (e) {
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Update packing
+static Future<Map<String, dynamic>> updatePacking(Map<String, dynamic> payload) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/orderBooking/updatePacking'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {'status': 'error', 'message': 'Failed to update packing'};
+  } catch (e) {
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
 }

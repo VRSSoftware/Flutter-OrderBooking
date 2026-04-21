@@ -8,11 +8,15 @@ import 'package:vrs_erp/constants/constants.dart';
 class SalesOrderListScreen extends StatefulWidget {
   final String custKey;
   final List<Map<String, dynamic>> existingSelectedItems;
+  final bool isEditMode;
+  final String? currentPackingId;
 
   const SalesOrderListScreen({
     Key? key,
     required this.custKey,
     this.existingSelectedItems = const [],
+    this.isEditMode = false,
+    this.currentPackingId,
   }) : super(key: key);
 
   @override
@@ -49,6 +53,8 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           "custKey": widget.custKey,
           "fcYrId": UserSession.userFcYr ?? '',
           "coBrId": UserSession.coBrId ?? '',
+          "isEditMode": widget.isEditMode,
+          "currentPackingId": widget.currentPackingId,
         }),
       );
 
@@ -141,72 +147,113 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           'itemAmt': balQty * rate,
           'sizes': [],
         };
+        print(
+          'Added to map - docId: ${item['Doc_Id']}, docDtlId: ${item['docDtl_Id']}',
+        );
       }
     });
   }
 
-  Future<void> _addSelectedItems() async {
-    final List<Map<String, dynamic>> selectedItems =
-        _selectedOrdersMap.values.toList();
-
-    if (selectedItems.isEmpty) return;
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final List<dynamic> sizeData = await _fetchSizeQty(selectedItems);
-
-      for (int i = 0; i < selectedItems.length && i < sizeData.length; i++) {
-        final sizeInfo = sizeData[i];
-        if (sizeInfo != null && sizeInfo['sizeQty'] != null) {
-          final List<dynamic> sizeQtyList = sizeInfo['sizeQty'];
-          final List<Map<String, dynamic>> updatedSizes = [];
-
-          for (var sizeQty in sizeQtyList) {
-            updatedSizes.add({
-              'size': sizeQty['Size_Name'] ?? 'N/A',
-              'qty': 0,
-              'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
-              'stock': (sizeQty['stockQty'] as num?)?.toInt() ?? 0,
-              'rate':
-                  (sizeQty['rate'] as num?)?.toDouble() ??
-                  selectedItems[i]['rate'],
-              'mrp':
-                  (sizeQty['mrp'] as num?)?.toDouble() ??
-                  selectedItems[i]['mrp'],
-              'netRate':
-                  (sizeQty['nettRate'] as num?)?.toDouble() ??
-                  selectedItems[i]['rate'],
-              'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
-              'docDtlSzId': sizeQty['docDtlSzId'] ?? 0, // Add this
-              'stkId': sizeQty['stkId'] ?? 0, // Add this
-              'balQty':
-                  (sizeQty['balQty'] as num?)?.toDouble() ?? 0, // Add this
-            });
-          }
-          selectedItems[i]['sizes'] = updatedSizes;
-        }
+Future<void> _addSelectedItems() async {
+  // Get only the items that were newly selected (not already existing)
+  final List<Map<String, dynamic>> newSelectedItems = [];
+  
+  for (var entry in _selectedOrdersMap.entries) {
+    final String uniqueId = entry.key;
+    final Map<String, dynamic> item = entry.value;
+    
+    // Check if this item already exists in existingSelectedItems
+    bool alreadyExists = false;
+    for (var existingItem in widget.existingSelectedItems) {
+      if (existingItem['docDtlId'] == item['docDtlId']) {
+        alreadyExists = true;
+        break;
       }
-
-      if (mounted) {
-        Navigator.pop(context);
-        Navigator.pop(context, selectedItems);
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+    }
+    
+    if (!alreadyExists) {
+      newSelectedItems.add(item);
     }
   }
 
+  if (newSelectedItems.isEmpty) {
+    // Just close the dialog if no new items
+    if (mounted) {
+      Navigator.pop(context);
+      Navigator.pop(context, []); // Return empty list
+    }
+    return;
+  }
+  
+  if (!mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final List<dynamic> sizeData = await _fetchSizeQty(newSelectedItems);
+
+    for (int i = 0; i < newSelectedItems.length && i < sizeData.length; i++) {
+      final sizeInfo = sizeData[i];
+      if (sizeInfo != null && sizeInfo['sizeQty'] != null) {
+        final List<dynamic> sizeQtyList = sizeInfo['sizeQty'];
+        final List<Map<String, dynamic>> updatedSizes = [];
+
+        for (var sizeQty in sizeQtyList) {
+          int balQty = (sizeQty['balQty'] as num?)?.toInt() ?? 0;
+          
+          updatedSizes.add({
+            'size': sizeQty['Size_Name'] ?? 'N/A',
+            'qty': balQty,
+            'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
+            'stock': (sizeQty['stockQty'] as num?)?.toInt() ?? 0,
+            'rate': (sizeQty['rate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
+            'mrp': (sizeQty['mrp'] as num?)?.toDouble() ?? newSelectedItems[i]['mrp'],
+            'netRate': (sizeQty['nettRate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
+            'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
+            'docDtlSzId': sizeQty['docDtlSzId'] ?? 0,
+            'stkId': sizeQty['stkId'] ?? 0,
+            'balQty': balQty,
+          });
+        }
+        
+        newSelectedItems[i]['sizes'] = updatedSizes;
+        
+        // Calculate total quantity
+        double totalQty = 0;
+        for (var size in updatedSizes) {
+          totalQty += size['qty'];
+        }
+        newSelectedItems[i]['selectedQty'] = totalQty;
+        newSelectedItems[i]['itemAmt'] = totalQty * (newSelectedItems[i]['rate'] as double);
+      }
+    }
+
+    if (mounted) {
+      Navigator.pop(context);
+      print('Returning NEW selected items:');
+      for (var item in newSelectedItems) {
+        print('docId: ${item['docId']}, docDtlId: ${item['docDtlId']}, itemName: ${item['itemName']}, selectedQty: ${item['selectedQty']}');
+      }
+      Navigator.pop(context, newSelectedItems); // Return ONLY new items
+    }
+  } catch (e) {
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+}
+
+
+
+
+  
   void _onCancel() {
     Navigator.pop(context);
   }
