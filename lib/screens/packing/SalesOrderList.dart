@@ -28,6 +28,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
   bool _isLoading = true;
   Set<String> _selectedOrderIds = {};
   Map<String, Map<String, dynamic>> _selectedOrdersMap = {};
+  Map<String, Map<String, int>> _selectedQuantities = {};
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
       final String uniqueId = '${item['docId']}_${item['docDtlId']}';
       _selectedOrderIds.add(uniqueId);
       _selectedOrdersMap[uniqueId] = item;
+      _selectedQuantities[uniqueId] = {'qty': (item['selectedQty'] as double? ?? 0).toInt()};
     }
     _fetchOrders();
   }
@@ -116,6 +118,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
       if (_selectedOrderIds.contains(uniqueId)) {
         _selectedOrderIds.remove(uniqueId);
         _selectedOrdersMap.remove(uniqueId);
+        _selectedQuantities.remove(uniqueId);
       } else {
         final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
         final double rate =
@@ -147,113 +150,121 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           'itemAmt': balQty * rate,
           'sizes': [],
         };
-        print(
-          'Added to map - docId: ${item['Doc_Id']}, docDtlId: ${item['docDtl_Id']}',
-        );
+        _selectedQuantities[uniqueId] = {'qty': balQty.toInt()};
       }
     });
   }
 
-Future<void> _addSelectedItems() async {
-  // Get only the items that were newly selected (not already existing)
-  final List<Map<String, dynamic>> newSelectedItems = [];
-  
-  for (var entry in _selectedOrdersMap.entries) {
-    final String uniqueId = entry.key;
-    final Map<String, dynamic> item = entry.value;
+  void _updateQuantity(String uniqueId, int newQty, double balQty, double rate) {
+    setState(() {
+      int clampedQty = newQty.clamp(0, balQty.toInt());
+      _selectedQuantities[uniqueId] = {'qty': clampedQty};
+      if (_selectedOrdersMap.containsKey(uniqueId)) {
+        _selectedOrdersMap[uniqueId]!['selectedQty'] = clampedQty.toDouble();
+        _selectedOrdersMap[uniqueId]!['itemAmt'] = clampedQty * rate;
+      }
+    });
+  }
+
+  Future<void> _addSelectedItems() async {
+    final List<Map<String, dynamic>> newSelectedItems = [];
     
-    // Check if this item already exists in existingSelectedItems
-    bool alreadyExists = false;
-    for (var existingItem in widget.existingSelectedItems) {
-      if (existingItem['docDtlId'] == item['docDtlId']) {
-        alreadyExists = true;
-        break;
+    for (var entry in _selectedOrdersMap.entries) {
+      final String uniqueId = entry.key;
+      final Map<String, dynamic> item = entry.value;
+      
+      bool alreadyExists = false;
+      for (var existingItem in widget.existingSelectedItems) {
+        if (existingItem['docDtlId'] == item['docDtlId']) {
+          alreadyExists = true;
+          break;
+        }
+      }
+      
+      if (!alreadyExists) {
+        final int selectedQty = _selectedQuantities[uniqueId]?['qty'] ?? (item['selectedQty'] as int);
+        item['selectedQty'] = selectedQty.toDouble();
+        item['itemAmt'] = selectedQty * (item['rate'] as double);
+        newSelectedItems.add(item);
       }
     }
+
+    if (newSelectedItems.isEmpty) {
+      if (mounted) {
+        Navigator.pop(context);
+        Navigator.pop(context, []);
+      }
+      return;
+    }
     
-    if (!alreadyExists) {
-      newSelectedItems.add(item);
-    }
-  }
+    if (!mounted) return;
 
-  if (newSelectedItems.isEmpty) {
-    // Just close the dialog if no new items
-    if (mounted) {
-      Navigator.pop(context);
-      Navigator.pop(context, []); // Return empty list
-    }
-    return;
-  }
-  
-  if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const Center(child: CircularProgressIndicator()),
-  );
+    try {
+      final List<dynamic> sizeData = await _fetchSizeQty(newSelectedItems);
 
-  try {
-    final List<dynamic> sizeData = await _fetchSizeQty(newSelectedItems);
+      for (int i = 0; i < newSelectedItems.length && i < sizeData.length; i++) {
+        final sizeInfo = sizeData[i];
+        if (sizeInfo != null && sizeInfo['sizeQty'] != null) {
+          final List<dynamic> sizeQtyList = sizeInfo['sizeQty'];
+          final List<Map<String, dynamic>> updatedSizes = [];
+          final int userSelectedQty = newSelectedItems[i]['selectedQty'].toInt();
+          int remainingQty = userSelectedQty;
 
-    for (int i = 0; i < newSelectedItems.length && i < sizeData.length; i++) {
-      final sizeInfo = sizeData[i];
-      if (sizeInfo != null && sizeInfo['sizeQty'] != null) {
-        final List<dynamic> sizeQtyList = sizeInfo['sizeQty'];
-        final List<Map<String, dynamic>> updatedSizes = [];
-
-        for (var sizeQty in sizeQtyList) {
-          int balQty = (sizeQty['balQty'] as num?)?.toInt() ?? 0;
+          for (var sizeQty in sizeQtyList) {
+            int availableQty = (sizeQty['stockQty'] as num?)?.toInt() ?? 0;
+            int qtyToTake = remainingQty > availableQty ? availableQty : remainingQty;
+            
+            if (qtyToTake > 0) {
+              updatedSizes.add({
+                'size': sizeQty['Size_Name'] ?? 'N/A',
+                'qty': qtyToTake,
+                'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
+                'stock': availableQty,
+                'rate': (sizeQty['rate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
+                'mrp': (sizeQty['mrp'] as num?)?.toDouble() ?? newSelectedItems[i]['mrp'],
+                'netRate': (sizeQty['nettRate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
+                'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
+                'docDtlSzId': sizeQty['docDtlSzId'] ?? 0,
+                'stkId': sizeQty['stkId'] ?? 0,
+                'balQty': qtyToTake,
+              });
+            }
+            
+            remainingQty -= qtyToTake;
+            if (remainingQty <= 0) break;
+          }
           
-          updatedSizes.add({
-            'size': sizeQty['Size_Name'] ?? 'N/A',
-            'qty': balQty,
-            'ordQty': (sizeQty['qty'] as num?)?.toInt() ?? 0,
-            'stock': (sizeQty['stockQty'] as num?)?.toInt() ?? 0,
-            'rate': (sizeQty['rate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
-            'mrp': (sizeQty['mrp'] as num?)?.toDouble() ?? newSelectedItems[i]['mrp'],
-            'netRate': (sizeQty['nettRate'] as num?)?.toDouble() ?? newSelectedItems[i]['rate'],
-            'styleSize_Id': sizeQty['styleSize_Id'] ?? 0,
-            'docDtlSzId': sizeQty['docDtlSzId'] ?? 0,
-            'stkId': sizeQty['stkId'] ?? 0,
-            'balQty': balQty,
-          });
+          newSelectedItems[i]['sizes'] = updatedSizes;
+          
+          double totalQty = 0;
+          for (var size in updatedSizes) {
+            totalQty += size['qty'];
+          }
+          newSelectedItems[i]['selectedQty'] = totalQty;
+          newSelectedItems[i]['itemAmt'] = totalQty * (newSelectedItems[i]['rate'] as double);
         }
-        
-        newSelectedItems[i]['sizes'] = updatedSizes;
-        
-        // Calculate total quantity
-        double totalQty = 0;
-        for (var size in updatedSizes) {
-          totalQty += size['qty'];
-        }
-        newSelectedItems[i]['selectedQty'] = totalQty;
-        newSelectedItems[i]['itemAmt'] = totalQty * (newSelectedItems[i]['rate'] as double);
       }
-    }
 
-    if (mounted) {
-      Navigator.pop(context);
-      print('Returning NEW selected items:');
-      for (var item in newSelectedItems) {
-        print('docId: ${item['docId']}, docDtlId: ${item['docDtlId']}, itemName: ${item['itemName']}, selectedQty: ${item['selectedQty']}');
+      if (mounted) {
+        Navigator.pop(context);
+        Navigator.pop(context, newSelectedItems);
       }
-      Navigator.pop(context, newSelectedItems); // Return ONLY new items
-    }
-  } catch (e) {
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
-}
 
-
-
-
-  
   void _onCancel() {
     Navigator.pop(context);
   }
@@ -278,34 +289,32 @@ Future<void> _addSelectedItems() async {
           ),
         ),
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _orders.isEmpty
-              ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.inbox, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No orders found',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              )
-              : ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: _orders.length,
-                itemBuilder: (context, index) {
-                  final item = _orders[index];
-                  final String uniqueId =
-                      '${item['Doc_Id']}_${item['docDtl_Id']}';
-                  final bool isSelected = _selectedOrderIds.contains(uniqueId);
-                  return _buildOrderCard(item, isSelected);
-                },
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _orders.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No orders found',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
               ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: _orders.length,
+              itemBuilder: (context, index) {
+                final item = _orders[index];
+                final String uniqueId = '${item['Doc_Id']}_${item['docDtl_Id']}';
+                final bool isSelected = _selectedOrderIds.contains(uniqueId);
+                return _buildOrderCard(item, isSelected, uniqueId);
+              },
+            ),
       bottomNavigationBar: Container(
         padding: EdgeInsets.zero,
         margin: EdgeInsets.zero,
@@ -320,11 +329,7 @@ Future<void> _addSelectedItems() async {
                   height: 42,
                   child: ElevatedButton.icon(
                     onPressed: _onCancel,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 18,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.close, size: 18, color: Colors.white),
                     label: const Text(
                       'CANCEL',
                       style: TextStyle(
@@ -348,13 +353,8 @@ Future<void> _addSelectedItems() async {
                 child: SizedBox(
                   height: 42,
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _selectedOrderIds.isEmpty ? null : _addSelectedItems,
-                    icon: const Icon(
-                      Icons.add_shopping_cart,
-                      size: 18,
-                      color: Colors.white,
-                    ),
+                    onPressed: _selectedOrderIds.isEmpty ? null : _addSelectedItems,
+                    icon: const Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),
                     label: Text(
                       'ADD SO (${_selectedOrderIds.length})',
                       style: const TextStyle(
@@ -381,33 +381,30 @@ Future<void> _addSelectedItems() async {
     );
   }
 
-  Widget _buildOrderCard(dynamic item, bool isSelected) {
+  Widget _buildOrderCard(dynamic item, bool isSelected, String uniqueId) {
     final statusColor = isSelected ? AppColors.primaryColor : Colors.grey;
-    final statusBgColor =
-        isSelected
-            ? AppColors.primaryColor.withOpacity(0.1)
-            : Colors.grey.shade50;
+    final statusBgColor = isSelected
+        ? AppColors.primaryColor.withOpacity(0.1)
+        : Colors.grey.shade50;
 
     final double amount = double.tryParse(item['amt']?.toString() ?? '0') ?? 0;
     final double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
     final double mrp = double.tryParse(item['mrp']?.toString() ?? '0') ?? 0;
     final double balQty = (item['BalQty'] as num?)?.toDouble() ?? 0;
-    final double freeQty =
-        double.tryParse(item['freeQty']?.toString() ?? '0') ?? 0;
+    final double freeQty = double.tryParse(item['freeQty']?.toString() ?? '0') ?? 0;
+    
+    int currentQty = _selectedQuantities[uniqueId]?['qty'] ?? balQty.toInt();
 
     final String styleCode = item['Style_Code'] ?? item['Style_Key'] ?? 'N/A';
-    final String shadeName =
-        (item['shade_name'] != null && item['shade_name'].toString().isNotEmpty)
-            ? item['shade_name'].toString()
-            : 'N/A';
-    final String brandName =
-        (item['Brand_Name'] != null && item['Brand_Name'].toString().isNotEmpty)
-            ? item['Brand_Name'].toString()
-            : 'N/A';
-    final String typeName =
-        (item['Type_Name'] != null && item['Type_Name'].toString().isNotEmpty)
-            ? item['Type_Name'].toString()
-            : 'N/A';
+    final String shadeName = (item['shade_name'] != null && item['shade_name'].toString().isNotEmpty)
+        ? item['shade_name'].toString()
+        : 'N/A';
+    final String brandName = (item['Brand_Name'] != null && item['Brand_Name'].toString().isNotEmpty)
+        ? item['Brand_Name'].toString()
+        : 'N/A';
+    final String typeName = (item['Type_Name'] != null && item['Type_Name'].toString().isNotEmpty)
+        ? item['Type_Name'].toString()
+        : 'N/A';
     final String unitName = item['unit_name'] ?? 'PCS';
     final String docDate = item['Doc_Dt']?.toString().split('T')[0] ?? 'N/A';
     final String dlvDate = item['DlvDate']?.toString().split('T')[0] ?? 'N/A';
@@ -440,10 +437,7 @@ Future<void> _addSelectedItems() async {
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 4,
-              ),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               childrenPadding: EdgeInsets.zero,
               leading: GestureDetector(
                 onTap: () => _toggleSelection(item),
@@ -455,9 +449,7 @@ Future<void> _addSelectedItems() async {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    isSelected
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
+                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                     color: statusColor,
                     size: 22,
                   ),
@@ -480,16 +472,11 @@ Future<void> _addSelectedItems() async {
                       ),
                       if (isSelected)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.green.withOpacity(0.3),
-                            ),
+                            border: Border.all(color: Colors.green.withOpacity(0.3)),
                           ),
                           child: Text(
                             'SELECTED',
@@ -508,18 +495,11 @@ Future<void> _addSelectedItems() async {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.inventory,
-                              size: 12,
-                              color: Colors.grey.shade600,
-                            ),
+                            Icon(Icons.inventory, size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 2),
                             Text(
                               item['item_name'] ?? 'N/A',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                              ),
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -528,19 +508,9 @@ Future<void> _addSelectedItems() async {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 12,
-                              color: Colors.grey.shade600,
-                            ),
+                            Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 2),
-                            Text(
-                              docDate,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
+                            Text(docDate, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
                           ],
                         ),
                       ),
@@ -554,11 +524,7 @@ Future<void> _addSelectedItems() async {
                   color: Colors.grey.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.keyboard_arrow_down,
-                  color: AppColors.primaryColor,
-                  size: 18,
-                ),
+                child: const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryColor, size: 18),
               ),
               backgroundColor: Colors.white,
               collapsedBackgroundColor: Colors.white,
@@ -566,9 +532,7 @@ Future<void> _addSelectedItems() async {
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade200),
-                    ),
+                    border: Border(top: BorderSide(color: Colors.grey.shade200)),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -585,88 +549,39 @@ Future<void> _addSelectedItems() async {
                           children: [
                             Row(
                               children: [
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.code,
-                                    'Design',
-                                    styleCode,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.code, 'Design', styleCode)),
                                 const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.color_lens,
-                                    'Shade',
-                                    shadeName,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.color_lens, 'Shade', shadeName)),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.branding_watermark,
-                                    'Brand',
-                                    brandName,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.branding_watermark, 'Brand', brandName)),
                                 const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.category,
-                                    'Type',
-                                    typeName,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.category, 'Type', typeName)),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.calendar_today,
-                                    'Date',
-                                    docDate,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.calendar_today, 'Date', docDate)),
                                 const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.local_shipping,
-                                    'Delivery',
-                                    dlvDate,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.local_shipping, 'Delivery', dlvDate)),
                               ],
                             ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.inventory,
-                                    'Unit',
-                                    unitName,
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.inventory, 'Unit', unitName)),
                                 const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildDetailRow(
-                                    Icons.sell,
-                                    'Free Qty',
-                                    '${freeQty.toStringAsFixed(0)} $unitName',
-                                  ),
-                                ),
+                                Expanded(child: _buildDetailRow(Icons.sell, 'Free Qty', '${freeQty.toStringAsFixed(0)} $unitName')),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
-
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -676,61 +591,130 @@ Future<void> _addSelectedItems() async {
                         ),
                         child: Row(
                           children: [
-                            Expanded(
-                              child: _buildMetricRow(
-                                Icons.currency_rupee,
-                                'MRP',
-                                '₹${mrp.toStringAsFixed(2)}',
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey.shade300,
-                            ),
-                            Expanded(
-                              child: _buildMetricRow(
-                                Icons.price_change,
-                                'Rate',
-                                '₹${rate.toStringAsFixed(2)}',
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey.shade300,
-                            ),
-                            Expanded(
-                              child: _buildMetricRow(
-                                Icons.attach_money,
-                                'Amount',
-                                '₹${amount.toStringAsFixed(2)}',
-                              ),
-                            ),
+                            Expanded(child: _buildMetricRow(Icons.currency_rupee, 'MRP', '₹${mrp.toStringAsFixed(2)}')),
+                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Expanded(child: _buildMetricRow(Icons.price_change, 'Rate', '₹${rate.toStringAsFixed(2)}')),
+                            Container(width: 1, height: 30, color: Colors.grey.shade300),
+                            Expanded(child: _buildMetricRow(Icons.attach_money, 'Amount', '₹${amount.toStringAsFixed(2)}')),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _buildMetricRow(
-                                Icons.inventory_2,
-                                'Balance Qty',
-                                '${balQty.toStringAsFixed(0)} $unitName',
+                      const SizedBox(height: 12),
+                      // Quantity Editor - Only show when item is selected
+                      if (isSelected)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.production_quantity_limits, size: 14, color: Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Quantity',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Available: ${balQty.toStringAsFixed(0)} $unitName',
+                                      style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 120,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey.shade300),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        InkWell(
+                                          onTap: currentQty > 0
+                                              ? () => _updateQuantity(uniqueId, currentQty - 1, balQty, rate)
+                                              : null,
+                                          child: Container(
+                                            width: 35,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: const BorderRadius.only(
+                                                topLeft: Radius.circular(8),
+                                                bottomLeft: Radius.circular(8),
+                                              ),
+                                            ),
+                                            child: const Icon(Icons.remove, size: 18, color: Colors.grey),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: TextFormField(
+                                            initialValue: currentQty.toString(),
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.zero,
+                                              isDense: true,
+                                            ),
+                                            onChanged: (value) {
+                                              int newQty = int.tryParse(value) ?? 0;
+                                              _updateQuantity(uniqueId, newQty, balQty, rate);
+                                            },
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: currentQty < balQty
+                                              ? () => _updateQuantity(uniqueId, currentQty + 1, balQty, rate)
+                                              : null,
+                                          child: Container(
+                                            width: 35,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: const BorderRadius.only(
+                                                topRight: Radius.circular(8),
+                                                bottomRight: Radius.circular(8),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.add,
+                                              size: 18,
+                                              color: currentQty < balQty ? Colors.grey : Colors.grey.shade300,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (currentQty > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    'Amount: ₹${(currentQty * rate).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -751,17 +735,10 @@ Future<void> _addSelectedItems() async {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
-              ),
+              Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C3E50),
-                ),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF2C3E50)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -781,17 +758,10 @@ Future<void> _addSelectedItems() async {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-              ),
+              Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

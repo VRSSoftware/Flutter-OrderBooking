@@ -19,15 +19,15 @@ class PackingListScreen extends StatefulWidget {
   final Map<String, dynamic>? orderData;
 
   const PackingListScreen({Key? key, this.orderId, this.orderData})
-    : super(key: key);
+      : super(key: key);
 
   @override
   _PackingListScreenState createState() => _PackingListScreenState();
 }
 
 class _PackingListScreenState extends State<PackingListScreen> {
-  bool _isUpdateMode = false;
   // ==================== VARIABLES ====================
+  bool _isUpdateMode = false;
 
   // Form & Controllers
   final _formKey = GlobalKey<FormState>();
@@ -47,7 +47,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
   Map<String, dynamic> _additionalInfo = {};
 
   // Order Selection
-  String? _selectedSOOption;
   List<Map<String, dynamic>> _selectedSOItems = [];
 
   // Amount Calculation
@@ -55,7 +54,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
   double _roundOffAmount = 0.0;
 
   // ==================== LIFECYCLE METHODS ====================
-
   @override
   void initState() {
     super.initState();
@@ -69,8 +67,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
       }
     });
   }
-  // ==================== INITIALIZATION METHODS ====================
 
+  // ==================== INITIALIZATION METHODS ====================
   Future<void> _initializeData() async {
     setState(() => isLoading = true);
 
@@ -86,21 +84,16 @@ class _PackingListScreenState extends State<PackingListScreen> {
     setState(() {
       if (payTermsResponse['result'] != null &&
           payTermsResponse['result'] is List) {
-        paymentTerms =
-            (payTermsResponse['result'] as List)
-                .map(
-                  (keyName) =>
-                      PytTermDisc(key: keyName.key, name: keyName.name),
-                )
-                .toList();
+        paymentTerms = (payTermsResponse['result'] as List)
+            .map((keyName) => PytTermDisc(key: keyName.key, name: keyName.name))
+            .toList();
       }
     });
 
     final today = DateTime.now();
     _orderControllers.date.text = _PackingListControllers.formatDate(today);
-    _orderControllers.deliveryDate.text = _PackingListControllers.formatDate(
-      today,
-    );
+    _orderControllers.deliveryDate.text =
+        _PackingListControllers.formatDate(today);
     _orderControllers.deliveryDays.text = '0';
 
     setState(() => isLoading = false);
@@ -112,16 +105,13 @@ class _PackingListScreenState extends State<PackingListScreen> {
         coBrId: UserSession.coBrId ?? '',
       );
       setState(() {
-        _bookingTypes =
-            (rawData as List)
-                .map(
-                  (json) => Item(
-                    itemKey: json['key'],
-                    itemName: json['name'],
-                    itemSubGrpKey: '',
-                  ),
-                )
-                .toList();
+        _bookingTypes = (rawData as List)
+            .map((json) => Item(
+                  itemKey: json['key'],
+                  itemName: json['name'],
+                  itemSubGrpKey: '',
+                ))
+            .toList();
       });
     } catch (e) {
       print('Failed to load booking types: $e');
@@ -138,46 +128,35 @@ class _PackingListScreenState extends State<PackingListScreen> {
         coBrId: UserSession.coBrId ?? '',
       );
 
-      print('Response: $response'); // Debug to see actual response
+      print('Response: $response');
 
       if (response['status'] == 'success') {
         setState(() {
-          // Pre-fill the form with existing data
-          _orderControllers.date.text =
-              response['packingdate']?.split(' ')[0] ??
+          _orderControllers.date.text = response['packingdate']?.split(' ')[0] ??
               DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-          // Set party selection
           _orderControllers.selectedPartyKey = response['customer'];
           _orderControllers.selectedPartyName = response['customerName'];
           _orderControllers.selectedParty = response['customerName'];
 
           _orderControllers.selectedBrokerKey = response['broker'];
-          _orderControllers.comm.text =
-              response['comission']?.toString() ?? '0';
+          _orderControllers.comm.text = response['comission']?.toString() ?? '0';
           _orderControllers.selectedTransporterKey = response['transporter'];
           _orderControllers.deliveryDays.text =
               response['delivaryday']?.toString() ?? '0';
           _orderControllers.deliveryDate.text = response['delivarydate'] ?? '';
           _orderControllers.remark.text = response['remark'] ?? '';
-          _selectedSOOption = response['soOption'];
           _roundOff = response['roundOff'] ?? false;
 
-          // Load selected items from the packing details
           if (response['items'] != null && response['items'] is List) {
-            List<Map<String, dynamic>> items = List<Map<String, dynamic>>.from(
-              response['items'],
-            );
-
-            // Get the packing date from response
+            List<Map<String, dynamic>> items =
+                List<Map<String, dynamic>>.from(response['items']);
             String packingDate = response['packingdate'] ?? '';
 
-            // Make sure each item has docNo and docDt from the packing header
             for (var item in items) {
               if (item['docNo'] == null || item['docNo'].toString().isEmpty) {
                 item['docNo'] = response['docNo'] ?? 'N/A';
               }
-              // Add the packing date to each item
               item['docDt'] = packingDate;
             }
             _selectedSOItems = items;
@@ -186,7 +165,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
           _updateRoundOff();
         });
 
-        // After setting party, load consignees and other details
         if (_orderControllers.selectedPartyKey != null &&
             _orderControllers.selectedPartyKey!.isNotEmpty) {
           await fetchAndMapConsignees(
@@ -235,7 +213,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
   }
 
   // ==================== HELPER METHODS ====================
-
   String formatDate(String date, bool time) {
     try {
       DateTime parsedDate = DateFormat("yyyy-MM-dd").parse(date);
@@ -252,16 +229,14 @@ class _PackingListScreenState extends State<PackingListScreen> {
   String calculateFutureDateFromString(String daysString) {
     final int? days = int.tryParse(daysString);
     if (days == null) return "";
-    return DateFormat(
-      'yyyy-MM-dd',
-    ).format(DateTime.now().add(Duration(days: days)));
+    return DateFormat('yyyy-MM-dd')
+        .format(DateTime.now().add(Duration(days: days)));
   }
 
   String getTodayWithZeroTime() {
     final now = DateTime.now();
-    return DateFormat(
-      'yyyy-MM-dd HH:mm:ss.SSS',
-    ).format(DateTime(now.year, now.month, now.day));
+    return DateFormat('yyyy-MM-dd HH:mm:ss.SSS')
+        .format(DateTime(now.year, now.month, now.day));
   }
 
   String calculateDueDate() {
@@ -302,7 +277,6 @@ class _PackingListScreenState extends State<PackingListScreen> {
   }
 
   // ==================== UI HELPER METHODS ====================
-
   List<Map<String, String>> _getLedgerList(String ledCat) {
     switch (ledCat) {
       case 'w':
@@ -323,45 +297,30 @@ class _PackingListScreenState extends State<PackingListScreen> {
       )['ledKey'];
 
   // ==================== DIALOG METHODS ====================
-
   void _showValidationDialog(String title, String message) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            const SizedBox(width: 12),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
   // ==================== BUSINESS LOGIC METHODS ====================
-
   void _openOrderListPage() async {
     if (_orderControllers.selectedPartyKey?.isEmpty ?? true) {
       _showValidationDialog(
@@ -371,28 +330,20 @@ class _PackingListScreenState extends State<PackingListScreen> {
       return;
     }
 
-    // Store existing items before navigation
-    final List<Map<String, dynamic>> existingItems = List.from(
-      _selectedSOItems,
-    );
-
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => SalesOrderListScreen(
-              custKey: _orderControllers.selectedPartyKey!,
-              existingSelectedItems: _selectedSOItems,
-              isEditMode: _isUpdateMode,
-              currentPackingId: _isUpdateMode ? widget.orderId : null,
-            ),
+        builder: (context) => SalesOrderListScreen(
+          custKey: _orderControllers.selectedPartyKey!,
+          existingSelectedItems: _selectedSOItems,
+          isEditMode: _isUpdateMode,
+          currentPackingId: _isUpdateMode ? widget.orderId : null,
+        ),
       ),
     );
 
     if (result != null && result is List<Map<String, dynamic>>) {
-      // result contains ONLY newly selected items
       setState(() {
-        // Add new items to existing items
         _selectedSOItems.addAll(result);
       });
 
@@ -451,27 +402,24 @@ class _PackingListScreenState extends State<PackingListScreen> {
 
     final result = await showDialog(
       context: context,
-      builder:
-          (context) => AddMoreInfoDialog2(
-            salesPersonList: _dropdownData.salesPersonList,
-            partyLedKey: _orderControllers.selectedPartyKey,
-            pytTermDiscKey: _orderControllers.pytTermDiscKey,
-            salesPersonKey: _orderControllers.salesPersonKey,
-            creditPeriod: _orderControllers.creditPeriod,
-            salesLedKey: _orderControllers.salesLedKey,
-            ledgerName: _orderControllers.ledgerName,
-            additionalInfo: _additionalInfo,
-            consignees: consignees,
-            paymentTerms: paymentTerms,
-            bookingTypes: _bookingTypes,
-            onValueChanged:
-                (newInfo) => setState(() => _additionalInfo = newInfo),
-            isSalesmanDropdownEnabled: UserSession.userType == 'A',
-            isPaymentTermEnable: UserSession.userType != 'C',
-            isConsigneeEnabled: UserSession.userType != 'C',
-            isBookingTypeEnabled:
-                UserSession.userType == 'A' || UserSession.userType == 'S',
-          ),
+      builder: (context) => AddMoreInfoDialog2(
+        salesPersonList: _dropdownData.salesPersonList,
+        partyLedKey: _orderControllers.selectedPartyKey,
+        pytTermDiscKey: _orderControllers.pytTermDiscKey,
+        salesPersonKey: _orderControllers.salesPersonKey,
+        creditPeriod: _orderControllers.creditPeriod,
+        salesLedKey: _orderControllers.salesLedKey,
+        ledgerName: _orderControllers.ledgerName,
+        additionalInfo: _additionalInfo,
+        consignees: consignees,
+        paymentTerms: paymentTerms,
+        bookingTypes: _bookingTypes,
+        onValueChanged: (newInfo) => setState(() => _additionalInfo = newInfo),
+        isSalesmanDropdownEnabled: UserSession.userType == 'A',
+        isPaymentTermEnable: UserSession.userType != 'C',
+        isConsigneeEnabled: UserSession.userType != 'C',
+        isBookingTypeEnabled: UserSession.userType == 'A' || UserSession.userType == 'S',
+      ),
     );
 
     if (result != null) {
@@ -485,116 +433,147 @@ class _PackingListScreenState extends State<PackingListScreen> {
     }
   }
 
-Future<void> _savePackingList() async {
-  if (_isSaving) return;
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _savePackingList() async {
+    if (_isSaving) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() => _isSaving = true);
+    setState(() => _isSaving = true);
 
-  try {
-    String? consigneeLedKey = '', stationStnKey = '';
-    final selectedConsigneeName = _additionalInfo['consignee']?.toString();
+    try {
+      String? consigneeLedKey = '', stationStnKey = '';
+      final selectedConsigneeName = _additionalInfo['consignee']?.toString();
 
-    if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
-      final selectedConsignee = consignees.firstWhere(
-        (consignee) => consignee.ledName == selectedConsigneeName,
-        orElse: () => Consignee(
-          ledKey: '',
-          ledName: '',
-          stnKey: '',
-          stnName: '',
-          paymentTermsKey: '',
-          paymentTermsName: '',
-          pytTermDiscdays: '0',
-        ),
-      );
-      consigneeLedKey = selectedConsignee.ledKey;
-      stationStnKey = selectedConsignee.stnKey;
-    }
-
-    final Map<String, dynamic> data2 = {
-      "packingdate": formatDate(_orderControllers.date.text, true),
-      "customer": _orderControllers.selectedPartyKey ?? '',
-      "broker": _orderControllers.selectedBrokerKey ?? '',
-      "comission": _orderControllers.comm.text,
-      "transporter": _orderControllers.selectedTransporterKey ?? '',
-      "delivaryday": _orderControllers.deliveryDays.text,
-      "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
-      "remark": _orderControllers.remark.text,
-      "consignee": consigneeLedKey,
-      "station": stationStnKey,
-      "paymentterms": _additionalInfo['paymentterms'] ?? _orderControllers.pytTermDiscKey ?? '',
-      "paymentdays": _additionalInfo['paymentdays'] ?? _orderControllers.creditPeriod?.toString() ?? '0',
-      "duedate": calculateDueDate(),
-      "refno": _additionalInfo['refno'] ?? '',
-      "date": getTodayWithZeroTime(),
-      "bookingtype": _additionalInfo['bookingtype'] ?? '',
-      "salesman": _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
-      "usertype": UserSession.userType,
-    //  "soOption": _selectedSOOption,
-      "grossAmount": _calculateGrossAmount().toInt().toString(),
-      "roundOff": _roundOff,
-      "roundOffAmount": _roundOffAmount.toInt().toString(),
-      "netAmount": _calculateNetAmount().toInt().toString(),
-    };
-
-    List<Map<String, dynamic>> dataArray = [];
-
-    for (var item in _selectedSOItems) {
-      print('Saving item: ${item['itemName']}, docId: ${item['docId']}, docDtlId: ${item['docDtlId']}, selectedQty: ${item['selectedQty']}');
-      
-      final List<Map<String, dynamic>> sizes = List<Map<String, dynamic>>.from(item['sizes'] ?? []);
-
-      // Safely convert docId to int
-      int soDocId = 0;
-      var docIdValue = item['docId'];
-      if (docIdValue is int) {
-        soDocId = docIdValue;
-      } else if (docIdValue is String) {
-        soDocId = int.tryParse(docIdValue) ?? 0;
+      if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
+        final selectedConsignee = consignees.firstWhere(
+          (consignee) => consignee.ledName == selectedConsigneeName,
+          orElse: () => Consignee(
+            ledKey: '',
+            ledName: '',
+            stnKey: '',
+            stnName: '',
+            paymentTermsKey: '',
+            paymentTermsName: '',
+            pytTermDiscdays: '0',
+          ),
+        );
+        consigneeLedKey = selectedConsignee.ledKey;
+        stationStnKey = selectedConsignee.stnKey;
       }
 
-      // Safely convert docDtlId to int
-      int soDocDtlId = 0;
-      var docDtlIdValue = item['docDtlId'];
-      if (docDtlIdValue is int) {
-        soDocDtlId = docDtlIdValue;
-      } else if (docDtlIdValue is String) {
-        soDocDtlId = int.tryParse(docDtlIdValue) ?? 0;
+      Set<String> uniqueOrderNos = {};
+      for (var item in _selectedSOItems) {
+        String? docNo = item['docNo']?.toString();
+        if (docNo != null && docNo.isNotEmpty && docNo != 'N/A') {
+          uniqueOrderNos.add(docNo);
+        }
       }
+      String ourOrderNo = uniqueOrderNos.join(',');
+      print('DEBUG: Final ourOrderNo = "$ourOrderNo"');
 
-      if (sizes.isNotEmpty) {
-        for (var size in sizes) {
-          final int qty = size['qty'] as int? ?? 0;
+      final Map<String, dynamic> data2 = {
+        "packingdate": formatDate(_orderControllers.date.text, true),
+        "customer": _orderControllers.selectedPartyKey ?? '',
+        "broker": _orderControllers.selectedBrokerKey ?? '',
+        "comission": _orderControllers.comm.text,
+        "transporter": _orderControllers.selectedTransporterKey ?? '',
+        "delivaryday": _orderControllers.deliveryDays.text,
+        "delivarydate": formatDate(_orderControllers.deliveryDate.text, false),
+        "remark": _orderControllers.remark.text,
+        "consignee": consigneeLedKey,
+        "station": stationStnKey,
+        "paymentterms": _additionalInfo['paymentterms'] ?? _orderControllers.pytTermDiscKey ?? '',
+        "paymentdays": _additionalInfo['paymentdays'] ?? _orderControllers.creditPeriod?.toString() ?? '0',
+        "duedate": calculateDueDate(),
+        "refno": _additionalInfo['refno'] ?? '',
+        "date": getTodayWithZeroTime(),
+        "bookingtype": _additionalInfo['bookingtype'] ?? '',
+        "salesman": _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+        "usertype": UserSession.userType,
+        "grossAmount": _calculateGrossAmount().toInt().toString(),
+        "roundOff": _roundOff,
+        "roundOffAmount": _roundOffAmount.toInt().toString(),
+        "netAmount": _calculateNetAmount().toInt().toString(),
+        "ourOrderNo": ourOrderNo,
+      };
+
+      List<Map<String, dynamic>> dataArray = [];
+
+      for (var item in _selectedSOItems) {
+        print(
+          'Saving item: ${item['itemName']}, docId: ${item['docId']}, docDtlId: ${item['docDtlId']}, selectedQty: ${item['selectedQty']}',
+        );
+
+        final List<Map<String, dynamic>> sizes =
+            List<Map<String, dynamic>>.from(item['sizes'] ?? []);
+
+        int soDocId = 0;
+        var docIdValue = item['docId'];
+        if (docIdValue is int) {
+          soDocId = docIdValue;
+        } else if (docIdValue is String) {
+          soDocId = int.tryParse(docIdValue) ?? 0;
+        }
+
+        int soDocDtlId = 0;
+        var docDtlIdValue = item['docDtlId'];
+        if (docDtlIdValue is int) {
+          soDocDtlId = docDtlIdValue;
+        } else if (docDtlIdValue is String) {
+          soDocDtlId = int.tryParse(docDtlIdValue) ?? 0;
+        }
+
+        if (sizes.isNotEmpty) {
+          for (var size in sizes) {
+            final int qty = size['qty'] as int? ?? 0;
+            if (qty > 0) {
+              int soDocDtlSzId = 0;
+              var szIdValue = size['docDtlSzId'];
+              if (szIdValue is int) {
+                soDocDtlSzId = szIdValue;
+              } else if (szIdValue is String) {
+                soDocDtlSzId = int.tryParse(szIdValue) ?? 0;
+              }
+
+              int stkId = 0;
+              var stkIdValue = size['stkId'];
+              if (stkIdValue is int) {
+                stkId = stkIdValue;
+              } else if (stkIdValue is String) {
+                stkId = int.tryParse(stkIdValue) ?? 0;
+              }
+
+              dataArray.add({
+                "designcode": item['styleCode']?.toString() ?? '',
+                "soDocId": soDocId,
+                "soDocDtlId": soDocDtlId,
+                "soDocDtlSzId": soDocDtlSzId,
+                "stkId": stkId,
+                "mrp": (size['mrp'] as double? ?? 0).toInt().toString(),
+                "WSP": (size['rate'] as double? ?? 0).toInt().toString(),
+                "size": size['size']?.toString() ?? '',
+                "TotQty": ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
+                "Note": item['amtRemark']?.toString() ?? '',
+                "color": item['shadeName']?.toString() ?? '',
+                "Qty": qty.toString(),
+                "cobrid": UserSession.coBrId ?? '',
+                "user": UserSession.userName ?? '',
+                "barcode": "",
+              });
+            }
+          }
+        } else {
+          final int qty = (item['selectedQty'] as double? ?? 0).toInt();
           if (qty > 0) {
-            // Safely convert docDtlSzId to int
-            int soDocDtlSzId = 0;
-            var szIdValue = size['docDtlSzId'];
-            if (szIdValue is int) {
-              soDocDtlSzId = szIdValue;
-            } else if (szIdValue is String) {
-              soDocDtlSzId = int.tryParse(szIdValue) ?? 0;
-            }
-
-            // Safely convert stkId to int
-            int stkId = 0;
-            var stkIdValue = size['stkId'];
-            if (stkIdValue is int) {
-              stkId = stkIdValue;
-            } else if (stkIdValue is String) {
-              stkId = int.tryParse(stkIdValue) ?? 0;
-            }
-
             dataArray.add({
               "designcode": item['styleCode']?.toString() ?? '',
               "soDocId": soDocId,
               "soDocDtlId": soDocDtlId,
-              "soDocDtlSzId": soDocDtlSzId,
-              "stkId": stkId,
-              "mrp": (size['mrp'] as double? ?? 0).toInt().toString(),
-              "WSP": (size['rate'] as double? ?? 0).toInt().toString(),
-              "size": size['size']?.toString() ?? '',
-              "TotQty": ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
+              "soDocDtlSzId": 0,
+              "stkId": 0,
+              "mrp": (item['mrp'] as double? ?? 0).toInt().toString(),
+              "WSP": (item['rate'] as double? ?? 0).toInt().toString(),
+              "size": "",
+              "TotQty": qty.toString(),
               "Note": item['amtRemark']?.toString() ?? '',
               "color": item['shadeName']?.toString() ?? '',
               "Qty": qty.toString(),
@@ -604,110 +583,79 @@ Future<void> _savePackingList() async {
             });
           }
         }
-      } else {
-        final int qty = (item['selectedQty'] as double? ?? 0).toInt();
-        if (qty > 0) {
-          dataArray.add({
-            "designcode": item['styleCode']?.toString() ?? '',
-            "soDocId": soDocId,
-            "soDocDtlId": soDocDtlId,
-            "soDocDtlSzId": 0,
-            "stkId": 0,
-            "mrp": (item['mrp'] as double? ?? 0).toInt().toString(),
-            "WSP": (item['rate'] as double? ?? 0).toInt().toString(),
-            "size": "",
-            "TotQty": qty.toString(),
-            "Note": item['amtRemark']?.toString() ?? '',
-            "color": item['shadeName']?.toString() ?? '',
-            "Qty": qty.toString(),
-            "cobrid": UserSession.coBrId ?? '',
-            "user": UserSession.userName ?? '',
-            "barcode": "",
-          });
-        }
       }
+
+      if (dataArray.isEmpty) {
+        _showValidationDialog(
+          'No Items',
+          'Please add at least one item to save.',
+        );
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      _showLoadingDialog();
+
+      int packingDocId = int.tryParse(widget.orderId ?? '0') ?? 0;
+
+      final Map<String, dynamic> payload = {
+        "userId": UserSession.userName ?? '',
+        "coBrId": UserSession.coBrId ?? '',
+        "fcYrId": UserSession.userFcYr ?? '',
+        "typ": _isUpdateMode ? 1 : 0,
+        "docId": packingDocId,
+        "data": dataArray,
+        "data2": jsonEncode(data2),
+        "barcode": "false",
+      };
+
+      print('Total dataArray length: ${dataArray.length}');
+      print('Payload docId: $packingDocId');
+
+      final response = _isUpdateMode
+          ? await ApiService.updatePacking(payload)
+          : await ApiService.insertPacking(payload);
+
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      if (response['status'] == 'success') {
+        _showSuccessDialog(response['docNo'] ?? '', isUpdate: _isUpdateMode);
+      } else {
+        _showErrorSnackBar(response['message'] ?? 'Failed to save packing');
+      }
+    } catch (e) {
+      print('Error: $e');
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        _showErrorSnackBar('Error saving packing: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    if (dataArray.isEmpty) {
-      _showValidationDialog(
-        'No Items',
-        'Please add at least one item to save.',
-      );
-      setState(() => _isSaving = false);
-      return;
-    }
-
-    _showLoadingDialog();
-
-    // Convert docId to int for the payload
-    int packingDocId = int.tryParse(widget.orderId ?? '0') ?? 0;
-
-    final Map<String, dynamic> payload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "typ": _isUpdateMode ? 1 : 0,
-      "docId": packingDocId,
-      "data": dataArray,
-      "data2": jsonEncode(data2),
-      "barcode": "false",
-    };
-
-    print('Total dataArray length: ${dataArray.length}');
-    print('Payload docId: $packingDocId');
-    print('Payload: $payload');
-
-    final response = _isUpdateMode
-        ? await ApiService.updatePacking(payload)
-        : await ApiService.insertPacking(payload);
-
-    if (mounted) Navigator.of(context, rootNavigator: true).pop();
-
-    if (response['status'] == 'success') {
-      _showSuccessDialog(response['docNo'] ?? '', isUpdate: _isUpdateMode);
-    } else {
-      _showErrorSnackBar(response['message'] ?? 'Failed to save packing');
-    }
-  } catch (e) {
-    print('Error: $e');
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      _showErrorSnackBar('Error saving packing: $e');
-    }
-  } finally {
-    if (mounted) setState(() => _isSaving = false);
   }
-}
+
   void _showLoadingDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              ),
             ),
-            content: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  'Saving Packing List...',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
+            const SizedBox(width: 16),
+            Text('Saving Packing List...', style: GoogleFonts.poppins(fontSize: 14)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -715,109 +663,78 @@ Future<void> _savePackingList() async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 4,
-            contentPadding: EdgeInsets.zero,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                    border: Border(
-                      bottom: BorderSide(color: Colors.green.shade100),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green.shade700,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                border: Border(bottom: BorderSide(color: Colors.green.shade100)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green.shade700, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                        children: [
+                          TextSpan(text: isUpdate ? 'Packing ' : 'Packing '),
+                          TextSpan(
+                            text: docNo,
                             style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade800,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: isUpdate ? 'Packing ' : 'Packing ',
-                              ),
-                              TextSpan(
-                                text: docNo,
-                                style: TextStyle(
-                                  color: Colors.blue.shade700,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: Colors.blue.shade300,
-                                  decorationThickness: 2,
-                                ),
-                              ),
-                              TextSpan(
-                                text:
-                                    isUpdate
-                                        ? ' updated successfully'
-                                        : ' saved successfully',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.pop(
-                              context,
-                              true,
-                            ); // Return true to indicate success
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primaryColor,
-                            side: BorderSide(color: AppColors.primaryColor),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.blue.shade300,
+                              decorationThickness: 2,
                             ),
                           ),
-                          child: const Text(
-                            'Done',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                          TextSpan(text: isUpdate ? ' updated successfully' : ' saved successfully'),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context, true);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryColor,
+                        side: BorderSide(color: AppColors.primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -834,26 +751,23 @@ Future<void> _savePackingList() async {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null)
-      controller.text = _PackingListControllers.formatDate(picked);
+    if (picked != null) controller.text = _PackingListControllers.formatDate(picked);
   }
 
   // ==================== WIDGET BUILD METHODS ====================
-
   @override
   Widget build(BuildContext context) {
     double grossAmount = _calculateGrossAmount();
     double netAmount = _calculateNetAmount();
+    bool isPartySelected = _orderControllers.selectedPartyKey != null && 
+                           _orderControllers.selectedPartyKey!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _buildBody(grossAmount, netAmount),
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(grossAmount, netAmount, isPartySelected),
     );
   }
 
@@ -867,16 +781,12 @@ Future<void> _savePackingList() async {
       ),
       title: const Text(
         'Packing List',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 20,
-        ),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 20),
       ),
     );
   }
 
-  Widget _buildBody(double grossAmount, double netAmount) {
+  Widget _buildBody(double grossAmount, double netAmount, bool isPartySelected) {
     return Column(
       children: [
         Expanded(
@@ -903,8 +813,7 @@ Future<void> _savePackingList() async {
                     (val, key) async {
                       _orderControllers.selectedBrokerKey = key;
                       if (key != null) {
-                        final commission = await _dropdownData
-                            .fetchCommissionPercentage(key);
+                        final commission = await _dropdownData.fetchCommissionPercentage(key);
                         _orderControllers.comm.text = commission;
                       }
                     },
@@ -916,15 +825,10 @@ Future<void> _savePackingList() async {
                     "Transporter",
                     "T",
                     _orderControllers.selectedTransporter,
-                    (val, key) =>
-                        _orderControllers.selectedTransporterKey = key,
+                    (val, key) => _orderControllers.selectedTransporterKey = key,
                   ),
                   _buildResponsiveRow(
-                    _buildTextField(
-                      "Delivery Days",
-                      _orderControllers.deliveryDays,
-                      readOnly: true,
-                    ),
+                    _buildTextField("Delivery Days", _orderControllers.deliveryDays, readOnly: true),
                     _buildTextField(
                       "Delivery Date",
                       _orderControllers.deliveryDate,
@@ -938,22 +842,41 @@ Future<void> _savePackingList() async {
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          _orderControllers.deliveryDate.text =
-                              _PackingListControllers.formatDate(picked);
-                          _orderControllers.deliveryDays.text =
-                              picked.difference(today).inDays.toString();
+                          _orderControllers.deliveryDate.text = _PackingListControllers.formatDate(picked);
+                          _orderControllers.deliveryDays.text = picked.difference(today).inDays.toString();
                         }
                       },
                     ),
                   ),
-                  _buildTextField(
-                    "Remark",
-                    _orderControllers.remark,
-                    isText: true,
+                  _buildTextField("Remark", _orderControllers.remark, isText: true),
+                  const SizedBox(height: 16),
+                  
+                  // View Sales Orders Button
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: ElevatedButton.icon(
+                      onPressed: isPartySelected ? _openOrderListPage : null,
+                      icon: Icon(Icons.receipt_long, size: 20, color: isPartySelected ? Colors.white : Colors.grey.shade400),
+                      label: Text(
+                        'View Sales Orders',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: isPartySelected ? Colors.white : Colors.grey.shade400,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isPartySelected ? AppColors.primaryColor : Colors.grey.shade300,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildOrderTypeSection(),
-                  const SizedBox(height: 16),
+                  
                   if (_selectedSOItems.isNotEmpty) ...[
                     _buildSelectedItemsCard(),
                     const SizedBox(height: 16),
@@ -970,55 +893,6 @@ Future<void> _savePackingList() async {
     );
   }
 
-  Widget _buildOrderTypeSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Order Type',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildRadioOption(
-                  'without_so',
-                  'Without SO',
-                  Icons.inventory,
-                  _selectedSOOption,
-                  (value) {
-                    setState(() {
-                      _selectedSOOption = value;
-                      if (value == 'without_so') _selectedSOItems.clear();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildRadioOption(
-                  'with_so',
-                  'With SO',
-                  Icons.receipt_long,
-                  _selectedSOOption,
-                  (value) => setState(() => _selectedSOOption = value),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAmountSummaryCard(double grossAmount, double netAmount) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -1028,11 +902,7 @@ Future<void> _savePackingList() async {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.grey.shade200, blurRadius: 4, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -1040,11 +910,7 @@ Future<void> _savePackingList() async {
         children: [
           const Text(
             'Amount Summary',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: AppColors.primaryColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryColor),
           ),
           const SizedBox(height: 12),
           const Divider(),
@@ -1052,17 +918,8 @@ Future<void> _savePackingList() async {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Gross Amount',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                '₹ ${grossAmount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('Gross Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Text('₹ ${grossAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
@@ -1081,21 +938,12 @@ Future<void> _savePackingList() async {
                     },
                     activeColor: AppColors.primaryColor,
                   ),
-                  const Text(
-                    'Round Off',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
+                  const Text('Round Off', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                 ],
               ),
               Text(
-                _roundOff
-                    ? '₹ ${_roundOffAmount.toStringAsFixed(2)}'
-                    : '₹ 0.00',
-                style: TextStyle(
-                  fontSize: 14,
-                  color:
-                      _roundOff ? Colors.green.shade700 : Colors.grey.shade600,
-                ),
+                _roundOff ? '₹ ${_roundOffAmount.toStringAsFixed(2)}' : '₹ 0.00',
+                style: TextStyle(fontSize: 14, color: _roundOff ? Colors.green.shade700 : Colors.grey.shade600),
               ),
             ],
           ),
@@ -1107,76 +955,15 @@ Future<void> _savePackingList() async {
             children: [
               const Text(
                 'Net Amount',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
               ),
               Text(
                 '₹ ${netAmount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRadioOption(
-    String value,
-    String title,
-    IconData icon,
-    String? selectedValue,
-    Function(String?) onChanged,
-  ) {
-    final isSelected = selectedValue == value;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppColors.primaryColor : Colors.grey.shade400,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(10),
-          color:
-              isSelected
-                  ? AppColors.primaryColor.withOpacity(0.08)
-                  : Colors.white,
-        ),
-        child: Row(
-          children: [
-            Radio<String>(
-              value: value,
-              groupValue: selectedValue,
-              onChanged: onChanged,
-              activeColor: AppColors.primaryColor,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? AppColors.primaryColor : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.primaryColor : Colors.black87,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1203,26 +990,16 @@ Future<void> _savePackingList() async {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.shopping_cart,
-                  size: 18,
-                  color: AppColors.primaryColor,
-                ),
+                const Icon(Icons.shopping_cart, size: 18, color: AppColors.primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   'Selected Items (${_selectedSOItems.length})',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor),
                 ),
                 const Spacer(),
                 TextButton(
                   onPressed: () => setState(() => _selectedSOItems.clear()),
-                  child: const Text(
-                    'Clear All',
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
+                  child: const Text('Clear All', style: TextStyle(color: Colors.red, fontSize: 12)),
                 ),
               ],
             ),
@@ -1231,9 +1008,7 @@ Future<void> _savePackingList() async {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _selectedSOItems.length,
-            itemBuilder:
-                (context, index) =>
-                    _buildSelectedItemCard(_selectedSOItems[index], index),
+            itemBuilder: (context, index) => _buildSelectedItemCard(_selectedSOItems[index], index),
           ),
         ],
       ),
@@ -1241,9 +1016,7 @@ Future<void> _savePackingList() async {
   }
 
   Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
-    final List<Map<String, dynamic>> sizes = List<Map<String, dynamic>>.from(
-      item['sizes'] ?? [],
-    );
+    final List<Map<String, dynamic>> sizes = List<Map<String, dynamic>>.from(item['sizes'] ?? []);
 
     int totalQty = 0;
     for (var size in sizes) {
@@ -1251,25 +1024,20 @@ Future<void> _savePackingList() async {
       totalQty += qty;
     }
 
-    // Update selectedQty
     if (totalQty != (item['selectedQty'] as double? ?? 0)) {
       item['selectedQty'] = totalQty.toDouble();
-      item['itemAmt'] =
-          (item['selectedQty'] as double? ?? 0) *
-          (item['rate'] as double? ?? 0);
+      item['itemAmt'] = (item['selectedQty'] as double? ?? 0) * (item['rate'] as double? ?? 0);
     }
 
     double avgRate = 0.0;
     if (totalQty > 0) {
       double totalValue = 0.0;
       for (var size in sizes) {
-        totalValue +=
-            (size['qty'] as int? ?? 0) * (size['rate'] as double? ?? 0);
+        totalValue += (size['qty'] as int? ?? 0) * (size['rate'] as double? ?? 0);
       }
       avgRate = totalValue / totalQty;
     }
 
-    // Get display values with proper null handling
     String displayDocNo = item['docNo']?.toString() ?? 'N/A';
     String displayItemName = item['itemName']?.toString() ?? 'N/A';
     String displayStyleCode = item['styleCode']?.toString() ?? 'N/A';
@@ -1292,11 +1060,7 @@ Future<void> _savePackingList() async {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1)),
         ],
       ),
       child: ExpansionTile(
@@ -1309,28 +1073,14 @@ Future<void> _savePackingList() async {
             color: AppColors.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
-            Icons.inventory,
-            color: AppColors.primaryColor,
-            size: 20,
-          ),
+          child: const Icon(Icons.inventory, color: AppColors.primaryColor, size: 20),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              displayDocNo, // This will show the sales order number
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
-            ),
+            Text(displayDocNo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
             const SizedBox(height: 2),
-            Text(
-              displayItemName,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-            ),
+            Text(displayItemName, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
           ],
         ),
         trailing: Row(
@@ -1342,22 +1092,12 @@ Future<void> _savePackingList() async {
                 color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                'Qty: ${item['selectedQty']} ${displayUnitName}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.green,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: Text('Qty: ${item['selectedQty']} $displayUnitName',
+                  style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-                size: 20,
-              ),
+              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
               onPressed: () => setState(() => _selectedSOItems.removeAt(index)),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
@@ -1375,49 +1115,33 @@ Future<void> _savePackingList() async {
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField('Product', displayItemName),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Product', displayItemName)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField('Design', displayStyleCode),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Design', displayStyleCode)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField('Type', displayTypeName),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Type', displayTypeName)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField('Shade', displayShadeName),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Shade', displayShadeName)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField('Brand', displayBrandName),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Brand', displayBrandName)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField('Order No', displayDocNo),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Order No', displayDocNo)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField('Date', displayDocDate),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Date', displayDocDate)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField('Dlv Date', displayDlvDate),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Dlv Date', displayDlvDate)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1425,73 +1149,33 @@ Future<void> _savePackingList() async {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'MRP',
-                        '₹${(item['mrp'] as double? ?? 0).toStringAsFixed(2)}',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('MRP', '₹${(item['mrp'] as double? ?? 0).toStringAsFixed(2)}')),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Rate',
-                        '₹${(item['rate'] as double? ?? 0).toStringAsFixed(2)}',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Rate', '₹${(item['rate'] as double? ?? 0).toStringAsFixed(2)}')),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Qty',
-                        '${(item['selectedQty'] as double? ?? 0).toStringAsFixed(0)} $displayUnitName',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Qty', '${(item['selectedQty'] as double? ?? 0).toStringAsFixed(0)} $displayUnitName')),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Avg Rt',
-                        avgRate.toStringAsFixed(2),
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Avg Rt', avgRate.toStringAsFixed(2))),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Item Amt',
-                        '₹${(item['itemAmt'] as double? ?? 0).toStringAsFixed(2)}',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Item Amt', '₹${(item['itemAmt'] as double? ?? 0).toStringAsFixed(2)}')),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Ord Qty',
-                        '${item['balQty'] ?? 0} $displayUnitName',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Ord Qty', '${item['balQty'] ?? 0} $displayUnitName')),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Disc (%)',
-                        '${(item['discPercent'] as double? ?? 0).toStringAsFixed(2)}%',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Disc (%)', '${(item['discPercent'] as double? ?? 0).toStringAsFixed(2)}%')),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Disc Amt',
-                        '₹${(item['discAmt'] as double? ?? 0).toStringAsFixed(2)}',
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Disc Amt', '₹${(item['discAmt'] as double? ?? 0).toStringAsFixed(2)}')),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1504,12 +1188,7 @@ Future<void> _savePackingList() async {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyField(
-                        'Amount Remark',
-                        displayAmtRemark,
-                      ),
-                    ),
+                    Expanded(child: _buildReadOnlyField('Amount Remark', displayAmtRemark)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1518,29 +1197,19 @@ Future<void> _savePackingList() async {
                 if (sizes.isNotEmpty)
                   _buildSizeWiseTable(item, sizes)
                 else
-                  const Text(
-                    'No size details available',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  const Text('No size details available', style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'Total Qty: ${item['selectedQty']} $displayUnitName',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppColors.primaryColor,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryColor),
                     ),
                   ),
                 ),
@@ -1549,159 +1218,6 @@ Future<void> _savePackingList() async {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInfoRow(Map<String, dynamic> item) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField('Product', item['itemName'] ?? 'N/A'),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField('Design', item['styleCode'] ?? 'N/A'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField('Type', item['typeName'] ?? 'N/A'),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField('Shade', item['shadeName'] ?? 'N/A'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField(
-                'Brand',
-                item['brandName']?.isNotEmpty == true
-                    ? item['brandName']
-                    : 'N/A',
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField('Order No', item['docNo'] ?? 'N/A'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField('Date', item['docDt'] ?? 'N/A'),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField('Dlv Date', item['dlvDate'] ?? 'N/A'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMainFieldsRow(Map<String, dynamic> item, double avgRate) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField(
-                'MRP',
-                '₹${(item['mrp'] as double? ?? 0).toStringAsFixed(2)}',
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField(
-                'Rate',
-                '₹${(item['rate'] as double? ?? 0).toStringAsFixed(2)}',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField(
-                'Qty',
-                '${(item['selectedQty'] as double? ?? 0).toStringAsFixed(0)} ${item['unitName']}',
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField('Avg Rt', avgRate.toStringAsFixed(2)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildReadOnlyField(
-                'Item Amt',
-                '₹${(item['itemAmt'] as double? ?? 0).toStringAsFixed(2)}',
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildReadOnlyField(
-                'Ord Qty',
-                '${item['balQty']} ${item['unitName']}',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDiscountRow(Map<String, dynamic> item) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildReadOnlyField(
-            'Disc (%)',
-            '${(item['discPercent'] as double? ?? 0).toStringAsFixed(2)}%',
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildReadOnlyField(
-            'Disc Amt',
-            '₹${(item['discAmt'] as double? ?? 0).toStringAsFixed(2)}',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAmountRow(Map<String, dynamic> item) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildReadOnlyField(
-            'Amount',
-            '₹${(((item['selectedQty'] as double? ?? 0) * (item['rate'] as double? ?? 0)) - (item['discAmt'] as double? ?? 0)).toStringAsFixed(2)}',
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildReadOnlyField('Amount Remark', item['amtRemark'] ?? ''),
-        ),
-      ],
     );
   }
 
@@ -1716,35 +1232,19 @@ Future<void> _savePackingList() async {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-          ),
+          Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF2C3E50),
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF2C3E50))),
         ],
       ),
     );
   }
 
-  Widget _buildSizeWiseTable(
-    Map<String, dynamic> item,
-    List<Map<String, dynamic>> sizes,
-  ) {
+  Widget _buildSizeWiseTable(Map<String, dynamic> item, List<Map<String, dynamic>> sizes) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Size-wise Details',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        ),
+        const Text('Size-wise Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -1756,10 +1256,7 @@ Future<void> _savePackingList() async {
             child: Table(
               border: TableBorder(
                 horizontalInside: BorderSide(color: Colors.grey.shade100),
-                verticalInside: BorderSide(
-                  color: Colors.grey.shade200,
-                  width: 0.5,
-                ),
+                verticalInside: BorderSide(color: Colors.grey.shade200, width: 0.5),
               ),
               columnWidths: const {
                 0: FixedColumnWidth(50),
@@ -1797,21 +1294,13 @@ Future<void> _savePackingList() async {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 10,
-          color: AppColors.primaryColor,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10, color: AppColors.primaryColor),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  TableRow _buildTableRow(
-    Map<String, dynamic> size,
-    List<Map<String, dynamic>> sizes,
-    Map<String, dynamic> item,
-  ) {
+  TableRow _buildTableRow(Map<String, dynamic> size, List<Map<String, dynamic>> sizes, Map<String, dynamic> item) {
     return TableRow(
       children: [
         _buildTableCell(size['size'] ?? 'N/A'),
@@ -1825,10 +1314,7 @@ Future<void> _savePackingList() async {
               textAlign: TextAlign.center,
               decoration: const InputDecoration(
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 4,
-                ),
+                contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -1841,9 +1327,7 @@ Future<void> _savePackingList() async {
                   int total = 0;
                   for (var s in sizes) total += (s['qty'] as int? ?? 0);
                   item['selectedQty'] = total.toDouble();
-                  item['itemAmt'] =
-                      (item['selectedQty'] as double? ?? 0) *
-                      (item['rate'] as double? ?? 0);
+                  item['itemAmt'] = (item['selectedQty'] as double? ?? 0) * (item['rate'] as double? ?? 0);
                 });
               },
             ),
@@ -1861,11 +1345,7 @@ Future<void> _savePackingList() async {
   static Widget _buildTableCell(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 10, color: Colors.black87),
-        textAlign: TextAlign.center,
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 10, color: Colors.black87), textAlign: TextAlign.center),
     );
   }
 
@@ -1885,26 +1365,14 @@ Future<void> _savePackingList() async {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _showAddMoreInfoDialog,
-                  icon: const Icon(
-                    Icons.info_outline,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    "Add More Info",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
+                  icon: const Icon(Icons.info_outline, size: 18, color: Colors.white),
+                  label: const Text("Add More Info",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
                 ),
               ),
@@ -1914,149 +1382,22 @@ Future<void> _savePackingList() async {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _savePackingList,
-                  icon:
-                      _isSaving
-                          ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                          : const Icon(
-                            Icons.save,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                  label:
-                      _isSaving
-                          ? const Text(
-                            "Saving...",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: Colors.white,
-                            ),
-                          )
-                          : const Text(
-                            "Save",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: Colors.white,
-                            ),
-                          ),
+                  icon: _isSaving
+                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save, size: 18, color: Colors.white),
+                  label: _isSaving
+                      ? const Text("Saving...", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white))
+                      : const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    if (_selectedSOOption == 'with_so') {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 80),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildFABButton(
-                Icons.receipt_long,
-                'View Sales Orders',
-                _openOrderListPage,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 80),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFABButton(
-              Icons.add,
-              'Add Item',
-              () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add Item feature coming soon')),
-              ),
-            ),
-            Container(width: 1, height: 35, color: Colors.grey.shade300),
-            _buildFABButton(
-              Icons.qr_code_scanner,
-              'Barcode',
-              () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Barcode scanning feature coming soon'),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFABButton(IconData icon, String label, VoidCallback onPressed) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(30),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: AppColors.primaryColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.primaryColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -2085,52 +1426,29 @@ Future<void> _savePackingList() async {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: DropdownSearch<String>(
-        validator:
-            (value) =>
-                isRequired && (value == null || value.isEmpty)
-                    ? "$label is required"
-                    : null,
+        validator: (value) => isRequired && (value == null || value.isEmpty) ? "$label is required" : null,
         popupProps: PopupProps.menu(
           showSearchBox: true,
           searchFieldProps: TextFieldProps(
             decoration: InputDecoration(
               hintText: "Search $label",
-              prefixIcon: const Icon(
-                Icons.search,
-                color: Colors.grey,
-                size: 18,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
           ),
         ),
         items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
-        filterFn:
-            (item, filter) =>
-                filter.isEmpty
-                    ? true
-                    : item
-                        .split('-->')
-                        .first
-                        .trim()
-                        .toLowerCase()
-                        .contains(filter.toLowerCase()),
+        filterFn: (item, filter) => filter.isEmpty
+            ? true
+            : item.split('-->').first.trim().toLowerCase().contains(filter.toLowerCase()),
         selectedItem: selectedValue,
         dropdownDecoratorProps: DropDownDecoratorProps(
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             isDense: true,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
@@ -2141,39 +1459,24 @@ Future<void> _savePackingList() async {
               borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
               borderRadius: BorderRadius.circular(6),
             ),
-            labelStyle: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ),
-        dropdownBuilder:
-            (context, selectedItem) => Text(
-              selectedItem ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14),
-            ),
-        onChanged:
-            isEnabled
-                ? (val) => onChanged(val, _getKeyFromValue(ledCat, val))
-                : null,
+        dropdownBuilder: (context, selectedItem) => Text(
+          selectedItem ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14),
+        ),
+        onChanged: isEnabled ? (val) => onChanged(val, _getKeyFromValue(ledCat, val)) : null,
         enabled: isEnabled,
       ),
     );
   }
 
-  Widget _buildResponsiveRow(Widget first, Widget second) =>
-      MediaQuery.of(context).size.width > 600
-          ? Row(
-            children: [
-              Expanded(child: first),
-              const SizedBox(width: 10),
-              Expanded(child: second),
-            ],
-          )
-          : Column(children: [first, second]);
+  Widget _buildResponsiveRow(Widget first, Widget second) => MediaQuery.of(context).size.width > 600
+      ? Row(children: [Expanded(child: first), const SizedBox(width: 10), Expanded(child: second)])
+      : Column(children: [first, second]);
 
   Widget _buildTextField(
     String label,
@@ -2191,23 +1494,13 @@ Future<void> _savePackingList() async {
         readOnly: readOnly || isDate,
         keyboardType: isText ? TextInputType.text : TextInputType.number,
         onTap: onTap ?? (isDate ? () => _selectDate(controller) : null),
-        validator:
-            isRequired
-                ? (value) =>
-                    value == null || value.isEmpty ? '$label is required' : null
-                : null,
+        validator: isRequired ? (value) => value == null || value.isEmpty ? '$label is required' : null : null,
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           isDense: true,
-          suffixIcon:
-              isDate
-                  ? Icon(Icons.calendar_today, size: 18, color: Colors.grey)
-                  : null,
+          suffixIcon: isDate ? Icon(Icons.calendar_today, size: 18, color: Colors.grey) : null,
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
             borderRadius: BorderRadius.circular(6),
@@ -2216,11 +1509,7 @@ Future<void> _savePackingList() async {
             borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
             borderRadius: BorderRadius.circular(6),
           ),
-          labelStyle: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+          labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
         ),
       ),
     );
@@ -2228,37 +1517,20 @@ Future<void> _savePackingList() async {
 }
 
 // ==================== CONTROLLER CLASSES ====================
-
 class _PackingListControllers {
-  // Variables
-  String? pytTermDiscKey,
-      salesPersonKey,
-      salesLedKey,
-      ledgerName,
-      whatsAppMobileNo;
+  String? pytTermDiscKey, salesPersonKey, salesLedKey, ledgerName, whatsAppMobileNo;
   int? creditPeriod;
 
-  // Controllers
   final date = TextEditingController();
   final comm = TextEditingController();
   final deliveryDays = TextEditingController();
   final deliveryDate = TextEditingController();
   final remark = TextEditingController();
 
-  // Selected Values
-  String? selectedParty,
-      selectedPartyKey,
-      selectedPartyName,
-      selectedTransporter,
-      selectedTransporterKey,
-      selectedBroker,
-      selectedBrokerKey;
+  String? selectedParty, selectedPartyKey, selectedPartyName, selectedTransporter, selectedTransporterKey, selectedBroker, selectedBrokerKey;
 
-  // Static Methods
-  static String formatDate(DateTime date) =>
-      DateFormat("yyyy-MM-dd").format(date);
+  static String formatDate(DateTime date) => DateFormat("yyyy-MM-dd").format(date);
 
-  // Methods
   void updateFromPartyDetails(
     Map<String, dynamic> details,
     List<Map<String, String>> brokers,
@@ -2294,13 +1566,8 @@ class _PackingListControllers {
 }
 
 class _PackingListDropdownData {
-  // Data Lists
-  List<Map<String, String>> partyList = [],
-      brokerList = [],
-      transporterList = [],
-      salesPersonList = [];
+  List<Map<String, String>> partyList = [], brokerList = [], transporterList = [], salesPersonList = [];
 
-  // Methods
   Future<void> loadAllDropdownData() async {
     try {
       final results = await Future.wait([
@@ -2337,9 +1604,7 @@ class _PackingListDropdownData {
 
       if (response['statusCode'] == 200 && response['result'] != null) {
         final List<KeyName> result = response['result'];
-        return result
-            .map((keyName) => {'ledKey': keyName.key, 'ledName': keyName.name})
-            .toList();
+        return result.map((keyName) => {'ledKey': keyName.key, 'ledName': keyName.name}).toList();
       }
       return [];
     } catch (e) {
