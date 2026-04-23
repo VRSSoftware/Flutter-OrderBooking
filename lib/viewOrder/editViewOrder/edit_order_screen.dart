@@ -1325,7 +1325,7 @@ void _showSuccessDialog() {
               width: 1,
             ),
           ),
-          child: IconButton(
+          child: 1==1? Container() : IconButton(
             icon: const Icon(
               Icons.add,
               color: Colors.white,
@@ -1436,7 +1436,8 @@ void _showSuccessDialog() {
                             });
                           },
                           children: [
-                            TransactionTabSticky(onUpdate: calculateTotals),
+                            TransactionTab3(onUpdate: calculateTotals),
+                            // TransactionTabSticky(onUpdate: calculateTotals),
                             const CustomerDetailTab(),
                           ],
                         )

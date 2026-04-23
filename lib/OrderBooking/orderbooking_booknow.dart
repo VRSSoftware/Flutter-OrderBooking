@@ -19,6 +19,9 @@ import 'package:vrs_erp/models/catalog.dart';
 import 'package:vrs_erp/models/shade.dart';
 import 'package:vrs_erp/models/size.dart';
 import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
+import 'package:vrs_erp/screens/packing/packing_order_withoutSO.dart';
+
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/widget/booknowwidget.dart';
 
@@ -33,6 +36,7 @@ class OrderPage extends StatefulWidget {
   final String? transactionType;
   final bool isMultiSelect;
   final bool isEdit;
+  final String editModeType;
 
   const OrderPage({
     Key? key,
@@ -46,6 +50,7 @@ class OrderPage extends StatefulWidget {
     this.transactionType,
     this.isMultiSelect = false,
     this.isEdit = false,
+    this.editModeType = '',
   }) : super(key: key);
 
   @override
@@ -2014,9 +2019,37 @@ Container(
           child: InkWell(
             onTap: () {
               final currentArgs = ModalRoute.of(context)?.settings.arguments;
-              Widget screen;
+              Widget screen = CreateOrderScreen(
+                  catalogs: selectedItems,
+                  routeArguments: currentArgs as Map<String, dynamic>?,
+                  onSuccess: () {
+                    setState(() {
+                      selectedItems.clear();
+                    });
+                    _fetchCartCount();
+                    Provider.of<CartModel>(
+                      context,
+                      listen: false,
+                    ).refreshAddedItems();
+                  },
+                );
+              if(widget.isEdit){
+                if(widget.editModeType == Constants.PACKING){
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PackingListWithoutSOScreen(
+                          docId: -1,
+                          catalogs: selectedItems,               // Pass the selected catalogs
+                          routeArguments: currentArgs as Map<String, dynamic>?,
+                        ),
+                      ),
+                    );
+                    return; // Stop further execution
+                }
 
-              if (AppConstants.bookingType == "1") {
+              }
+              else if (AppConstants.bookingType == "1") {
                 print('nav to typ 1');
                 screen = MultiCatalogBookingPage(
                   catalogs: selectedItems,

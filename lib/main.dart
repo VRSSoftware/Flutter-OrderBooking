@@ -59,6 +59,7 @@ import 'package:vrs_erp/screens/home_screen.dart';
 import 'package:vrs_erp/screens/login_screen.dart';
 import 'package:vrs_erp/screens/mdns/MdnsDiscoveryScreen.dart';
 import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
+import 'package:vrs_erp/screens/packing/packing_order_withoutSO.dart';
 import 'package:vrs_erp/screens/sale_bill/sale_bill_order_screen.dart';
 import 'package:vrs_erp/screens/splash_screen.dart';
 import 'package:vrs_erp/services/notification_service.dart';
@@ -150,7 +151,7 @@ class MyApp extends StatelessWidget {
         '/setting': (context) => PrivacyPolicyPage(),
         '/drawer': (context) => DrawerScreen(),
         '/packingRegister': (context) => PackingPage(),
-        '/packingList': (context) => PackingListScreen(),
+        '/packingList': (context) => PackingListWithoutSOScreen(docId: -2),
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
@@ -196,8 +197,8 @@ class MyApp extends StatelessWidget {
 
       // home: SalesOrderInvoicePage(),
       // home: OrderDetailsPage123(),
-      home: LoginScreen(),
-      // home: SplashScreen(),
+      // home: LoginScreen(),
+      home: SplashScreen(),
       // home: MdnsDiscoveryScreen(),
     );
   }
