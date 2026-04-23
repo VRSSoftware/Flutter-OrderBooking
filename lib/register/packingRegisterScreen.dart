@@ -23,7 +23,7 @@ import 'package:vrs_erp/models/stockReportModel.dart';
 import 'package:vrs_erp/models/style.dart';
 import 'package:vrs_erp/register/registerFilteration.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
-import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
+import 'package:vrs_erp/packing/packinglIst_AgainstSO.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/Pdf_viewer_screen.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_barcode2.dart';
@@ -888,7 +888,7 @@ Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PackingListScreen(
+        builder: (context) => PackingListAgainstSO(
           orderId: registerOrder.orderId,
           orderData: {
             'docNo': registerOrder.orderNo,

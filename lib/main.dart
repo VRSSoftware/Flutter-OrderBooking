@@ -17,11 +17,7 @@ import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Payable/payable.dar
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Profit_Loss/Profit_Loss.dart';
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Receivables/receivables.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Trial_Balance/trial_balance.dart';
-
-import 'package:vrs_erp/Masters/Customer/Customer.dart';
-import 'package:vrs_erp/Masters/Customer/CustomerList.dart';
 import 'package:vrs_erp/Masters/Customer/CustomerMaster.dart';
-
 import 'package:vrs_erp/Masters/MastersHome.dart';
 import 'package:vrs_erp/OrderBooking/order_booking.dart';
 import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
@@ -39,11 +35,10 @@ import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/Reports/Stock/Stock.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/dashboard/OrderDetails_page.dart';
-import 'package:vrs_erp/dashboard/customerOrderDetailsPage.dart';
 import 'package:vrs_erp/dashboard/dashboard.dart';
 import 'package:vrs_erp/firebase_options.dart';
 import 'package:vrs_erp/models/CartModel.dart';
+import 'package:vrs_erp/packing/packingListHome.dart';
 import 'package:vrs_erp/privacypolicy/deleteAccount.dart';
 import 'package:vrs_erp/privacypolicy/privacypolicy.dart';
 import 'package:vrs_erp/production/JobCard_cutting/jobCardListScreen.dart';
@@ -54,18 +49,14 @@ import 'package:vrs_erp/catalog/catalog_screen.dart';
 import 'package:vrs_erp/register/saleBillRegister.dart';
 import 'package:vrs_erp/screens/app_settings_screen.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
-
 import 'package:vrs_erp/screens/home_screen.dart';
 import 'package:vrs_erp/screens/login_screen.dart';
-import 'package:vrs_erp/screens/mdns/MdnsDiscoveryScreen.dart';
-import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
-import 'package:vrs_erp/screens/packing/packing_order_withoutSO.dart';
-import 'package:vrs_erp/screens/sale_bill/sale_bill_order_screen.dart';
+import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
+import 'package:vrs_erp/packing/packinglIst_AgainstSO.dart';
+import 'package:vrs_erp/sale_bill/sale_bill_order_screen.dart';
 import 'package:vrs_erp/screens/splash_screen.dart';
 import 'package:vrs_erp/services/notification_service.dart';
 import 'package:vrs_erp/stockReport/stockreportpage.dart';
-import 'package:vrs_erp/viewOrder/TemptestPage.dart';
-import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
 import 'package:vrs_erp/viewOrder/view_order.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
@@ -73,6 +64,9 @@ import 'package:vrs_erp/viewOrder/view_order_screen_barcode.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen_barcode2.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:vrs_erp/viewOrder/TemptestPage.dart';
+import 'package:vrs_erp/viewOrder/ViewSalesOrderReport.dart';
+import 'package:vrs_erp/screens/mdns/MdnsDiscoveryScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -151,7 +145,9 @@ class MyApp extends StatelessWidget {
         '/setting': (context) => PrivacyPolicyPage(),
         '/drawer': (context) => DrawerScreen(),
         '/packingRegister': (context) => PackingPage(),
-        '/packingList': (context) => PackingListWithoutSOScreen(docId: -2),
+        '/packingList': (context) => PackingListHome(),
+         '/packingListWithSO': (context) => PackingListAgainstSO(),
+         '/packingListWithOutSO': (context) => PackingListWithoutSOScreen(docId: -2),
         '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
@@ -197,8 +193,8 @@ class MyApp extends StatelessWidget {
 
       // home: SalesOrderInvoicePage(),
       // home: OrderDetailsPage123(),
-      // home: LoginScreen(),
-      home: SplashScreen(),
+      home: LoginScreen(),
+   //  home: SplashScreen(),
       // home: MdnsDiscoveryScreen(),
     );
   }

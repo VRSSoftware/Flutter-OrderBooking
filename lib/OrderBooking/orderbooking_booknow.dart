@@ -19,8 +19,8 @@ import 'package:vrs_erp/models/catalog.dart';
 import 'package:vrs_erp/models/shade.dart';
 import 'package:vrs_erp/models/size.dart';
 import 'package:vrs_erp/models/style.dart';
-import 'package:vrs_erp/screens/packing/packing_order_screen.dart';
-import 'package:vrs_erp/screens/packing/packing_order_withoutSO.dart';
+
+import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
 
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/widget/booknowwidget.dart';

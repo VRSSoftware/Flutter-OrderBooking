@@ -10,22 +10,22 @@ import 'package:vrs_erp/models/consignee.dart';
 import 'package:vrs_erp/models/PytTermDisc.dart';
 import 'package:vrs_erp/models/item.dart';
 import 'package:vrs_erp/models/keyName.dart';
-import 'package:vrs_erp/screens/packing/SalesOrderList.dart';
+import 'package:vrs_erp/packing/SalesOrderList.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
 
-class PackingListScreen extends StatefulWidget {
+class PackingListAgainstSO extends StatefulWidget {
   final String? orderId;
   final Map<String, dynamic>? orderData;
 
-  const PackingListScreen({Key? key, this.orderId, this.orderData})
-      : super(key: key);
+  const PackingListAgainstSO({Key? key, this.orderId, this.orderData})
+    : super(key: key);
 
   @override
-  _PackingListScreenState createState() => _PackingListScreenState();
+  _PackingListAgainstSOState createState() => _PackingListAgainstSOState();
 }
 
-class _PackingListScreenState extends State<PackingListScreen> {
+class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
   // ==================== VARIABLES ====================
   bool _isUpdateMode = false;
 
@@ -52,6 +52,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
   // Amount Calculation
   bool _roundOff = false;
   double _roundOffAmount = 0.0;
+
+
 
   // ==================== LIFECYCLE METHODS ====================
   @override
@@ -84,16 +86,21 @@ class _PackingListScreenState extends State<PackingListScreen> {
     setState(() {
       if (payTermsResponse['result'] != null &&
           payTermsResponse['result'] is List) {
-        paymentTerms = (payTermsResponse['result'] as List)
-            .map((keyName) => PytTermDisc(key: keyName.key, name: keyName.name))
-            .toList();
+        paymentTerms =
+            (payTermsResponse['result'] as List)
+                .map(
+                  (keyName) =>
+                      PytTermDisc(key: keyName.key, name: keyName.name),
+                )
+                .toList();
       }
     });
 
     final today = DateTime.now();
     _orderControllers.date.text = _PackingListControllers.formatDate(today);
-    _orderControllers.deliveryDate.text =
-        _PackingListControllers.formatDate(today);
+    _orderControllers.deliveryDate.text = _PackingListControllers.formatDate(
+      today,
+    );
     _orderControllers.deliveryDays.text = '0';
 
     setState(() => isLoading = false);
@@ -105,13 +112,16 @@ class _PackingListScreenState extends State<PackingListScreen> {
         coBrId: UserSession.coBrId ?? '',
       );
       setState(() {
-        _bookingTypes = (rawData as List)
-            .map((json) => Item(
-                  itemKey: json['key'],
-                  itemName: json['name'],
-                  itemSubGrpKey: '',
-                ))
-            .toList();
+        _bookingTypes =
+            (rawData as List)
+                .map(
+                  (json) => Item(
+                    itemKey: json['key'],
+                    itemName: json['name'],
+                    itemSubGrpKey: '',
+                  ),
+                )
+                .toList();
       });
     } catch (e) {
       print('Failed to load booking types: $e');
@@ -132,7 +142,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
 
       if (response['status'] == 'success') {
         setState(() {
-          _orderControllers.date.text = response['packingdate']?.split(' ')[0] ??
+          _orderControllers.date.text =
+              response['packingdate']?.split(' ')[0] ??
               DateFormat('yyyy-MM-dd').format(DateTime.now());
 
           _orderControllers.selectedPartyKey = response['customer'];
@@ -140,7 +151,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
           _orderControllers.selectedParty = response['customerName'];
 
           _orderControllers.selectedBrokerKey = response['broker'];
-          _orderControllers.comm.text = response['comission']?.toString() ?? '0';
+          _orderControllers.comm.text =
+              response['comission']?.toString() ?? '0';
           _orderControllers.selectedTransporterKey = response['transporter'];
           _orderControllers.deliveryDays.text =
               response['delivaryday']?.toString() ?? '0';
@@ -149,8 +161,9 @@ class _PackingListScreenState extends State<PackingListScreen> {
           _roundOff = response['roundOff'] ?? false;
 
           if (response['items'] != null && response['items'] is List) {
-            List<Map<String, dynamic>> items =
-                List<Map<String, dynamic>>.from(response['items']);
+            List<Map<String, dynamic>> items = List<Map<String, dynamic>>.from(
+              response['items'],
+            );
             String packingDate = response['packingdate'] ?? '';
 
             for (var item in items) {
@@ -229,14 +242,16 @@ class _PackingListScreenState extends State<PackingListScreen> {
   String calculateFutureDateFromString(String daysString) {
     final int? days = int.tryParse(daysString);
     if (days == null) return "";
-    return DateFormat('yyyy-MM-dd')
-        .format(DateTime.now().add(Duration(days: days)));
+    return DateFormat(
+      'yyyy-MM-dd',
+    ).format(DateTime.now().add(Duration(days: days)));
   }
 
   String getTodayWithZeroTime() {
     final now = DateTime.now();
-    return DateFormat('yyyy-MM-dd HH:mm:ss.SSS')
-        .format(DateTime(now.year, now.month, now.day));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss.SSS',
+    ).format(DateTime(now.year, now.month, now.day));
   }
 
   String calculateDueDate() {
@@ -252,7 +267,12 @@ class _PackingListScreenState extends State<PackingListScreen> {
   double _calculateGrossAmount() {
     double total = 0.0;
     for (var item in _selectedSOItems) {
-      total += (item['selectedQty'] * item['rate']);
+      // Use netAmt if available from the order, otherwise calculate
+      if (item['netAmt'] != null && item['netAmt'] > 0) {
+        total += item['netAmt'] as double;
+      } else {
+        total += (item['selectedQty'] * item['rate']);
+      }
     }
     return total;
   }
@@ -300,23 +320,36 @@ class _PackingListScreenState extends State<PackingListScreen> {
   void _showValidationDialog(String title, String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-            const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -333,12 +366,13 @@ class _PackingListScreenState extends State<PackingListScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SalesOrderListScreen(
-          custKey: _orderControllers.selectedPartyKey!,
-          existingSelectedItems: _selectedSOItems,
-          isEditMode: _isUpdateMode,
-          currentPackingId: _isUpdateMode ? widget.orderId : null,
-        ),
+        builder:
+            (context) => SalesOrderListScreen(
+              custKey: _orderControllers.selectedPartyKey!,
+              existingSelectedItems: _selectedSOItems,
+              isEditMode: _isUpdateMode,
+              currentPackingId: _isUpdateMode ? widget.orderId : null,
+            ),
       ),
     );
 
@@ -402,24 +436,27 @@ class _PackingListScreenState extends State<PackingListScreen> {
 
     final result = await showDialog(
       context: context,
-      builder: (context) => AddMoreInfoDialog2(
-        salesPersonList: _dropdownData.salesPersonList,
-        partyLedKey: _orderControllers.selectedPartyKey,
-        pytTermDiscKey: _orderControllers.pytTermDiscKey,
-        salesPersonKey: _orderControllers.salesPersonKey,
-        creditPeriod: _orderControllers.creditPeriod,
-        salesLedKey: _orderControllers.salesLedKey,
-        ledgerName: _orderControllers.ledgerName,
-        additionalInfo: _additionalInfo,
-        consignees: consignees,
-        paymentTerms: paymentTerms,
-        bookingTypes: _bookingTypes,
-        onValueChanged: (newInfo) => setState(() => _additionalInfo = newInfo),
-        isSalesmanDropdownEnabled: UserSession.userType == 'A',
-        isPaymentTermEnable: UserSession.userType != 'C',
-        isConsigneeEnabled: UserSession.userType != 'C',
-        isBookingTypeEnabled: UserSession.userType == 'A' || UserSession.userType == 'S',
-      ),
+      builder:
+          (context) => AddMoreInfoDialog2(
+            salesPersonList: _dropdownData.salesPersonList,
+            partyLedKey: _orderControllers.selectedPartyKey,
+            pytTermDiscKey: _orderControllers.pytTermDiscKey,
+            salesPersonKey: _orderControllers.salesPersonKey,
+            creditPeriod: _orderControllers.creditPeriod,
+            salesLedKey: _orderControllers.salesLedKey,
+            ledgerName: _orderControllers.ledgerName,
+            additionalInfo: _additionalInfo,
+            consignees: consignees,
+            paymentTerms: paymentTerms,
+            bookingTypes: _bookingTypes,
+            onValueChanged:
+                (newInfo) => setState(() => _additionalInfo = newInfo),
+            isSalesmanDropdownEnabled: UserSession.userType == 'A',
+            isPaymentTermEnable: UserSession.userType != 'C',
+            isConsigneeEnabled: UserSession.userType != 'C',
+            isBookingTypeEnabled:
+                UserSession.userType == 'A' || UserSession.userType == 'S',
+          ),
     );
 
     if (result != null) {
@@ -446,15 +483,16 @@ class _PackingListScreenState extends State<PackingListScreen> {
       if (selectedConsigneeName != null && selectedConsigneeName.isNotEmpty) {
         final selectedConsignee = consignees.firstWhere(
           (consignee) => consignee.ledName == selectedConsigneeName,
-          orElse: () => Consignee(
-            ledKey: '',
-            ledName: '',
-            stnKey: '',
-            stnName: '',
-            paymentTermsKey: '',
-            paymentTermsName: '',
-            pytTermDiscdays: '0',
-          ),
+          orElse:
+              () => Consignee(
+                ledKey: '',
+                ledName: '',
+                stnKey: '',
+                stnName: '',
+                paymentTermsKey: '',
+                paymentTermsName: '',
+                pytTermDiscdays: '0',
+              ),
         );
         consigneeLedKey = selectedConsignee.ledKey;
         stationStnKey = selectedConsignee.stnKey;
@@ -481,13 +519,22 @@ class _PackingListScreenState extends State<PackingListScreen> {
         "remark": _orderControllers.remark.text,
         "consignee": consigneeLedKey,
         "station": stationStnKey,
-        "paymentterms": _additionalInfo['paymentterms'] ?? _orderControllers.pytTermDiscKey ?? '',
-        "paymentdays": _additionalInfo['paymentdays'] ?? _orderControllers.creditPeriod?.toString() ?? '0',
+        "paymentterms":
+            _additionalInfo['paymentterms'] ??
+            _orderControllers.pytTermDiscKey ??
+            '',
+        "paymentdays":
+            _additionalInfo['paymentdays'] ??
+            _orderControllers.creditPeriod?.toString() ??
+            '0',
         "duedate": calculateDueDate(),
         "refno": _additionalInfo['refno'] ?? '',
         "date": getTodayWithZeroTime(),
         "bookingtype": _additionalInfo['bookingtype'] ?? '',
-        "salesman": _additionalInfo['salesman'] ?? _orderControllers.salesPersonKey ?? '',
+        "salesman":
+            _additionalInfo['salesman'] ??
+            _orderControllers.salesPersonKey ??
+            '',
         "usertype": UserSession.userType,
         "grossAmount": _calculateGrossAmount().toInt().toString(),
         "roundOff": _roundOff,
@@ -551,7 +598,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
                 "mrp": (size['mrp'] as double? ?? 0).toInt().toString(),
                 "WSP": (size['rate'] as double? ?? 0).toInt().toString(),
                 "size": size['size']?.toString() ?? '',
-                "TotQty": ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
+                "TotQty":
+                    ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
                 "Note": item['amtRemark']?.toString() ?? '',
                 "color": item['shadeName']?.toString() ?? '',
                 "Qty": qty.toString(),
@@ -612,9 +660,10 @@ class _PackingListScreenState extends State<PackingListScreen> {
       print('Total dataArray length: ${dataArray.length}');
       print('Payload docId: $packingDocId');
 
-      final response = _isUpdateMode
-          ? await ApiService.updatePacking(payload)
-          : await ApiService.insertPacking(payload);
+      final response =
+          _isUpdateMode
+              ? await ApiService.updatePacking(payload)
+              : await ApiService.insertPacking(payload);
 
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
@@ -638,24 +687,32 @@ class _PackingListScreenState extends State<PackingListScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
-              ),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(width: 16),
-            Text('Saving Packing List...', style: GoogleFonts.poppins(fontSize: 14)),
-          ],
-        ),
-      ),
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Saving Packing List...',
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
     );
   }
 
@@ -663,78 +720,106 @@ class _PackingListScreenState extends State<PackingListScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 4,
-        contentPadding: EdgeInsets.zero,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                border: Border(bottom: BorderSide(color: Colors.green.shade100)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green.shade700, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.green.shade800),
-                        children: [
-                          TextSpan(text: isUpdate ? 'Packing ' : 'Packing '),
-                          TextSpan(
-                            text: docNo,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
+            contentPadding: EdgeInsets.zero,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.green.shade100),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.green.shade700,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
                             style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.blue.shade300,
-                              decorationThickness: 2,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade800,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: isUpdate ? 'Packing ' : 'Packing ',
+                              ),
+                              TextSpan(
+                                text: docNo,
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: Colors.blue.shade300,
+                                  decorationThickness: 2,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    isUpdate
+                                        ? ' updated successfully'
+                                        : ' saved successfully',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pop(context, true);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryColor,
+                            side: BorderSide(color: AppColors.primaryColor),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          TextSpan(text: isUpdate ? ' updated successfully' : ' saved successfully'),
-                        ],
+                          child: const Text(
+                            'Done',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context, true);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryColor,
-                        side: BorderSide(color: AppColors.primaryColor),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -751,7 +836,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) controller.text = _PackingListControllers.formatDate(picked);
+    if (picked != null)
+      controller.text = _PackingListControllers.formatDate(picked);
   }
 
   // ==================== WIDGET BUILD METHODS ====================
@@ -759,15 +845,17 @@ class _PackingListScreenState extends State<PackingListScreen> {
   Widget build(BuildContext context) {
     double grossAmount = _calculateGrossAmount();
     double netAmount = _calculateNetAmount();
-    bool isPartySelected = _orderControllers.selectedPartyKey != null && 
-                           _orderControllers.selectedPartyKey!.isNotEmpty;
+    bool isPartySelected =
+        _orderControllers.selectedPartyKey != null &&
+        _orderControllers.selectedPartyKey!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(grossAmount, netAmount, isPartySelected),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildBody(grossAmount, netAmount, isPartySelected),
     );
   }
 
@@ -780,13 +868,21 @@ class _PackingListScreenState extends State<PackingListScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: const Text(
-        'Packing List',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 20),
+        'Packing List(Against SO)',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 20,
+        ),
       ),
     );
   }
 
-  Widget _buildBody(double grossAmount, double netAmount, bool isPartySelected) {
+  Widget _buildBody(
+    double grossAmount,
+    double netAmount,
+    bool isPartySelected,
+  ) {
     return Column(
       children: [
         Expanded(
@@ -813,7 +909,8 @@ class _PackingListScreenState extends State<PackingListScreen> {
                     (val, key) async {
                       _orderControllers.selectedBrokerKey = key;
                       if (key != null) {
-                        final commission = await _dropdownData.fetchCommissionPercentage(key);
+                        final commission = await _dropdownData
+                            .fetchCommissionPercentage(key);
                         _orderControllers.comm.text = commission;
                       }
                     },
@@ -825,10 +922,15 @@ class _PackingListScreenState extends State<PackingListScreen> {
                     "Transporter",
                     "T",
                     _orderControllers.selectedTransporter,
-                    (val, key) => _orderControllers.selectedTransporterKey = key,
+                    (val, key) =>
+                        _orderControllers.selectedTransporterKey = key,
                   ),
                   _buildResponsiveRow(
-                    _buildTextField("Delivery Days", _orderControllers.deliveryDays, readOnly: true),
+                    _buildTextField(
+                      "Delivery Days",
+                      _orderControllers.deliveryDays,
+                      readOnly: true,
+                    ),
                     _buildTextField(
                       "Delivery Date",
                       _orderControllers.deliveryDate,
@@ -842,31 +944,50 @@ class _PackingListScreenState extends State<PackingListScreen> {
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          _orderControllers.deliveryDate.text = _PackingListControllers.formatDate(picked);
-                          _orderControllers.deliveryDays.text = picked.difference(today).inDays.toString();
+                          _orderControllers.deliveryDate.text =
+                              _PackingListControllers.formatDate(picked);
+                          _orderControllers.deliveryDays.text =
+                              picked.difference(today).inDays.toString();
                         }
                       },
                     ),
                   ),
-                  _buildTextField("Remark", _orderControllers.remark, isText: true),
+                  _buildTextField(
+                    "Remark",
+                    _orderControllers.remark,
+                    isText: true,
+                  ),
                   const SizedBox(height: 16),
-                  
+
                   // View Sales Orders Button
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: ElevatedButton.icon(
                       onPressed: isPartySelected ? _openOrderListPage : null,
-                      icon: Icon(Icons.receipt_long, size: 20, color: isPartySelected ? Colors.white : Colors.grey.shade400),
+                      icon: Icon(
+                        Icons.receipt_long,
+                        size: 20,
+                        color:
+                            isPartySelected
+                                ? Colors.white
+                                : Colors.grey.shade400,
+                      ),
                       label: Text(
                         'View Sales Orders',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          color: isPartySelected ? Colors.white : Colors.grey.shade400,
+                          color:
+                              isPartySelected
+                                  ? Colors.white
+                                  : Colors.grey.shade400,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isPartySelected ? AppColors.primaryColor : Colors.grey.shade300,
+                        backgroundColor:
+                            isPartySelected
+                                ? AppColors.primaryColor
+                                : Colors.grey.shade300,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -876,7 +997,7 @@ class _PackingListScreenState extends State<PackingListScreen> {
                       ),
                     ),
                   ),
-                  
+
                   if (_selectedSOItems.isNotEmpty) ...[
                     _buildSelectedItemsCard(),
                     const SizedBox(height: 16),
@@ -902,7 +1023,11 @@ class _PackingListScreenState extends State<PackingListScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
-          BoxShadow(color: Colors.grey.shade200, blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -910,7 +1035,11 @@ class _PackingListScreenState extends State<PackingListScreen> {
         children: [
           const Text(
             'Amount Summary',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryColor),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AppColors.primaryColor,
+            ),
           ),
           const SizedBox(height: 12),
           const Divider(),
@@ -918,8 +1047,17 @@ class _PackingListScreenState extends State<PackingListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Gross Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              Text('₹ ${grossAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const Text(
+                'Gross Amount',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              Text(
+                '₹ ${grossAmount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -938,12 +1076,21 @@ class _PackingListScreenState extends State<PackingListScreen> {
                     },
                     activeColor: AppColors.primaryColor,
                   ),
-                  const Text('Round Off', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  const Text(
+                    'Round Off',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
                 ],
               ),
               Text(
-                _roundOff ? '₹ ${_roundOffAmount.toStringAsFixed(2)}' : '₹ 0.00',
-                style: TextStyle(fontSize: 14, color: _roundOff ? Colors.green.shade700 : Colors.grey.shade600),
+                _roundOff
+                    ? '₹ ${_roundOffAmount.toStringAsFixed(2)}'
+                    : '₹ 0.00',
+                style: TextStyle(
+                  fontSize: 14,
+                  color:
+                      _roundOff ? Colors.green.shade700 : Colors.grey.shade600,
+                ),
               ),
             ],
           ),
@@ -955,11 +1102,19 @@ class _PackingListScreenState extends State<PackingListScreen> {
             children: [
               const Text(
                 'Net Amount',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryColor,
+                ),
               ),
               Text(
                 '₹ ${netAmount.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryColor,
+                ),
               ),
             ],
           ),
@@ -990,16 +1145,26 @@ class _PackingListScreenState extends State<PackingListScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.shopping_cart, size: 18, color: AppColors.primaryColor),
+                const Icon(
+                  Icons.shopping_cart,
+                  size: 18,
+                  color: AppColors.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Selected Items (${_selectedSOItems.length})',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryColor,
+                  ),
                 ),
                 const Spacer(),
                 TextButton(
                   onPressed: () => setState(() => _selectedSOItems.clear()),
-                  child: const Text('Clear All', style: TextStyle(color: Colors.red, fontSize: 12)),
+                  child: const Text(
+                    'Clear All',
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -1008,7 +1173,9 @@ class _PackingListScreenState extends State<PackingListScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _selectedSOItems.length,
-            itemBuilder: (context, index) => _buildSelectedItemCard(_selectedSOItems[index], index),
+            itemBuilder:
+                (context, index) =>
+                    _buildSelectedItemCard(_selectedSOItems[index], index),
           ),
         ],
       ),
@@ -1016,7 +1183,9 @@ class _PackingListScreenState extends State<PackingListScreen> {
   }
 
   Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
-    final List<Map<String, dynamic>> sizes = List<Map<String, dynamic>>.from(item['sizes'] ?? []);
+    final List<Map<String, dynamic>> sizes = List<Map<String, dynamic>>.from(
+      item['sizes'] ?? [],
+    );
 
     int totalQty = 0;
     for (var size in sizes) {
@@ -1026,14 +1195,17 @@ class _PackingListScreenState extends State<PackingListScreen> {
 
     if (totalQty != (item['selectedQty'] as double? ?? 0)) {
       item['selectedQty'] = totalQty.toDouble();
-      item['itemAmt'] = (item['selectedQty'] as double? ?? 0) * (item['rate'] as double? ?? 0);
+      item['itemAmt'] =
+          (item['selectedQty'] as double? ?? 0) *
+          (item['rate'] as double? ?? 0);
     }
 
     double avgRate = 0.0;
     if (totalQty > 0) {
       double totalValue = 0.0;
       for (var size in sizes) {
-        totalValue += (size['qty'] as int? ?? 0) * (size['rate'] as double? ?? 0);
+        totalValue +=
+            (size['qty'] as int? ?? 0) * (size['rate'] as double? ?? 0);
       }
       avgRate = totalValue / totalQty;
     }
@@ -1060,7 +1232,11 @@ class _PackingListScreenState extends State<PackingListScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
         ],
       ),
       child: ExpansionTile(
@@ -1073,14 +1249,28 @@ class _PackingListScreenState extends State<PackingListScreen> {
             color: AppColors.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.inventory, color: AppColors.primaryColor, size: 20),
+          child: const Icon(
+            Icons.inventory,
+            color: AppColors.primaryColor,
+            size: 20,
+          ),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(displayDocNo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
+            Text(
+              displayDocNo,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(displayItemName, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+            Text(
+              displayItemName,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
           ],
         ),
         trailing: Row(
@@ -1092,13 +1282,35 @@ class _PackingListScreenState extends State<PackingListScreen> {
                 color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text('Qty: ${item['selectedQty']} $displayUnitName',
-                  style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
+              child: Text(
+                'Qty: ${item['selectedQty']} $displayUnitName',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.green,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-              onPressed: () => setState(() => _selectedSOItems.removeAt(index)),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+                size: 20,
+              ),
+              onPressed: () {
+                // Dispose all controllers and focus nodes for sizes in this item
+                final sizesToDispose = item['sizes'] as List? ?? [];
+                for (var sizeToDispose in sizesToDispose) {
+                  if (sizeToDispose['controller'] != null) {
+                    sizeToDispose['controller'].dispose();
+                  }
+                  if (sizeToDispose['focusNode'] != null) {
+                    sizeToDispose['focusNode'].dispose();
+                  }
+                }
+                setState(() => _selectedSOItems.removeAt(index));
+              },
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -1115,67 +1327,140 @@ class _PackingListScreenState extends State<PackingListScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Product', displayItemName)),
+                    Expanded(
+                      child: _buildReadOnlyField('Product', displayItemName),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Design', displayStyleCode)),
+                    Expanded(
+                      child: _buildReadOnlyField('Design', displayStyleCode),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Type', displayTypeName)),
+                    Expanded(
+                      child: _buildReadOnlyField('Type', displayTypeName),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Shade', displayShadeName)),
+                    Expanded(
+                      child: _buildReadOnlyField('Shade', displayShadeName),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Brand', displayBrandName)),
+                    Expanded(
+                      child: _buildReadOnlyField('Brand', displayBrandName),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Order No', displayDocNo)),
+                    Expanded(
+                      child: _buildReadOnlyField('Order No', displayDocNo),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Date', displayDocDate)),
+                    Expanded(
+                      child: _buildReadOnlyField('Date', displayDocDate),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Dlv Date', displayDlvDate)),
+                    Expanded(
+                      child: _buildReadOnlyField('Dlv Date', displayDlvDate),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
+
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('MRP', '₹${(item['mrp'] as double? ?? 0).toStringAsFixed(2)}')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'MRP',
+                        '₹${(item['mrp'] as double? ?? 0).toStringAsFixed(2)}',
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Rate', '₹${(item['rate'] as double? ?? 0).toStringAsFixed(2)}')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Rate',
+                        '₹${(item['rate'] as double? ?? 0).toStringAsFixed(2)}',
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Qty', '${(item['selectedQty'] as double? ?? 0).toStringAsFixed(0)} $displayUnitName')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Qty',
+                        '${(item['selectedQty'] as double? ?? 0).toStringAsFixed(0)} $displayUnitName',
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Avg Rt', avgRate.toStringAsFixed(2))),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Avg Rt',
+                        avgRate.toStringAsFixed(2),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Item Amt', '₹${(item['itemAmt'] as double? ?? 0).toStringAsFixed(2)}')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Item Amt',
+                        '₹${(item['itemAmt'] as double? ?? 0).toStringAsFixed(2)}',
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Ord Qty', '${item['balQty'] ?? 0} $displayUnitName')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Ord Qty',
+                        '${item['balQty'] ?? 0} $displayUnitName',
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _buildReadOnlyField('Disc (%)', '${(item['discPercent'] as double? ?? 0).toStringAsFixed(2)}%')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Disc (%)',
+                        '${(item['discPercent'] as double? ?? 0).toStringAsFixed(2)}%',
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Disc Amt', '₹${(item['discAmt'] as double? ?? 0).toStringAsFixed(2)}')),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Disc Amt',
+                        '₹${(item['discAmt'] as double? ?? 0).toStringAsFixed(2)}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Total Qty',
+                        '${item['totQty']?.toStringAsFixed(0) ?? 'N/A'} ${displayUnitName}',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Net Amount',
+                        '₹${item['netAmt']?.toStringAsFixed(2) ?? '0.00'}',
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1188,7 +1473,12 @@ class _PackingListScreenState extends State<PackingListScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildReadOnlyField('Amount Remark', displayAmtRemark)),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Amount Remark',
+                        displayAmtRemark,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1197,19 +1487,29 @@ class _PackingListScreenState extends State<PackingListScreen> {
                 if (sizes.isNotEmpty)
                   _buildSizeWiseTable(item, sizes)
                 else
-                  const Text('No size details available', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Text(
+                    'No size details available',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'Total Qty: ${item['selectedQty']} $displayUnitName',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryColor),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppColors.primaryColor,
+                      ),
                     ),
                   ),
                 ),
@@ -1232,19 +1532,35 @@ class _PackingListScreenState extends State<PackingListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+          ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF2C3E50))),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2C3E50),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSizeWiseTable(Map<String, dynamic> item, List<Map<String, dynamic>> sizes) {
+  Widget _buildSizeWiseTable(
+    Map<String, dynamic> item,
+    List<Map<String, dynamic>> sizes,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Size-wise Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        const Text(
+          'Size-wise Details',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -1256,7 +1572,10 @@ class _PackingListScreenState extends State<PackingListScreen> {
             child: Table(
               border: TableBorder(
                 horizontalInside: BorderSide(color: Colors.grey.shade100),
-                verticalInside: BorderSide(color: Colors.grey.shade200, width: 0.5),
+                verticalInside: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 0.5,
+                ),
               ),
               columnWidths: const {
                 0: FixedColumnWidth(50),
@@ -1294,58 +1613,446 @@ class _PackingListScreenState extends State<PackingListScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10, color: AppColors.primaryColor),
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 10,
+          color: AppColors.primaryColor,
+        ),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  TableRow _buildTableRow(Map<String, dynamic> size, List<Map<String, dynamic>> sizes, Map<String, dynamic> item) {
-    return TableRow(
-      children: [
-        _buildTableCell(size['size'] ?? 'N/A'),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-          child: SizedBox(
-            width: 50,
-            child: TextFormField(
-              initialValue: (size['qty'] as int? ?? 0).toString(),
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-              ),
-              style: const TextStyle(fontSize: 10),
-              onChanged: (val) {
-                final int qty = int.tryParse(val) ?? 0;
-                setState(() {
-                  size['qty'] = qty;
-                  int total = 0;
-                  for (var s in sizes) total += (s['qty'] as int? ?? 0);
-                  item['selectedQty'] = total.toDouble();
-                  item['itemAmt'] = (item['selectedQty'] as double? ?? 0) * (item['rate'] as double? ?? 0);
-                });
-              },
+TableRow _buildTableRow(
+  Map<String, dynamic> size,
+  List<Map<String, dynamic>> sizes,
+  Map<String, dynamic> item,
+) {
+  // Get stock quantity
+  int stockQty = size['stock'] as int? ?? 0;
+  int currentQty = size['qty'] as int? ?? 0;
+  int ordQty = size['ordQty'] as int? ?? 0;
+  int sizeBalQty = size['balQty'] as int? ?? 0;
+  
+  // Get varPerc from the item
+  final double varPerc = item['varPerc'] as double? ?? 0;
+  final bool hasVarPerc = varPerc > 0;
+  
+  // Calculate varQty and total allowed quantity ONLY if varPerc > 0
+  final double varQty = hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
+  final double totalAllowedQty = hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
+
+  // Create a controller for this size if not exists
+  if (size['controller'] == null) {
+    size['controller'] = TextEditingController(text: currentQty.toString());
+    size['lastValidQty'] = currentQty;
+    size['isError'] = false;
+  }
+
+  // Create focus node for this field
+  if (size['focusNode'] == null) {
+    size['focusNode'] = FocusNode();
+
+    size['focusNode'].addListener(() {
+      if (!size['focusNode'].hasFocus) {
+        _validateAndUpdateQuantity(size, sizes, item, stockQty);
+      }
+    });
+  }
+
+  // Store necessary values
+  size['ordQty'] = ordQty;
+  size['balQty'] = sizeBalQty;
+  size['totalAllowedQty'] = totalAllowedQty;
+  size['varPerc'] = varPerc;
+
+  // Check if current quantity is valid
+  bool isValidStock = (size['qty'] as int? ?? 0) <= stockQty;
+  bool isValidOrder = !hasVarPerc || (size['qty'] as int? ?? 0) <= totalAllowedQty;
+  bool isValid = isValidStock && isValidOrder;
+
+  return TableRow(
+    children: [
+      _buildTableCell(size['size'] ?? 'N/A'),
+      Container(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.yellow.shade50,
+        ),
+        child: SizedBox(
+          width: 50,
+          child: TextFormField(
+            controller: size['controller'],
+            focusNode: size['focusNode'],
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: !isValid && (size['qty'] as int? ?? 0) > 0
+                  ? Colors.red
+                  : Colors.black,
+              fontWeight: !isValid && (size['qty'] as int? ?? 0) > 0
+                      ? FontWeight.bold
+                      : FontWeight.normal,
             ),
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+            onChanged: (value) {
+              final int enteredQty = int.tryParse(value) ?? 0;
+              setState(() {
+                size['tempQty'] = enteredQty;
+                bool exceedsStock = enteredQty > stockQty && stockQty > 0;
+                bool exceedsOrder = hasVarPerc && enteredQty > totalAllowedQty;
+                size['isError'] = exceedsStock || exceedsOrder;
+              });
+            },
+            onEditingComplete: () {
+              _validateAndUpdateQuantity(size, sizes, item, stockQty);
+              size['focusNode'].unfocus();
+            },
+            onTapOutside: (event) {
+              _validateAndUpdateQuantity(size, sizes, item, stockQty);
+            },
           ),
         ),
-        _buildTableCell((size['ordQty'] as int? ?? 0).toString()),
-        _buildTableCell((size['stock'] as int? ?? 0).toString()),
-        _buildTableCell((size['rate'] as double? ?? 0).toStringAsFixed(2)),
-        _buildTableCell((size['mrp'] as double? ?? 0).toStringAsFixed(2)),
-        _buildTableCell((size['netRate'] as double? ?? 0).toStringAsFixed(2)),
+      ),
+      _buildTableCell(ordQty.toString()),
+      _buildTableCell(
+        stockQty.toString(),
+        textColor: stockQty == 0 ? Colors.red : Colors.black87,
+        fontWeight: stockQty == 0 ? FontWeight.bold : FontWeight.normal,
+      ),
+      _buildTableCell((size['rate'] as double? ?? 0).toStringAsFixed(2)),
+      _buildTableCell((size['mrp'] as double? ?? 0).toStringAsFixed(2)),
+      _buildTableCell((size['netRate'] as double? ?? 0).toStringAsFixed(2)),
+    ],
+  );
+}
+void _validateAndUpdateQuantity(
+  Map<String, dynamic> size,
+  List<Map<String, dynamic>> sizes,
+  Map<String, dynamic> item,
+  int stockQty,
+) {
+  final String textValue = size['controller'].text;
+  final int enteredQty = int.tryParse(textValue) ?? 0;
+  
+  // Get size-specific balance quantity from the size object
+  final int sizeBalQty = size['balQty'] as int? ?? 0;
+  
+  // Get varPerc from the item
+  final double varPerc = item['varPerc'] as double? ?? 0;
+  
+  // Calculate total allowed quantity ONLY if varPerc > 0
+  final bool hasVarPerc = varPerc > 0;
+  final double varQty = hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
+  final double totalAllowedQty = hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
+  
+  // Check if entered quantity exceeds total allowed quantity (only if varPerc exists)
+  if (hasVarPerc && enteredQty > totalAllowedQty) {
+    _showStockErrorDialogForSize(
+      'Quantity cannot be greater than Order Qty (${totalAllowedQty.toStringAsFixed(0)} ) for size ${size['size']}',
+      size,
+      sizes,
+      item,
+      totalAllowedQty.toInt(),
+    );
+  }
+  // Check if entered quantity exceeds stock (always apply)
+  else if (enteredQty > stockQty && stockQty > 0) {
+    _showStockErrorDialogForSize(
+      'Quantity cannot be greater than Ready stock for size ${size['size']}.\nAvailable stock: $stockQty',
+      size,
+      sizes,
+      item,
+      stockQty,
+    );
+  } 
+  else if (enteredQty >= 0 && (!hasVarPerc || enteredQty <= totalAllowedQty) && (stockQty == 0 || enteredQty <= stockQty)) {
+    // Valid quantity - update everything
+    setState(() {
+      size['qty'] = enteredQty;
+      size['lastValidQty'] = enteredQty;
+      size['controller'].text = enteredQty.toString();
+      size['isError'] = false;
+
+      // Recalculate total quantity from all sizes
+      int totalQty = 0;
+      for (var s in sizes) {
+        totalQty += (s['qty'] as int? ?? 0);
+      }
+      item['selectedQty'] = totalQty.toDouble();
+      item['itemAmt'] = totalQty * (item['rate'] as double);
+
+      _updateRoundOff();
+    });
+  }
+}
+// Add this new method for order limit error dialog
+void _showOrderLimitErrorDialog(
+  String message,
+  Map<String, dynamic> size,
+  List<Map<String, dynamic>> sizes,
+  Map<String, dynamic> item,
+  int resetQty,
+) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      titlePadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+      actionsPadding: const EdgeInsets.only(bottom: 12),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.orange,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(12),
+          ),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Order Limit Exceeded',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      content: Text(message, style: const TextStyle(fontSize: 14)),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  
+                  setState(() {
+                    // Reset to total allowed quantity
+                    size['qty'] = resetQty;
+                    size['lastValidQty'] = resetQty;
+                    size['isError'] = false;
+                    
+                    // Reset the controller text
+                    if (size['controller'] != null) {
+                      size['controller'].text = resetQty.toString();
+                    }
+                    
+                    // Recalculate total quantity from all sizes
+                    int totalQty = 0;
+                    for (var s in sizes) {
+                      totalQty += (s['qty'] as int? ?? 0);
+                    }
+                    
+                    item['selectedQty'] = totalQty.toDouble();
+                    item['itemAmt'] = totalQty * (item['rate'] as double);
+                    
+                    // Update round off
+                    _updateRoundOff();
+                  });
+                },
+                icon: const Icon(
+                  Icons.check,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'OK',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
+    ),
+  );
+}
+
+// Add the calculate methods
+double _calculateVarQty(double balQty, double varPerc) {
+  if (varPerc <= 0) return 0;
+  return (balQty * varPerc) / 100;
+}
+
+double _calculateTotalAllowedQty(double balQty, double varPerc) {
+  double varQty = _calculateVarQty(balQty, varPerc);
+  return balQty + varQty;
+}
+
+  void _showStockErrorDialogForSize(
+    String message,
+    Map<String, dynamic> size,
+    List<Map<String, dynamic>> sizes,
+    Map<String, dynamic> item,
+    int stockQty,
+  ) {
+    // Store the stock quantity (this is what we want to reset to)
+    final int resetQty = stockQty;
+
+    // Store the current invalid text for display
+    final String invalidText = size['controller']?.text ?? '0';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            titlePadding: EdgeInsets.zero,
+            contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+            actionsPadding: const EdgeInsets.only(bottom: 12),
+            title: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Stock Limit Exceeded',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            content: Text(message, style: const TextStyle(fontSize: 14)),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+
+                        setState(() {
+                          // Reset to STOCK VALUE
+                          size['qty'] = resetQty;
+                          size['lastValidQty'] = resetQty;
+                          size['isError'] = false;
+
+                          // Reset the controller text to stock value
+                          if (size['controller'] != null) {
+                            size['controller'].text = resetQty.toString();
+                          }
+
+                          // Recalculate total quantity from all sizes
+                          int totalQty = 0;
+                          for (var s in sizes) {
+                            totalQty += (s['qty'] as int? ?? 0);
+                          }
+
+                          item['selectedQty'] = totalQty.toDouble();
+                          item['itemAmt'] = totalQty * (item['rate'] as double);
+
+                          // Update round off
+                          _updateRoundOff();
+                        });
+                      },
+                      icon: const Icon(
+                        Icons.check,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
     );
   }
 
-  static Widget _buildTableCell(String text) {
+  static Widget _buildTableCell(
+    String text, {
+    Color textColor = Colors.black87,
+    FontWeight fontWeight = FontWeight.normal,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: Text(text, style: const TextStyle(fontSize: 10, color: Colors.black87), textAlign: TextAlign.center),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          color: textColor,
+          fontWeight: fontWeight,
+        ),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -1365,14 +2072,26 @@ class _PackingListScreenState extends State<PackingListScreen> {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _showAddMoreInfoDialog,
-                  icon: const Icon(Icons.info_outline, size: 18, color: Colors.white),
-                  label: const Text("Add More Info",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
+                  icon: const Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    "Add More Info",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
                   ),
                 ),
               ),
@@ -1382,17 +2101,46 @@ class _PackingListScreenState extends State<PackingListScreen> {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _savePackingList,
-                  icon: _isSaving
-                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save, size: 18, color: Colors.white),
-                  label: _isSaving
-                      ? const Text("Saving...", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white))
-                      : const Text("Save", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
+                  icon:
+                      _isSaving
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Icon(
+                            Icons.save,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                  label:
+                      _isSaving
+                          ? const Text(
+                            "Saving...",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            "Save",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
                   ),
                 ),
               ),
@@ -1426,29 +2174,52 @@ class _PackingListScreenState extends State<PackingListScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: DropdownSearch<String>(
-        validator: (value) => isRequired && (value == null || value.isEmpty) ? "$label is required" : null,
+        validator:
+            (value) =>
+                isRequired && (value == null || value.isEmpty)
+                    ? "$label is required"
+                    : null,
         popupProps: PopupProps.menu(
           showSearchBox: true,
           searchFieldProps: TextFieldProps(
             decoration: InputDecoration(
               hintText: "Search $label",
-              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Colors.grey,
+                size: 18,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               isDense: true,
             ),
           ),
         ),
         items: _getLedgerList(ledCat).map((e) => e['ledName']!).toList(),
-        filterFn: (item, filter) => filter.isEmpty
-            ? true
-            : item.split('-->').first.trim().toLowerCase().contains(filter.toLowerCase()),
+        filterFn:
+            (item, filter) =>
+                filter.isEmpty
+                    ? true
+                    : item
+                        .split('-->')
+                        .first
+                        .trim()
+                        .toLowerCase()
+                        .contains(filter.toLowerCase()),
         selectedItem: selectedValue,
         dropdownDecoratorProps: DropDownDecoratorProps(
           dropdownSearchDecoration: InputDecoration(
             labelText: label,
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             isDense: true,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
             enabledBorder: OutlineInputBorder(
@@ -1459,24 +2230,39 @@ class _PackingListScreenState extends State<PackingListScreen> {
               borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
               borderRadius: BorderRadius.circular(6),
             ),
-            labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+            labelStyle: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        dropdownBuilder: (context, selectedItem) => Text(
-          selectedItem ?? '',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 14),
-        ),
-        onChanged: isEnabled ? (val) => onChanged(val, _getKeyFromValue(ledCat, val)) : null,
+        dropdownBuilder:
+            (context, selectedItem) => Text(
+              selectedItem ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14),
+            ),
+        onChanged:
+            isEnabled
+                ? (val) => onChanged(val, _getKeyFromValue(ledCat, val))
+                : null,
         enabled: isEnabled,
       ),
     );
   }
 
-  Widget _buildResponsiveRow(Widget first, Widget second) => MediaQuery.of(context).size.width > 600
-      ? Row(children: [Expanded(child: first), const SizedBox(width: 10), Expanded(child: second)])
-      : Column(children: [first, second]);
+  Widget _buildResponsiveRow(Widget first, Widget second) =>
+      MediaQuery.of(context).size.width > 600
+          ? Row(
+            children: [
+              Expanded(child: first),
+              const SizedBox(width: 10),
+              Expanded(child: second),
+            ],
+          )
+          : Column(children: [first, second]);
 
   Widget _buildTextField(
     String label,
@@ -1494,13 +2280,23 @@ class _PackingListScreenState extends State<PackingListScreen> {
         readOnly: readOnly || isDate,
         keyboardType: isText ? TextInputType.text : TextInputType.number,
         onTap: onTap ?? (isDate ? () => _selectDate(controller) : null),
-        validator: isRequired ? (value) => value == null || value.isEmpty ? '$label is required' : null : null,
+        validator:
+            isRequired
+                ? (value) =>
+                    value == null || value.isEmpty ? '$label is required' : null
+                : null,
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           isDense: true,
-          suffixIcon: isDate ? Icon(Icons.calendar_today, size: 18, color: Colors.grey) : null,
+          suffixIcon:
+              isDate
+                  ? Icon(Icons.calendar_today, size: 18, color: Colors.grey)
+                  : null,
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
             borderRadius: BorderRadius.circular(6),
@@ -1509,7 +2305,11 @@ class _PackingListScreenState extends State<PackingListScreen> {
             borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
             borderRadius: BorderRadius.circular(6),
           ),
-          labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
+          labelStyle: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -1518,7 +2318,11 @@ class _PackingListScreenState extends State<PackingListScreen> {
 
 // ==================== CONTROLLER CLASSES ====================
 class _PackingListControllers {
-  String? pytTermDiscKey, salesPersonKey, salesLedKey, ledgerName, whatsAppMobileNo;
+  String? pytTermDiscKey,
+      salesPersonKey,
+      salesLedKey,
+      ledgerName,
+      whatsAppMobileNo;
   int? creditPeriod;
 
   final date = TextEditingController();
@@ -1527,9 +2331,16 @@ class _PackingListControllers {
   final deliveryDate = TextEditingController();
   final remark = TextEditingController();
 
-  String? selectedParty, selectedPartyKey, selectedPartyName, selectedTransporter, selectedTransporterKey, selectedBroker, selectedBrokerKey;
+  String? selectedParty,
+      selectedPartyKey,
+      selectedPartyName,
+      selectedTransporter,
+      selectedTransporterKey,
+      selectedBroker,
+      selectedBrokerKey;
 
-  static String formatDate(DateTime date) => DateFormat("yyyy-MM-dd").format(date);
+  static String formatDate(DateTime date) =>
+      DateFormat("yyyy-MM-dd").format(date);
 
   void updateFromPartyDetails(
     Map<String, dynamic> details,
@@ -1566,7 +2377,10 @@ class _PackingListControllers {
 }
 
 class _PackingListDropdownData {
-  List<Map<String, String>> partyList = [], brokerList = [], transporterList = [], salesPersonList = [];
+  List<Map<String, String>> partyList = [],
+      brokerList = [],
+      transporterList = [],
+      salesPersonList = [];
 
   Future<void> loadAllDropdownData() async {
     try {
@@ -1604,7 +2418,9 @@ class _PackingListDropdownData {
 
       if (response['statusCode'] == 200 && response['result'] != null) {
         final List<KeyName> result = response['result'];
-        return result.map((keyName) => {'ledKey': keyName.key, 'ledName': keyName.name}).toList();
+        return result
+            .map((keyName) => {'ledKey': keyName.key, 'ledName': keyName.name})
+            .toList();
       }
       return [];
     } catch (e) {
