@@ -1389,6 +1389,7 @@ class _PackingListWithoutSOScreenState
         "roundOff": _roundOff,
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
+        "packType": "0",
       };
 
       List<Map<String, dynamic>> dataArray = [];
@@ -1468,10 +1469,11 @@ class _PackingListWithoutSOScreenState
 
       // Replace with actual API call vrs_MobApp_updatePacking
       final response = await http.post(
-       
-        Uri.parse(int.parse(EditOrderData.doc_id) > 0
-            ? '${AppConstants.BASE_URL}/packing/updatePacking'
-            : '${AppConstants.BASE_URL}/orderBooking/insertPacking',),
+        Uri.parse(
+          int.parse(EditOrderData.doc_id) > 0
+              ? '${AppConstants.BASE_URL}/packing/updatePacking'
+              : '${AppConstants.BASE_URL}/orderBooking/insertPacking',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
@@ -1660,8 +1662,6 @@ class _PackingListWithoutSOScreenState
               ? const Center(child: CircularProgressIndicator())
               : _buildBody(),
       bottomNavigationBar: _buildBottomButtons(),
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -1679,6 +1679,34 @@ class _PackingListWithoutSOScreenState
           color: Colors.white,
           fontWeight: FontWeight.w600,
           fontSize: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddItemsButton() {
+    final isPartySelected =
+        _orderControllers.selectedPartyKey != null &&
+        _orderControllers.selectedPartyKey!.isNotEmpty;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: isPartySelected ? _openCatalogSelection : null,
+        icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+        label: const Text(
+          'Add Items',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.white,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isPartySelected ? AppColors.primaryColor : Colors.grey[400],
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
@@ -1780,6 +1808,11 @@ class _PackingListWithoutSOScreenState
                     isText: true,
                     onChanged: (val) => EditOrderData.remark = val,
                   ),
+                  const SizedBox(height: 20),
+
+                  // ADD THE BUTTON HERE - After remark field and before matrix
+                  _buildAddItemsButton(), // <-- ADD THIS LINE
+
                   const SizedBox(height: 20),
 
                   // Matrix Section with Sticky Headers
@@ -2526,15 +2559,15 @@ class _PackingListWithoutSOScreenState
   }
 
   // ==================== FLOATING ACTION BUTTON ====================
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: _openCatalogSelection,
-      icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-      label: const Text('Add Items', style: TextStyle(color: Colors.white)),
-      backgroundColor: AppColors.primaryColor,
-      foregroundColor: Colors.white,
-    );
-  }
+  // Widget _buildFloatingActionButton() {
+  //   return FloatingActionButton.extended(
+  //     onPressed: _openCatalogSelection,
+  //     icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+  //     label: const Text('Add Items', style: TextStyle(color: Colors.white)),
+  //     backgroundColor: AppColors.primaryColor,
+  //     foregroundColor: Colors.white,
+  //   );
+  // }
 
   void _openCatalogSelection() async {
     _persistQuantitiesToEditOrderData();

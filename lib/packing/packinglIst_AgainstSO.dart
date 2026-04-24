@@ -53,8 +53,6 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
   bool _roundOff = false;
   double _roundOffAmount = 0.0;
 
-
-
   // ==================== LIFECYCLE METHODS ====================
   @override
   void initState() {
@@ -541,6 +539,7 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
         "ourOrderNo": ourOrderNo,
+        "packType": "1",
       };
 
       List<Map<String, dynamic>> dataArray = [];
@@ -1623,301 +1622,311 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
     );
   }
 
-TableRow _buildTableRow(
-  Map<String, dynamic> size,
-  List<Map<String, dynamic>> sizes,
-  Map<String, dynamic> item,
-) {
-  // Get stock quantity
-  int stockQty = size['stock'] as int? ?? 0;
-  int currentQty = size['qty'] as int? ?? 0;
-  int ordQty = size['ordQty'] as int? ?? 0;
-  int sizeBalQty = size['balQty'] as int? ?? 0;
-  
-  // Get varPerc from the item
-  final double varPerc = item['varPerc'] as double? ?? 0;
-  final bool hasVarPerc = varPerc > 0;
-  
-  // Calculate varQty and total allowed quantity ONLY if varPerc > 0
-  final double varQty = hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
-  final double totalAllowedQty = hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
+  TableRow _buildTableRow(
+    Map<String, dynamic> size,
+    List<Map<String, dynamic>> sizes,
+    Map<String, dynamic> item,
+  ) {
+    // Get stock quantity
+    int stockQty = size['stock'] as int? ?? 0;
+    int currentQty = size['qty'] as int? ?? 0;
+    int ordQty = size['ordQty'] as int? ?? 0;
+    int sizeBalQty = size['balQty'] as int? ?? 0;
 
-  // Create a controller for this size if not exists
-  if (size['controller'] == null) {
-    size['controller'] = TextEditingController(text: currentQty.toString());
-    size['lastValidQty'] = currentQty;
-    size['isError'] = false;
-  }
+    // Get varPerc from the item
+    final double varPerc = item['varPerc'] as double? ?? 0;
+    final bool hasVarPerc = varPerc > 0;
 
-  // Create focus node for this field
-  if (size['focusNode'] == null) {
-    size['focusNode'] = FocusNode();
+    // Calculate varQty and total allowed quantity ONLY if varPerc > 0
+    final double varQty =
+        hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
+    final double totalAllowedQty =
+        hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
 
-    size['focusNode'].addListener(() {
-      if (!size['focusNode'].hasFocus) {
-        _validateAndUpdateQuantity(size, sizes, item, stockQty);
-      }
-    });
-  }
-
-  // Store necessary values
-  size['ordQty'] = ordQty;
-  size['balQty'] = sizeBalQty;
-  size['totalAllowedQty'] = totalAllowedQty;
-  size['varPerc'] = varPerc;
-
-  // Check if current quantity is valid
-  bool isValidStock = (size['qty'] as int? ?? 0) <= stockQty;
-  bool isValidOrder = !hasVarPerc || (size['qty'] as int? ?? 0) <= totalAllowedQty;
-  bool isValid = isValidStock && isValidOrder;
-
-  return TableRow(
-    children: [
-      _buildTableCell(size['size'] ?? 'N/A'),
-      Container(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.yellow.shade50,
-        ),
-        child: SizedBox(
-          width: 50,
-          child: TextFormField(
-            controller: size['controller'],
-            focusNode: size['focusNode'],
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              color: !isValid && (size['qty'] as int? ?? 0) > 0
-                  ? Colors.red
-                  : Colors.black,
-              fontWeight: !isValid && (size['qty'] as int? ?? 0) > 0
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-            ),
-            decoration: const InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 4,
-              ),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-            onChanged: (value) {
-              final int enteredQty = int.tryParse(value) ?? 0;
-              setState(() {
-                size['tempQty'] = enteredQty;
-                bool exceedsStock = enteredQty > stockQty && stockQty > 0;
-                bool exceedsOrder = hasVarPerc && enteredQty > totalAllowedQty;
-                size['isError'] = exceedsStock || exceedsOrder;
-              });
-            },
-            onEditingComplete: () {
-              _validateAndUpdateQuantity(size, sizes, item, stockQty);
-              size['focusNode'].unfocus();
-            },
-            onTapOutside: (event) {
-              _validateAndUpdateQuantity(size, sizes, item, stockQty);
-            },
-          ),
-        ),
-      ),
-      _buildTableCell(ordQty.toString()),
-      _buildTableCell(
-        stockQty.toString(),
-        textColor: stockQty == 0 ? Colors.red : Colors.black87,
-        fontWeight: stockQty == 0 ? FontWeight.bold : FontWeight.normal,
-      ),
-      _buildTableCell((size['rate'] as double? ?? 0).toStringAsFixed(2)),
-      _buildTableCell((size['mrp'] as double? ?? 0).toStringAsFixed(2)),
-      _buildTableCell((size['netRate'] as double? ?? 0).toStringAsFixed(2)),
-    ],
-  );
-}
-void _validateAndUpdateQuantity(
-  Map<String, dynamic> size,
-  List<Map<String, dynamic>> sizes,
-  Map<String, dynamic> item,
-  int stockQty,
-) {
-  final String textValue = size['controller'].text;
-  final int enteredQty = int.tryParse(textValue) ?? 0;
-  
-  // Get size-specific balance quantity from the size object
-  final int sizeBalQty = size['balQty'] as int? ?? 0;
-  
-  // Get varPerc from the item
-  final double varPerc = item['varPerc'] as double? ?? 0;
-  
-  // Calculate total allowed quantity ONLY if varPerc > 0
-  final bool hasVarPerc = varPerc > 0;
-  final double varQty = hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
-  final double totalAllowedQty = hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
-  
-  // Check if entered quantity exceeds total allowed quantity (only if varPerc exists)
-  if (hasVarPerc && enteredQty > totalAllowedQty) {
-    _showStockErrorDialogForSize(
-      'Quantity cannot be greater than Order Qty (${totalAllowedQty.toStringAsFixed(0)} ) for size ${size['size']}',
-      size,
-      sizes,
-      item,
-      totalAllowedQty.toInt(),
-    );
-  }
-  // Check if entered quantity exceeds stock (always apply)
-  else if (enteredQty > stockQty && stockQty > 0) {
-    _showStockErrorDialogForSize(
-      'Quantity cannot be greater than Ready stock for size ${size['size']}.\nAvailable stock: $stockQty',
-      size,
-      sizes,
-      item,
-      stockQty,
-    );
-  } 
-  else if (enteredQty >= 0 && (!hasVarPerc || enteredQty <= totalAllowedQty) && (stockQty == 0 || enteredQty <= stockQty)) {
-    // Valid quantity - update everything
-    setState(() {
-      size['qty'] = enteredQty;
-      size['lastValidQty'] = enteredQty;
-      size['controller'].text = enteredQty.toString();
+    // Create a controller for this size if not exists
+    if (size['controller'] == null) {
+      size['controller'] = TextEditingController(text: currentQty.toString());
+      size['lastValidQty'] = currentQty;
       size['isError'] = false;
+    }
 
-      // Recalculate total quantity from all sizes
-      int totalQty = 0;
-      for (var s in sizes) {
-        totalQty += (s['qty'] as int? ?? 0);
-      }
-      item['selectedQty'] = totalQty.toDouble();
-      item['itemAmt'] = totalQty * (item['rate'] as double);
+    // Create focus node for this field
+    if (size['focusNode'] == null) {
+      size['focusNode'] = FocusNode();
 
-      _updateRoundOff();
-    });
-  }
-}
-// Add this new method for order limit error dialog
-void _showOrderLimitErrorDialog(
-  String message,
-  Map<String, dynamic> size,
-  List<Map<String, dynamic>> sizes,
-  Map<String, dynamic> item,
-  int resetQty,
-) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      titlePadding: EdgeInsets.zero,
-      contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-      actionsPadding: const EdgeInsets.only(bottom: 12),
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.orange,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(12),
+      size['focusNode'].addListener(() {
+        if (!size['focusNode'].hasFocus) {
+          _validateAndUpdateQuantity(size, sizes, item, stockQty);
+        }
+      });
+    }
+
+    // Store necessary values
+    size['ordQty'] = ordQty;
+    size['balQty'] = sizeBalQty;
+    size['totalAllowedQty'] = totalAllowedQty;
+    size['varPerc'] = varPerc;
+
+    // Check if current quantity is valid
+    bool isValidStock = (size['qty'] as int? ?? 0) <= stockQty;
+    bool isValidOrder =
+        !hasVarPerc || (size['qty'] as int? ?? 0) <= totalAllowedQty;
+    bool isValid = isValidStock && isValidOrder;
+
+    return TableRow(
+      children: [
+        _buildTableCell(size['size'] ?? 'N/A'),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          decoration: BoxDecoration(color: Colors.yellow.shade50),
+          child: SizedBox(
+            width: 50,
+            child: TextFormField(
+              controller: size['controller'],
+              focusNode: size['focusNode'],
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color:
+                    !isValid && (size['qty'] as int? ?? 0) > 0
+                        ? Colors.red
+                        : Colors.black,
+                fontWeight:
+                    !isValid && (size['qty'] as int? ?? 0) > 0
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 4,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+              onChanged: (value) {
+                final int enteredQty = int.tryParse(value) ?? 0;
+                setState(() {
+                  size['tempQty'] = enteredQty;
+                  bool exceedsStock = enteredQty > stockQty && stockQty > 0;
+                  bool exceedsOrder =
+                      hasVarPerc && enteredQty > totalAllowedQty;
+                  size['isError'] = exceedsStock || exceedsOrder;
+                });
+              },
+              onEditingComplete: () {
+                _validateAndUpdateQuantity(size, sizes, item, stockQty);
+                size['focusNode'].unfocus();
+              },
+              onTapOutside: (event) {
+                _validateAndUpdateQuantity(size, sizes, item, stockQty);
+              },
+            ),
           ),
         ),
-        child: const Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 24,
+        _buildTableCell(ordQty.toString()),
+        _buildTableCell(
+          stockQty.toString(),
+          textColor: stockQty == 0 ? Colors.red : Colors.black87,
+          fontWeight: stockQty == 0 ? FontWeight.bold : FontWeight.normal,
+        ),
+        _buildTableCell((size['rate'] as double? ?? 0).toStringAsFixed(2)),
+        _buildTableCell((size['mrp'] as double? ?? 0).toStringAsFixed(2)),
+        _buildTableCell((size['netRate'] as double? ?? 0).toStringAsFixed(2)),
+      ],
+    );
+  }
+
+  void _validateAndUpdateQuantity(
+    Map<String, dynamic> size,
+    List<Map<String, dynamic>> sizes,
+    Map<String, dynamic> item,
+    int stockQty,
+  ) {
+    final String textValue = size['controller'].text;
+    final int enteredQty = int.tryParse(textValue) ?? 0;
+
+    // Get size-specific balance quantity from the size object
+    final int sizeBalQty = size['balQty'] as int? ?? 0;
+
+    // Get varPerc from the item
+    final double varPerc = item['varPerc'] as double? ?? 0;
+
+    // Calculate total allowed quantity ONLY if varPerc > 0
+    final bool hasVarPerc = varPerc > 0;
+    final double varQty =
+        hasVarPerc ? _calculateVarQty(sizeBalQty.toDouble(), varPerc) : 0;
+    final double totalAllowedQty =
+        hasVarPerc ? (sizeBalQty + varQty) : double.infinity;
+
+    // Check if entered quantity exceeds total allowed quantity (only if varPerc exists)
+    if (hasVarPerc && enteredQty > totalAllowedQty) {
+      _showStockErrorDialogForSize(
+        'Quantity cannot be greater than Order Qty (${totalAllowedQty.toStringAsFixed(0)} ) for size ${size['size']}',
+        size,
+        sizes,
+        item,
+        totalAllowedQty.toInt(),
+      );
+    }
+    // Check if entered quantity exceeds stock (always apply)
+    else if (enteredQty > stockQty && stockQty > 0) {
+      _showStockErrorDialogForSize(
+        'Quantity cannot be greater than Ready stock for size ${size['size']}.\nAvailable stock: $stockQty',
+        size,
+        sizes,
+        item,
+        stockQty,
+      );
+    } else if (enteredQty >= 0 &&
+        (!hasVarPerc || enteredQty <= totalAllowedQty) &&
+        (stockQty == 0 || enteredQty <= stockQty)) {
+      // Valid quantity - update everything
+      setState(() {
+        size['qty'] = enteredQty;
+        size['lastValidQty'] = enteredQty;
+        size['controller'].text = enteredQty.toString();
+        size['isError'] = false;
+
+        // Recalculate total quantity from all sizes
+        int totalQty = 0;
+        for (var s in sizes) {
+          totalQty += (s['qty'] as int? ?? 0);
+        }
+        item['selectedQty'] = totalQty.toDouble();
+        item['itemAmt'] = totalQty * (item['rate'] as double);
+
+        _updateRoundOff();
+      });
+    }
+  }
+
+  // Add this new method for order limit error dialog
+  void _showOrderLimitErrorDialog(
+    String message,
+    Map<String, dynamic> size,
+    List<Map<String, dynamic>> sizes,
+    Map<String, dynamic> item,
+    int resetQty,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            SizedBox(width: 10),
-            Text(
-              'Order Limit Exceeded',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            titlePadding: EdgeInsets.zero,
+            contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+            actionsPadding: const EdgeInsets.only(bottom: 12),
+            title: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Order Limit Exceeded',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      content: Text(message, style: const TextStyle(fontSize: 14)),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  
-                  setState(() {
-                    // Reset to total allowed quantity
-                    size['qty'] = resetQty;
-                    size['lastValidQty'] = resetQty;
-                    size['isError'] = false;
-                    
-                    // Reset the controller text
-                    if (size['controller'] != null) {
-                      size['controller'].text = resetQty.toString();
-                    }
-                    
-                    // Recalculate total quantity from all sizes
-                    int totalQty = 0;
-                    for (var s in sizes) {
-                      totalQty += (s['qty'] as int? ?? 0);
-                    }
-                    
-                    item['selectedQty'] = totalQty.toDouble();
-                    item['itemAmt'] = totalQty * (item['rate'] as double);
-                    
-                    // Update round off
-                    _updateRoundOff();
-                  });
-                },
-                icon: const Icon(
-                  Icons.check,
-                  size: 18,
-                  color: Colors.white,
-                ),
-                label: const Text(
-                  'OK',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 10,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
+            content: Text(message, style: const TextStyle(fontSize: 14)),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+
+                        setState(() {
+                          // Reset to total allowed quantity
+                          size['qty'] = resetQty;
+                          size['lastValidQty'] = resetQty;
+                          size['isError'] = false;
+
+                          // Reset the controller text
+                          if (size['controller'] != null) {
+                            size['controller'].text = resetQty.toString();
+                          }
+
+                          // Recalculate total quantity from all sizes
+                          int totalQty = 0;
+                          for (var s in sizes) {
+                            totalQty += (s['qty'] as int? ?? 0);
+                          }
+
+                          item['selectedQty'] = totalQty.toDouble();
+                          item['itemAmt'] = totalQty * (item['rate'] as double);
+
+                          // Update round off
+                          _updateRoundOff();
+                        });
+                      },
+                      icon: const Icon(
+                        Icons.check,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
-// Add the calculate methods
-double _calculateVarQty(double balQty, double varPerc) {
-  if (varPerc <= 0) return 0;
-  return (balQty * varPerc) / 100;
-}
+  // Add the calculate methods
+  double _calculateVarQty(double balQty, double varPerc) {
+    if (varPerc <= 0) return 0;
+    return (balQty * varPerc) / 100;
+  }
 
-double _calculateTotalAllowedQty(double balQty, double varPerc) {
-  double varQty = _calculateVarQty(balQty, varPerc);
-  return balQty + varQty;
-}
+  double _calculateTotalAllowedQty(double balQty, double varPerc) {
+    double varQty = _calculateVarQty(balQty, varPerc);
+    return balQty + varQty;
+  }
 
   void _showStockErrorDialogForSize(
     String message,
