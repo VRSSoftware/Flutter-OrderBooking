@@ -32,7 +32,6 @@ import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_screen.dart';
 import '../constants/app_constants.dart';
 import '../models/consignee.dart';
 
-
 class PackingPage extends StatefulWidget {
   @override
   _PackingPageState createState() => _PackingPageState();
@@ -347,7 +346,9 @@ class _PackingPageState extends State<PackingPage>
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate:
-          isFromDate ? (fromDate ?? DateTime.now()) : (toDate ?? DateTime.now()),
+          isFromDate
+              ? (fromDate ?? DateTime.now())
+              : (toDate ?? DateTime.now()),
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -683,116 +684,266 @@ class _PackingPageState extends State<PackingPage>
       );
     }
   }
-Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
-  try {
-    // For Android 11+, request MANAGE_EXTERNAL_STORAGE
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      if (androidInfo.version.sdkInt >= 30) { // Android 11+
-        var status = await Permission.manageExternalStorage.status;
-        if (!status.isGranted) {
-          status = await Permission.manageExternalStorage.request();
+
+  Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
+    try {
+      // For Android 11+, request MANAGE_EXTERNAL_STORAGE
+      if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        if (androidInfo.version.sdkInt >= 30) {
+          // Android 11+
+          var status = await Permission.manageExternalStorage.status;
           if (!status.isGranted) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Storage management permission required'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+            status = await Permission.manageExternalStorage.request();
+            if (!status.isGranted) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Storage management permission required'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              return;
             }
-            return;
           }
-        }
-      } else {
-        var status = await Permission.storage.status;
-        if (!status.isGranted) {
-          status = await Permission.storage.request();
+        } else {
+          var status = await Permission.storage.status;
           if (!status.isGranted) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Storage permission denied')),
-              );
+            status = await Permission.storage.request();
+            if (!status.isGranted) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Storage permission denied')),
+                );
+              }
+              return;
             }
-            return;
           }
         }
       }
-    }
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.primaryColor,
-                ),
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Downloading PDF...',
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 16),
-            Text(
-              'Downloading PDF...',
-              style: GoogleFonts.poppins(fontSize: 14),
+      );
+
+      final dio = Dio();
+      final response = await dio.post(
+        '${AppConstants.Pdf_url}',
+        data: {
+          "doc_id": registerOrder.orderId,
+          "rptName": "Packing",
+          "dbName": UserSession.dbName,
+          "dbUser": UserSession.dbUser,
+          "dbPassword": UserSession.dbPassword,
+          "dbServer": UserSession.dbSourceForRpt,
+          "rptPath": UserSession.rptPath,
+        },
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      if (response.statusCode == 200) {
+        final fileName = 'Packing_${registerOrder.orderNo}.pdf';
+        String filePath;
+
+        // Use app-specific directory (no permission needed)
+        final directory = await getApplicationDocumentsDirectory();
+        filePath = '${directory.path}/$fileName';
+
+        final file = File(filePath);
+        await file.writeAsBytes(response.data, flush: true);
+
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+
+          // Show success dialog with option to open
+          await showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 28),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Download Complete',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PDF saved successfully!',
+                        style: GoogleFonts.poppins(fontSize: 14),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          filePath,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.poppins(color: Colors.grey.shade600),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final openResult = await OpenFile.open(filePath);
+                        if (openResult.type != ResultType.done && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Failed to open PDF: ${openResult.message}',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Open'),
+                    ),
+                  ],
+                ),
+          );
+        }
+      } else {
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load PDF: ${response.statusCode}'),
+              backgroundColor: Colors.red,
             ),
-          ],
-        ),
-      ),
-    );
-
-    final dio = Dio();
-    final response = await dio.post(
-      '${AppConstants.Pdf_url}',
-      data: {
-        "doc_id": registerOrder.orderId,
-        "rptName": "Packing",
-        "dbName": UserSession.dbName,
-        "dbUser": UserSession.dbUser,
-        "dbPassword": UserSession.dbPassword,
-        "dbServer": UserSession.dbSourceForRpt,
-        "rptPath": UserSession.rptPath,
-      },
-      options: Options(responseType: ResponseType.bytes),
-    );
-
-    if (response.statusCode == 200) {
-      final fileName = 'Packing_${registerOrder.orderNo}.pdf';
-      String filePath;
-
-      // Use app-specific directory (no permission needed)
-      final directory = await getApplicationDocumentsDirectory();
-      filePath = '${directory.path}/$fileName';
-      
-      final file = File(filePath);
-      await file.writeAsBytes(response.data, flush: true);
-
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Download error: $e');
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        
-        // Show success dialog with option to open
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updatePacking(RegisterOrder registerOrder) async {
+    Widget targetScreen;
+
+    // Check packType to decide which screen to navigate to
+    if (registerOrder.packType == "1") {
+      // Against Sales Order
+      targetScreen = PackingListAgainstSO(
+        orderId: registerOrder.orderId,
+        orderData: {
+          'docNo': registerOrder.orderNo,
+          'partyName': registerOrder.partyName,
+          'itemName': registerOrder.itemName,
+          'quantity': registerOrder.quantity,
+          'amount': registerOrder.amount,
+        },
+      );
+    } else {
+      // Without Sales Order (packType == "0" or any other value)
+      targetScreen = PackingListWithoutSOScreen(
+        docId: int.parse(registerOrder.orderId),
+      );
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => targetScreen),
+    );
+
+    if (result == true) {
+      fetchOrders(isLoadMore: false);
+    }
+  }
+
+  Future<void> _deletePacking(RegisterOrder registerOrder) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
             title: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 28),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 Text(
-                  'Download Complete',
+                  'Delete Packing',
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -800,244 +951,106 @@ Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
                 ),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'PDF saved successfully!',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    filePath,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ],
+            content: Text(
+              'Are you sure you want to delete packing order ${registerOrder.orderNo}?',
+              style: GoogleFonts.poppins(fontSize: 14),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, false),
                 child: Text(
-                  'Close',
+                  'Cancel',
                   style: GoogleFonts.poppins(color: Colors.grey.shade600),
                 ),
               ),
-              ElevatedButton.icon(
+              ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
+                  backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final openResult = await OpenFile.open(filePath);
-                  if (openResult.type != ResultType.done && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to open PDF: ${openResult.message}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Open'),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
               ),
             ],
           ),
-        );
-      }
-    } else {
+    );
+
+    if (confirm != true) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text('Deleting...', style: GoogleFonts.poppins(fontSize: 14)),
+              ],
+            ),
+          ),
+    );
+
+    try {
+      final response = await ApiService.deletePacking(
+        docId: registerOrder.orderId,
+        coBrId: UserSession.coBrId ?? '',
+      );
+
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (response['status'] == 'success') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load PDF: ${response.statusCode}'),
+            content: Text(
+              'Packing order ${registerOrder.orderNo} deleted successfully',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Refresh the list
+        fetchOrders(isLoadMore: false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] ?? 'Failed to delete packing'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    }
-  } catch (e) {
-    debugPrint('Download error: $e');
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Download failed: $e'),
+          content: Text('Error deleting packing: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
-}
 
-Future<void> _updatePacking(RegisterOrder registerOrder) async {
-  Widget targetScreen;
-  
-  // Check packType to decide which screen to navigate to
-  if (registerOrder.packType == "1") {
-    // Against Sales Order
-    targetScreen = PackingListAgainstSO(
-      orderId: registerOrder.orderId,
-      orderData: {
-        'docNo': registerOrder.orderNo,
-        'partyName': registerOrder.partyName,
-        'itemName': registerOrder.itemName,
-        'quantity': registerOrder.quantity,
-        'amount': registerOrder.amount,
-      },
-    );
-  } else {
-    // Without Sales Order (packType == "0" or any other value)
-    targetScreen = PackingListWithoutSOScreen(
-      docId: int.parse(registerOrder.orderId),
-    );
-  }
-
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => targetScreen),
-  );
-  
-  if (result == true) {
-    fetchOrders(isLoadMore: false);
-  }
-}
-
-Future<void> _deletePacking(RegisterOrder registerOrder) async {
-  // Show confirmation dialog
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      title: Row(
-        children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Delete Packing',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      content: Text(
-        'Are you sure you want to delete packing order ${registerOrder.orderNo}?',
-        style: GoogleFonts.poppins(fontSize: 14),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(
-            'Cancel',
-            style: GoogleFonts.poppins(color: Colors.grey.shade600),
-          ),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  // Show loading dialog
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      content: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                AppColors.primaryColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'Deleting...',
-            style: GoogleFonts.poppins(fontSize: 14),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  try {
-    final response = await ApiService.deletePacking(
-      docId: registerOrder.orderId,
-      coBrId: UserSession.coBrId ?? '',
-    );
-
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-
-    if (response['status'] == 'success') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Packing order ${registerOrder.orderNo} deleted successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      // Refresh the list
-      fetchOrders(isLoadMore: false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response['message'] ?? 'Failed to delete packing'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error deleting packing: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-}
   Future<void> _handleMenuSelection(
     String value,
     RegisterOrder registerOrder,
@@ -1055,13 +1068,14 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PdfViewerScreen(
-              rptName: 'Packing',
-              orderNo: registerOrder.orderId,
-              whatsappNo: registerOrder.whatsAppMobileNo,
-              partyName: registerOrder.partyName,
-              orderDate: registerOrder.orderDate,
-            ),
+            builder:
+                (context) => PdfViewerScreen(
+                  rptName: 'Packing',
+                  orderNo: registerOrder.orderId,
+                  whatsappNo: registerOrder.whatsAppMobileNo,
+                  partyName: registerOrder.partyName,
+                  orderDate: registerOrder.orderDate,
+                ),
           ),
         );
         break;
@@ -1139,7 +1153,9 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryColor.withOpacity(0.1),
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -1174,8 +1190,12 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.green.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: Colors.green.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                           child: Text(
                                             registerOrder.orderNo,
@@ -1193,9 +1213,13 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(30),
+                                            borderRadius: BorderRadius.circular(
+                                              30,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.blue.withOpacity(0.2),
+                                              color: Colors.blue.withOpacity(
+                                                0.2,
+                                              ),
                                             ),
                                           ),
                                           child: Row(
@@ -1218,6 +1242,44 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                                             ],
                                           ),
                                         ),
+                                        if (registerOrder.packType == "1")
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.pink.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
+                                              border: Border.all(
+                                                color: Colors.pink.withOpacity(
+                                                  0.2,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.inventory,
+                                                  color: Colors.pink,
+                                                  size: 12,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "Against SO",
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.pink,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -1243,59 +1305,100 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 4,
-                          onSelected: (value) => _handleMenuSelection(value, registerOrder),
-                          itemBuilder: (BuildContext context) => [
-                            const PopupMenuItem<String>(
-                              value: 'whatsapp',
-                              child: Row(
-                                children: [
-                                  FaIcon(FontAwesomeIcons.whatsapp, size: 20, color: AppColors.primaryColor),
-                                  SizedBox(width: 12),
-                                  Text('WhatsApp', style: TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'download',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.download, color: AppColors.primaryColor, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Download & Open', style: TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'view',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.visibility, color: AppColors.primaryColor, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('View', style: TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'updatePacking',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit, color: AppColors.primaryColor, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Update Packing', style: TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete, color: Colors.red, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Delete', style: TextStyle(fontSize: 14, color: Colors.red)),
-                                ],
-                              ),
-                            ),
-                          ],
+                          onSelected:
+                              (value) =>
+                                  _handleMenuSelection(value, registerOrder),
+                          itemBuilder:
+                              (BuildContext context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'whatsapp',
+                                  child: Row(
+                                    children: [
+                                      FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        size: 20,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'WhatsApp',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'download',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.download,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'Download & Open',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'view',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.visibility,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'View',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'updatePacking',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.edit,
+                                        color: AppColors.primaryColor,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'Update Packing',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                         ),
                       ],
                     ),
@@ -1335,7 +1438,8 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                           Expanded(
                             child: _buildDetailItem(
                               label: 'Amount',
-                              value: '₹${registerOrder.amount.toStringAsFixed(0)}',
+                              value:
+                                  '₹${registerOrder.amount.toStringAsFixed(0)}',
                               icon: Icons.currency_rupee,
                             ),
                           ),
@@ -1526,10 +1630,11 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         actions: [
           Container(
@@ -1621,52 +1726,51 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
         ),
       ),
       body: SafeArea(
-        child: isLoading && registerOrderList.isEmpty
-            ? _buildLoadingIndicator()
-            : FadeTransition(
-              opacity: _fadeAnimation,
-              child: RefreshIndicator(
-                onRefresh: () => fetchOrders(isLoadMore: false),
-                color: AppColors.primaryColor,
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDateRangeSelector(),
-                      const SizedBox(height: 20),
-                      if (registerOrderList.isEmpty)
-                        _buildEmptyState()
-                      else
-                        ...registerOrderList.map(
-                          (order) => Column(
-                            children: [
-                              buildOrderItem(order),
-                              const SizedBox(height: 12),
-                            ],
-                          ),
-                        ),
-                      if (isLoading && registerOrderList.isNotEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                      if (!hasMoreData && registerOrderList.isNotEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                            child: Text('No more orders to load'),
-                          ),
-                        ),
-                    ],
+        child:
+            isLoading && registerOrderList.isEmpty
+                ? _buildLoadingIndicator()
+                : FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: RefreshIndicator(
+                    onRefresh: () => fetchOrders(isLoadMore: false),
+                    color: AppColors.primaryColor,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDateRangeSelector(),
+                          const SizedBox(height: 20),
+                          if (registerOrderList.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ...registerOrderList.map(
+                              (order) => Column(
+                                children: [
+                                  buildOrderItem(order),
+                                  const SizedBox(height: 12),
+                                ],
+                              ),
+                            ),
+                          if (isLoading && registerOrderList.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          if (!hasMoreData && registerOrderList.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: Text('No more orders to load'),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
       ),
     );
   }
@@ -1726,31 +1830,37 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
                 onTap: () => _updateDateRange(range),
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primaryColor : Colors.white,
                     borderRadius: BorderRadius.circular(25),
                     border: Border.all(
-                      color: isSelected
-                          ? AppColors.primaryColor
-                          : Colors.grey.shade300,
+                      color:
+                          isSelected
+                              ? AppColors.primaryColor
+                              : Colors.grey.shade300,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primaryColor.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
+                    boxShadow:
+                        isSelected
+                            ? [
+                              BoxShadow(
+                                color: AppColors.primaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                            : null,
                   ),
                   child: Center(
                     child: Text(
                       range,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                         color: isSelected ? Colors.white : Colors.grey.shade700,
                       ),
                     ),
@@ -1801,5 +1911,3 @@ Future<void> _deletePacking(RegisterOrder registerOrder) async {
     );
   }
 }
-
-

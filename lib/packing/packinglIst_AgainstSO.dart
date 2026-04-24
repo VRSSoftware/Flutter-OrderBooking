@@ -633,8 +633,8 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
 
       if (dataArray.isEmpty) {
         _showValidationDialog(
-          'No Items',
-          'Please add at least one item to save.',
+          'No Packing Slip',
+          'Packing Slip details not specified!',
         );
         setState(() => _isSaving = false);
         return;
@@ -650,7 +650,7 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
         "fcYrId": UserSession.userFcYr ?? '',
         "typ": _isUpdateMode ? 1 : 0,
         "docId": packingDocId,
-        "data": dataArray,
+        "items": dataArray,
         "data2": jsonEncode(data2),
         "barcode": "false",
         "packType": "1",
@@ -972,7 +972,7 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
                                 : Colors.grey.shade400,
                       ),
                       label: Text(
-                        'View Sales Orders',
+                        'Order Details',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,

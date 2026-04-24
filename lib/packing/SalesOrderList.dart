@@ -919,6 +919,8 @@
 //     );
 //   }
 // }
+
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -946,7 +948,10 @@ class SalesOrderListScreen extends StatefulWidget {
 
 class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
   List<dynamic> _orders = [];
+    List<dynamic> _filteredOrders = [];
   bool _isLoading = true;
+   bool _isSearching = false; 
+     final TextEditingController _searchController = TextEditingController(); 
   Set<String> _selectedOrderIds = {};
   Map<String, Map<String, dynamic>> _selectedOrdersMap = {};
   Map<String, Map<String, int>> _selectedQuantities = {};
