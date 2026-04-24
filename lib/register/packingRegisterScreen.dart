@@ -21,6 +21,7 @@ import 'package:vrs_erp/models/shade.dart';
 import 'package:vrs_erp/models/size.dart';
 import 'package:vrs_erp/models/stockReportModel.dart';
 import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
 import 'package:vrs_erp/register/registerFilteration.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
 import 'package:vrs_erp/packing/packinglIst_AgainstSO.dart';
@@ -887,16 +888,22 @@ Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
   Future<void> _updatePacking(RegisterOrder registerOrder) async {
     final result = await Navigator.push(
       context,
+      // MaterialPageRoute(
+      //   builder: (context) => PackingListAgainstSO(
+      //     orderId: registerOrder.orderId,
+      //     orderData: {
+      //       'docNo': registerOrder.orderNo,
+      //       'partyName': registerOrder.partyName,
+      //       'itemName': registerOrder.itemName,
+      //       'quantity': registerOrder.quantity,
+      //       'amount': registerOrder.amount,
+      //     },
+      //   ),
+      // ),
       MaterialPageRoute(
-        builder: (context) => PackingListAgainstSO(
-          orderId: registerOrder.orderId,
-          orderData: {
-            'docNo': registerOrder.orderNo,
-            'partyName': registerOrder.partyName,
-            'itemName': registerOrder.itemName,
-            'quantity': registerOrder.quantity,
-            'amount': registerOrder.amount,
-          },
+        builder: (context) => PackingListWithoutSOScreen(
+          docId: int.parse(registerOrder.orderId),
+          
         ),
       ),
     );
