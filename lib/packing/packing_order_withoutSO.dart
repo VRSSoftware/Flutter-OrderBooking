@@ -24,7 +24,8 @@ import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
 // packing_list_without_so_screen.dart
 
 class PackingListWithoutSOScreen extends StatefulWidget {
-  final int? docId;
+  final int?
+  docId; // -2: fresh, -1: use existing EditOrderData + fetch new catalogs, >0: edit
   final List<Catalog>? catalogs;
   final Map<String, dynamic>? routeArguments;
 
@@ -56,7 +57,8 @@ class _PackingListWithoutSOScreenState
   bool isLoading = true;
   bool _isSaving = false;
   bool _isMatrixLoading = false;
-  bool _isEditMode = false;
+  bool _isEditMode = false; // true if editing an existing packing (docId > 0)
+  bool _shouldFetchNewCatalogs = false; // true for docId == -1
 
   // ==================== ADDITIONAL INFO ====================
   Map<String, dynamic> _additionalInfo = {};
@@ -78,15 +80,199 @@ class _PackingListWithoutSOScreenState
   @override
   void initState() {
     super.initState();
-    _isEditMode = EditOrderData.doc_id.isNotEmpty;
 
-    if (!_isEditMode) {
+    // Determine mode based on docId
+    if (widget.docId == -2) {
+      // Fresh start: clear all static data
       EditOrderData.clear();
+      _isEditMode = false;
+      _shouldFetchNewCatalogs = false;
+    } else if (widget.docId == -1) {
+      // Use existing EditOrderData but also fetch new catalogs
+      _isEditMode = false;
+      _shouldFetchNewCatalogs = true;
+      // Do NOT clear EditOrderData – keep existing form fields
+    } else if (widget.docId != null && widget.docId! > 0) {
+      // Edit mode: load from EditOrderData (which should already be populated)
+      _isEditMode = true;
+      _shouldFetchNewCatalogs = false;
+      EditOrderData.doc_id = widget.docId.toString();
+    } else {
+      // Fallback: clear
+      // EditOrderData.clear();
+      _isEditMode = false;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
+  }
+
+  Future<void> fetchOrderItems({required String doc_Id}) async {
+    if (doc_Id != '-1') {
+      EditOrderData.doc_id = doc_Id;
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.BASE_URL}/orderRegister/editOrderData2'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({"doc_id": doc_Id}),
+        );
+
+        if (response.statusCode == 200) {
+          final items = json.decode(response.body);
+          if (items is List && items.isNotEmpty) {
+            final groupedByStyle = <String, List<dynamic>>{};
+            for (var item in items) {
+              final styleCode =
+                  item['styleCode']?.toString() ?? 'No Style Code';
+              groupedByStyle.putIfAbsent(styleCode, () => []).add(item);
+            }
+            EditOrderData.data =
+                groupedByStyle.entries.map((entry) {
+                  final catalogOrder = _convertToCatalogOrderData(
+                    entry.key,
+                    entry.value,
+                  );
+                  return catalogOrder;
+                }).toList();
+            // calculateTotals();
+
+            setState(() {
+              catalogOrderList = List.from(EditOrderData.data);
+            });
+            _rebuildMatrixFromCatalogOrderData();
+            _restoreQuantitiesFromEditOrderData();
+          } else {
+            EditOrderData.data = [];
+          }
+        } else {
+          EditOrderData.data = [];
+        }
+      } catch (e) {
+        print('Error fetching order items: $e');
+        EditOrderData.data = [];
+      }
+    }
+    setState(() {
+      // isOrderItemsLoaded = true;
+    });
+  }
+
+  CatalogOrderData _convertToCatalogOrderData(
+    String styleKey,
+    List<dynamic> items,
+  ) {
+    if (items.isEmpty) {
+      return CatalogOrderData(
+        catalog: Catalog(
+          itemSubGrpKey: '',
+          itemSubGrpName: '',
+          itemKey: '',
+          itemName: 'Unknown',
+          brandKey: '',
+          brandName: '',
+          styleKey: styleKey,
+          styleCode: styleKey,
+          shadeKey: '',
+          shadeName: '',
+          styleSizeId: '',
+          sizeName: '',
+          mrp: 0.0,
+          wsp: 0.0,
+          onlyMRP: 0.0,
+          clqty: 0,
+          total: 0,
+          fullImagePath: '/NoImage.jpg',
+          remark: '',
+          imageId: '',
+          sizeDetails: '',
+          sizeDetailsWithoutWSp: '',
+          sizeWithMrp: '',
+          styleCodeWithcount: styleKey,
+          onlySizes: '',
+          sizeWithWsp: '',
+          createdDate: '',
+          shadeImages: '',
+          upcoming_Stk: '0',
+        ),
+        orderMatrix: OrderMatrix(shades: [], sizes: [], matrix: []),
+      );
+    }
+
+    final shades =
+        items
+            .map((i) => i['shadeName']?.toString() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList();
+    final sizes =
+        items
+            .map((i) => i['sizeName']?.toString() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList();
+    final firstItem = items.first;
+
+    final matrix = List.generate(shades.length, (shadeIndex) {
+      return List.generate(sizes.length, (sizeIndex) {
+        final item = items.firstWhere(
+          (i) =>
+              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+          orElse: () => {},
+        );
+        final mrp = item['mrp']?.toString() ?? '0';
+        final wsp = item['wsp']?.toString() ?? '0';
+        final qty = item['clqty']?.toString() ?? '0';
+        final stkQty = item['data2']?.toString() ?? '0';
+        return '$mrp,$wsp,$qty,$stkQty';
+      });
+    });
+
+    final catalog = Catalog(
+      itemSubGrpKey: '',
+      itemSubGrpName: '',
+      itemKey: '',
+      itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+      brandKey: '',
+      brandName: '',
+      styleKey: styleKey,
+      styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+      shadeKey: '',
+      shadeName: shades.join(','),
+      styleSizeId: '',
+      sizeName: sizes.join(','),
+      mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+      wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+      onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+      clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+      total: items.fold(
+        0,
+        (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+      ),
+      fullImagePath: firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
+      remark: firstItem['remark']?.toString() ?? '',
+      imageId: '',
+      sizeDetails: sizes
+          .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+          .join(','),
+      sizeDetailsWithoutWSp: sizes
+          .map((s) => '$s (${firstItem['mrp']})')
+          .join(','),
+      sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+      styleCodeWithcount: styleKey,
+      onlySizes: sizes.join(','),
+      sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+      createdDate: '',
+      shadeImages: '',
+      upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '0',
+      barcode: '',
+    );
+
+    return CatalogOrderData(
+      catalog: catalog,
+      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
+    );
   }
 
   @override
@@ -103,20 +289,137 @@ class _PackingListWithoutSOScreenState
     await _loadBookingTypes();
     await _loadPaymentTerms();
 
-    // Store dropdown lists in EditOrderData for persistence
     EditOrderData.brokerList = _dropdownData.brokerList;
     EditOrderData.transporterList = _dropdownData.transporterList;
 
     if (_isEditMode) {
+      // docId > 0 : edit existing packing list
       await _loadEditData();
     } else {
+      // docId == -2 (fresh) or docId == -1 (append)
       _setDefaultDates();
+
+      // Restore form fields from EditOrderData (party, broker, etc.)
+      if (EditOrderData.partyKey.isNotEmpty) {
+        _restoreFormFromEditOrderData();
+        await fetchAndMapConsignees(key: EditOrderData.partyKey);
+      }
+
+      // --- Base catalog list: start with existing EditOrderData.data (if any) ---
+      if (EditOrderData.data.isNotEmpty) {
+        setState(() {
+          catalogOrderList = List.from(EditOrderData.data);
+        });
+        _rebuildMatrixFromCatalogOrderData();
+        _restoreQuantitiesFromEditOrderData();
+      }
+
+      // --- Append new catalogs if provided (for docId == -1) ---
       if (widget.catalogs != null && widget.catalogs!.isNotEmpty) {
-        await _loadCatalogOrderDetails(widget.catalogs!);
+        await _appendNewCatalogs(widget.catalogs!);
+      }
+
+      // For fresh start (docId == -2), ensure EditOrderData is cleared
+      if (widget.docId == -2) {
+        EditOrderData.clear();
       }
     }
 
     setState(() => isLoading = false);
+  }
+
+  /// Fetches matrix data for the given catalogs and appends them to the existing list.
+  Future<void> _appendNewCatalogs(List<Catalog> newCatalogs) async {
+    setState(() => _isMatrixLoading = true);
+
+    List<CatalogOrderData> newItems = [];
+
+    for (var catalog in newCatalogs) {
+      // Skip if this style already exists (optional, but prevents duplicates)
+      if (catalogOrderList.any(
+        (order) => order.catalog.styleKey == catalog.styleKey,
+      )) {
+        _showErrorSnackBar('Style ${catalog.styleCode} already added');
+        continue;
+      }
+
+      final payload = {
+        "itemSubGrpKey": catalog.itemSubGrpKey,
+        "itemKey": catalog.itemKey,
+        "styleKey": catalog.styleKey,
+        "userId": UserSession.userName ?? '',
+        "coBrId": UserSession.coBrId ?? '',
+        "fcYrId": UserSession.userFcYr ?? '',
+      };
+
+      try {
+        final response = await http.post(
+          Uri.parse('${AppConstants.BASE_URL}/catalog/GetOrderDetails2'),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(payload),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final orderMatrix = OrderMatrix.fromJson(data);
+          final catalogOrder = CatalogOrderData(
+            catalog: catalog,
+            orderMatrix: orderMatrix,
+          );
+          newItems.add(catalogOrder);
+
+          // Initialize colors and quantities for this new style
+          selectedColors2[catalog.styleKey] =
+              catalog.shadeName.split(',').map((e) => e.trim()).toSet();
+          quantities[catalog.styleKey] = {};
+          for (var shade in selectedColors2[catalog.styleKey]!) {
+            quantities[catalog.styleKey]![shade] = {};
+          }
+        } else {
+          _showErrorSnackBar('Failed to load details for ${catalog.styleCode}');
+        }
+      } catch (e) {
+        _showErrorSnackBar('Error loading ${catalog.styleCode}: $e');
+      }
+    }
+
+    setState(() {
+      catalogOrderList.addAll(newItems);
+      _isMatrixLoading = false;
+    });
+
+    // Persist updated list and quantities to EditOrderData
+    EditOrderData.data = catalogOrderList;
+    _persistQuantitiesToEditOrderData();
+
+    if (newItems.isNotEmpty) {
+      // _showSuccessSnackBar('${newItems.length} item(s) added');
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchEditHeader(int docId) async {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/packing/headerDetailsForEdit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"doc_id": docId}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to load header details');
+  }
+
+  Future<List<dynamic>> _fetchEditItems(int docId) async {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/packing/getPackingDataEdit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"doc_id": docId}),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return data;
+    }
+    return [];
   }
 
   Future<void> _loadPaymentTerms() async {
@@ -164,50 +467,448 @@ class _PackingListWithoutSOScreenState
     _orderControllers.deliveryDays.text = '0';
   }
 
+  void _restoreFormFromEditOrderData() {
+    _orderControllers.selectedParty = EditOrderData.partyName;
+    _orderControllers.selectedPartyKey = EditOrderData.partyKey;
+    _orderControllers.selectedPartyName = EditOrderData.partyName;
+    _orderControllers.selectedBroker = EditOrderData.brokerName;
+    _orderControllers.selectedBrokerKey = EditOrderData.brokerKey;
+    _orderControllers.selectedTransporter = EditOrderData.transporterName;
+    _orderControllers.selectedTransporterKey = EditOrderData.transporterKey;
+    _orderControllers.comm.text = EditOrderData.commission;
+    _orderControllers.deliveryDays.text = EditOrderData.deliveryDays;
+    _orderControllers.deliveryDate.text =
+        EditOrderData.deliveryDate.isNotEmpty
+            ? EditOrderData.deliveryDate
+            : _PackingListControllers.formatDate(DateTime.now());
+    _orderControllers.remark.text = EditOrderData.remark;
+    _orderControllers.date.text =
+        EditOrderData.deliveryDate.isNotEmpty
+            ? EditOrderData.deliveryDate
+            : _PackingListControllers.formatDate(DateTime.now());
+  }
+
   // ==================== EDIT MODE: LOAD FROM EditOrderData ====================
   Future<void> _loadEditData() async {
-    setState(() {
-      _orderControllers.date.text =
-          EditOrderData.deliveryDate.isNotEmpty
-              ? EditOrderData.deliveryDate
-              : _PackingListControllers.formatDate(DateTime.now());
-      _orderControllers.selectedParty = EditOrderData.partyName;
-      _orderControllers.selectedPartyKey = EditOrderData.partyKey;
-      _orderControllers.selectedPartyName = EditOrderData.partyName;
-      _orderControllers.selectedBroker = EditOrderData.brokerName;
-      _orderControllers.selectedBrokerKey = EditOrderData.brokerKey;
-      _orderControllers.selectedTransporter = EditOrderData.transporterName;
-      _orderControllers.selectedTransporterKey = EditOrderData.transporterKey;
-      _orderControllers.comm.text = EditOrderData.commission;
-      _orderControllers.deliveryDays.text = EditOrderData.deliveryDays;
-      _orderControllers.deliveryDate.text = EditOrderData.deliveryDate;
-      _orderControllers.remark.text = EditOrderData.remark;
-    });
+    try {
+      final docId = int.tryParse(EditOrderData.doc_id) ?? widget.docId!;
 
-    if (EditOrderData.partyKey.isNotEmpty) {
-      await fetchAndMapConsignees(key: EditOrderData.partyKey);
+      // 1. Load header
+      final header = await _fetchEditHeader(docId);
+      _populateFormFromHeader(header);
+
+      // 2. Load items
+      final items = await _fetchEditItems(docId);
+      if (items.isNotEmpty) {
+        await _buildCatalogOrderListFromItems(items);
+      }
+
+      // 3. Restore additional info if any
+      if (EditOrderData.detailsForEdit.isNotEmpty) {
+        try {
+          final stored = jsonDecode(EditOrderData.detailsForEdit);
+          if (stored['additionalInfo'] != null) {
+            _additionalInfo = Map<String, dynamic>.from(
+              stored['additionalInfo'],
+            );
+          }
+        } catch (_) {}
+      }
+
+      setState(() {});
+    } catch (e) {
+      _showErrorSnackBar('Failed to load edit data: $e');
     }
-    setState(() {
-      consignees = EditOrderData.consignees;
-    });
+  }
 
-    setState(() {
-      catalogOrderList = EditOrderData.data;
-    });
-    _rebuildMatrixFromCatalogOrderData();
-    _restoreQuantitiesFromEditOrderData();
+  Future<void> _buildCatalogOrderListFromItems(List<dynamic> items) async {
+    final Map<String, List<dynamic>> styleMap = {};
+    for (var item in items) {
+      final styleKey = item['styleKey']?.toString() ?? '';
+      if (styleKey.isEmpty) continue;
+      styleMap.putIfAbsent(styleKey, () => []).add(item);
+    }
 
-    if (EditOrderData.detailsForEdit.isNotEmpty) {
-      try {
-        final stored = jsonDecode(EditOrderData.detailsForEdit);
-        if (stored['additionalInfo'] != null) {
-          _additionalInfo = Map<String, dynamic>.from(stored['additionalInfo']);
+    final List<CatalogOrderData> tempList = [];
+    for (var entry in styleMap.entries) {
+      final styleKey = entry.key;
+      final styleItems = entry.value;
+      final firstItem = styleItems.first;
+
+      final shades =
+          styleItems
+              .map((i) => i['shadeName']?.toString() ?? '')
+              .toSet()
+              .toList();
+      final sizes =
+          styleItems
+              .map((i) => i['sizeName']?.toString() ?? '')
+              .toSet()
+              .toList();
+
+      final matrix = <List<String>>[];
+      for (var shade in shades) {
+        final row = <String>[];
+        for (var size in sizes) {
+          final item = styleItems.firstWhere(
+            (i) => i['shadeName'] == shade && i['sizeName'] == size,
+            orElse: () => {},
+          );
+          final mrp = (item['mrp'] ?? 0).toString();
+          final wsp = (item['wsp'] ?? 0).toString();
+          final stock = (item['clqty'] ?? 0).toString();
+          row.add('$mrp,$wsp,$stock');
         }
-      } catch (_) {}
+        matrix.add(row);
+      }
+
+      final catalog = Catalog(
+        itemSubGrpKey: firstItem['itemSubGrpKey'] ?? '',
+        itemSubGrpName: firstItem['itemSubGrpName'] ?? '',
+        itemKey: firstItem['itemKey'] ?? '',
+        itemName: firstItem['itemName'] ?? '',
+        brandKey: firstItem['brandKey'] ?? '',
+        brandName: firstItem['brandName'] ?? '',
+        styleKey: styleKey,
+        styleCode: firstItem['styleCode'] ?? '',
+        shadeKey: firstItem['shadeKey'] ?? '',
+        shadeName: shades.join(','),
+        styleSizeId: firstItem['styleSizeId'] ?? '',
+        sizeName: sizes.join(','),
+        mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0,
+        wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0,
+        onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0,
+        clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+        total: styleItems.fold(
+          0,
+          (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
+        ),
+        upcoming_Stk: firstItem['upcoming_Stk'] ?? '0',
+        fullImagePath: firstItem['fullImagePath'] ?? '',
+        remark: firstItem['remark'] ?? '',
+        imageId: '',
+        sizeDetails: sizes
+            .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+            .join(','),
+        sizeDetailsWithoutWSp: sizes
+            .map((s) => '$s (${firstItem['mrp']})')
+            .join(','),
+        sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+        styleCodeWithcount: styleKey,
+        onlySizes: sizes.join(','),
+        sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+        createdDate: '',
+        shadeImages: '',
+      );
+
+      final orderMatrix = OrderMatrix(
+        shades: shades,
+        sizes: sizes,
+        matrix: matrix,
+      );
+      tempList.add(
+        CatalogOrderData(catalog: catalog, orderMatrix: orderMatrix),
+      );
+
+      selectedColors2[styleKey] = shades.toSet();
+      if (!quantities.containsKey(styleKey)) quantities[styleKey] = {};
+      for (var shade in shades) {
+        quantities[styleKey]![shade] = {};
+        for (var size in sizes) {
+          final item = styleItems.firstWhere(
+            (i) => i['shadeName'] == shade && i['sizeName'] == size,
+            orElse: () => {'clqty': 0},
+          );
+          final qty = int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+          quantities[styleKey]![shade]![size] = qty;
+          final key = '$styleKey-$shade-$size';
+          _controllers[key] = TextEditingController(text: qty.toString());
+        }
+      }
     }
 
-    _dropdownData.brokerList = EditOrderData.brokerList;
-    _dropdownData.transporterList = EditOrderData.transporterList;
+    setState(() {
+      catalogOrderList = tempList;
+    });
+    EditOrderData.data = catalogOrderList;
+    _persistQuantitiesToEditOrderData();
+  }
+
+  void _showCopyOptionsDialog(
+    String styleKey,
+    String sourceShade,
+    List<String> sizes,
+    CatalogOrderData catalogOrder,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Copy Quantities'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.content_copy, color: Colors.blue),
+                  title: const Text('Copy to all sizes (same shade)'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _copyToAllSizes(styleKey, sourceShade, sizes);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.palette, color: Colors.purple),
+                  title: const Text('Copy to other shades (same style)'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _copyToOtherShades(styleKey, sourceShade, sizes);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy_all, color: Colors.orange),
+                  title: const Text('Copy to same shade in all styles'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _copyToSameShadeInAllStyles(styleKey, sourceShade, sizes);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.style, color: Colors.green),
+                  title: const Text('Copy to other styles'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showStyleSelectionDialog(styleKey, sourceShade, sizes);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _copyToAllSizes(String styleKey, String shade, List<String> sizes) {
+    if (sizes.isEmpty) return;
+    final firstSize = sizes.first;
+    final firstQuantity = _getQuantity(styleKey, shade, firstSize);
+    setState(() {
+      for (var size in sizes) {
+        _setQuantity(styleKey, shade, size, firstQuantity);
+      }
+      _refreshSelectedItems();
+    });
+    _showSnackBar('Copied $firstQuantity to all sizes in $shade');
+  }
+
+  void _copyToOtherShades(
+    String styleKey,
+    String sourceShade,
+    List<String> sizes,
+  ) {
+    final sourceQuantities = {
+      for (var s in sizes) s: _getQuantity(styleKey, sourceShade, s),
+    };
+    final otherShades =
+        (selectedColors2[styleKey] ?? {})
+            .where((s) => s != sourceShade)
+            .toList();
+    if (otherShades.isEmpty) {
+      _showSnackBar('No other shades', isError: true);
+      return;
+    }
+    setState(() {
+      for (var shade in otherShades) {
+        for (var size in sizes) {
+          _setQuantity(styleKey, shade, size, sourceQuantities[size] ?? 0);
+        }
+      }
+      _refreshSelectedItems();
+    });
+    _showSnackBar('Copied to ${otherShades.length} other shade(s)');
+  }
+
+  void _copyToSameShadeInAllStyles(
+    String sourceStyleKey,
+    String sourceShade,
+    List<String> sizes,
+  ) {
+    final sourceQuantities = {
+      for (var s in sizes) s: _getQuantity(sourceStyleKey, sourceShade, s),
+    };
+    int count = 0;
+    setState(() {
+      for (var order in catalogOrderList) {
+        final targetKey = order.catalog.styleKey;
+        if (targetKey == sourceStyleKey) continue;
+        final matchingShade = (selectedColors2[targetKey] ?? {}).firstWhere(
+          (s) => s.toLowerCase() == sourceShade.toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchingShade.isEmpty) continue;
+        for (var size in sizes) {
+          if (order.orderMatrix.sizes.any(
+            (s) => s.toLowerCase() == size.toLowerCase(),
+          )) {
+            _setQuantity(
+              targetKey,
+              matchingShade,
+              size,
+              sourceQuantities[size] ?? 0,
+            );
+            count++;
+          }
+        }
+      }
+      _refreshSelectedItems();
+    });
+    _showSnackBar('Copied to $count combinations');
+  }
+
+  void _showStyleSelectionDialog(
+    String sourceStyleKey,
+    String sourceShade,
+    List<String> sizes,
+  ) {
+    final otherStyles =
+        catalogOrderList
+            .where((o) => o.catalog.styleKey != sourceStyleKey)
+            .toList();
+    if (otherStyles.isEmpty) {
+      _showSnackBar('No other styles', isError: true);
+      return;
+    }
+    final sourceQuantities = {
+      for (var s in sizes) s: _getQuantity(sourceStyleKey, sourceShade, s),
+    };
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Select Target Style'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                itemCount: otherStyles.length,
+                itemBuilder: (context, index) {
+                  final target = otherStyles[index];
+                  return ListTile(
+                    leading: const Icon(Icons.style),
+                    title: Text(target.catalog.styleCode),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _copyToOtherStyle(
+                        sourceStyleKey,
+                        target.catalog.styleKey,
+                        sourceShade,
+                        sizes,
+                        sourceQuantities,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _copyToOtherStyle(
+    String sourceStyleKey,
+    String targetStyleKey,
+    String sourceShade,
+    List<String> sizes,
+    Map<String, int> sourceQuantities,
+  ) {
+    final targetOrder = catalogOrderList.firstWhere(
+      (o) => o.catalog.styleKey == targetStyleKey,
+    );
+    final matchingShade = (selectedColors2[targetStyleKey] ?? {}).firstWhere(
+      (s) => s.toLowerCase() == sourceShade.toLowerCase(),
+      orElse: () => '',
+    );
+    if (matchingShade.isEmpty) {
+      _showSnackBar(
+        'Shade "$sourceShade" not found in target style',
+        isError: true,
+      );
+      return;
+    }
+    setState(() {
+      for (var size in sizes) {
+        if (targetOrder.orderMatrix.sizes.any(
+          (s) => s.toLowerCase() == size.toLowerCase(),
+        )) {
+          _setQuantity(
+            targetStyleKey,
+            matchingShade,
+            size,
+            sourceQuantities[size] ?? 0,
+          );
+        }
+      }
+      _refreshSelectedItems();
+    });
+    _showSnackBar('Copied to ${targetOrder.catalog.styleCode}');
+  }
+
+  void _refreshSelectedItems() {
+    setState(() {
+      _selectedItems = _buildItemsFromMatrix();
+    });
+    _updateRoundOff();
+  }
+
+  void _showSnackBar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : AppColors.primaryColor,
+      ),
+    );
+  }
+
+  void _populateFormFromHeader(Map<String, dynamic> header) {
+    setState(() {
+      _orderControllers.selectedPartyKey = header['cust_key']?.toString();
+      _orderControllers.selectedParty = header['partyName']?.toString();
+      _orderControllers.selectedPartyName = header['partyName']?.toString();
+      _orderControllers.selectedBrokerKey = header['Broker_Key']?.toString();
+      _orderControllers.selectedTransporterKey = header['Trsp_Key']?.toString();
+      _orderControllers.comm.text = (header['Broker_Comm'] ?? 0).toString();
+      _orderControllers.deliveryDays.text =
+          (header['dlv_Days'] ?? 0).toString();
+      _orderControllers.deliveryDate.text = _formatDateFromString(
+        header['DlvDate'] ?? '',
+      );
+      _orderControllers.remark.text = header['Remark'] ?? '';
+      _orderControllers.date.text = _formatDateFromString(
+        header['DlvDate'] ?? '',
+      );
+
+      EditOrderData.partyKey = header['cust_key']?.toString() ?? '';
+      EditOrderData.partyName = header['partyName']?.toString() ?? '';
+      EditOrderData.brokerKey = header['Broker_Key']?.toString() ?? '';
+      EditOrderData.transporterKey = header['Trsp_Key']?.toString() ?? '';
+      EditOrderData.commission = (header['Broker_Comm'] ?? 0).toString();
+      EditOrderData.deliveryDays = (header['dlv_Days'] ?? 0).toString();
+      EditOrderData.deliveryDate = _orderControllers.deliveryDate.text;
+      EditOrderData.remark = _orderControllers.remark.text;
+    });
+  }
+
+  String _formatDateFromString(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('yyyy-MM-dd').format(date);
+    } catch (_) {
+      return '';
+    }
   }
 
   void _rebuildMatrixFromCatalogOrderData() {
@@ -239,7 +940,8 @@ class _PackingListWithoutSOScreenState
     }
 
     setState(() => _isMatrixLoading = true);
-    final List<CatalogOrderData> newItems = [];
+
+    List<CatalogOrderData> newItems = [];
 
     for (var item in catalogs) {
       final payload = {
@@ -291,6 +993,13 @@ class _PackingListWithoutSOScreenState
         catalogOrderList.addAll(newItems);
       } else {
         catalogOrderList = newItems;
+      }
+      if (widget.docId == -2) {
+        // _showSuccessSnackBar('Catalogs updated successfully');
+        EditOrderData.data = catalogOrderList;
+      }
+      if (widget.docId == -1) {
+        catalogOrderList.addAll(EditOrderData.data);
       }
       _isMatrixLoading = false;
     });
@@ -606,8 +1315,13 @@ class _PackingListWithoutSOScreenState
 
   // ==================== SAVE PACKING ====================
   Future<void> _savePackingList() async {
+    print('packing save started');
     if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
+    print('packing save started and isSaving true');
+
+    // if (!_formKey.currentState!.validate()) return;
+
+    print('packing save started');
 
     // Build items from matrix first
     final items = _buildItemsFromMatrix();
@@ -688,19 +1402,19 @@ class _PackingListWithoutSOScreenState
             final int qty = size['qty'] as int? ?? 0;
             if (qty > 0) {
               dataArray.add({
-                "designcode": item['styleCode']?.toString() ?? '',
+                "style_code": item['styleCode']?.toString() ?? '',
                 "soDocId": 0,
                 "soDocDtlId": 0,
                 "soDocDtlSzId": 0,
                 "stkId": 0,
                 "mrp": (size['mrp'] as double? ?? 0).toInt().toString(),
-                "WSP": (size['rate'] as double? ?? 0).toInt().toString(),
+                "wsp": (size['rate'] as double? ?? 0).toInt().toString(),
                 "size": size['size']?.toString() ?? '',
-                "TotQty":
+                "totQty":
                     ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
-                "Note": item['amtRemark']?.toString() ?? '',
-                "color": item['shadeName']?.toString() ?? '',
-                "Qty": qty.toString(),
+                "note": item['amtRemark']?.toString() ?? '',
+                "shade": item['shadeName']?.toString() ?? '',
+                "qty": qty.toString(),
                 "cobrid": UserSession.coBrId ?? '',
                 "user": UserSession.userName ?? '',
                 "barcode": "",
@@ -711,18 +1425,18 @@ class _PackingListWithoutSOScreenState
           final int qty = (item['selectedQty'] as double? ?? 0).toInt();
           if (qty > 0) {
             dataArray.add({
-              "designcode": item['styleCode']?.toString() ?? '',
+              "style_code": item['styleCode']?.toString() ?? '',
               "soDocId": 0,
               "soDocDtlId": 0,
               "soDocDtlSzId": 0,
               "stkId": 0,
               "mrp": (item['mrp'] as double? ?? 0).toInt().toString(),
-              "WSP": (item['rate'] as double? ?? 0).toInt().toString(),
-              "size": "",
-              "TotQty": qty.toString(),
-              "Note": item['amtRemark']?.toString() ?? '',
-              "color": item['shadeName']?.toString() ?? '',
-              "Qty": qty.toString(),
+              "wsp": (item['rate'] as double? ?? 0).toInt().toString(),
+              "size": item['size'],
+              "totQty": qty.toString(),
+              "note": item['amtRemark']?.toString() ?? '',
+              "shade": item['shadeName']?.toString() ?? '',
+              "qty": qty.toString(),
               "cobrid": UserSession.coBrId ?? '',
               "user": UserSession.userName ?? '',
               "barcode": "",
@@ -737,48 +1451,49 @@ class _PackingListWithoutSOScreenState
         return;
       }
 
-      _showLoadingDialog();
+      _showLoadingDialog(); //vrs_MobApp_insertSalesOrderTemp_EditedSave
 
       final payload = {
         "userId": UserSession.userName ?? '',
-        "coBrId": UserSession.coBrId ?? '',
-        "fcYrId": UserSession.userFcYr ?? '',
+        "login_id": UserSession.userName ?? '',
+        "coBr_id": UserSession.coBrId ?? '',
+        "fcYr_id": UserSession.userFcYr ?? '',
         "typ": _isEditMode ? 1 : 0,
         "docId": _isEditMode ? int.tryParse(EditOrderData.doc_id) ?? 0 : 0,
-        "data": dataArray,
-        "data2": jsonEncode(data2),
+        "items": dataArray,
+        "data": data2,
         "barcode": "false",
+        "doc_id": EditOrderData.doc_id,
       };
 
-      // final response = _isEditMode
-      //     ? await ApiService.updatePacking(payload)
-      //     : await ApiService.insertPacking(payload);
-      try {
-        final response = await http.post(
-          // Uri.parse('${AppConstants.BASE_URL}/orderBooking/insertPacking'),
-          Uri.parse('https://webhook.site/bb5b85c8-d2f1-44dc-8e0a-ca7c61382caf'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(payload),
-        );
-
-        if (response.statusCode == 200) {
-          return jsonDecode(response.body);
-        } else {
-          print('Error inserting packing: ${response.body}');
-        }
-      } catch (e) {
-        print('Error inserting packing: $e');
-      }
-      ;
+      // Replace with actual API call vrs_MobApp_updatePacking
+      final response = await http.post(
+       
+        Uri.parse(int.parse(EditOrderData.doc_id) > 0
+            ? '${AppConstants.BASE_URL}/packing/updatePacking'
+            : '${AppConstants.BASE_URL}/orderBooking/insertPacking',),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
 
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
-      // if (response['status'] == 'success') {
-      //   EditOrderData.clear();
-      //   _showSuccessDialog(response['docNo'] ?? '', isUpdate: _isEditMode);
-      // } else {
-      //   // _showErrorSnackBar(response['message'] ?? 'Failed to save packing');
-      // }
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success') {
+          EditOrderData.clear();
+          _showSuccessDialog(
+            responseData['docNo'] ?? '',
+            isUpdate: _isEditMode,
+          );
+        } else {
+          _showErrorSnackBar(
+            responseData['message'] ?? 'Failed to save packing',
+          );
+        }
+      } else {
+        _showErrorSnackBar('Server error: ${response.statusCode}');
+      }
     } catch (e) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -1387,28 +2102,57 @@ class _PackingListWithoutSOScreenState
             child: Row(
               children: [
                 Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          shade,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: _getColorCode(shade),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      shade,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: _getColorCode(shade),
+                      IconButton(
+                        icon: const Icon(Icons.copy, size: 18),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                        onPressed:
+                            () => _showCopyOptionsDialog(
+                              styleKey,
+                              shade,
+                              sizes,
+                              catalogOrder,
+                            ),
+                        tooltip: 'Copy quantities',
                       ),
-                      textAlign: TextAlign.center,
-                    ),
+                    ],
                   ),
                 ),
+                // Expanded(
+                //   flex: 2,
+                //   child: Container(
+                //     padding: const EdgeInsets.symmetric(
+                //       vertical: 8,
+                //       horizontal: 12,
+                //     ),
+                //     decoration: BoxDecoration(
+                //       border: Border(
+                //         right: BorderSide(color: Colors.grey.shade300),
+                //       ),
+                //     ),
+                //     child: Text(
+                //       shade,
+                //       style: GoogleFonts.poppins(
+                //         fontWeight: FontWeight.w600,
+                //         fontSize: 13,
+                //         color: _getColorCode(shade),
+                //       ),
+                //       textAlign: TextAlign.center,
+                //     ),
+                //   ),
+                // ),
                 Expanded(
                   flex: 1,
                   child: Container(
@@ -1731,7 +2475,11 @@ class _PackingListWithoutSOScreenState
                 ),
                 label: const Text(
                   "Add More Info",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -1760,6 +2508,7 @@ class _PackingListWithoutSOScreenState
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
+                    color: Colors.white,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -1780,14 +2529,14 @@ class _PackingListWithoutSOScreenState
   Widget _buildFloatingActionButton() {
     return FloatingActionButton.extended(
       onPressed: _openCatalogSelection,
-      icon: const Icon(Icons.add_shopping_cart),
-      label: const Text('Add Items'),
+      icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+      label: const Text('Add Items', style: TextStyle(color: Colors.white)),
       backgroundColor: AppColors.primaryColor,
+      foregroundColor: Colors.white,
     );
   }
 
   void _openCatalogSelection() async {
-    // Persist current state before navigating
     _persistQuantitiesToEditOrderData();
 
     final result = await Navigator.push(
@@ -1802,16 +2551,15 @@ class _PackingListWithoutSOScreenState
     );
 
     if (result != null && result is List<Catalog>) {
-      final existingStyleKeys =
-          catalogOrderList.map((e) => e.catalog.styleKey).toSet();
-      final newCatalogs =
-          result.where((c) => !existingStyleKeys.contains(c.styleKey)).toList();
-
-      if (newCatalogs.isNotEmpty) {
-        await _loadCatalogOrderDetails(newCatalogs, append: true);
-        // Restore quantities for existing items (they remain unchanged)
-        _restoreQuantitiesFromEditOrderData();
-      }
+      // Navigate to a new instance of this screen with docId = -1 and the selected catalogs
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  PackingListWithoutSOScreen(docId: -1, catalogs: result),
+        ),
+      );
     }
   }
 

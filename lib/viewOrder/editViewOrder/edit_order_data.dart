@@ -19,10 +19,11 @@ class EditOrderData {
   static List<Map<String, String>> brokerList = [];
   static List<Map<String, String>> transporterList = [];
   static List<Consignee> consignees = [];
+  static bool editMode = false;
   
   static void clear() {
     data = [];
-    doc_id = '';
+    doc_id = '-1';
     partyName = '';
     partyKey = '';
     brokerName = '';
@@ -38,5 +39,6 @@ class EditOrderData {
     brokerList = [];
     transporterList = [];
     consignees = [];
+    editMode = false;
   }
 }
