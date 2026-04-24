@@ -885,32 +885,38 @@ Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
   }
 }
 
-  Future<void> _updatePacking(RegisterOrder registerOrder) async {
-    final result = await Navigator.push(
-      context,
-      // MaterialPageRoute(
-      //   builder: (context) => PackingListAgainstSO(
-      //     orderId: registerOrder.orderId,
-      //     orderData: {
-      //       'docNo': registerOrder.orderNo,
-      //       'partyName': registerOrder.partyName,
-      //       'itemName': registerOrder.itemName,
-      //       'quantity': registerOrder.quantity,
-      //       'amount': registerOrder.amount,
-      //     },
-      //   ),
-      // ),
-      MaterialPageRoute(
-        builder: (context) => PackingListWithoutSOScreen(
-          docId: int.parse(registerOrder.orderId),
-          
-        ),
-      ),
+Future<void> _updatePacking(RegisterOrder registerOrder) async {
+  Widget targetScreen;
+  
+  // Check packType to decide which screen to navigate to
+  if (registerOrder.packType == "1") {
+    // Against Sales Order
+    targetScreen = PackingListAgainstSO(
+      orderId: registerOrder.orderId,
+      orderData: {
+        'docNo': registerOrder.orderNo,
+        'partyName': registerOrder.partyName,
+        'itemName': registerOrder.itemName,
+        'quantity': registerOrder.quantity,
+        'amount': registerOrder.amount,
+      },
     );
-    if (result == true) {
-      fetchOrders(isLoadMore: false);
-    }
+  } else {
+    // Without Sales Order (packType == "0" or any other value)
+    targetScreen = PackingListWithoutSOScreen(
+      docId: int.parse(registerOrder.orderId),
+    );
   }
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => targetScreen),
+  );
+  
+  if (result == true) {
+    fetchOrders(isLoadMore: false);
+  }
+}
 
 Future<void> _deletePacking(RegisterOrder registerOrder) async {
   // Show confirmation dialog
