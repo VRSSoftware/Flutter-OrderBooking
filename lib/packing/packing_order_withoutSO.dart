@@ -1389,6 +1389,7 @@ class _PackingListWithoutSOScreenState
         "roundOff": _roundOff,
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
+        "doc_id" : EditOrderData.doc_id,
       };
 
       List<Map<String, dynamic>> dataArray = [];
@@ -1402,19 +1403,19 @@ class _PackingListWithoutSOScreenState
             final int qty = size['qty'] as int? ?? 0;
             if (qty > 0) {
               dataArray.add({
-                "style_code": item['styleCode']?.toString() ?? '',
+                "designcode": item['styleCode']?.toString() ?? '',
                 "soDocId": 0,
                 "soDocDtlId": 0,
                 "soDocDtlSzId": 0,
                 "stkId": 0,
                 "mrp": (size['mrp'] as double? ?? 0).toInt().toString(),
-                "wsp": (size['rate'] as double? ?? 0).toInt().toString(),
+                "WSP": (size['rate'] as double? ?? 0).toInt().toString(),
                 "size": size['size']?.toString() ?? '',
-                "totQty":
+                "TotQty":
                     ((item['selectedQty'] as double? ?? 0).toInt()).toString(),
-                "note": item['amtRemark']?.toString() ?? '',
-                "shade": item['shadeName']?.toString() ?? '',
-                "qty": qty.toString(),
+                "Note": item['amtRemark']?.toString() ?? '',
+                "color": item['shadeName']?.toString() ?? '',
+                "Qty": qty.toString(),
                 "cobrid": UserSession.coBrId ?? '',
                 "user": UserSession.userName ?? '',
                 "barcode": "",
@@ -1425,7 +1426,7 @@ class _PackingListWithoutSOScreenState
           final int qty = (item['selectedQty'] as double? ?? 0).toInt();
           if (qty > 0) {
             dataArray.add({
-              "style_code": item['styleCode']?.toString() ?? '',
+              "designcode": item['styleCode']?.toString() ?? '',
               "soDocId": 0,
               "soDocDtlId": 0,
               "soDocDtlSzId": 0,
@@ -1457,11 +1458,15 @@ class _PackingListWithoutSOScreenState
         "userId": UserSession.userName ?? '',
         "login_id": UserSession.userName ?? '',
         "coBr_id": UserSession.coBrId ?? '',
+        "coBrId": UserSession.coBrId ?? '',
         "fcYr_id": UserSession.userFcYr ?? '',
+        "fcYrId": UserSession.userFcYr ?? '',
         "typ": _isEditMode ? 1 : 0,
         "docId": _isEditMode ? int.tryParse(EditOrderData.doc_id) ?? 0 : 0,
         "items": dataArray,
-        "data": data2,
+        // "data": dataArray,
+        "data2": jsonEncode(data2),
+        "data": _isEditMode ? data2 : {},
         "barcode": "false",
         "doc_id": EditOrderData.doc_id,
         "packType": "0",
