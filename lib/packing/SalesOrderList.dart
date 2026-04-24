@@ -920,7 +920,6 @@
 //   }
 // }
 
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -948,10 +947,10 @@ class SalesOrderListScreen extends StatefulWidget {
 
 class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
   List<dynamic> _orders = [];
-    List<dynamic> _filteredOrders = [];
+  List<dynamic> _filteredOrders = [];
   bool _isLoading = true;
-   bool _isSearching = false; 
-     final TextEditingController _searchController = TextEditingController(); 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
   Set<String> _selectedOrderIds = {};
   Map<String, Map<String, dynamic>> _selectedOrdersMap = {};
   Map<String, Map<String, int>> _selectedQuantities = {};
@@ -996,6 +995,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
         final data = jsonDecode(response.body);
         if (data['data'] != null && data['data'] is List) {
           setState(() => _orders = data['data']);
+          _filteredOrders = data['data'];
         }
       }
     } catch (e) {
@@ -1003,6 +1003,125 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _filterOrders(String searchText) {
+    if (searchText.isEmpty) {
+      setState(() {
+        _filteredOrders = List.from(_orders);
+      });
+      return;
+    }
+
+    final lowerSearchText = searchText.toLowerCase();
+
+    setState(() {
+      _filteredOrders =
+          _orders.where((order) {
+            // Search by Doc No
+            final docNo = order['Doc_No']?.toString().toLowerCase() ?? '';
+            if (docNo.contains(lowerSearchText)) return true;
+
+            // Search by Design (Style Code)
+            final styleCode =
+                order['Style_Code']?.toString().toLowerCase() ??
+                order['Style_Key']?.toString().toLowerCase() ??
+                '';
+            if (styleCode.contains(lowerSearchText)) return true;
+
+            // Search by Shade Name
+            final shadeName =
+                order['shade_name']?.toString().toLowerCase() ?? '';
+            if (shadeName.contains(lowerSearchText)) return true;
+
+            // Search by Consignee Name
+            final consigneeName =
+                order['consigneeName']?.toString().toLowerCase() ?? '';
+            if (consigneeName.contains(lowerSearchText)) return true;
+
+            // Search by Item Name
+            final itemName = order['item_name']?.toString().toLowerCase() ?? '';
+            if (itemName.contains(lowerSearchText)) return true;
+
+            return false;
+          }).toList();
+    });
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      if (_isSearching) {
+        _isSearching = false;
+        _searchController.clear();
+        _filteredOrders = List.from(_orders);
+      } else {
+        _isSearching = true;
+      }
+    });
+  }
+
+  AppBar _buildNormalAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.primaryColor,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: _onCancel,
+      ),
+      title: const Text(
+        'Sales Orders',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.white),
+          onPressed: _toggleSearch,
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildSearchAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.primaryColor,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: _toggleSearch,
+      ),
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+        decoration: const InputDecoration(
+          hintText: 'Search by Doc No, Design, Shade, Consignee...',
+          hintStyle: TextStyle(color: Colors.white70),
+          border: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          enabledBorder: InputBorder.none,
+        ),
+        onChanged: _filterOrders,
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.clear, color: Colors.white),
+          onPressed: () {
+            _searchController.clear();
+            _filterOrders('');
+          },
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<List<dynamic>> _fetchSizeQty(
@@ -1105,11 +1224,10 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
             double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
         final double totQty = (item['totQty'] as num?)?.toDouble() ?? 0;
         final double netAmt = (item['net_amt'] as num?)?.toDouble() ?? 0;
-        
+
         // Default selected quantity: if has varPerc, use totalAllowedQty, else use stkQty (but not more than balQty)
-        double defaultSelectedQty = hasVarPerc 
-            ? totalAllowedQty 
-            : (stkQty > balQty ? balQty : stkQty);
+        double defaultSelectedQty =
+            hasVarPerc ? totalAllowedQty : (stkQty > balQty ? balQty : stkQty);
 
         _selectedOrderIds.add(uniqueId);
         _selectedOrdersMap[uniqueId] = {
@@ -1146,45 +1264,48 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     });
   }
 
- void _updateQuantity(
-  String uniqueId,
-  int newQty,
-  double balQty,
-  double rate,
-  double varPerc,
-) {
-  final bool hasVarPerc = varPerc > 0;
-  final double stkQty = _selectedOrdersMap[uniqueId]?['stkQty'] as double? ?? 0;
-  final double totalAllowedQty = _calculateTotalAllowedQty(balQty, varPerc);
-  
-  // Determine max allowed quantity
-  double maxAllowedQty = hasVarPerc ? totalAllowedQty : stkQty;
-  
-  // Show error if quantity exceeds max allowed
-  if (newQty > maxAllowedQty) {
-    String errorMsg = hasVarPerc
-        ? 'Quantity cannot exceed ${totalAllowedQty.toStringAsFixed(0)}'
-        : 'Quantity cannot exceed available stock: ${stkQty.toStringAsFixed(0)}';
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(errorMsg),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ),
-    );
-    return;
+  void _updateQuantity(
+    String uniqueId,
+    int newQty,
+    double balQty,
+    double rate,
+    double varPerc,
+  ) {
+    final bool hasVarPerc = varPerc > 0;
+    final double stkQty =
+        _selectedOrdersMap[uniqueId]?['stkQty'] as double? ?? 0;
+    final double totalAllowedQty = _calculateTotalAllowedQty(balQty, varPerc);
+
+    // Determine max allowed quantity
+    double maxAllowedQty = hasVarPerc ? totalAllowedQty : stkQty;
+
+    // Show error if quantity exceeds max allowed
+    if (newQty > maxAllowedQty) {
+      String errorMsg =
+          hasVarPerc
+              ? 'Quantity cannot exceed ${totalAllowedQty.toStringAsFixed(0)}'
+              : 'Quantity cannot exceed available stock: ${stkQty.toStringAsFixed(0)}';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      int clampedQty = newQty.clamp(0, maxAllowedQty.toInt());
+      _selectedQuantities[uniqueId] = {'qty': clampedQty};
+      if (_selectedOrdersMap.containsKey(uniqueId)) {
+        _selectedOrdersMap[uniqueId]!['selectedQty'] = clampedQty.toDouble();
+        _selectedOrdersMap[uniqueId]!['itemAmt'] = clampedQty * rate;
+      }
+    });
   }
 
-  setState(() {
-    int clampedQty = newQty.clamp(0, maxAllowedQty.toInt());
-    _selectedQuantities[uniqueId] = {'qty': clampedQty};
-    if (_selectedOrdersMap.containsKey(uniqueId)) {
-      _selectedOrdersMap[uniqueId]!['selectedQty'] = clampedQty.toDouble();
-      _selectedOrdersMap[uniqueId]!['itemAmt'] = clampedQty * rate;
-    }
-  });
-}
   void _addSelectedItems() async {
     final List<Map<String, dynamic>> newSelectedItems = [];
 
@@ -1338,22 +1459,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: _onCancel,
-        ),
-        title: const Text(
-          'Sales Orders',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-      ),
+      appBar: _isSearching ? _buildSearchAppBar() : _buildNormalAppBar(),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -1371,11 +1477,25 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                   ],
                 ),
               )
+              : _filteredOrders.isEmpty && _searchController.text.isNotEmpty
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'No matching orders found',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
               : ListView.builder(
                 padding: const EdgeInsets.all(8),
-                itemCount: _orders.length,
+                itemCount: _filteredOrders.length,
                 itemBuilder: (context, index) {
-                  final item = _orders[index];
+                  final item = _filteredOrders[index];
                   final String uniqueId =
                       '${item['Doc_Id']}_${item['docDtl_Id']}';
                   final bool isSelected = _selectedOrderIds.contains(uniqueId);
@@ -1508,7 +1628,11 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     // Get selected quantity for this item
     final int selectedQty =
         _selectedQuantities[uniqueId]?['qty'] ??
-        (isSelected ? (hasVarPerc ? totalAllowedQty.toInt() : (stkQty > balQty ? balQty.toInt() : stkQty.toInt())) : 0);
+        (isSelected
+            ? (hasVarPerc
+                ? totalAllowedQty.toInt()
+                : (stkQty > balQty ? balQty.toInt() : stkQty.toInt()))
+            : 0);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1880,7 +2004,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 5),
 
                       // Quantity Details Container
                       Container(
@@ -2082,27 +2206,33 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
     String value, {
     Color? valueColor,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
+        SizedBox(
+          width: 65,
+          child: Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.left,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          value.isEmpty || value == 'N/A' ? 'N/A' : value,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: valueColor ?? const Color(0xFF2C3E50),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value.isEmpty || value == 'N/A' ? 'N/A' : value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: valueColor ?? const Color(0xFF2C3E50),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

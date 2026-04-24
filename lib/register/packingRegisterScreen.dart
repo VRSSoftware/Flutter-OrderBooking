@@ -21,6 +21,7 @@ import 'package:vrs_erp/models/shade.dart';
 import 'package:vrs_erp/models/size.dart';
 import 'package:vrs_erp/models/stockReportModel.dart';
 import 'package:vrs_erp/models/style.dart';
+import 'package:vrs_erp/packing/PackingOrderReportViewPage.dart';
 import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
 import 'package:vrs_erp/register/registerFilteration.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
@@ -685,213 +686,6 @@ class _PackingPageState extends State<PackingPage>
     }
   }
 
-  Future<void> _downloadAndOpenPDF(RegisterOrder registerOrder) async {
-    try {
-      // For Android 11+, request MANAGE_EXTERNAL_STORAGE
-      if (Platform.isAndroid) {
-        final androidInfo = await DeviceInfoPlugin().androidInfo;
-        if (androidInfo.version.sdkInt >= 30) {
-          // Android 11+
-          var status = await Permission.manageExternalStorage.status;
-          if (!status.isGranted) {
-            status = await Permission.manageExternalStorage.request();
-            if (!status.isGranted) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Storage management permission required'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-              return;
-            }
-          }
-        } else {
-          var status = await Permission.storage.status;
-          if (!status.isGranted) {
-            status = await Permission.storage.request();
-            if (!status.isGranted) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Storage permission denied')),
-                );
-              }
-              return;
-            }
-          }
-        }
-      }
-
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              content: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Downloading PDF...',
-                    style: GoogleFonts.poppins(fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-      );
-
-      final dio = Dio();
-      final response = await dio.post(
-        '${AppConstants.Pdf_url}',
-        data: {
-          "doc_id": registerOrder.orderId,
-          "rptName": "Packing",
-          "dbName": UserSession.dbName,
-          "dbUser": UserSession.dbUser,
-          "dbPassword": UserSession.dbPassword,
-          "dbServer": UserSession.dbSourceForRpt,
-          "rptPath": UserSession.rptPath,
-        },
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      if (response.statusCode == 200) {
-        final fileName = 'Packing_${registerOrder.orderNo}.pdf';
-        String filePath;
-
-        // Use app-specific directory (no permission needed)
-        final directory = await getApplicationDocumentsDirectory();
-        filePath = '${directory.path}/$fileName';
-
-        final file = File(filePath);
-        await file.writeAsBytes(response.data, flush: true);
-
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
-
-          // Show success dialog with option to open
-          await showDialog(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  title: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green, size: 28),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Download Complete',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PDF saved successfully!',
-                        style: GoogleFonts.poppins(fontSize: 14),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          filePath,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Close',
-                        style: GoogleFonts.poppins(color: Colors.grey.shade600),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        final openResult = await OpenFile.open(filePath);
-                        if (openResult.type != ResultType.done && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Failed to open PDF: ${openResult.message}',
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      label: const Text('Open'),
-                    ),
-                  ],
-                ),
-          );
-        }
-      } else {
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to load PDF: ${response.statusCode}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Download error: $e');
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _updatePacking(RegisterOrder registerOrder) async {
     Widget targetScreen;
 
@@ -920,8 +714,16 @@ class _PackingPageState extends State<PackingPage>
       MaterialPageRoute(builder: (context) => targetScreen),
     );
 
-    if (result == true) {
-      fetchOrders(isLoadMore: false);
+    // Force refresh when returning from update screen
+    if (result == true || result == null) {
+      // Reset pagination state
+      setState(() {
+        pageNo = 1;
+        registerOrderList.clear();
+        hasMoreData = true;
+      });
+      // Fetch fresh data
+      await fetchOrders(isLoadMore: false);
     }
   }
 
@@ -1028,8 +830,14 @@ class _PackingPageState extends State<PackingPage>
             backgroundColor: Colors.green,
           ),
         );
-        // Refresh the list
-        fetchOrders(isLoadMore: false);
+
+        // Reset pagination and refresh the list
+        setState(() {
+          pageNo = 1;
+          registerOrderList.clear();
+          hasMoreData = true;
+        });
+        await fetchOrders(isLoadMore: false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1060,9 +868,19 @@ class _PackingPageState extends State<PackingPage>
         _showWhatsAppDialog(registerOrder);
         break;
 
-      case 'download':
-        await _downloadAndOpenPDF(registerOrder);
-        break;
+      case 'reportView': // CHANGED FROM 'download' TO 'reportView'
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => PackingOrderReportViewPage(
+                  orderId: registerOrder.orderId,
+                  orderNo: registerOrder.orderNo,
+                  defaultWhatsAppMobileNo: registerOrder.whatsAppMobileNo,
+                  fromRegisterPage: true,
+                ),
+          ),
+        );
 
       case 'view':
         Navigator.push(
@@ -1328,17 +1146,17 @@ class _PackingPageState extends State<PackingPage>
                                   ),
                                 ),
                                 const PopupMenuItem<String>(
-                                  value: 'download',
+                                  value: 'reportView',
                                   child: Row(
                                     children: [
                                       Icon(
-                                        Icons.download,
+                                        Icons.visibility,
                                         color: AppColors.primaryColor,
                                         size: 20,
                                       ),
                                       SizedBox(width: 12),
                                       Text(
-                                        'Download & Open',
+                                        'Report View',
                                         style: TextStyle(fontSize: 14),
                                       ),
                                     ],

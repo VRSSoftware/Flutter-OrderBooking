@@ -1736,6 +1736,7 @@ class _PackingListWithoutSOScreenState
                     isDate: true,
                     onTap: () => _selectDate(_orderControllers.date),
                     isRequired: true,
+                      readOnly: true, 
                   ),
                   _buildPartyDropdownRow(),
                   _buildDropdown(
@@ -2610,7 +2611,7 @@ class _PackingListWithoutSOScreenState
       "w",
       _orderControllers.selectedParty,
       _handlePartySelection,
-      isEnabled: UserSession.userType != 'C',
+    isEnabled: !_isEditMode,
       isRequired: true,
     ),
   );

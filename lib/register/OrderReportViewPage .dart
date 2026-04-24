@@ -637,452 +637,469 @@ pw.Widget _buildPDFHeader() {
     ),
   );
 }
-  pw.Widget _buildPDFItemsTable() {
-    if (items.isEmpty) {
-      return pw.Center(child: pw.Text("No Items Found"));
-    }
+pw.Widget _buildPDFItemsTable() {
+  if (items.isEmpty) {
+    return pw.Center(child: pw.Text("No Items Found"));
+  }
 
-    int grandTotalQty = 0;
-    int totalStylesCount = 0;
-    List<pw.Widget> tables = [];
+  int grandTotalQty = 0;
+  int totalStylesCount = 0;
+  List<pw.Widget> tables = [];
 
-    for (var category in items) {
-      String categoryName = category['item_name']?.toString() ?? '';
-      List<String> categorySizes = _getSizesForCategory(
-        category,
-      ); // Now returns 12-size array
-      List styles = category['styles'] ?? [];
-      int categoryTotalQty = 0;
-      int categoryStyleCount = 0;
+  for (var category in items) {
+    String categoryName = category['item_name']?.toString() ?? '';
+    List<String> categorySizes = _getSizesForCategory(category);
+    List styles = category['styles'] ?? [];
+    int categoryTotalQty = 0;
+    int categoryStyleCount = 0;
 
-      List<pw.TableRow> categoryRows = [];
+    List<pw.TableRow> categoryRows = [];
 
-      for (var style in styles) {
-        String styleCode = style['style_code']?.toString() ?? '';
-        String imageUrl = style['Style_Image']?.toString() ?? '';
-        String styleRemark = style['Remark']?.toString() ?? '';
-        List shades = style['shades'] ?? [];
+    for (var style in styles) {
+      String styleCode = style['style_code']?.toString() ?? '';
+      String styleImageUrl = style['Style_Image']?.toString() ?? '';
+      String styleRemark = style['Remark']?.toString() ?? '';
+      List shades = style['shades'] ?? [];
 
-        bool isFirstRowForStyle = true;
-        int shadeCount = 0;
+      bool isFirstRowForStyle = true;
+      int shadeCount = 0;
 
-        for (var shade in shades) {
-          String shadeName = shade['shade_name']?.toString() ?? '';
-          List sizeData = shade['size_data'] ?? [];
+      for (var shade in shades) {
+        String shadeName = shade['shade_name']?.toString() ?? '';
+        String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+        List sizeData = shade['size_data'] ?? [];
 
-          Map<String, int> sizeQtyMap = {};
-          double? wsp;
+        Map<String, int> sizeQtyMap = {};
+        double? wsp;
 
-          // Map size quantities first
-          for (var size in sizeData) {
-            String sizeName = size['Size_Name']?.toString() ?? '';
-            int qty = (size['Qty'] ?? 0).toInt();
+        for (var size in sizeData) {
+          String sizeName = size['Size_Name']?.toString() ?? '';
+          int qty = (size['Qty'] ?? 0).toInt();
 
-            if (sizeName.isNotEmpty) {
-              sizeQtyMap[sizeName] = qty;
-            }
-
-            if (wsp == null) {
-              num rate = size['Rate'] ?? 0;
-              wsp = rate.toDouble();
-            }
+          if (sizeName.isNotEmpty) {
+            sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
           }
 
-          // 🔹 Row-wise total calculation from displayed sizes
-          int totalQty = 0;
-          for (var size in categorySizes) {
-            totalQty += sizeQtyMap[size] ?? 0;
+          if (wsp == null) {
+            num rate = size['Rate'] ?? 0;
+            wsp = rate.toDouble();
           }
+        }
 
-          categoryTotalQty += totalQty;
-          grandTotalQty += totalQty;
-          shadeCount++;
+        int totalQty = 0;
+        for (var size in categorySizes) {
+          totalQty += sizeQtyMap[size] ?? 0;
+        }
 
-          List<pw.Widget> dataCells = [
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  if (isFirstRowForStyle)
-                    pw.Text(
-                      styleCode,
-                      style: const pw.TextStyle(fontSize: 8),
-                      textAlign: pw.TextAlign.center,
-                    ),
-                  if (isFirstRowForStyle && styleRemark.isNotEmpty)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text(
-                        'Remark: $styleRemark',
-                        style: pw.TextStyle(
-                          fontSize: 6,
-                          color: PdfColors.grey700,
-                        ),
+        categoryTotalQty += totalQty;
+        grandTotalQty += totalQty;
+        shadeCount++;
+
+        List<pw.Widget> dataCells = [
+          // Style column
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                if (isFirstRowForStyle)
+                  pw.Text(
+                    styleCode,
+                    style: const pw.TextStyle(fontSize: 8),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                if (isFirstRowForStyle && styleRemark.isNotEmpty)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 2),
+                    child: pw.Text(
+                      'Remark: $styleRemark',
+                      style: pw.TextStyle(
+                        fontSize: 6,
+                        color: PdfColors.grey700,
                       ),
                     ),
-                ],
-              ),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                shadeName,
-                style: const pw.TextStyle(fontSize: 8),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-          ];
-
-          // Add Image column only if showOnlyWithImage is true
-          if (widget.showOnlyWithImage) {
-            dataCells.add(
-              pw.Container(
-                width: 35,
-                height: 35,
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                  color: PdfColors.grey50,
-                ),
-                child:
-                    isFirstRowForStyle
-                        ? (imageUrl.isNotEmpty &&
-                                imageCache.containsKey(imageUrl)
-                            ? pw.Center(
-                              child: pw.Container(
-                                width: 33,
-                                height: 33,
-                                child: pw.Image(
-                                  imageCache[imageUrl]!,
-                                  fit: pw.BoxFit.contain,
-                                ),
-                              ),
-                            )
-                            : pw.Center(
-                              child: pw.Container(
-                                width: 33,
-                                height: 33,
-                                decoration: pw.BoxDecoration(
-                                  color: PdfColors.grey200,
-                                  borderRadius: pw.BorderRadius.circular(2),
-                                ),
-                                child: pw.Center(
-                                  child: pw.Text(
-                                    'No Image',
-                                    style: pw.TextStyle(
-                                      fontSize: 6,
-                                      color: PdfColors.grey700,
-                                    ),
-                                    textAlign: pw.TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            ))
-                        : pw.Container(),
-              ),
-            );
-          }
-
-          // Now categorySizes always has 12 elements
-          for (var size in categorySizes) {
-            dataCells.add(
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(4),
-                child: pw.Text(
-                  sizeQtyMap[size]?.toString() ?? '-',
-                  style: const pw.TextStyle(fontSize: 8),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-            );
-          }
-
-          dataCells.addAll([
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                wsp?.toStringAsFixed(0) ?? "0",
-                style: const pw.TextStyle(fontSize: 8),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                totalQty.toString(),
-                style: pw.TextStyle(
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-          ]);
-
-          categoryRows.add(pw.TableRow(children: dataCells));
-          isFirstRowForStyle = false;
-        }
-
-        if (shadeCount > 0) {
-          categoryStyleCount++;
-          totalStylesCount++;
-        }
-      }
-
-      if (categoryStyleCount > 0) {
-        List<pw.Widget> headerCells = [
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              "Style",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-              textAlign: pw.TextAlign.center,
+                  ),
+              ],
             ),
           ),
+          // Shade column
           pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "Shade",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              shadeName,
+              style: const pw.TextStyle(fontSize: 8),
               textAlign: pw.TextAlign.center,
             ),
           ),
         ];
 
-        // Add Image column header only if showOnlyWithImage is true
-        if (widget.showOnlyWithImage) {
-          headerCells.add(
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(2),
-              child: pw.Text(
-                "Image",
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 9,
-                ),
-                textAlign: pw.TextAlign.center,
-              ),
+        // Style Image column (only for first shade of this style)
+        dataCells.add(
+          pw.Container(
+            width: 35,
+            height: 35,
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+              color: PdfColors.grey50,
             ),
-          );
-        }
+            child: isFirstRowForStyle
+                ? (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)
+                    ? pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          child: pw.Image(
+                            imageCache[styleImageUrl]!,
+                            fit: pw.BoxFit.contain,
+                          ),
+                        ),
+                      )
+                    : pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.grey200,
+                            borderRadius: pw.BorderRadius.circular(2),
+                          ),
+                          child: pw.Center(
+                            child: pw.Text(
+                              'No Image',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                color: PdfColors.grey700,
+                              ),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ))
+                : pw.Container(),
+          ),
+        );
 
+        // Shade Image column (for every shade)
+        dataCells.add(
+          pw.Container(
+            width: 35,
+            height: 35,
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+              color: PdfColors.grey50,
+            ),
+            child: (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl))
+                ? pw.Center(
+                    child: pw.Container(
+                      width: 33,
+                      height: 33,
+                      child: pw.Image(
+                        imageCache[shadeImageUrl]!,
+                        fit: pw.BoxFit.contain,
+                      ),
+                    ),
+                  )
+                : pw.Center(
+                    child: pw.Container(
+                      width: 33,
+                      height: 33,
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.grey200,
+                        borderRadius: pw.BorderRadius.circular(2),
+                      ),
+                      child: pw.Center(
+                        child: pw.Text(
+                          'No Image',
+                          style: pw.TextStyle(
+                            fontSize: 6,
+                            color: PdfColors.grey700,
+                          ),
+                          textAlign: pw.TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        );
+
+        // Size columns
         for (var size in categorySizes) {
-          headerCells.add(
+          dataCells.add(
             pw.Padding(
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
-                size,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 9,
-                ),
+                sizeQtyMap[size]?.toString() ?? '-',
+                style: const pw.TextStyle(fontSize: 8),
                 textAlign: pw.TextAlign.center,
               ),
             ),
           );
         }
 
-        headerCells.addAll([
+        dataCells.addAll([
           pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "WSP",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              wsp?.toStringAsFixed(0) ?? "0",
+              style: const pw.TextStyle(fontSize: 8),
               textAlign: pw.TextAlign.center,
             ),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "TotQty",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              totalQty.toString(),
+              style: pw.TextStyle(
+                fontSize: 8,
+                fontWeight: pw.FontWeight.bold,
+              ),
               textAlign: pw.TextAlign.center,
             ),
           ),
         ]);
 
-        categoryRows.insert(
-          0,
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            children: headerCells,
-          ),
-        );
+        categoryRows.add(pw.TableRow(children: dataCells));
+        isFirstRowForStyle = false;
+      }
 
-        int totalColumns =
-            2 + (widget.showOnlyWithImage ? 1 : 0) + categorySizes.length + 2;
-        List<pw.Widget> categoryTotalRowCells = [
-          pw.Container(
+      if (shadeCount > 0) {
+        categoryStyleCount++;
+        totalStylesCount++;
+      }
+    }
+
+    if (categoryStyleCount > 0) {
+      // Header cells
+      List<pw.Widget> headerCells = [
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "Style",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "Shade",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(2),
+          child: pw.Text(
+            "Style Image",
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 9,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(2),
+          child: pw.Text(
+            "Shade Image",
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 9,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+      ];
+
+      for (var size in categorySizes) {
+        headerCells.add(
+          pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "Total Item: $categoryStyleCount",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            ),
-          ),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        ];
-
-        if (widget.showOnlyWithImage) {
-          categoryTotalRowCells.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Container(),
-            ),
-          );
-        }
-
-        for (
-          int i = 2 + (widget.showOnlyWithImage ? 1 : 0);
-          i < totalColumns - 1;
-          i++
-        ) {
-          categoryTotalRowCells.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Container(),
-            ),
-          );
-        }
-
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              "$categoryName Total: $categoryTotalQty",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              size,
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+              ),
               textAlign: pw.TextAlign.center,
             ),
           ),
         );
+      }
 
-        categoryRows.add(
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-            children: categoryTotalRowCells,
+      headerCells.addAll([
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "WSP",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            textAlign: pw.TextAlign.center,
           ),
-        );
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "TotQty",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+      ]);
 
-        tables.add(
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                categoryName,
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-              pw.SizedBox(height: 5),
-              pw.Container(
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey400),
-                ),
-                child: pw.Table(
-                  border: pw.TableBorder.all(width: 0.5),
-                  columnWidths: {
-                    0: const pw.FixedColumnWidth(55), // Style
-                    1: const pw.FixedColumnWidth(55), // Shade
-                    if (widget.showOnlyWithImage)
-                      2: const pw.FixedColumnWidth(40), // Image
-                    // 12 size columns (always same width)
-                    for (int i = 0; i < 12; i++)
-                      (widget.showOnlyWithImage
-                          ? 3 + i
-                          : 2 + i): const pw.FixedColumnWidth(28),
+      categoryRows.insert(
+        0,
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          children: headerCells,
+        ),
+      );
 
-                    (widget.showOnlyWithImage
-                        ? 15
-                        : 14): const pw.FixedColumnWidth(40), // WSP
-                    (widget.showOnlyWithImage
-                        ? 16
-                        : 15): const pw.FixedColumnWidth(65), // TotQty
-                  },
-                  children: categoryRows,
-                ),
-              ),
-              pw.SizedBox(height: 15),
-            ],
+      int totalColumns = 4 + categorySizes.length + 2;
+      List<pw.Widget> categoryTotalRowCells = [
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "Total Item: $categoryStyleCount",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          ),
+        ),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
+      ];
+
+      for (int i = 4; i < totalColumns - 1; i++) {
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Container(),
           ),
         );
       }
-    }
 
-    int totalColumns = 0;
-    if (items.isNotEmpty) {
-      var lastCategory = items.last;
-      List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
-      totalColumns =
-          2 + (widget.showOnlyWithImage ? 1 : 0) + lastCategorySizes.length + 2;
-    }
-
-    List<pw.Widget> grandTotalRowCells = [
-      pw.Container(
-        padding: const pw.EdgeInsets.all(4),
-        child: pw.Text(
-          "Total Item: $totalStylesCount",
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+      categoryTotalRowCells.add(
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "$categoryName Total: $categoryTotalQty",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            textAlign: pw.TextAlign.center,
+          ),
         ),
+      );
+
+      categoryRows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: categoryTotalRowCells,
+        ),
+      );
+
+      tables.add(
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              categoryName,
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+            pw.SizedBox(height: 5),
+            pw.Container(
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400),
+              ),
+              child: pw.Table(
+                border: pw.TableBorder.all(width: 0.5),
+                columnWidths: {
+                  0: const pw.FixedColumnWidth(55), // Style
+                  1: const pw.FixedColumnWidth(55), // Shade
+                  2: const pw.FixedColumnWidth(40), // Style Image
+                  3: const pw.FixedColumnWidth(40), // Shade Image
+                  for (int i = 0; i < categorySizes.length; i++)
+                    4 + i: const pw.FixedColumnWidth(28),
+                  (4 + categorySizes.length): const pw.FixedColumnWidth(40), // WSP
+                  (5 + categorySizes.length): const pw.FixedColumnWidth(65), // TotQty
+                },
+                children: categoryRows,
+              ),
+            ),
+            pw.SizedBox(height: 15),
+          ],
+        ),
+      );
+    }
+  }
+
+  int totalColumns = 0;
+  if (items.isNotEmpty) {
+    var lastCategory = items.last;
+    List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
+    totalColumns = 4 + lastCategorySizes.length + 2;
+  }
+
+  List<pw.Widget> grandTotalRowCells = [
+    pw.Container(
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Text(
+        "Total Item: $totalStylesCount",
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
       ),
-      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    ];
+    ),
+    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+  ];
 
-    if (widget.showOnlyWithImage) {
-      grandTotalRowCells.add(
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Container(),
-        ),
-      );
-    }
-
-    for (
-      int i = 2 + (widget.showOnlyWithImage ? 1 : 0);
-      i < totalColumns - 1;
-      i++
-    ) {
-      grandTotalRowCells.add(
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Container(),
-        ),
-      );
-    }
-
+  for (int i = 4; i < totalColumns - 1; i++) {
     grandTotalRowCells.add(
       pw.Container(
         padding: const pw.EdgeInsets.all(4),
-        child: pw.Text(
-          "Grand Total: $grandTotalQty",
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-          textAlign: pw.TextAlign.center,
-        ),
+        child: pw.Container(),
       ),
     );
-
-    tables.add(
-      pw.Container(
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.grey400),
-        ),
-        child: pw.Table(
-          border: pw.TableBorder.all(width: 0.5),
-          children: [
-            pw.TableRow(
-              decoration: const pw.BoxDecoration(color: PdfColors.grey400),
-              children: grandTotalRowCells,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return pw.Column(children: tables);
   }
 
+  grandTotalRowCells.add(
+    pw.Container(
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Text(
+        "Grand Total: $grandTotalQty",
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+        textAlign: pw.TextAlign.center,
+      ),
+    ),
+  );
+
+  tables.add(
+    pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+      ),
+      child: pw.Table(
+        border: pw.TableBorder.all(width: 0.5),
+        children: [
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey400),
+            children: grandTotalRowCells,
+          ),
+        ],
+      ),
+    ),
+  );
+
+  return pw.Column(children: tables);
+}
 pw.Widget _buildPDFFooter() {
   // Get Ledger_Name from backend data
   String ledgerName = headerData['Ledger_Name']?.toString() ?? '';

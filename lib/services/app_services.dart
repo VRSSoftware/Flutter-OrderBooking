@@ -1436,4 +1436,26 @@ static Future<Map<String, dynamic>> updatePacking(Map<String, dynamic> payload) 
   }
 }
 
+//---------------Report Virw Packing slip----------------------------------
+static Future<Map<String, dynamic>> fetchPackingReportData(String orderId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/packing/getPackingData/$orderId'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return data;
+    } else {
+      throw Exception('Failed to load packing report data');
+    }
+  } catch (e) {
+    print('Error fetching packing report: $e');
+    throw e;
+  }
+}
+
 }
