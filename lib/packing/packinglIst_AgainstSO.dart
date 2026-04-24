@@ -539,7 +539,6 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
         "ourOrderNo": ourOrderNo,
-        "packType": "1",
       };
 
       List<Map<String, dynamic>> dataArray = [];
@@ -654,6 +653,7 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
         "data": dataArray,
         "data2": jsonEncode(data2),
         "barcode": "false",
+        "packType": "1",
       };
 
       print('Total dataArray length: ${dataArray.length}');

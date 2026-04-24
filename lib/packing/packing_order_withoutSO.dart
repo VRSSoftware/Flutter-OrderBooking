@@ -1389,7 +1389,6 @@ class _PackingListWithoutSOScreenState
         "roundOff": _roundOff,
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
-        "packType": "0",
       };
 
       List<Map<String, dynamic>> dataArray = [];
@@ -1465,6 +1464,7 @@ class _PackingListWithoutSOScreenState
         "data": data2,
         "barcode": "false",
         "doc_id": EditOrderData.doc_id,
+        "packType": "0",
       };
 
       // Replace with actual API call vrs_MobApp_updatePacking
