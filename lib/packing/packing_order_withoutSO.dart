@@ -1389,6 +1389,7 @@ class _PackingListWithoutSOScreenState
         "roundOff": _roundOff,
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
+        "packType": "0",
         "doc_id" : EditOrderData.doc_id,
       };
 

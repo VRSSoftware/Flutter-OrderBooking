@@ -539,6 +539,7 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
         "roundOffAmount": _roundOffAmount.toInt().toString(),
         "netAmount": _calculateNetAmount().toInt().toString(),
         "ourOrderNo": ourOrderNo,
+        "packType": "1",
       };
 
       List<Map<String, dynamic>> dataArray = [];
