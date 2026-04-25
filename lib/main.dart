@@ -33,6 +33,8 @@ import 'package:vrs_erp/Reports/Receivable/ReceivableReport.dart';
 import 'package:vrs_erp/Reports/Report_Home_Screen.dart';
 import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/Reports/Stock/Stock.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInovice/SaleInvoicePage.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInvoiceHome.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/dashboard/dashboard.dart';
@@ -53,7 +55,7 @@ import 'package:vrs_erp/screens/home_screen.dart';
 import 'package:vrs_erp/screens/login_screen.dart';
 import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
 import 'package:vrs_erp/packing/packinglIst_AgainstSO.dart';
-import 'package:vrs_erp/sale_bill/sale_bill_order_screen.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInvoiceWithPO/SalesInvoiceWithPO.dart';
 import 'package:vrs_erp/screens/splash_screen.dart';
 import 'package:vrs_erp/services/notification_service.dart';
 import 'package:vrs_erp/stockReport/stockreportpage.dart';
@@ -148,7 +150,9 @@ class MyApp extends StatelessWidget {
         '/packingList': (context) => PackingListHome(),
          '/packingListWithSO': (context) => PackingListAgainstSO(),
          '/packingListWithOutSO': (context) => PackingListWithoutSOScreen(docId: -2),
-        '/SaleBillBookingScreen': (context) => SaleBillBookingScreen(),
+          '/saleInvoice': (context) => SaleInvoiceHome(),
+        '/SaleInvoiceWithPOPage': (context) => SaleInvoiceWithPO(),
+          '/SaleInvoiceWithoutPOPage': (context) => SaleInvoicePage(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),

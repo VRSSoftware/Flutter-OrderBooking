@@ -1458,4 +1458,152 @@ static Future<Map<String, dynamic>> fetchPackingReportData(String orderId) async
   }
 }
 
+//======================Sales Invoice Apis
+// Fetch invoice by ID
+static Future<Map<String, dynamic>> fetchInvoiceById({
+  required String docId,
+  required String coBrId,
+}) async {
+  final response = await http.post(
+    Uri.parse('${AppConstants.BASE_URL}/sales/getInvoiceById'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'docId': docId,
+      'coBrId': coBrId,
+    }),
+  );
+  return jsonDecode(response.body);
+}
+
+// Save invoice
+static Future<Map<String, dynamic>> saveInvoice(Map<String, dynamic> invoiceData) async {
+  final response = await http.post(
+    Uri.parse('${AppConstants.BASE_URL}/sales/saveInvoice'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode(invoiceData),
+  );
+  return jsonDecode(response.body);
+}
+
+static Future<Map<String, dynamic>> getDocNumbers({
+  required String docType,
+  required String coBrId,
+  required String fcYrId,
+}) async {
+  final response = await http.post(
+    Uri.parse('${AppConstants.BASE_URL}/sales/getDocNumbers'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'docType': docType,
+      'coBrId': coBrId,
+      'fcYrId': fcYrId,
+    }),
+  );
+  return jsonDecode(response.body);
+}
+
+static Future<Map<String, dynamic>> fetchPendingDespatches({
+  required String custKey,
+  required String fcYrId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/getPendingPackingForBill'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "custKey": custKey,
+        "fcYrId": fcYrId,
+        "coBrId": coBrId,
+      }),
+    );
+
+    print('fetchPendingDespatches status: ${response.statusCode}');
+    print('fetchPendingDespatches body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Failed to fetch despatches'};
+    }
+  } catch (e) {
+    print('Exception in fetchPendingDespatches: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Fetch packing details for selected despatches
+static Future<Map<String, dynamic>> fetchPackingDetailsForBill({
+  required List<int> docIds,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/getPackingDetailsForBill'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'docIds': docIds}),
+    );
+
+    print('fetchPackingDetailsForBill status: ${response.statusCode}');
+    print('fetchPackingDetailsForBill body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {'status': 'success', 'data': data};
+    } else {
+      return {'status': 'error', 'message': 'Failed to fetch packing details'};
+    }
+  } catch (e) {
+    print('Exception in fetchPackingDetailsForBill: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Delete Sale Bill
+static Future<Map<String, dynamic>> deleteSaleBill({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/deleteSaleBill'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docId': docId,
+        'coBrId': coBrId,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Failed to delete sale bill'};
+    }
+  } catch (e) {
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Fetch Sale Bill Report
+static Future<Map<String, dynamic>> fetchSaleBillReport({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/getSaleBillReport'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docId': docId,
+        'coBrId': coBrId,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {'status': 'error', 'message': 'Failed to fetch report'};
+    }
+  } catch (e) {
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
 }

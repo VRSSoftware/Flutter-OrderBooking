@@ -645,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     buttons.add(
       _buildFeatureButton(context, 'Sale Bill', () {
-        Navigator.pushNamed(context, '/SaleBillBookingScreen');
+        Navigator.pushNamed(context, '/saleInvoice');
       }, buttonWidth),
     );
     
@@ -655,9 +655,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }, buttonWidth),
     );
 
-    //    buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
-    //     Navigator.pushNamed(context, '/saleBillRegister');
-    //   }, buttonWidth));
+       buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
+        Navigator.pushNamed(context, '/saleBillRegister');
+      }, buttonWidth));
 
     // buttons.add(
     //   _buildFeatureButton(context, 'Production', () {
