@@ -70,7 +70,7 @@ class _SaleInvoicePageState extends State<SaleInvoicePage> {
     super.initState();
     _isUpdateMode = widget.invoiceId != null && widget.invoiceId!.isNotEmpty;
     docDtController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    _initializeData();
+   // _initializeData();
   }
 
   @override
@@ -82,26 +82,26 @@ class _SaleInvoicePageState extends State<SaleInvoicePage> {
     super.dispose();
   }
 
-  Future<void> _initializeData() async {
-    setState(() => isLoading = true);
+  // Future<void> _initializeData() async {
+  //   setState(() => isLoading = true);
 
-    try {
-      await Future.wait([
-        _fetchDocNumbers(),
-        _fetchLedgers('L'),
-        _fetchLedgers('W'),
-        _fetchStations(),
-      ]);
+  //   try {
+  //     await Future.wait([
+  //       _fetchDocNumbers(),
+  //       _fetchLedgers('L'),
+  //       _fetchLedgers('W'),
+  //       _fetchStations(),
+  //     ]);
 
-      if (_isUpdateMode) {
-        await _loadInvoiceData(widget.invoiceId!);
-      }
-    } catch (e) {
-      print('Error initializing data: $e');
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
+  //     if (_isUpdateMode) {
+  //       await _loadInvoiceData(widget.invoiceId!);
+  //     }
+  //   } catch (e) {
+  //     print('Error initializing data: $e');
+  //   } finally {
+  //     setState(() => isLoading = false);
+  //   }
+  // }
 
   Future<void> _fetchDocNumbers() async {
     try {
@@ -161,52 +161,52 @@ class _SaleInvoicePageState extends State<SaleInvoicePage> {
     }
   }
 
-  Future<void> _loadInvoiceData(String invoiceId) async {
-    try {
-      final response = await ApiService.fetchInvoiceById(
-        docId: invoiceId,
-        coBrId: coBrId,
-      );
+  // Future<void> _loadInvoiceData(String invoiceId) async {
+  //   try {
+  //     final response = await ApiService.fetchInvoiceById(
+  //       docId: invoiceId,
+  //       coBrId: coBrId,
+  //     );
 
-      if (response['status'] == 'success') {
-        setState(() {
-          seriesController.text =
-              response['series']?.toString() ?? seriesController.text;
-          lastCdController.text =
-              response['lastCd']?.toString() ?? lastCdController.text;
-          docNoController.text =
-              response['docNo']?.toString() ?? docNoController.text;
-          docDtController.text =
-              response['docDt']?.toString() ??
-              DateFormat('yyyy-MM-dd').format(DateTime.now());
+  //     if (response['status'] == 'success') {
+  //       setState(() {
+  //         seriesController.text =
+  //             response['series']?.toString() ?? seriesController.text;
+  //         lastCdController.text =
+  //             response['lastCd']?.toString() ?? lastCdController.text;
+  //         docNoController.text =
+  //             response['docNo']?.toString() ?? docNoController.text;
+  //         docDtController.text =
+  //             response['docDt']?.toString() ??
+  //             DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-          selectedSalesLedgerKey = response['salesLedgerKey'];
-          selectedSalesLedgerName = response['salesLedger'];
-          selectedPartyKey = response['partyKey'];
-          selectedPartyName = response['party'];
-          selectedStationKey = response['stationKey'];
-          selectedStationName = response['station'];
+  //         selectedSalesLedgerKey = response['salesLedgerKey'];
+  //         selectedSalesLedgerName = response['salesLedger'];
+  //         selectedPartyKey = response['partyKey'];
+  //         selectedPartyName = response['party'];
+  //         selectedStationKey = response['stationKey'];
+  //         selectedStationName = response['station'];
 
-          if (response['items'] != null && response['items'] is List) {
-            addedItems = List<Map<String, dynamic>>.from(response['items']);
-          }
+  //         if (response['items'] != null && response['items'] is List) {
+  //           addedItems = List<Map<String, dynamic>>.from(response['items']);
+  //         }
 
-          otherChrgs =
-              double.tryParse(response['otherChrgs']?.toString() ?? '0') ?? 0.0;
-          rdOff = response['rdOff'] ?? false;
+  //         otherChrgs =
+  //             double.tryParse(response['otherChrgs']?.toString() ?? '0') ?? 0.0;
+  //         rdOff = response['rdOff'] ?? false;
           
-          // Load invoice details if exists
-          if (response['invoiceDetails'] != null) {
-            invoiceDetails = response['invoiceDetails'];
-          }
+  //         // Load invoice details if exists
+  //         if (response['invoiceDetails'] != null) {
+  //           invoiceDetails = response['invoiceDetails'];
+  //         }
           
-          _calculateTotals();
-        });
-      }
-    } catch (e) {
-      print('Error loading invoice data: $e');
-    }
-  }
+  //         _calculateTotals();
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print('Error loading invoice data: $e');
+  //   }
+  // }
 
   void _calculateTotals() {
     grossAmt = addedItems.fold(
@@ -357,7 +357,7 @@ class _SaleInvoicePageState extends State<SaleInvoicePage> {
         'docId': widget.invoiceId ?? '',
       };
 
-      final response = await ApiService.saveInvoice(invoiceData);
+      final response = await ApiService.saveInvoiceForPacking(invoiceData);
 
       if (response['status'] == 'success') {
         _showSuccessDialog(response['docNo']?.toString() ?? 'Invoice');

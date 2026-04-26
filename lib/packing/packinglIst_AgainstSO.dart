@@ -3603,7 +3603,9 @@ class _PackingListAgainstSOState extends State<PackingListAgainstSO> {
       avgRate = totalValue / totalQty;
     }
 
-    String displayDocNo = _packingDocNo.isNotEmpty ? _packingDocNo : 'N/A';
+    String displayDocNo = item['docNo']?.toString() ?? 
+                     item['SalesOrderNo']?.toString() ?? 
+                     'N/A';
     String displayItemName = item['itemName']?.toString() ?? 'N/A';
     String displayStyleCode = item['styleCode']?.toString() ?? 'N/A';
     String displayShadeName = item['shadeName']?.toString() ?? 'N/A';

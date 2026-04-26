@@ -710,15 +710,16 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
   }
 
   Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
-    // You need to determine which update screen to use based on your business logic
-    // For example, check if it's a normal sale bill or with PO
-
     Widget targetScreen;
 
-    // Check if there are despatches (for PO) or use normal edit screen
-    if (registerOrder.hasDespatches == true) {
-      // You'll need to add this property to RegisterOrder or check something else
-      // For Sale Invoice with PO - use SaleInvoiceWithPO
+    // Check if there are packing documents (despatches)
+    // packingDocNo will contain values like "DP00085, DP00086" if exists
+    final hasPackingDocs =
+        registerOrder.packingDocNo.isNotEmpty &&
+        registerOrder.packingDocNo != 'null';
+
+    if (hasPackingDocs) {
+      // Navigate to Sale Invoice with PO screen
       targetScreen = SaleInvoiceWithPO(
         invoiceId: registerOrder.orderId,
         invoiceData: {
@@ -727,10 +728,12 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
           'itemName': registerOrder.itemName,
           'quantity': registerOrder.quantity,
           'amount': registerOrder.amount,
+          'packingDocNo':
+              registerOrder.packingDocNo, // Pass packing doc numbers
         },
       );
     } else {
-      // For normal Sale Invoice - use SaleInvoicePage
+      // Navigate to regular Sale Invoice screen
       targetScreen = SaleInvoicePage(
         invoiceId: registerOrder.orderId,
         invoiceData: {
@@ -901,7 +904,6 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
         break;
 
       case 'reportView':
-        // Navigate to Report View page (similar to Packing Register)
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -933,8 +935,9 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
         break;
 
       case 'updateSaleBill':
-        // Navigate to update page (depending on packType or order type)
-        await _updateSaleBill(registerOrder);
+        await _updateSaleBill(
+          registerOrder,
+        ); // This now uses packingDocNo check
         break;
 
       case 'delete':
@@ -944,6 +947,10 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
   }
 
   Widget buildOrderItem(RegisterOrder registerOrder) {
+    final hasPackingDocs =
+        registerOrder.packingDocNo.isNotEmpty &&
+        registerOrder.packingDocNo != 'null';
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -1299,6 +1306,92 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
                         ],
                       ),
                     ),
+                    if (hasPackingDocs) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.inventory_2,
+                                size: 16,
+                                color: Colors.orange[700],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Packing Order',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.orange[800],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    registerOrder.packingDocNo,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping,
+                                    size: 12,
+                                    color: Colors.orange[700],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'With PO',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (registerOrder.salesPersonName.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Container(

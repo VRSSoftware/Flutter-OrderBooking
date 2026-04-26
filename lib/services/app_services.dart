@@ -1459,30 +1459,78 @@ static Future<Map<String, dynamic>> fetchPackingReportData(String orderId) async
 }
 
 //======================Sales Invoice Apis
-// Fetch invoice by ID
-static Future<Map<String, dynamic>> fetchInvoiceById({
+static Future<dynamic> fetchInvoiceById({
   required String docId,
   required String coBrId,
 }) async {
-  final response = await http.post(
-    Uri.parse('${AppConstants.BASE_URL}/sales/getInvoiceById'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'docId': docId,
-      'coBrId': coBrId,
-    }),
-  );
-  return jsonDecode(response.body);
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/getBillDetails'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docIds': [int.tryParse(docId) ?? 0],
+      }),
+    );
+    
+    print('fetchInvoiceById request body: ${jsonEncode({
+      'docIds': [int.tryParse(docId) ?? 0],
+   
+    })}');
+    print('fetchInvoiceById response status: ${response.statusCode}');
+    print('fetchInvoiceById response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load invoice details: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error in fetchInvoiceById: $e');
+    rethrow;
+  }
 }
 
 // Save invoice
-static Future<Map<String, dynamic>> saveInvoice(Map<String, dynamic> invoiceData) async {
-  final response = await http.post(
-    Uri.parse('${AppConstants.BASE_URL}/sales/saveInvoice'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode(invoiceData),
-  );
-  return jsonDecode(response.body);
+static Future<Map<String, dynamic>> saveInvoiceForPacking(Map<String, dynamic> invoiceData) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/saveSaleBillForPacking'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(invoiceData),
+    );
+    
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) {
+        return {
+          'status': 'success',
+          'message': 'Invoice saved successfully'
+        };
+      }
+      
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {
+          'status': 'success',
+          'message': 'Invoice saved successfully'
+        };
+      }
+    } else {
+      return {
+        'status': 'error',
+        'message': 'Server error: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    print('API Error: $e');
+    return {
+      'status': 'error',
+      'message': 'Network error: $e'
+    };
+  }
 }
 
 static Future<Map<String, dynamic>> getDocNumbers({
@@ -1603,6 +1651,42 @@ static Future<Map<String, dynamic>> fetchSaleBillReport({
     }
   } catch (e) {
     return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+
+// In app_services.dart
+static Future<Map<String, dynamic>> updateSaleBillForPacking(Map<String, dynamic> invoiceData) async {
+  try {
+    final response = await http.put(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/updateSaleBillForPacking/${invoiceData['docId']}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(invoiceData),
+    );
+    
+    print('Update response status: ${response.statusCode}');
+    print('Update response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) {
+        return {
+          'status': 'success',
+          'message': 'Invoice updated successfully'
+        };
+      }
+      return jsonDecode(response.body);
+    } else {
+      return {
+        'status': 'error',
+        'message': 'Server error: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    print('API Error: $e');
+    return {
+      'status': 'error',
+      'message': 'Network error: $e'
+    };
   }
 }
 

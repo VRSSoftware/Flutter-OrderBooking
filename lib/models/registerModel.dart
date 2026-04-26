@@ -19,6 +19,7 @@ class RegisterOrder {
   final String partyLedKey;
     final String partyName; 
       final String packType; 
+        final String packingDocNo; 
 
   RegisterOrder({
     required this.orderId,
@@ -41,6 +42,7 @@ class RegisterOrder {
      required this.partyLedKey, 
        required this.partyName,
          required this.packType,
+         required this.packingDocNo,
   });
 
   factory RegisterOrder.fromJson(Map<String, dynamic> json) {
@@ -65,6 +67,7 @@ class RegisterOrder {
       partyLedKey: json['partyKey']?.toString() ?? '',
        partyName: json['customerName']?.toString() ?? '',
         packType: json['packType']?.toString() ?? '0',
+              packingDocNo: json['packingDocNo']?.toString() ?? '', 
     );
   }
 }

@@ -1234,6 +1234,7 @@ class _SalesOrderListScreenState extends State<SalesOrderListScreen> {
           'docId': item['Doc_Id'],
           'docDtlId': item['docDtl_Id'],
           'docNo': item['Doc_No'],
+           'SalesOrderNo': item['Doc_No'],  
           'docDt': item['Doc_Dt']?.toString().split('T')[0] ?? '',
           'dlvDate': item['DlvDate']?.toString().split('T')[0] ?? '',
           'itemName': item['item_name'] ?? 'N/A',

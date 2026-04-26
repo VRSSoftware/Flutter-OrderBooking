@@ -78,81 +78,88 @@ class _DespatchListScreenState extends State<DespatchListScreen> {
     }
   }
 
-  Future<void> _fetchPackingDetailsAndAdd() async {
-    if (_selectedDespatchIds.isEmpty) return;
+Future<void> _fetchPackingDetailsAndAdd() async {
+  if (_selectedDespatchIds.isEmpty) return;
 
-    setState(() => _isLoadingDetails = true);
+  setState(() => _isLoadingDetails = true);
 
-    try {
-      // Get all selected Doc IDs
-      List<int> docIds = _selectedDespatchIds.map((id) => int.parse(id)).toList();
+  try {
+    // Get all selected Doc IDs
+    List<int> docIds = _selectedDespatchIds.map((id) => int.parse(id)).toList();
 
-      final response = await ApiService.fetchPackingDetailsForBill(docIds: docIds);
+    final response = await ApiService.fetchPackingDetailsForBill(docIds: docIds);
 
-      print('Packing Details Response: $response');
+    print('Packing Details Response: $response');
 
-      if (response['status'] == 'success' && response['data'] != null && response['data'] is List) {
-        final List<Map<String, dynamic>> packingDetails = 
-            List<Map<String, dynamic>>.from(response['data']);
+    if (response['status'] == 'success' && response['data'] != null && response['data'] is List) {
+      final List<Map<String, dynamic>> packingDetails = 
+          List<Map<String, dynamic>>.from(response['data']);
+      
+      // Transform packing details to match the expected format for SaleInvoiceWithPO
+      List<Map<String, dynamic>> transformedItems = [];
+      
+      for (var item in packingDetails) {
+        double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
+        double rate = (item['Rate'] as num?)?.toDouble() ?? 0;
+        double amount = (item['Amount'] as num?)?.toDouble() ?? (qty * rate);
+        double discAmt = (item['DiscAmt'] as num?)?.toDouble() ?? 0;
+        double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
+        double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
         
-        // Transform packing details to match the expected format for SaleInvoicePage
-        List<Map<String, dynamic>> transformedItems = [];
-        
-        for (var item in packingDetails) {
-          // Calculate total amount
-          double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
-          double rate = (item['Rate'] as num?)?.toDouble() ?? 0;
-          double amount = (item['Amount'] as num?)?.toDouble() ?? (qty * rate);
-          double discAmt = (item['DiscAmt'] as num?)?.toDouble() ?? 0;
-          double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
-          double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
-          
-          transformedItems.add({
-            'Doc_Id': item['Doc_Id'],
-            'DocDtl_Id': item['DocDtl_Id'],
-            'Doc_No': item['Doc_No'],
-            'Product': item['Item_Name'] ?? 'N/A',
-            'Design': item['Style_Code'] ?? 'N/A',
-            'Type': item['Type_Name'] ?? 'N/A',
-            'Shade': item['Shade_Name'] ?? 'N/A',
-            'Brand': item['Brand_Name'] ?? 'N/A',
-            'Rate': rate,
-            'MRP': (item['MRP'] as num?)?.toDouble() ?? 0,
-            'Qty': qty,
-            'Avg Rt': avgRt,
-            'Item Amt': amount,
-            'Disc': discAmt,
-            'Disc (%)': (item['billDiscPerc'] as num?)?.toDouble() ?? 0,
-            'Amount': netAmt,
-            'Tax Amt': (item['Tax_Amt'] as num?)?.toDouble() ?? 0,
-            'sizes': item['sizes'] ?? [],
-            'Unit_Name': item['Unit_Name'] ?? 'PCS',
-          });
-        }
-        
-        widget.onDespatchesSelected(transformedItems);
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to fetch packing details'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        transformedItems.add({
+          'Doc_Id': item['Doc_Id'],
+          'packDocId': item['Doc_Id'],
+          'DocDtl_Id': item['DocDtl_Id'],
+          'Doc_No': item['Doc_No'],
+          'Product': item['Item_Name'] ?? 'N/A',
+          'Design': item['Style_Code'] ?? 'N/A',
+          'Type': item['Type_Name'] ?? 'N/A',
+          'Shade': item['Shade_Name'] ?? 'N/A',
+          'Brand': item['Brand_Name'] ?? 'N/A',
+          'Rate': rate,
+          'MRP': (item['MRP'] as num?)?.toDouble() ?? 0,
+          'Qty': qty,
+          'Avg Rt': avgRt,
+          'Item Amt': amount,
+          'Disc': discAmt,
+          'Disc (%)': (item['billDiscPerc'] as num?)?.toDouble() ?? 0,
+          'Amount': netAmt,
+          'Tax Amt': (item['Tax_Amt'] as num?)?.toDouble() ?? 0,
+          'TaxPerc': (item['TaxPerc'] as num?)?.toDouble() ?? 0,
+          'Tax1_Amt': (item['Tax1_Amt'] as num?)?.toDouble() ?? 0,
+          'Tax2_Amt': (item['Tax2_Amt'] as num?)?.toDouble() ?? 0,
+          'Tax3_Amt': (item['Tax3_Amt'] as num?)?.toDouble() ?? 0,
+          'sizes': item['sizes'] ?? [],
+          'Unit_Name': item['Unit_Name'] ?? 'PCS',
+        });
       }
-    } catch (e) {
-      print('Error fetching packing details: $e');
+      
+      print('Transformed ${transformedItems.length} items');
+      
+      // Return the transformed items to the previous screen
+      // This will REPLACE the existing selection in SaleInvoiceWithPO
+      Navigator.pop(context, transformedItems);
+      
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error fetching packing details: $e'),
+        const SnackBar(
+          content: Text('Failed to fetch packing details'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      setState(() => _isLoadingDetails = false);
     }
+  } catch (e) {
+    print('Error fetching packing details: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error fetching packing details: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoadingDetails = false);
   }
-
+}
   void _filterDespatches(String searchText) {
     if (searchText.isEmpty) {
       setState(() {
@@ -280,9 +287,9 @@ class _DespatchListScreenState extends State<DespatchListScreen> {
     });
   }
 
-  void _onCancel() {
-    Navigator.pop(context);
-  }
+void _onCancel() {
+  Navigator.pop(context, null); // Return null when cancelled
+}
 
   String formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
