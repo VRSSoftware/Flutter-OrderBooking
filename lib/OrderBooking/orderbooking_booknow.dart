@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:vrs_erp/OrderBooking/booking2/booking2.dart';
 import 'package:vrs_erp/OrderBooking/booking2/booking3.dart';
 import 'package:vrs_erp/OrderBooking/booking2/multipleorderbooking.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInovice/SaleInvoicePage.dart';
 import 'package:vrs_erp/catalog/dotIndicatorDesign.dart';
 import 'package:vrs_erp/catalog/filter.dart';
 import 'package:vrs_erp/catalog/imagezoom.dart';
@@ -2039,6 +2040,19 @@ Container(
                       context,
                       MaterialPageRoute(
                         builder: (context) => PackingListWithoutSOScreen(
+                          docId: -1,
+                          catalogs: selectedItems,               // Pass the selected catalogs
+                          routeArguments: currentArgs as Map<String, dynamic>?,
+                        ),
+                      ),
+                    );
+                    return; // Stop further execution
+                }
+                if(widget.editModeType == Constants.SALE_BILL){
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SaleInvoicePage(
                           docId: -1,
                           catalogs: selectedItems,               // Pass the selected catalogs
                           routeArguments: currentArgs as Map<String, dynamic>?,

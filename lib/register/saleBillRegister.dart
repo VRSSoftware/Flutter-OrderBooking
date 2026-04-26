@@ -732,16 +732,7 @@ Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
     );
   } else {
     targetScreen = SaleInvoicePage(
-      invoiceId: registerOrder.orderId,
-      invoiceData: {
-        'docNo': registerOrder.orderNo,
-        'partyName': registerOrder.partyName,
-        'partyKey': registerOrder.custKey,
-        'custKey': registerOrder.custKey,
-        'itemName': registerOrder.itemName,
-        'quantity': registerOrder.quantity,
-        'amount': registerOrder.amount,
-      },
+      docId: int.parse(registerOrder.orderId),
     );
   }
 
