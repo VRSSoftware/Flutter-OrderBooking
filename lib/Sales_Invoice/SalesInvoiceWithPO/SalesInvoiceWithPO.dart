@@ -9,6 +9,7 @@ import 'package:vrs_erp/Sales_Invoice/InvoiceDetailsPage.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/services/production_services.dart';
 
 class SaleInvoiceWithPO extends StatefulWidget {
   final String? invoiceId;
@@ -26,9 +27,9 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
   bool _isUpdateMode = false;
 
   // Basic Details Controllers
-  final TextEditingController seriesController = TextEditingController();
-  final TextEditingController lastCdController = TextEditingController();
-  final TextEditingController docNoController = TextEditingController();
+   final TextEditingController _seriesCtrl = TextEditingController(text: '');
+     final TextEditingController _lastCdCtrl = TextEditingController(text: '');
+  final TextEditingController _docNoCtrl = TextEditingController(text: '');
   final TextEditingController docDtController = TextEditingController();
 
   // Dropdown values
@@ -64,8 +65,10 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
   final String fcYrId = UserSession.userFcYr ?? '';
   final String userId = UserSession.userName ?? '';
 
+
+
   // Add this variable at the top with other variables
-List<int> _packingDocIds = [];
+  List<int> _packingDocIds = [];
 
   @override
   void initState() {
@@ -77,57 +80,54 @@ List<int> _packingDocIds = [];
 
   @override
   void dispose() {
-    seriesController.dispose();
-    lastCdController.dispose();
-    docNoController.dispose();
+    _seriesCtrl.dispose();
+    _lastCdCtrl.dispose();
+    _docNoCtrl.dispose();
     docDtController.dispose();
     super.dispose();
   }
 
-Future<void> _initializeData() async {
-  setState(() => isLoading = true);
+  Future<void> _initializeData() async {
+    setState(() => isLoading = true);
 
-  try {
-    await Future.wait([
-      _fetchDocNumbers(),
-      _fetchLedgers('L'),
-      _fetchLedgers('W'),
-      _fetchStations(),
-    ]);
-
-    if (_isUpdateMode && widget.invoiceId != null) {
-      await _loadInvoiceData(widget.invoiceId!);
-    }
-  } catch (e) {
-    print('Error initializing data: $e');
-  } finally {
-    // Always set isLoading to false, even if there's an error
-    if (mounted) {
-      setState(() => isLoading = false);
-    }
-  }
-}
-
-  Future<void> _fetchDocNumbers() async {
     try {
-      final response = await ApiService.getDocNumbers(
-        docType: 'SINV',
-        coBrId: coBrId,
-        fcYrId: fcYrId,
-      );
+      await Future.wait([
+           _loadSeries(),
+       _loadDocNo(),
+        _fetchLedgers('L'),
+        _fetchLedgers('W'),
+        _fetchStations(),
+      ]);
 
-      if (response['status'] == 'success') {
-        setState(() {
-          seriesController.text = response['series']?.toString() ?? 'INV';
-          lastCdController.text = response['lastCd']?.toString() ?? '';
-          docNoController.text = response['docNo']?.toString() ?? '1';
-        });
+      if (_isUpdateMode && widget.invoiceId != null) {
+        await _loadInvoiceData(widget.invoiceId!);
       }
     } catch (e) {
-      seriesController.text = 'INV';
-      lastCdController.text = 'INV-001';
-      docNoController.text = '1';
+      print('Error initializing data: $e');
+    } finally {
+      // Always set isLoading to false, even if there's an error
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
+  }
+
+  
+  Future<void> _loadSeries() async {
+    final seriesData = await ProductionService.getSeries('21');
+    if (seriesData.isNotEmpty) {
+      setState(() {
+        _seriesCtrl.text = seriesData['Sr_Code'] ?? '';
+      });
+    }
+  }
+
+    Future<void> _loadDocNo() async {
+    final docNoData = await ApiService.getDocNo();
+    setState(() {
+      _lastCdCtrl.text = docNoData['LastCd'] ?? '';
+      _docNoCtrl.text = docNoData['DocNo'] ?? '';
+    });
   }
 
   Future<void> _fetchLedgers(String ledCat) async {
@@ -165,6 +165,7 @@ Future<void> _initializeData() async {
       print('Error fetching stations: $e');
     }
   }
+
 Future<void> _loadInvoiceData(String invoiceId) async {
   try {
     final response = await ApiService.fetchInvoiceById(
@@ -177,10 +178,20 @@ Future<void> _loadInvoiceData(String invoiceId) async {
 
     // Get header information from widget.invoiceData if available
     if (widget.invoiceData != null) {
+      print('Invoice Data from register: ${widget.invoiceData}');
+      
       setState(() {
-        docNoController.text = widget.invoiceData!['docNo']?.toString() ?? docNoController.text;
+        _docNoCtrl.text = widget.invoiceData!['docNo']?.toString() ?? _docNoCtrl.text;
         selectedPartyName = widget.invoiceData!['partyName']?.toString();
-        selectedPartyKey = widget.invoiceData!['partyKey']?.toString();
+        
+        // FIX: Set the party key from invoiceData
+        if (widget.invoiceData!.containsKey('partyKey') && widget.invoiceData!['partyKey'] != null) {
+          selectedPartyKey = widget.invoiceData!['partyKey'].toString();
+          print('Set selectedPartyKey from invoiceData: $selectedPartyKey');
+        } else if (widget.invoiceData!.containsKey('custKey') && widget.invoiceData!['custKey'] != null) {
+          selectedPartyKey = widget.invoiceData!['custKey'].toString();
+          print('Set selectedPartyKey from custKey: $selectedPartyKey');
+        }
       });
     }
 
@@ -189,7 +200,7 @@ Future<void> _loadInvoiceData(String invoiceId) async {
       setState(() {
         addedItems.clear();
         selectedDespatches.clear();
-        
+
         Set<int> uniquePackDocIds = {};
         
         for (var item in response) {
@@ -197,14 +208,14 @@ Future<void> _loadInvoiceData(String invoiceId) async {
           if (packDocId != null) {
             uniquePackDocIds.add(packDocId);
           }
-          
+
           double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
           double rate = (item['Rate'] as num?)?.toDouble() ?? 0;
           double amount = (item['Amount'] as num?)?.toDouble() ?? (qty * rate);
           double discAmt = (item['DiscAmt'] as num?)?.toDouble() ?? 0;
           double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
           double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
-          
+
           Map<String, dynamic> transformedItem = {
             'Doc_Id': packDocId,
             'packDocId': packDocId,
@@ -231,11 +242,11 @@ Future<void> _loadInvoiceData(String invoiceId) async {
             'sizes': item['sizes'] ?? [],
             'Unit_Name': item['Unit_Name'] ?? 'PCS',
           };
-          
+
           addedItems.add(transformedItem);
           selectedDespatches.add(transformedItem);
         }
-        
+
         _packingDocIds = uniquePackDocIds.toList();
         
         _calculateTotals();
@@ -253,6 +264,7 @@ Future<void> _loadInvoiceData(String invoiceId) async {
     );
   }
 }
+  
   void _calculateTotals() {
     grossAmt = addedItems.fold(
       0.0,
@@ -265,59 +277,66 @@ Future<void> _loadInvoiceData(String invoiceId) async {
       netAmt = rdOff ? calculatedNet.roundToDouble() : calculatedNet;
     });
   }
-void _openDespatchDetails() async {
-  if (selectedPartyKey == null || selectedPartyKey!.isEmpty) {
-    _showValidationDialog(
-      'Party Selection Required',
-      'Please select a party before viewing Despatches.',
-    );
-    return;
-  }
 
-  print('Opening despatch screen for party: $selectedPartyKey');
-  print('Existing selected despatches: ${selectedDespatches.length}');
+  void _openDespatchDetails() async {
+    if (selectedPartyKey == null || selectedPartyKey!.isEmpty) {
+      _showValidationDialog(
+        'Party Selection Required',
+        'Please select a party before viewing Despatches.',
+      );
+      return;
+    }
 
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => DespatchListScreen(
-        custKey: selectedPartyKey!,
-        existingSelectedDespatches: selectedDespatches, // Pass existing selections
-        onDespatchesSelected: (newDespatches) {
-          print('Callback received ${newDespatches.length} despatches');
-        },
+    print('Opening despatch screen for party: $selectedPartyKey');
+    print('Existing selected despatches: ${selectedDespatches.length}');
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => DespatchListScreen(
+              custKey: selectedPartyKey!,
+              existingSelectedDespatches:
+                  selectedDespatches, // Pass existing selections
+              onDespatchesSelected: (newDespatches) {
+                print('Callback received ${newDespatches.length} despatches');
+              },
+            ),
       ),
-    ),
-  );
+    );
 
-  print('Result from pop: $result');
-  print('Result type: ${result.runtimeType}');
+    print('Result from pop: $result');
+    print('Result type: ${result.runtimeType}');
 
-  if (result != null && result is List && result.isNotEmpty) {
-    print('Received ${result.length} despatches from selection');
-    
-    setState(() {
-      // Clear and add all selected despatches (this replaces the old ones)
-      selectedDespatches.clear();
-      addedItems.clear();
-      selectedDespatches.addAll(result.cast<Map<String, dynamic>>());
-      addedItems.addAll(result.cast<Map<String, dynamic>>());
-      
-      // Update packingDocIds for saving
-      _packingDocIds = selectedDespatches.map<int>((item) {
-        return item['Doc_Id'] ?? item['packDocId'] ?? 0;
-      }).where((id) => id != 0).toList();
-      _packingDocIds = _packingDocIds.toSet().toList();
-      
-      _calculateTotals();
-    });
-    
-    print('Added items count: ${addedItems.length}');
-    print('Packing Doc IDs: $_packingDocIds');
-  } else {
-    print('No despatches selected or result is null/empty');
+    if (result != null && result is List && result.isNotEmpty) {
+      print('Received ${result.length} despatches from selection');
+
+      setState(() {
+        // Clear and add all selected despatches (this replaces the old ones)
+        selectedDespatches.clear();
+        addedItems.clear();
+        selectedDespatches.addAll(result.cast<Map<String, dynamic>>());
+        addedItems.addAll(result.cast<Map<String, dynamic>>());
+
+        // Update packingDocIds for saving
+        _packingDocIds =
+            selectedDespatches
+                .map<int>((item) {
+                  return item['Doc_Id'] ?? item['packDocId'] ?? 0;
+                })
+                .where((id) => id != 0)
+                .toList();
+        _packingDocIds = _packingDocIds.toSet().toList();
+
+        _calculateTotals();
+      });
+
+      print('Added items count: ${addedItems.length}');
+      print('Packing Doc IDs: $_packingDocIds');
+    } else {
+      print('No despatches selected or result is null/empty');
+    }
   }
-}
 
   void _handlePartySelection(String? val, String? key) async {
     if (key == null) return;
@@ -413,139 +432,150 @@ void _openDespatchDetails() async {
     );
   }
 
-Future<void> _saveInvoice() async {
-  if (_isSaving) return;
-  if (!_formKey.currentState!.validate()) return;
-  if (addedItems.isEmpty) {
-    _showValidationDialog(
-      'Validation Error',
-      'Please add at least one item to save invoice.',
-    );
-    return;
-  }
-
-  setState(() => _isSaving = true);
-
-  try {
-    // Extract packing document IDs
-    List<int> packingDocIds;
-    
-    if (_isUpdateMode) {
-      // In update mode, use the stored packingDocIds from loaded data
-      packingDocIds = _packingDocIds;
-    } else {
-      // In create mode, extract from addedItems
-      packingDocIds = addedItems.map<int>((item) {
-        if (item['Doc_Id'] != null) {
-          return int.tryParse(item['Doc_Id'].toString()) ?? 0;
-        }
-        return 0;
-      }).where((id) => id != 0).toList();
-      // Remove duplicates
-      packingDocIds = packingDocIds.toSet().toList();
-    }
-
-    print('Extracted Packing Doc IDs: $packingDocIds');
-
-    if (packingDocIds.isEmpty) {
+  Future<void> _saveInvoice() async {
+    if (_isSaving) return;
+    if (!_formKey.currentState!.validate()) return;
+    if (addedItems.isEmpty) {
       _showValidationDialog(
         'Validation Error',
-        'No valid packing document IDs found.',
+        'Please add at least one item to save invoice.',
       );
-      setState(() => _isSaving = false);
       return;
     }
 
-    // Prepare data2 JSON string
-    Map<String, dynamic> data2Map = {
-      "packingdate": "${docDtController.text} 18:58:15",
-      "customer": selectedPartyKey ?? '',
-      "broker": "",
-      "comission": "0.0",
-      "transporter": "",
-      "delivaryday": "",
-      "delivarydate": docDtController.text,
-      "remark": "",
-      "consignee": "",
-      "station": selectedStationKey ?? '',
-      "paymentterms": "",
-      "paymentdays": "0",
-      "duedate": docDtController.text,
-      "refno": "",
-      "date": "${docDtController.text} 00:00:00.000",
-      "bookingtype": "",
-      "salesman": selectedSalesLedgerKey ?? '',
-      "usertype": "A",
-      "grossAmount": grossAmt.toStringAsFixed(2),
-      "roundOff": rdOff,
-      "roundOffAmount": rdOff ? (netAmt - grossAmt + disc - taxAmt - otherChrgs).abs().toStringAsFixed(2) : "0",
-      "netAmount": netAmt.toStringAsFixed(2),
-      "packType": "0",
-      "doc_id": _isUpdateMode ? (widget.invoiceId ?? "-1") : "-1"
-    };
+    setState(() => _isSaving = true);
 
-    Map<String, dynamic> response;
-    
-    if (_isUpdateMode) {
-      // Use update endpoint for update mode
-      final int docId = int.tryParse(widget.invoiceId ?? '0') ?? 0;
-      
-      final Map<String, dynamic> updateData = {
-        "userId": UserSession.userName ?? '',
-        "login_id": UserSession.userName ?? '',
-        "coBr_id": coBrId,
-        "coBrId": coBrId,
-        "fcYr_id": fcYrId,
-        "fcYrId": fcYrId,
-        "docId": docId,
-        "custKey": selectedPartyKey ?? '',
-        "newPackingDocIds": packingDocIds,  // Note: newPackingDocIds for update
-        "data2": jsonEncode(data2Map),
+    try {
+      // Extract packing document IDs
+      List<int> packingDocIds;
+
+      if (_isUpdateMode) {
+        // In update mode, use the stored packingDocIds from loaded data
+        packingDocIds = _packingDocIds;
+      } else {
+        // In create mode, extract from addedItems
+        packingDocIds =
+            addedItems
+                .map<int>((item) {
+                  if (item['Doc_Id'] != null) {
+                    return int.tryParse(item['Doc_Id'].toString()) ?? 0;
+                  }
+                  return 0;
+                })
+                .where((id) => id != 0)
+                .toList();
+        // Remove duplicates
+        packingDocIds = packingDocIds.toSet().toList();
+      }
+
+      print('Extracted Packing Doc IDs: $packingDocIds');
+
+      if (packingDocIds.isEmpty) {
+        _showValidationDialog(
+          'Validation Error',
+          'No valid packing document IDs found.',
+        );
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      // Prepare data2 JSON string
+      Map<String, dynamic> data2Map = {
+        "packingdate": "${docDtController.text} 18:58:15",
+        "customer": selectedPartyKey ?? '',
+        "broker": "",
+        "comission": "0.0",
+        "transporter": "",
+        "delivaryday": "",
+        "delivarydate": docDtController.text,
+        "remark": "",
+        "consignee": "",
+        "station": selectedStationKey ?? '',
+        "paymentterms": "",
+        "paymentdays": "0",
+        "duedate": docDtController.text,
+        "refno": "",
+        "date": "${docDtController.text} 00:00:00.000",
+        "bookingtype": "",
+        "salesman": selectedSalesLedgerKey ?? '',
+        "usertype": "A",
+        "grossAmount": grossAmt.toStringAsFixed(2),
+        "roundOff": rdOff,
+        "roundOffAmount":
+            rdOff
+                ? (netAmt - grossAmt + disc - taxAmt - otherChrgs)
+                    .abs()
+                    .toStringAsFixed(2)
+                : "0",
+        "netAmount": netAmt.toStringAsFixed(2),
+        "packType": "0",
+        "doc_id": _isUpdateMode ? (widget.invoiceId ?? "-1") : "-1",
       };
-      
-      print('Updating invoice payload: ${jsonEncode(updateData)}');
-      print('Updating with newPackingDocIds: $packingDocIds');
-      
-      response = await ApiService.updateSaleBillForPacking(updateData);
-    } else {
-      // Use create endpoint for new invoice
-      final Map<String, dynamic> saveData = {
-        "userId": UserSession.userName ?? '',
-        "login_id": UserSession.userName ?? '',
-        "coBr_id": coBrId,
-        "coBrId": coBrId,
-        "fcYr_id": fcYrId,
-        "fcYrId": fcYrId,
-        "docId": 0,
-        "custKey": selectedPartyKey ?? '',
-        "packingDocIds": packingDocIds,
-        "data2": jsonEncode(data2Map),
-      };
-      
-      print('Saving invoice payload: ${jsonEncode(saveData)}');
-      print('PackingDocIds: $packingDocIds');
-      
-      response = await ApiService.saveInvoiceForPacking(saveData);
-    }
 
-    print('Response: $response');
+      Map<String, dynamic> response;
 
-    if (response['status'] == 'success') {
-      String docNo = response['docNo']?.toString() ?? 
-                     response['message']?.toString() ?? 
-                     docNoController.text;
-      _showSuccessDialog(docNo);
-    } else {
-      _showErrorSnackBar(response['message'] ?? 'Failed to save invoice');
+      if (_isUpdateMode) {
+        // Use update endpoint for update mode
+        final int docId = int.tryParse(widget.invoiceId ?? '0') ?? 0;
+
+        final Map<String, dynamic> updateData = {
+          "userId": UserSession.userName ?? '',
+          "login_id": UserSession.userName ?? '',
+          "coBr_id": coBrId,
+          "coBrId": coBrId,
+          "fcYr_id": fcYrId,
+          "fcYrId": fcYrId,
+          "docId": docId,
+          "custKey": selectedPartyKey ?? '',
+          "packingDocIds":
+              packingDocIds, // Note: newPackingDocIds for update
+          "data2": jsonEncode(data2Map),
+        };
+
+        print('Updating invoice payload: ${jsonEncode(updateData)}');
+        print('Updating with newPackingDocIds: $packingDocIds');
+
+        response = await ApiService.updateSaleBillForPacking(updateData);
+      } else {
+        // Use create endpoint for new invoice
+        final Map<String, dynamic> saveData = {
+          "userId": UserSession.userName ?? '',
+          "login_id": UserSession.userName ?? '',
+          "coBr_id": coBrId,
+          "coBrId": coBrId,
+          "fcYr_id": fcYrId,
+          "fcYrId": fcYrId,
+          "docId": 0,
+          "custKey": selectedPartyKey ?? '',
+          "packingDocIds": packingDocIds,
+          "data2": jsonEncode(data2Map),
+        };
+
+        print('Saving invoice payload: ${jsonEncode(saveData)}');
+        print('PackingDocIds: $packingDocIds');
+
+        response = await ApiService.saveInvoiceForPacking(saveData);
+      }
+
+      print('Response: $response');
+
+      if (response['status'] == 'success') {
+        String docNo =
+            response['docNo']?.toString() ??
+            response['message']?.toString() ??
+            _docNoCtrl.text;
+        _showSuccessDialog(docNo);
+      } else {
+        _showErrorSnackBar(response['message'] ?? 'Failed to save invoice');
+      }
+    } catch (e) {
+      print('Error saving invoice: $e');
+      _showErrorSnackBar('Error saving invoice: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-  } catch (e) {
-    print('Error saving invoice: $e');
-    _showErrorSnackBar('Error saving invoice: $e');
-  } finally {
-    if (mounted) setState(() => _isSaving = false);
   }
-}
- 
+
   void _showSuccessDialog(String docNo) {
     showDialog(
       context: context,
@@ -683,8 +713,15 @@ Future<void> _saveInvoice() async {
   @override
   Widget build(BuildContext context) {
     bool isPartySelected =
-        selectedPartyKey != null && selectedPartyKey!.isNotEmpty;
+        _isUpdateMode
+            ? (selectedPartyKey != null && selectedPartyKey!.isNotEmpty)
+            : (selectedPartyKey != null && selectedPartyKey!.isNotEmpty);
+
     bool hasItems = addedItems.isNotEmpty;
+
+    print('Build - Is Update Mode: $_isUpdateMode');
+    print('Build - Selected Party Key: $selectedPartyKey');
+    print('Build - Is Party Selected: $isPartySelected');
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -718,19 +755,19 @@ Future<void> _saveInvoice() async {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                       Row(
                               children: [
                                 Expanded(
                                   child: _buildReadOnlyField(
                                     'Series',
-                                    seriesController,
+                                    _seriesCtrl,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: _buildReadOnlyField(
                                     'Last CD',
-                                    lastCdController,
+                                    _lastCdCtrl,
                                   ),
                                 ),
                               ],
@@ -741,7 +778,7 @@ Future<void> _saveInvoice() async {
                                 Expanded(
                                   child: _buildReadOnlyField(
                                     'Doc No',
-                                    docNoController,
+                                    _docNoCtrl,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -947,524 +984,534 @@ Future<void> _saveInvoice() async {
   }
 
   // Selected Item Card (Same design as PackingListAgainstSO)
-Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
-  final List<dynamic> sizes = item['sizes'] ?? [];
+  Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
+    final List<dynamic> sizes = item['sizes'] ?? [];
 
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 2,
-          offset: const Offset(0, 1),
-        ),
-      ],
-    ),
-    child: ExpansionTile(
-      tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      childrenPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(
-          Icons.inventory,
-          color: AppColors.primaryColor,
-          size: 20,
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item['Product'] ?? 'N/A',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2C3E50),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Doc: ${item['PackDocNo'] ?? item['Doc_No'] ?? 'N/A'}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Unit: ${item['Unit_Name'] ?? 'PCS'}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Qty: ${item['Qty']} | Amount: ₹${item['Amount']}',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        childrenPadding: EdgeInsets.zero,
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.inventory,
+            color: AppColors.primaryColor,
+            size: 20,
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              item['Product'] ?? 'N/A',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Doc: ${item['PackDocNo'] ?? item['Doc_No'] ?? 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Unit: ${item['Unit_Name'] ?? 'PCS'}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Qty: ${item['Qty']} | Amount: ₹${item['Amount']}',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '₹${item['Amount']}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.green,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  addedItems.removeAt(index);
+                  _calculateTotals();
+                });
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.shade50,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
             ),
-            child: Text(
-              '₹${item['Amount']}',
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.green,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: Colors.red,
-              size: 20,
-            ),
-            onPressed: () {
-              setState(() {
-                addedItems.removeAt(index);
-                _calculateTotals();
-              });
-            },
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            border: Border(top: BorderSide(color: Colors.grey.shade200)),
-          ),
-          child: Column(
-            children: [
-              // Product Details Row 1
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Product',
-                      item['Product'] ?? 'N/A',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Design',
-                      item['Design'] ?? 'N/A',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 2
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Type',
-                      item['Type'] ?? 'N/A',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Shade',
-                      item['Shade'] ?? 'N/A',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 3
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Brand',
-                      item['Brand'] ?? 'N/A',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Rate',
-                      '₹${item['Rate']}',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 4
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'MRP',
-                      '₹${item['MRP']}',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Qty',
-                      '${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 5
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Avg Rt',
-                      '₹${item['Avg Rt']}',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Item Amt',
-                      '₹${item['Item Amt']}',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 6 - Discount
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Disc',
-                      '₹${item['Disc']}',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Disc (%)',
-                      '${item['Disc (%)']}%',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 7 - Tax Details
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Tax Amt',
-                      '₹${item['Tax Amt'] ?? 0}',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildReadOnlyFieldCompact(
-                      'Tax %',
-                      '${item['TaxPerc'] ?? 5}%',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Row 8 - Tax Breakup
-              if (item['Tax1_Amt'] != null || item['Tax2_Amt'] != null)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tax Breakup',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber.shade800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'CGST: ₹${item['Tax1_Amt'] ?? 0}',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              'SGST: ₹${item['Tax2_Amt'] ?? 0}',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          ),
-                          if (item['Tax3_Amt'] != null && item['Tax3_Amt'] != 0)
-                            Expanded(
-                              child: Text(
-                                'Other: ₹${item['Tax3_Amt']}',
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 8),
-              // Row 9 - Net Amount
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
+            child: Column(
+              children: [
+                // Product Details Row 1
+                Row(
                   children: [
                     Expanded(
                       child: _buildReadOnlyFieldCompact(
-                        'Net Amount',
-                        '₹${item['Amount']}',
+                        'Product',
+                        item['Product'] ?? 'N/A',
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildReadOnlyFieldCompact(
-                        'Description',
-                        item['Description'] ?? 'N/A',
+                        'Design',
+                        item['Design'] ?? 'N/A',
                       ),
                     ),
                   ],
                 ),
-              ),
-              // Size-wise Details Table
-              if (sizes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Divider(),
                 const SizedBox(height: 8),
+                // Row 2
                 Row(
                   children: [
-                    const Text(
-                      'Size-wise Details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Type',
+                        item['Type'] ?? 'N/A',
                       ),
                     ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Shade',
+                        item['Shade'] ?? 'N/A',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 3
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Brand',
+                        item['Brand'] ?? 'N/A',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Rate',
+                        '₹${item['Rate']}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 4
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'MRP',
+                        '₹${item['MRP']}',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Qty',
+                        '${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 5
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Avg Rt',
+                        '₹${item['Avg Rt']}',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Item Amt',
+                        '₹${item['Item Amt']}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 6 - Discount
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Disc',
+                        '₹${item['Disc']}',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Disc (%)',
+                        '${item['Disc (%)']}%',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 7 - Tax Details
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Tax Amt',
+                        '₹${item['Tax Amt'] ?? 0}',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Tax %',
+                        '${item['TaxPerc'] ?? 5}%',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Row 8 - Tax Breakup
+                if (item['Tax1_Amt'] != null || item['Tax2_Amt'] != null)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tax Breakup',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'CGST: ₹${item['Tax1_Amt'] ?? 0}',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                'SGST: ₹${item['Tax2_Amt'] ?? 0}',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ),
+                            if (item['Tax3_Amt'] != null &&
+                                item['Tax3_Amt'] != 0)
+                              Expanded(
+                                child: Text(
+                                  'Other: ₹${item['Tax3_Amt']}',
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                // Row 9 - Net Amount
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildReadOnlyFieldCompact(
+                          'Net Amount',
+                          '₹${item['Amount']}',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildReadOnlyFieldCompact(
+                          'Description',
+                          item['Description'] ?? 'N/A',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Size-wise Details Table
+                if (sizes.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text(
+                        'Size-wise Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Unit: ${item['Unit_Name'] ?? 'PCS'}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Table(
+                        border: TableBorder(
+                          horizontalInside: BorderSide(
+                            color: Colors.grey.shade100,
+                          ),
+                          verticalInside: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 0.5,
+                          ),
+                        ),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FixedColumnWidth(50),
+                          2: FixedColumnWidth(80),
+                          3: FixedColumnWidth(80),
+                          4: FixedColumnWidth(80),
+                        },
+                        children: [
+                          // Header Row
+                          TableRow(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                            ),
+                            children: [
+                              _buildTableHeaderCell('Size'),
+                              _buildTableHeaderCell('Qty'),
+                              _buildTableHeaderCell('MRP'),
+                              _buildTableHeaderCell('Rate'),
+                              _buildTableHeaderCell('Net Rate'),
+                            ],
+                          ),
+                          // Data Rows
+                          ...sizes.map(
+                            (size) => TableRow(
+                              children: [
+                                _buildTableCell(
+                                  size['Size_Name'] ?? size['size'] ?? 'N/A',
+                                ),
+                                _buildTableCell((size['Qty'] ?? 0).toString()),
+                                _buildTableCell(
+                                  '₹${(size['MRP'] ?? size['mrp'] ?? 0).toStringAsFixed(2)}',
+                                ),
+                                _buildTableCell(
+                                  '₹${(size['Rate'] ?? 0).toStringAsFixed(2)}',
+                                ),
+                                _buildTableCell(
+                                  '₹${(size['NettRate'] ?? 0).toStringAsFixed(2)}',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Unit: ${item['Unit_Name'] ?? 'PCS'}',
+                        'Total Qty: ${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                           color: AppColors.primaryColor,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade200),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Table(
-                      border: TableBorder(
-                        horizontalInside: BorderSide(
-                          color: Colors.grey.shade100,
-                        ),
-                        verticalInside: BorderSide(
-                          color: Colors.grey.shade200,
-                          width: 0.5,
-                        ),
-                      ),
-                      columnWidths: const {
-                        0: FixedColumnWidth(50),
-                        1: FixedColumnWidth(50),
-                        2: FixedColumnWidth(80),
-                        3: FixedColumnWidth(80),
-                        4: FixedColumnWidth(80),
-                      },
-                      children: [
-                        // Header Row
-                        TableRow(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                          ),
-                          children: [
-                            _buildTableHeaderCell('Size'),
-                            _buildTableHeaderCell('Qty'),
-                            _buildTableHeaderCell('MRP'),
-                            _buildTableHeaderCell('Rate'),
-                            _buildTableHeaderCell('Net Rate'),
-                          ],
-                        ),
-                        // Data Rows
-                        ...sizes.map(
-                          (size) => TableRow(
-                            children: [
-                              _buildTableCell(
-                                size['Size_Name'] ?? size['size'] ?? 'N/A',
-                              ),
-                              _buildTableCell((size['Qty'] ?? 0).toString()),
-                              _buildTableCell(
-                                '₹${(size['MRP'] ?? size['mrp'] ?? 0).toStringAsFixed(2)}',
-                              ),
-                              _buildTableCell(
-                                '₹${(size['Rate'] ?? 0).toStringAsFixed(2)}',
-                              ),
-                              _buildTableCell(
-                                '₹${(size['NettRate'] ?? 0).toStringAsFixed(2)}',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Total Qty: ${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                  ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-Widget _buildReadOnlyFieldCompact(String label, String value) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF2C3E50),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildTableHeaderCell(String text) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 11,
-        color: AppColors.primaryColor,
+        ],
       ),
-      textAlign: TextAlign.center,
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildTableCell(String text) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 11, color: Colors.black87),
-      textAlign: TextAlign.center,
-    ),
-  );
-}
+  Widget _buildReadOnlyFieldCompact(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2C3E50),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeaderCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          color: AppColors.primaryColor,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11, color: Colors.black87),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   Widget _buildDropdown(
     String label,
     String ledCat,

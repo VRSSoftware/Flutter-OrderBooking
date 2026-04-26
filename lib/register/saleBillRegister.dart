@@ -708,60 +708,57 @@ class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
       }
     }
   }
+Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
+  Widget targetScreen;
 
-  Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
-    Widget targetScreen;
+  final hasPackingDocs =
+      registerOrder.packingDocNo.isNotEmpty &&
+      registerOrder.packingDocNo != 'null';
 
-    // Check if there are packing documents (despatches)
-    // packingDocNo will contain values like "DP00085, DP00086" if exists
-    final hasPackingDocs =
-        registerOrder.packingDocNo.isNotEmpty &&
-        registerOrder.packingDocNo != 'null';
-
-    if (hasPackingDocs) {
-      // Navigate to Sale Invoice with PO screen
-      targetScreen = SaleInvoiceWithPO(
-        invoiceId: registerOrder.orderId,
-        invoiceData: {
-          'docNo': registerOrder.orderNo,
-          'partyName': registerOrder.partyName,
-          'itemName': registerOrder.itemName,
-          'quantity': registerOrder.quantity,
-          'amount': registerOrder.amount,
-          'packingDocNo':
-              registerOrder.packingDocNo, // Pass packing doc numbers
-        },
-      );
-    } else {
-      // Navigate to regular Sale Invoice screen
-      targetScreen = SaleInvoicePage(
-        invoiceId: registerOrder.orderId,
-        invoiceData: {
-          'docNo': registerOrder.orderNo,
-          'partyName': registerOrder.partyName,
-          'itemName': registerOrder.itemName,
-          'quantity': registerOrder.quantity,
-          'amount': registerOrder.amount,
-        },
-      );
-    }
-
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => targetScreen),
+  if (hasPackingDocs) {
+    targetScreen = SaleInvoiceWithPO(
+      invoiceId: registerOrder.orderId,
+      invoiceData: {
+        'docNo': registerOrder.orderNo,
+        'partyName': registerOrder.partyName,
+        'partyKey': registerOrder.custKey, // Use custKey from registerOrder
+        'custKey': registerOrder.custKey,
+        'partyLedKey': registerOrder.custKey,
+        'itemName': registerOrder.itemName,
+        'quantity': registerOrder.quantity,
+        'amount': registerOrder.amount,
+        'packingDocNo': registerOrder.packingDocNo,
+      },
     );
-
-    // Force refresh when returning from update screen
-    if (result == true || result == null) {
-      setState(() {
-        pageNo = 1;
-        registerOrderList.clear();
-        hasMoreData = true;
-      });
-      await fetchOrders(isLoadMore: false);
-    }
+  } else {
+    targetScreen = SaleInvoicePage(
+      invoiceId: registerOrder.orderId,
+      invoiceData: {
+        'docNo': registerOrder.orderNo,
+        'partyName': registerOrder.partyName,
+        'partyKey': registerOrder.custKey,
+        'custKey': registerOrder.custKey,
+        'itemName': registerOrder.itemName,
+        'quantity': registerOrder.quantity,
+        'amount': registerOrder.amount,
+      },
+    );
   }
 
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => targetScreen),
+  );
+
+  if (result == true || result == null) {
+    setState(() {
+      pageNo = 1;
+      registerOrderList.clear();
+      hasMoreData = true;
+    });
+    await fetchOrders(isLoadMore: false);
+  }
+}
   Future<void> _deleteSaleBill(RegisterOrder registerOrder) async {
     // Show confirmation dialog
     final confirm = await showDialog<bool>(

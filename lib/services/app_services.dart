@@ -1612,24 +1612,34 @@ static Future<Map<String, dynamic>> deleteSaleBill({
   required String coBrId,
 }) async {
   try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/deleteSaleBill'),
+    final response = await http.delete(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/deleteSaleBill/$docId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'docId': docId,
-        'coBrId': coBrId,
-      }),
     );
+    
+    print('Delete response status: ${response.statusCode}');
+    print('Delete response body: ${response.body}');
+    
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      // Handle empty response
+      if (response.body.isEmpty) {
+        return {'status': 'success', 'message': 'Sale bill deleted successfully'};
+      }
+      
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        // If response is not valid JSON but status is 200, treat as success
+        return {'status': 'success', 'message': 'Sale bill deleted successfully'};
+      }
     } else {
       return {'status': 'error', 'message': 'Failed to delete sale bill'};
     }
   } catch (e) {
+    print('Error deleting sale bill: $e');
     return {'status': 'error', 'message': e.toString()};
   }
 }
-
 // Fetch Sale Bill Report
 static Future<Map<String, dynamic>> fetchSaleBillReport({
   required String docId,
@@ -1658,7 +1668,7 @@ static Future<Map<String, dynamic>> fetchSaleBillReport({
 // In app_services.dart
 static Future<Map<String, dynamic>> updateSaleBillForPacking(Map<String, dynamic> invoiceData) async {
   try {
-    final response = await http.put(
+    final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/saleBill/updateSaleBillForPacking/${invoiceData['docId']}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(invoiceData),
@@ -1689,5 +1699,27 @@ static Future<Map<String, dynamic>> updateSaleBillForPacking(Map<String, dynamic
     };
   }
 }
+
+  static Future<Map<String, dynamic>> getDocNo() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/getDocNo'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'LastCd': data['LastCd']?.toString() ?? '',
+          'DocNo': data['DocNo']?.toString() ?? '',
+        };
+      } else {
+        throw Exception('Failed to load document number');
+      }
+    } catch (e) {
+      print('Error fetching document number: $e');
+      return {'LastCd': '', 'DocNo': ''};
+    }
+  }
 
 }
