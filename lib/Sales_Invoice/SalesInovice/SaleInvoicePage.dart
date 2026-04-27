@@ -1477,8 +1477,8 @@ class _PackingListWithoutSOScreenState
       final response = await http.post(
         Uri.parse(
           int.parse(EditOrderData.doc_id) > 0
-              ? '${AppConstants.BASE_URL}/packing/updateSaleBillWithoutPacking'
-              : '${AppConstants.BASE_URL}/packing/insertSaleBillWithOutPacking',
+              ? '${AppConstants.BASE_URL}/saleBill/updateSaleBillWithoutPacking'
+              : '${AppConstants.BASE_URL}/saleBill/insertSaleBillWithOutPacking',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
