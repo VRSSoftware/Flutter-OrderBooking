@@ -27,8 +27,8 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
   bool _isUpdateMode = false;
 
   // Basic Details Controllers
-   final TextEditingController _seriesCtrl = TextEditingController(text: '');
-     final TextEditingController _lastCdCtrl = TextEditingController(text: '');
+  final TextEditingController _seriesCtrl = TextEditingController(text: '');
+  final TextEditingController _lastCdCtrl = TextEditingController(text: '');
   final TextEditingController _docNoCtrl = TextEditingController(text: '');
   final TextEditingController docDtController = TextEditingController();
 
@@ -65,8 +65,6 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
   final String fcYrId = UserSession.userFcYr ?? '';
   final String userId = UserSession.userName ?? '';
 
-
-
   // Add this variable at the top with other variables
   List<int> _packingDocIds = [];
 
@@ -91,11 +89,14 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     setState(() => isLoading = true);
 
     try {
+      // Load Sales Ledger FIRST (changed order)
+      await _fetchLedgers('L');
+
+      // Then load everything else in parallel
       await Future.wait([
-           _loadSeries(),
-       _loadDocNo(),
-        _fetchLedgers('L'),
-        _fetchLedgers('W'),
+        _loadSeries(),
+        _loadDocNo(),
+        _fetchLedgers('W'), // Now Party list loads after Sales Ledger
         _fetchStations(),
       ]);
 
@@ -105,14 +106,12 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     } catch (e) {
       print('Error initializing data: $e');
     } finally {
-      // Always set isLoading to false, even if there's an error
       if (mounted) {
         setState(() => isLoading = false);
       }
     }
   }
 
-  
   Future<void> _loadSeries() async {
     final seriesData = await ProductionService.getSeries('21');
     if (seriesData.isNotEmpty) {
@@ -122,7 +121,7 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     }
   }
 
-    Future<void> _loadDocNo() async {
+  Future<void> _loadDocNo() async {
     final docNoData = await ApiService.getDocNo();
     setState(() {
       _lastCdCtrl.text = docNoData['LastCd'] ?? '';
@@ -132,13 +131,33 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
 
   Future<void> _fetchLedgers(String ledCat) async {
     try {
-      final response = await ApiService.fetchLedgers(
-        ledCat: ledCat,
-        coBrId: coBrId,
-      );
+      Map<String, dynamic> response;
+
+      if (ledCat == 'L') {
+        response = await ApiService.fetchLedgers(
+          ledCat: ledCat,
+          coBrId: coBrId,
+          accLGrpKey: '0121',
+        );
+      } else {
+        response = await ApiService.fetchLedgers(
+          ledCat: ledCat,
+          coBrId: coBrId,
+        );
+      }
 
       if (response['statusCode'] == 200 && response['result'] != null) {
-        final List<KeyName> result = response['result'];
+        final List<dynamic> data = response['result'];
+
+        // Convert to KeyName objects with extra data
+        final List<KeyName> result =
+            data.map((item) {
+              return KeyName(
+                key: item['ledKey'].toString(),
+                name: item['ledName'].toString(),
+                extra: item, // Store the entire item as extra data
+              );
+            }).toList();
 
         setState(() {
           if (ledCat == 'L') {
@@ -166,105 +185,109 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     }
   }
 
-Future<void> _loadInvoiceData(String invoiceId) async {
-  try {
-    final response = await ApiService.fetchInvoiceById(
-      docId: invoiceId,
-      coBrId: coBrId,
-    );
+  Future<void> _loadInvoiceData(String invoiceId) async {
+    try {
+      final response = await ApiService.fetchInvoiceById(
+        docId: invoiceId,
+        coBrId: coBrId,
+      );
 
-    print('Load invoice response type: ${response.runtimeType}');
-    print('Load invoice response: $response');
+      print('Load invoice response type: ${response.runtimeType}');
+      print('Load invoice response: $response');
 
-    // Get header information from widget.invoiceData if available
-    if (widget.invoiceData != null) {
-      print('Invoice Data from register: ${widget.invoiceData}');
-      
-      setState(() {
-        _docNoCtrl.text = widget.invoiceData!['docNo']?.toString() ?? _docNoCtrl.text;
-        selectedPartyName = widget.invoiceData!['partyName']?.toString();
-        
-        // FIX: Set the party key from invoiceData
-        if (widget.invoiceData!.containsKey('partyKey') && widget.invoiceData!['partyKey'] != null) {
-          selectedPartyKey = widget.invoiceData!['partyKey'].toString();
-          print('Set selectedPartyKey from invoiceData: $selectedPartyKey');
-        } else if (widget.invoiceData!.containsKey('custKey') && widget.invoiceData!['custKey'] != null) {
-          selectedPartyKey = widget.invoiceData!['custKey'].toString();
-          print('Set selectedPartyKey from custKey: $selectedPartyKey');
-        }
-      });
-    }
+      // Get header information from widget.invoiceData if available
+      if (widget.invoiceData != null) {
+        print('Invoice Data from register: ${widget.invoiceData}');
 
-    // Response is a List of packing details
-    if (response is List && response.isNotEmpty) {
-      setState(() {
-        addedItems.clear();
-        selectedDespatches.clear();
+        setState(() {
+          _docNoCtrl.text =
+              widget.invoiceData!['docNo']?.toString() ?? _docNoCtrl.text;
+          selectedPartyName = widget.invoiceData!['partyName']?.toString();
 
-        Set<int> uniquePackDocIds = {};
-        
-        for (var item in response) {
-          final packDocId = item['packDocId'] as int?;
-          if (packDocId != null) {
-            uniquePackDocIds.add(packDocId);
+          // FIX: Set the party key from invoiceData
+          if (widget.invoiceData!.containsKey('partyKey') &&
+              widget.invoiceData!['partyKey'] != null) {
+            selectedPartyKey = widget.invoiceData!['partyKey'].toString();
+            print('Set selectedPartyKey from invoiceData: $selectedPartyKey');
+          } else if (widget.invoiceData!.containsKey('custKey') &&
+              widget.invoiceData!['custKey'] != null) {
+            selectedPartyKey = widget.invoiceData!['custKey'].toString();
+            print('Set selectedPartyKey from custKey: $selectedPartyKey');
+          }
+        });
+      }
+
+      // Response is a List of packing details
+      if (response is List && response.isNotEmpty) {
+        setState(() {
+          addedItems.clear();
+          selectedDespatches.clear();
+
+          Set<int> uniquePackDocIds = {};
+
+          for (var item in response) {
+            final packDocId = item['packDocId'] as int?;
+            if (packDocId != null) {
+              uniquePackDocIds.add(packDocId);
+            }
+
+            double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
+            double rate = (item['Rate'] as num?)?.toDouble() ?? 0;
+            double amount =
+                (item['Amount'] as num?)?.toDouble() ?? (qty * rate);
+            double discAmt = (item['DiscAmt'] as num?)?.toDouble() ?? 0;
+            double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
+            double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
+
+            Map<String, dynamic> transformedItem = {
+              'Doc_Id': packDocId,
+              'packDocId': packDocId,
+              'SaleBillDtlID': item['SaleBillDtlID'],
+              'PackDocNo': item['PackDocNo'] ?? '',
+              'Product': item['Item_Name'] ?? 'N/A',
+              'Design': item['Style_Code'] ?? 'N/A',
+              'Type': item['Type_Name'] ?? 'N/A',
+              'Shade': item['Shade_Name'] ?? 'N/A',
+              'Brand': item['Brand_Name'] ?? 'N/A',
+              'Rate': rate,
+              'MRP': (item['MRP'] as num?)?.toDouble() ?? 0,
+              'Qty': qty,
+              'Avg Rt': avgRt,
+              'Item Amt': amount,
+              'Disc': discAmt,
+              'Disc (%)': (item['billDiscPerc'] as num?)?.toDouble() ?? 0,
+              'Amount': netAmt,
+              'Tax Amt': (item['Tax_Amt'] as num?)?.toDouble() ?? 0,
+              'TaxPerc': (item['TaxPerc'] as num?)?.toDouble() ?? 0,
+              'Tax1_Amt': (item['Tax1_Amt'] as num?)?.toDouble() ?? 0,
+              'Tax2_Amt': (item['Tax2_Amt'] as num?)?.toDouble() ?? 0,
+              'Tax3_Amt': (item['Tax3_Amt'] as num?)?.toDouble() ?? 0,
+              'sizes': item['sizes'] ?? [],
+              'Unit_Name': item['Unit_Name'] ?? 'PCS',
+            };
+
+            addedItems.add(transformedItem);
+            selectedDespatches.add(transformedItem);
           }
 
-          double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
-          double rate = (item['Rate'] as num?)?.toDouble() ?? 0;
-          double amount = (item['Amount'] as num?)?.toDouble() ?? (qty * rate);
-          double discAmt = (item['DiscAmt'] as num?)?.toDouble() ?? 0;
-          double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
-          double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
+          _packingDocIds = uniquePackDocIds.toList();
 
-          Map<String, dynamic> transformedItem = {
-            'Doc_Id': packDocId,
-            'packDocId': packDocId,
-            'SaleBillDtlID': item['SaleBillDtlID'],
-            'PackDocNo': item['PackDocNo'] ?? '',
-            'Product': item['Item_Name'] ?? 'N/A',
-            'Design': item['Style_Code'] ?? 'N/A',
-            'Type': item['Type_Name'] ?? 'N/A',
-            'Shade': item['Shade_Name'] ?? 'N/A',
-            'Brand': item['Brand_Name'] ?? 'N/A',
-            'Rate': rate,
-            'MRP': (item['MRP'] as num?)?.toDouble() ?? 0,
-            'Qty': qty,
-            'Avg Rt': avgRt,
-            'Item Amt': amount,
-            'Disc': discAmt,
-            'Disc (%)': (item['billDiscPerc'] as num?)?.toDouble() ?? 0,
-            'Amount': netAmt,
-            'Tax Amt': (item['Tax_Amt'] as num?)?.toDouble() ?? 0,
-            'TaxPerc': (item['TaxPerc'] as num?)?.toDouble() ?? 0,
-            'Tax1_Amt': (item['Tax1_Amt'] as num?)?.toDouble() ?? 0,
-            'Tax2_Amt': (item['Tax2_Amt'] as num?)?.toDouble() ?? 0,
-            'Tax3_Amt': (item['Tax3_Amt'] as num?)?.toDouble() ?? 0,
-            'sizes': item['sizes'] ?? [],
-            'Unit_Name': item['Unit_Name'] ?? 'PCS',
-          };
-
-          addedItems.add(transformedItem);
-          selectedDespatches.add(transformedItem);
-        }
-
-        _packingDocIds = uniquePackDocIds.toList();
-        
-        _calculateTotals();
-      });
-    } else {
-      print('No items found in invoice or invalid response format');
+          _calculateTotals();
+        });
+      } else {
+        print('No items found in invoice or invalid response format');
+      }
+    } catch (e) {
+      print('Error loading invoice data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading invoice: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  } catch (e) {
-    print('Error loading invoice data: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error loading invoice: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
-  
+
   void _calculateTotals() {
     grossAmt = addedItems.fold(
       0.0,
@@ -342,10 +365,20 @@ Future<void> _loadInvoiceData(String invoiceId) async {
     if (key == null) return;
 
     String? extractedStation;
+
     if (val != null && val.contains('-->')) {
       final parts = val.split('-->');
       extractedStation = parts.last.trim();
     }
+
+    // Find the selected party from partyList
+    final selectedParty = partyList.firstWhere(
+      (party) => party.key == key,
+      orElse: () => KeyName(key: '', name: ''),
+    );
+
+    // Get salesLedKey from extra data
+    String? salesLedKeyFromParty = selectedParty.salesLedKey;
 
     setState(() {
       selectedPartyName = val;
@@ -361,6 +394,62 @@ Future<void> _loadInvoiceData(String invoiceId) async {
         }
       }
     });
+
+    // Auto-select Sales Ledger after state update
+    if (salesLedKeyFromParty != null && salesLedKeyFromParty.isNotEmpty) {
+      // Wait a bit for sales ledger list to load if needed
+      if (salesLedgerList.isEmpty) {
+        // If sales ledger list is empty, wait for it to load
+        await Future.delayed(Duration(milliseconds: 500));
+        // Or better: retry a few times
+        for (int i = 0; i < 5; i++) {
+          if (salesLedgerList.isNotEmpty) break;
+          await Future.delayed(Duration(milliseconds: 200));
+        }
+      }
+      _autoSelectSalesLedger(salesLedKeyFromParty);
+    }
+  }
+
+  void _autoSelectSalesLedger(String salesLedKey) {
+    if (!mounted) return;
+
+    // Find matching sales ledger by key
+    final matchingLedger = salesLedgerList.firstWhere(
+      (ledger) => ledger.key == salesLedKey,
+      orElse: () => KeyName(key: '', name: ''),
+    );
+
+    if (matchingLedger.key.isNotEmpty) {
+      // Found matching sales ledger - auto-select it
+      setState(() {
+        selectedSalesLedgerKey = matchingLedger.key;
+        selectedSalesLedgerName = matchingLedger.name;
+      });
+      print(
+        'Auto-selected Sales Ledger: ${matchingLedger.name} (${matchingLedger.key})',
+      );
+    } else {
+      // Sales ledger not found - show key in the field but not in dropdown
+      print('Sales Ledger with key $salesLedKey not found in list');
+
+      setState(() {
+        // Set the selected value to show the missing key in the field
+        selectedSalesLedgerKey = salesLedKey;
+        selectedSalesLedgerName = '$salesLedKey';
+      });
+
+      // Show message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Sales Ledger ID: $salesLedKey not available. Please select from dropdown.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _openDetailsDialog() async {
@@ -527,8 +616,7 @@ Future<void> _loadInvoiceData(String invoiceId) async {
           "fcYrId": fcYrId,
           "docId": docId,
           "custKey": selectedPartyKey ?? '',
-          "packingDocIds":
-              packingDocIds, // Note: newPackingDocIds for update
+          "packingDocIds": packingDocIds, // Note: newPackingDocIds for update
           "data2": jsonEncode(data2Map),
         };
 
@@ -691,10 +779,20 @@ Future<void> _loadInvoiceData(String invoiceId) async {
     switch (ledCat) {
       case 'W':
         return partyList
-            .map((e) => {'ledKey': e.key, 'ledName': e.name})
+            .map(
+              (e) => {
+                'ledKey': e.key,
+                'ledName': e.name,
+                if (e.salesLedKey != null) 'salesLedKey': e.salesLedKey!,
+              },
+            )
             .toList();
       case 'L':
+        // Filter out any missing entries from the dropdown list
         return salesLedgerList
+            .where(
+              (e) => !e.isMissing,
+            ) // Don't show missing entries in dropdown
             .map((e) => {'ledKey': e.key, 'ledName': e.name})
             .toList();
       default:
@@ -755,7 +853,7 @@ Future<void> _loadInvoiceData(String invoiceId) async {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                       Row(
+                            Row(
                               children: [
                                 Expanded(
                                   child: _buildReadOnlyField(
@@ -793,6 +891,15 @@ Future<void> _loadInvoiceData(String invoiceId) async {
                             ),
                             const SizedBox(height: 12),
                             _buildDropdown(
+                              "Party Name",
+                              "W",
+                              selectedPartyName,
+                              (val, key) => _handlePartySelection(val, key),
+                              isRequired: true,
+                              isEnabled: !_isUpdateMode,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDropdown(
                               "Sales Ledger",
                               "L",
                               selectedSalesLedgerName,
@@ -805,15 +912,7 @@ Future<void> _loadInvoiceData(String invoiceId) async {
                               isRequired: true,
                               isEnabled: true,
                             ),
-                            const SizedBox(height: 12),
-                            _buildDropdown(
-                              "Party Name",
-                              "W",
-                              selectedPartyName,
-                              (val, key) => _handlePartySelection(val, key),
-                              isRequired: true,
-                              isEnabled: !_isUpdateMode,
-                            ),
+
                             const SizedBox(height: 12),
                             _buildReadOnlyField(
                               'Station',
@@ -1595,7 +1694,31 @@ Future<void> _loadInvoiceData(String invoiceId) async {
             ),
         onChanged:
             isEnabled
-                ? (val) => onChanged(val, _getKeyFromValue(ledCat, val))
+                ? (val) {
+                  if (ledCat == 'L' && val != null) {
+                    final selectedKey = _getKeyFromValue(ledCat, val);
+                    final selectedLedger = salesLedgerList.firstWhere(
+                      (l) => l.key == selectedKey,
+                      orElse: () => KeyName(key: '', name: ''),
+                    );
+
+                    // If selecting a valid ledger (not missing), update normally
+                    if (!selectedLedger.isMissing) {
+                      onChanged(val, selectedKey);
+                    } else {
+                      // If selecting missing item, prompt to select valid one
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Please select a valid Sales Ledger'),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } else {
+                    onChanged(val, _getKeyFromValue(ledCat, val));
+                  }
+                }
                 : null,
         enabled: isEnabled,
       ),

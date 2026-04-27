@@ -462,36 +462,37 @@ class ApiService {
   static Future<Map<String, dynamic>> fetchLedgers({
     required String ledCat,
     required String coBrId,
+    String? accLGrpKey,
   }) async {
     try {
+      final Map<String, dynamic> requestBody = {
+        'ledCat': ledCat,
+        'coBrId': coBrId,
+      };
+
+      if (ledCat == 'L' && accLGrpKey != null && accLGrpKey.isNotEmpty) {
+        requestBody['accLGrpKey'] = accLGrpKey;
+      }
+
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/users/getLedger'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'ledCat': ledCat, 'coBrId': coBrId}),
+        body: jsonEncode(requestBody),
       );
 
       final int statusCode = response.statusCode;
 
       if (statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final List<KeyName> result =
-            data
-                .map(
-                  (item) => KeyName(
-                    key: item['ledKey'].toString(),
-                    name: item['ledName'].toString(),
-                  ),
-                )
-                .toList();
-
-        return {'statusCode': statusCode, 'result': result};
+        // Return the raw data without transforming
+        return {'statusCode': statusCode, 'result': data};
       } else {
         print('Error fetching ledgers: $statusCode');
-        return {'statusCode': statusCode, 'result': <KeyName>[]};
+        return {'statusCode': statusCode, 'result': []};
       }
     } catch (e) {
       print('Exception in fetchLedgers: $e');
-      return {'statusCode': 500, 'result': <KeyName>[]};
+      return {'statusCode': 500, 'result': []};
     }
   }
 
@@ -1328,7 +1329,8 @@ class ApiService {
       rethrow;
     }
   }
-    static Future<Map<String, dynamic>> fetchOrderReportDataPost(
+
+  static Future<Map<String, dynamic>> fetchOrderReportDataPost(
     String docId,
     String orderStatus,
   ) async {
@@ -1353,352 +1355,354 @@ class ApiService {
   }
 
   // Add this method to your existing ApiService class
-static Future<Map<String, dynamic>> insertPacking(Map<String, dynamic> payload) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/insertPacking'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      return {'status': 'error', 'message': 'Failed to save packing'};
-    }
-  } catch (e) {
-    print('Error inserting packing: $e');
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
+  static Future<Map<String, dynamic>> insertPacking(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/insertPacking'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
 
-static Future<Map<String, dynamic>> deletePacking({
-  required String docId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/deletePacking'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'docId': docId,
-        'coBrId': coBrId,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    return {'status': 'error', 'message': 'Failed to delete packing order'};
-  } catch (e) {
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
-// Fetch packing by ID for update
-static Future<Map<String, dynamic>> fetchPackingById({
-  required String docId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/getPackingById'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'docId': docId,
-        'coBrId': coBrId,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    return {'status': 'error', 'message': 'Failed to fetch packing data'};
-  } catch (e) {
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
-
-// Update packing
-static Future<Map<String, dynamic>> updatePacking(Map<String, dynamic> payload) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/orderBooking/updatePacking'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    return {'status': 'error', 'message': 'Failed to update packing'};
-  } catch (e) {
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
-
-//---------------Report Virw Packing slip----------------------------------
-static Future<Map<String, dynamic>> fetchPackingReportData(String orderId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('${AppConstants.BASE_URL}/packing/getPackingData/$orderId'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
-    
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      return data;
-    } else {
-      throw Exception('Failed to load packing report data');
-    }
-  } catch (e) {
-    print('Error fetching packing report: $e');
-    throw e;
-  }
-}
-
-//======================Sales Invoice Apis
-static Future<dynamic> fetchInvoiceById({
-  required String docId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/getBillDetails'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'docIds': [int.tryParse(docId) ?? 0],
-      }),
-    );
-    
-    print('fetchInvoiceById request body: ${jsonEncode({
-      'docIds': [int.tryParse(docId) ?? 0],
-   
-    })}');
-    print('fetchInvoiceById response status: ${response.statusCode}');
-    print('fetchInvoiceById response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load invoice details: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Error in fetchInvoiceById: $e');
-    rethrow;
-  }
-}
-
-// Save invoice
-static Future<Map<String, dynamic>> saveInvoiceForPacking(Map<String, dynamic> invoiceData) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/saveSaleBillForPacking'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(invoiceData),
-    );
-    
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      if (response.body.isEmpty) {
-        return {
-          'status': 'success',
-          'message': 'Invoice saved successfully'
-        };
-      }
-      
-      try {
+      if (response.statusCode == 200) {
         return jsonDecode(response.body);
-      } catch (e) {
-        return {
-          'status': 'success',
-          'message': 'Invoice saved successfully'
-        };
+      } else {
+        return {'status': 'error', 'message': 'Failed to save packing'};
       }
-    } else {
-      return {
-        'status': 'error',
-        'message': 'Server error: ${response.statusCode}'
-      };
+    } catch (e) {
+      print('Error inserting packing: $e');
+      return {'status': 'error', 'message': e.toString()};
     }
-  } catch (e) {
-    print('API Error: $e');
-    return {
-      'status': 'error',
-      'message': 'Network error: $e'
-    };
   }
-}
 
-static Future<Map<String, dynamic>> getDocNumbers({
-  required String docType,
-  required String coBrId,
-  required String fcYrId,
-}) async {
-  final response = await http.post(
-    Uri.parse('${AppConstants.BASE_URL}/sales/getDocNumbers'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'docType': docType,
-      'coBrId': coBrId,
-      'fcYrId': fcYrId,
-    }),
-  );
-  return jsonDecode(response.body);
-}
+  static Future<Map<String, dynamic>> deletePacking({
+    required String docId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/deletePacking'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'docId': docId, 'coBrId': coBrId}),
+      );
 
-static Future<Map<String, dynamic>> fetchPendingDespatches({
-  required String custKey,
-  required String fcYrId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/getPendingPackingForBill'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "custKey": custKey,
-        "fcYrId": fcYrId,
-        "coBrId": coBrId,
-      }),
-    );
-
-    print('fetchPendingDespatches status: ${response.statusCode}');
-    print('fetchPendingDespatches body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      return {'status': 'error', 'message': 'Failed to fetch despatches'};
-    }
-  } catch (e) {
-    print('Exception in fetchPendingDespatches: $e');
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
-
-// Fetch packing details for selected despatches
-static Future<Map<String, dynamic>> fetchPackingDetailsForBill({
-  required List<int> docIds,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/getPackingDetailsForBill'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'docIds': docIds}),
-    );
-
-    print('fetchPackingDetailsForBill status: ${response.statusCode}');
-    print('fetchPackingDetailsForBill body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return {'status': 'success', 'data': data};
-    } else {
-      return {'status': 'error', 'message': 'Failed to fetch packing details'};
-    }
-  } catch (e) {
-    print('Exception in fetchPackingDetailsForBill: $e');
-    return {'status': 'error', 'message': e.toString()};
-  }
-}
-
-// Delete Sale Bill
-static Future<Map<String, dynamic>> deleteSaleBill({
-  required String docId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.delete(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/deleteSaleBill/$docId'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    
-    print('Delete response status: ${response.statusCode}');
-    print('Delete response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      // Handle empty response
-      if (response.body.isEmpty) {
-        return {'status': 'success', 'message': 'Sale bill deleted successfully'};
-      }
-      
-      try {
+      if (response.statusCode == 200) {
         return jsonDecode(response.body);
-      } catch (e) {
-        // If response is not valid JSON but status is 200, treat as success
-        return {'status': 'success', 'message': 'Sale bill deleted successfully'};
       }
-    } else {
-      return {'status': 'error', 'message': 'Failed to delete sale bill'};
+      return {'status': 'error', 'message': 'Failed to delete packing order'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
     }
-  } catch (e) {
-    print('Error deleting sale bill: $e');
-    return {'status': 'error', 'message': e.toString()};
   }
-}
-// Fetch Sale Bill Report
-static Future<Map<String, dynamic>> fetchSaleBillReport({
-  required String docId,
-  required String coBrId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/getSaleBillReport'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'docId': docId,
-        'coBrId': coBrId,
-      }),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      return {'status': 'error', 'message': 'Failed to fetch report'};
+
+  // Fetch packing by ID for update
+  static Future<Map<String, dynamic>> fetchPackingById({
+    required String docId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/getPackingById'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'docId': docId, 'coBrId': coBrId}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'status': 'error', 'message': 'Failed to fetch packing data'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
     }
-  } catch (e) {
-    return {'status': 'error', 'message': e.toString()};
   }
-}
 
+  // Update packing
+  static Future<Map<String, dynamic>> updatePacking(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/orderBooking/updatePacking'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
 
-// In app_services.dart
-static Future<Map<String, dynamic>> updateSaleBillForPacking(Map<String, dynamic> invoiceData) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/saleBill/updateSaleBillForPacking/${invoiceData['docId']}'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(invoiceData),
-    );
-    
-    print('Update response status: ${response.statusCode}');
-    print('Update response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      if (response.body.isEmpty) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'status': 'error', 'message': 'Failed to update packing'};
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  //---------------Report Virw Packing slip----------------------------------
+  static Future<Map<String, dynamic>> fetchPackingReportData(
+    String orderId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.BASE_URL}/packing/getPackingData/$orderId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to load packing report data');
+      }
+    } catch (e) {
+      print('Error fetching packing report: $e');
+      throw e;
+    }
+  }
+
+  //======================Sales Invoice Apis
+  static Future<dynamic> fetchInvoiceById({
+    required String docId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/getBillDetails'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'docIds': [int.tryParse(docId) ?? 0],
+        }),
+      );
+
+      print(
+        'fetchInvoiceById request body: ${jsonEncode({
+          'docIds': [int.tryParse(docId) ?? 0],
+        })}',
+      );
+      print('fetchInvoiceById response status: ${response.statusCode}');
+      print('fetchInvoiceById response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to load invoice details: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error in fetchInvoiceById: $e');
+      rethrow;
+    }
+  }
+
+  // Save invoice
+  static Future<Map<String, dynamic>> saveInvoiceForPacking(
+    Map<String, dynamic> invoiceData,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/saveSaleBillForPacking'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(invoiceData),
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return {'status': 'success', 'message': 'Invoice saved successfully'};
+        }
+
+        try {
+          return jsonDecode(response.body);
+        } catch (e) {
+          return {'status': 'success', 'message': 'Invoice saved successfully'};
+        }
+      } else {
         return {
-          'status': 'success',
-          'message': 'Invoice updated successfully'
+          'status': 'error',
+          'message': 'Server error: ${response.statusCode}',
         };
       }
-      return jsonDecode(response.body);
-    } else {
-      return {
-        'status': 'error',
-        'message': 'Server error: ${response.statusCode}'
-      };
+    } catch (e) {
+      print('API Error: $e');
+      return {'status': 'error', 'message': 'Network error: $e'};
     }
-  } catch (e) {
-    print('API Error: $e');
-    return {
-      'status': 'error',
-      'message': 'Network error: $e'
-    };
   }
-}
+
+  static Future<Map<String, dynamic>> getDocNumbers({
+    required String docType,
+    required String coBrId,
+    required String fcYrId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/sales/getDocNumbers'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docType': docType,
+        'coBrId': coBrId,
+        'fcYrId': fcYrId,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> fetchPendingDespatches({
+    required String custKey,
+    required String fcYrId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/getPendingPackingForBill'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "custKey": custKey,
+          "fcYrId": fcYrId,
+          "coBrId": coBrId,
+        }),
+      );
+
+      print('fetchPendingDespatches status: ${response.statusCode}');
+      print('fetchPendingDespatches body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Failed to fetch despatches'};
+      }
+    } catch (e) {
+      print('Exception in fetchPendingDespatches: $e');
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  // Fetch packing details for selected despatches
+  static Future<Map<String, dynamic>> fetchPackingDetailsForBill({
+    required List<int> docIds,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/getPackingDetailsForBill'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'docIds': docIds}),
+      );
+
+      print('fetchPackingDetailsForBill status: ${response.statusCode}');
+      print('fetchPackingDetailsForBill body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'status': 'success', 'data': data};
+      } else {
+        return {
+          'status': 'error',
+          'message': 'Failed to fetch packing details',
+        };
+      }
+    } catch (e) {
+      print('Exception in fetchPackingDetailsForBill: $e');
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  // Delete Sale Bill
+  static Future<Map<String, dynamic>> deleteSaleBill({
+    required String docId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/deleteSaleBill/$docId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('Delete response status: ${response.statusCode}');
+      print('Delete response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Handle empty response
+        if (response.body.isEmpty) {
+          return {
+            'status': 'success',
+            'message': 'Sale bill deleted successfully',
+          };
+        }
+
+        try {
+          return jsonDecode(response.body);
+        } catch (e) {
+          // If response is not valid JSON but status is 200, treat as success
+          return {
+            'status': 'success',
+            'message': 'Sale bill deleted successfully',
+          };
+        }
+      } else {
+        return {'status': 'error', 'message': 'Failed to delete sale bill'};
+      }
+    } catch (e) {
+      print('Error deleting sale bill: $e');
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  // Fetch Sale Bill Report
+  static Future<Map<String, dynamic>> fetchSaleBillReport({
+    required String docId,
+    required String coBrId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/saleBill/getSaleBillReport'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'docId': docId, 'coBrId': coBrId}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Failed to fetch report'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  // In app_services.dart
+  static Future<Map<String, dynamic>> updateSaleBillForPacking(
+    Map<String, dynamic> invoiceData,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '${AppConstants.BASE_URL}/saleBill/updateSaleBillForPacking/${invoiceData['docId']}',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(invoiceData),
+      );
+
+      print('Update response status: ${response.statusCode}');
+      print('Update response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return {
+            'status': 'success',
+            'message': 'Invoice updated successfully',
+          };
+        }
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'status': 'error',
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('API Error: $e');
+      return {'status': 'error', 'message': 'Network error: $e'};
+    }
+  }
 
   static Future<Map<String, dynamic>> getDocNo() async {
     try {
@@ -1721,5 +1725,4 @@ static Future<Map<String, dynamic>> updateSaleBillForPacking(Map<String, dynamic
       return {'LastCd': '', 'DocNo': ''};
     }
   }
-
 }
