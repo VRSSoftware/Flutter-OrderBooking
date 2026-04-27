@@ -31,52 +31,78 @@ class _DespatchListScreenState extends State<DespatchListScreen> {
   Set<String> _selectedDespatchIds = {};
   Map<String, Map<String, dynamic>> _selectedDespatchesMap = {};
 
-  @override
-  void initState() {
-    super.initState();
-    for (var item in widget.existingSelectedDespatches) {
-      final String uniqueId = item['Doc_Id'].toString();
-      _selectedDespatchIds.add(uniqueId);
-      _selectedDespatchesMap[uniqueId] = item;
-    }
-    _fetchDespatches();
-  }
+@override
+void initState() {
+  super.initState();
+  // DON'T add existing despatches to selected IDs
+  // Only use them to know what's already in the invoice
+  // _selectedDespatchIds should start empty for NEW selections
+  _selectedDespatchIds.clear();
+  _selectedDespatchesMap.clear();
+  
+  _fetchDespatches();
+}
 
-  Future<void> _fetchDespatches() async {
-    setState(() => _isLoading = true);
 
-    try {
-      final response = await ApiService.fetchPendingDespatches(
-        custKey: widget.custKey,
-        fcYrId: UserSession.userFcYr ?? '',
-        coBrId: UserSession.coBrId ?? '',
-      );
+ Future<void> _fetchDespatches() async {
+  setState(() => _isLoading = true);
 
-      print('Response: $response');
+  try {
+    final response = await ApiService.fetchPendingDespatches(
+      custKey: widget.custKey,
+      fcYrId: UserSession.userFcYr ?? '',
+      coBrId: UserSession.coBrId ?? '',
+    );
 
-      if (response['status'] == 'success' && response['data'] != null && response['data'] is List) {
-        setState(() {
-          _despatches = response['data'];
-          _filteredDespatches = response['data'];
-        });
-      } else {
-        setState(() {
-          _despatches = [];
-          _filteredDespatches = [];
-        });
+    print('Response: $response');
+
+    if (response['status'] == 'success' && response['data'] != null && response['data'] is List) {
+      List<dynamic> allDespatches = response['data'];
+      
+      // Get IDs of already selected despatches from existing invoice
+      Set<String> existingSelectedIds = {};
+      for (var item in widget.existingSelectedDespatches) {
+        final docId = item['Doc_Id']?.toString() ?? item['packDocId']?.toString();
+        if (docId != null) {
+          existingSelectedIds.add(docId);
+        }
       }
-    } catch (e) {
-      print('Error fetching despatches: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error fetching despatches: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      
+      print('Existing despatch IDs in invoice: $existingSelectedIds');
+      
+      // Filter out despatches that are already in the invoice
+      List<dynamic> pendingDespatches = allDespatches.where((despatch) {
+        final despatchId = despatch['Doc_Id']?.toString();
+        return !existingSelectedIds.contains(despatchId);
+      }).toList();
+      
+      print('Total despatches: ${allDespatches.length}');
+      print('Already in invoice: ${existingSelectedIds.length}');
+      print('Available to add: ${pendingDespatches.length}');
+      
+      setState(() {
+        _despatches = pendingDespatches;
+        _filteredDespatches = pendingDespatches;
+      });
+    } else {
+      setState(() {
+        _despatches = [];
+        _filteredDespatches = [];
+      });
     }
+  } catch (e) {
+    print('Error fetching despatches: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error fetching despatches: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoading = false);
   }
+}
+
 
 Future<void> _fetchPackingDetailsAndAdd() async {
   if (_selectedDespatchIds.isEmpty) return;
@@ -84,10 +110,37 @@ Future<void> _fetchPackingDetailsAndAdd() async {
   setState(() => _isLoadingDetails = true);
 
   try {
-    // Get all selected Doc IDs
-    List<int> docIds = _selectedDespatchIds.map((id) => int.parse(id)).toList();
-
-    final response = await ApiService.fetchPackingDetailsForBill(docIds: docIds);
+    // Get IDs of already selected despatches from existing invoice
+    Set<String> existingSelectedIds = {};
+    for (var item in widget.existingSelectedDespatches) {
+      final docId = item['Doc_Id']?.toString() ?? item['packDocId']?.toString();
+      if (docId != null) {
+        existingSelectedIds.add(docId);
+      }
+    }
+    
+    // Only get NEWLY selected despatch IDs (not already in invoice)
+    List<int> newDocIds = _selectedDespatchIds
+        .where((id) => !existingSelectedIds.contains(id))
+        .map((id) => int.parse(id))
+        .toList();
+    
+    print('All selected IDs: $_selectedDespatchIds');
+    print('Existing IDs in invoice: $existingSelectedIds');
+    print('New Doc IDs to add: $newDocIds');
+    
+    if (newDocIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No new despatches to add'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      setState(() => _isLoadingDetails = false);
+      return;
+    }
+    
+    final response = await ApiService.fetchPackingDetailsForBill(docIds: newDocIds);
 
     print('Packing Details Response: $response');
 
@@ -95,8 +148,8 @@ Future<void> _fetchPackingDetailsAndAdd() async {
       final List<Map<String, dynamic>> packingDetails = 
           List<Map<String, dynamic>>.from(response['data']);
       
-      // Transform packing details to match the expected format for SaleInvoiceWithPO
-      List<Map<String, dynamic>> transformedItems = [];
+      // Transform packing details to match the expected format
+      List<Map<String, dynamic>> newItems = [];
       
       for (var item in packingDetails) {
         double qty = (item['Qty'] as num?)?.toDouble() ?? 0;
@@ -106,7 +159,7 @@ Future<void> _fetchPackingDetailsAndAdd() async {
         double netAmt = (item['NetAmt'] as num?)?.toDouble() ?? amount;
         double avgRt = (item['Avrg_RT'] as num?)?.toDouble() ?? rate;
         
-        transformedItems.add({
+        newItems.add({
           'Doc_Id': item['Doc_Id'],
           'packDocId': item['Doc_Id'],
           'DocDtl_Id': item['DocDtl_Id'],
@@ -134,11 +187,10 @@ Future<void> _fetchPackingDetailsAndAdd() async {
         });
       }
       
-      print('Transformed ${transformedItems.length} items');
+      print('Returning ${newItems.length} new items');
       
-      // Return the transformed items to the previous screen
-      // This will REPLACE the existing selection in SaleInvoiceWithPO
-      Navigator.pop(context, transformedItems);
+      // Return ONLY the NEW items to the previous screen
+      Navigator.pop(context, newItems);
       
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,6 +212,7 @@ Future<void> _fetchPackingDetailsAndAdd() async {
     setState(() => _isLoadingDetails = false);
   }
 }
+ 
   void _filterDespatches(String searchText) {
     if (searchText.isEmpty) {
       setState(() {

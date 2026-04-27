@@ -89,19 +89,19 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     setState(() => isLoading = true);
 
     try {
-      // Load Sales Ledger FIRST (changed order)
-      await _fetchLedgers('L');
-
-      // Then load everything else in parallel
+      // Load common dropdown data first
       await Future.wait([
-        _loadSeries(),
-        _loadDocNo(),
-        _fetchLedgers('W'), // Now Party list loads after Sales Ledger
+        _fetchLedgers('L'),
+        _fetchLedgers('W'),
         _fetchStations(),
       ]);
 
+      // For UPDATE mode: Load invoice data after dropdowns are loaded
       if (_isUpdateMode && widget.invoiceId != null) {
         await _loadInvoiceData(widget.invoiceId!);
+      } else {
+        // For NEW mode: Load series and document number
+        await Future.wait([_loadSeries(), _loadDocNo()]);
       }
     } catch (e) {
       print('Error initializing data: $e');
@@ -187,35 +187,103 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
 
   Future<void> _loadInvoiceData(String invoiceId) async {
     try {
+      // First, fetch header details from your new API
+      final headerResponse = await ApiService.fetchSaleBillHeaderForEdit(
+        docId: invoiceId,
+        coBrId: coBrId,
+      );
+
+      print('Header response: $headerResponse');
+
+      if (headerResponse.isNotEmpty) {
+        // Extract data from response
+        final docNo = headerResponse['Doc_No']?.toString();
+        final docDt = headerResponse['Doc_Dt']?.toString();
+        final custKey = headerResponse['cust_key']?.toString();
+        final salesLedgerKey = headerResponse['Led_Key']?.toString();
+        final stationKey = headerResponse['stn_key']?.toString();
+        final partyName = headerResponse['partyName']?.toString();
+        final remark = headerResponse['Remark']?.toString();
+
+        setState(() {
+          // Set document information
+          _docNoCtrl.text = docNo ?? '';
+
+          // Set date (format from "2026-04-26T18:30:00.000+00:00" to "2026-04-26")
+          if (docDt != null) {
+            docDtController.text = docDt.split('T')[0];
+          }
+
+          // Set party information
+          selectedPartyKey = custKey;
+          selectedPartyName = partyName;
+
+          // Set sales ledger key
+          selectedSalesLedgerKey = salesLedgerKey;
+
+          // Set station key
+          selectedStationKey = stationKey;
+        });
+
+        // Extract station name from party name if station key is not set
+        if (selectedStationKey == null &&
+            partyName != null &&
+            partyName.contains('-->')) {
+          final parts = partyName.split('-->');
+          final extractedStation = parts.last.trim();
+          setState(() {
+            selectedStationName = extractedStation;
+          });
+        } else if (stationKey != null && stationList.isNotEmpty) {
+          // Find and set station name from stationList
+          final station = stationList.firstWhere(
+            (s) => s.key == stationKey,
+            orElse: () => KeyName(key: '', name: ''),
+          );
+          if (station.name.isNotEmpty) {
+            setState(() {
+              selectedStationName = station.name;
+            });
+          }
+        }
+
+        // Auto-select sales ledger from the fetched key
+        if (salesLedgerKey != null && salesLedgerKey.isNotEmpty) {
+          final matchingLedger = salesLedgerList.firstWhere(
+            (ledger) => ledger.key == salesLedgerKey,
+            orElse: () => KeyName(key: '', name: ''),
+          );
+
+          if (matchingLedger.key.isNotEmpty) {
+            setState(() {
+              selectedSalesLedgerName = matchingLedger.name;
+            });
+            print('Auto-selected Sales Ledger: ${matchingLedger.name}');
+          } else {
+            // Sales ledger not found in dropdown list
+            setState(() {
+              selectedSalesLedgerName = '$salesLedgerKey (Not Found)';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Sales Ledger ID: $salesLedgerKey not available. Please select manually.',
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+
+      // Then, fetch the packing details (items) from existing API
       final response = await ApiService.fetchInvoiceById(
         docId: invoiceId,
         coBrId: coBrId,
       );
 
-      print('Load invoice response type: ${response.runtimeType}');
-      print('Load invoice response: $response');
-
-      // Get header information from widget.invoiceData if available
-      if (widget.invoiceData != null) {
-        print('Invoice Data from register: ${widget.invoiceData}');
-
-        setState(() {
-          _docNoCtrl.text =
-              widget.invoiceData!['docNo']?.toString() ?? _docNoCtrl.text;
-          selectedPartyName = widget.invoiceData!['partyName']?.toString();
-
-          // FIX: Set the party key from invoiceData
-          if (widget.invoiceData!.containsKey('partyKey') &&
-              widget.invoiceData!['partyKey'] != null) {
-            selectedPartyKey = widget.invoiceData!['partyKey'].toString();
-            print('Set selectedPartyKey from invoiceData: $selectedPartyKey');
-          } else if (widget.invoiceData!.containsKey('custKey') &&
-              widget.invoiceData!['custKey'] != null) {
-            selectedPartyKey = widget.invoiceData!['custKey'].toString();
-            print('Set selectedPartyKey from custKey: $selectedPartyKey');
-          }
-        });
-      }
+      print('Items response type: ${response.runtimeType}');
 
       // Response is a List of packing details
       if (response is List && response.isNotEmpty) {
@@ -271,7 +339,6 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
           }
 
           _packingDocIds = uniquePackDocIds.toList();
-
           _calculateTotals();
         });
       } else {
@@ -332,12 +399,10 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
     print('Result type: ${result.runtimeType}');
 
     if (result != null && result is List && result.isNotEmpty) {
-      print('Received ${result.length} despatches from selection');
+      print('Received ${result.length} NEW despatches from selection');
 
       setState(() {
-        // Clear and add all selected despatches (this replaces the old ones)
-        selectedDespatches.clear();
-        addedItems.clear();
+        // ONLY ADD the new despatches to existing ones
         selectedDespatches.addAll(result.cast<Map<String, dynamic>>());
         addedItems.addAll(result.cast<Map<String, dynamic>>());
 
@@ -354,10 +419,10 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
         _calculateTotals();
       });
 
-      print('Added items count: ${addedItems.length}');
+      print('Total items count: ${addedItems.length}');
       print('Packing Doc IDs: $_packingDocIds');
     } else {
-      print('No despatches selected or result is null/empty');
+      print('No new despatches selected');
     }
   }
 
@@ -1004,13 +1069,20 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             SizedBox(
-              width: 55,
+              width: 140,
               height: 55,
               child: FloatingActionButton(
                 heroTag: 'despatch',
                 onPressed: isPartySelected ? _openDespatchDetails : null,
                 backgroundColor: isPartySelected ? Colors.orange : Colors.grey,
-                child: const Icon(Icons.local_shipping, size: 30),
+                child: const Text(
+                  'Despatch Details',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold, // 👈 makes text bold
+                  ),
+                ),
               ),
             ),
           ],

@@ -1725,4 +1725,30 @@ class ApiService {
       return {'LastCd': '', 'DocNo': ''};
     }
   }
+
+  static Future<Map<String, dynamic>> fetchSaleBillHeaderForEdit({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/saleBill/headerDetailsForEdit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'doc_id': docId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching sale bill header: ${response.statusCode}');
+      return {};
+    }
+  } catch (e) {
+    print('Exception in fetchSaleBillHeaderForEdit: $e');
+    return {};
+  }
+}
+
 }

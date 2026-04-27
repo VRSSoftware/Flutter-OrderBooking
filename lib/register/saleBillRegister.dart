@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -718,17 +719,7 @@ Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
   if (hasPackingDocs) {
     targetScreen = SaleInvoiceWithPO(
       invoiceId: registerOrder.orderId,
-      invoiceData: {
-        'docNo': registerOrder.orderNo,
-        'partyName': registerOrder.partyName,
-        'partyKey': registerOrder.custKey, // Use custKey from registerOrder
-        'custKey': registerOrder.custKey,
-        'partyLedKey': registerOrder.custKey,
-        'itemName': registerOrder.itemName,
-        'quantity': registerOrder.quantity,
-        'amount': registerOrder.amount,
-        'packingDocNo': registerOrder.packingDocNo,
-      },
+     
     );
   } else {
     targetScreen = SaleInvoicePage(
