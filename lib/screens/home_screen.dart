@@ -351,6 +351,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.teal[50]!,
         );
 
+   case 'Purchase Inward':
+        return IconStyle(Icons.receipt, Colors.grey[700]!, Colors.grey[50]!);
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
@@ -659,12 +661,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/saleBillRegister');
       }, buttonWidth));
 
-    // buttons.add(
-    //   _buildFeatureButton(context, 'Production', () {
-    //     Navigator.pushNamed(context, '/production');
-    //   }, buttonWidth),
-    // );
+    buttons.add(
+      _buildFeatureButton(context, 'Production', () {
+        Navigator.pushNamed(context, '/production');
+      }, buttonWidth),
+    );
 
+    buttons.add(
+      _buildFeatureButton(context, 'Purchase Inward', () {
+        Navigator.pushNamed(context, '/purchaseInward');
+      }, buttonWidth),
+    );
     // buttons.add(
     //   _buildFeatureButton(context, 'Ask VRS AI', () {
     //     Navigator.pushNamed(context, '/vrsai');

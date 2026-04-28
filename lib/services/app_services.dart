@@ -15,6 +15,7 @@ import '../constants/app_constants.dart';
 import '../models/consignee.dart';
 
 class ApiService {
+  
   static Future<List<Category>> fetchCategories() async {
     final response = await http.get(
       Uri.parse('${AppConstants.BASE_URL}/itemSubGrp'),
@@ -1751,4 +1752,190 @@ class ApiService {
   }
 }
 
+//------------------purchasr inward----------------------
+
+// Fetch Purchase Inward Header for Edit
+static Future<Map<String, dynamic>> fetchPurchaseInwardHeaderForEdit({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseInward/headerDetailsForEdit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'doc_id': docId,
+        'coBr_id': coBrId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching purchase inward header: ${response.statusCode}');
+      return {};
+    }
+  } catch (e) {
+    print('Exception in fetchPurchaseInwardHeaderForEdit: $e');
+    return {};
+  }
+}
+
+// Fetch Purchase Inward Items
+static Future<List<dynamic>> fetchPurchaseInwardItems({
+  required String docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseInward/getItems'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'doc_id': docId,
+        'coBr_id': coBrId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching purchase inward items: ${response.statusCode}');
+      return [];
+    }
+  } catch (e) {
+    print('Exception in fetchPurchaseInwardItems: $e');
+    return [];
+  }
+}
+
+// Update Purchase Inward
+static Future<Map<String, dynamic>> updatePurchaseInward(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseInward/update'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error updating purchase inward: ${response.statusCode}');
+      return {'status': 'error', 'message': 'Failed to update purchase inward'};
+    }
+  } catch (e) {
+    print('Exception in updatePurchaseInward: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Save Purchase Inward
+static Future<Map<String, dynamic>> savePurchaseInward(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseInward/save'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error saving purchase inward: ${response.statusCode}');
+      return {'status': 'error', 'message': 'Failed to save purchase inward'};
+    }
+  } catch (e) {
+    print('Exception in savePurchaseInward: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Fetch Pending POs for Supplier
+static Future<Map<String, dynamic>> fetchPendingPOs({
+  required String supplierKey,
+  required String coBrId,
+  required String fcYrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseOrder/getPendingPOs'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'supplier_key': supplierKey,
+        'coBr_id': coBrId,
+        'fcYr_id': fcYrId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching pending POs: ${response.statusCode}');
+      return {'status': 'error', 'data': []};
+    }
+  } catch (e) {
+    print('Exception in fetchPendingPOs: $e');
+    return {'status': 'error', 'data': []};
+  }
+}
+
+// Fetch PO Details for Inward
+static Future<Map<String, dynamic>> fetchPODetailsForInward({
+  required List<int> poDocIds,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseOrder/getPODetailsForInward'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'po_doc_ids': poDocIds,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching PO details: ${response.statusCode}');
+      return {'status': 'error', 'data': []};
+    }
+  } catch (e) {
+    print('Exception in fetchPODetailsForInward: $e');
+    return {'status': 'error', 'data': []};
+  }
+}
+
+
+static Future<Map<String, dynamic>> fetchOrderDetails({
+  required String itemSubGrpKey,
+  required String itemKey,
+  required String styleKey,
+  required String userId,
+  required String coBrId,
+  required String fcYrId,
+}) async {
+  try {
+    final payload = {
+      "itemSubGrpKey": itemSubGrpKey,
+      "itemKey": itemKey,
+      "styleKey": styleKey,
+      "userId": userId,
+      "coBrId": coBrId,
+      "fcYrId": fcYrId,
+    };
+    
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/catalog/GetOrderDetails2'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(payload),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load order details');
+    }
+  } catch (e) {
+    throw Exception('Error fetching order details: $e');
+  }
+}
 }

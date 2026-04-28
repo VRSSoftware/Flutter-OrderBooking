@@ -24,6 +24,7 @@ import 'package:vrs_erp/OrderBooking/orderbooking_booknow.dart';
 import 'package:vrs_erp/Outstanding_Reports/OutstandingMainScreen.dart';
 import 'package:vrs_erp/Outstanding_Reports/Payable/outstanding_payable.dart';
 import 'package:vrs_erp/Outstanding_Reports/Receivable/outstanding_receivable.dart';
+import 'package:vrs_erp/PurchaseInward/purchaseInward.dart';
 import 'package:vrs_erp/Reports/Customer/customer.dart';
 import 'package:vrs_erp/Reports/Ledger/ledgerReport.dart';
 import 'package:vrs_erp/Reports/Order/Order.dart';
@@ -118,8 +119,7 @@ class MyApp extends StatelessWidget {
           overlayColor: WidgetStateProperty.all(AppColors.primaryColor),
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors
-                  .primaryColor; 
+              return AppColors.primaryColor;
             }
             return Colors.grey.shade300; // color when unchecked
           }),
@@ -148,12 +148,15 @@ class MyApp extends StatelessWidget {
         '/drawer': (context) => DrawerScreen(),
         '/packingRegister': (context) => PackingPage(),
         '/packingList': (context) => PackingListHome(),
-         '/packingListWithSO': (context) => PackingListAgainstSO(),
-         '/packingListWithOutSO': (context) => PackingListWithoutSOScreen(docId: -2),
-          '/saleInvoice': (context) => SaleInvoiceHome(),
+        '/packingListWithSO': (context) => PackingListAgainstSO(),
+        '/packingListWithOutSO':
+            (context) => PackingListWithoutSOScreen(docId: -2),
+        '/saleInvoice': (context) => SaleInvoiceHome(),
         '/SaleInvoiceWithPOPage': (context) => SaleInvoiceWithPO(),
-          '/SaleInvoiceWithoutPOPage': (context) => SaleInvoicePage(),
+        '/SaleInvoiceWithoutPOPage': (context) => SaleInvoicePage(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
+        '/purchaseInward': (context) => PurchaseInwardPage(),
+
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),
         '/reportHomeScreen': (context) => ReportHomeScreen(),
@@ -198,7 +201,7 @@ class MyApp extends StatelessWidget {
       // home: SalesOrderInvoicePage(),
       // home: OrderDetailsPage123(),
       home: LoginScreen(),
-   //  home: SplashScreen(),
+      //  home: SplashScreen(),
       // home: MdnsDiscoveryScreen(),
     );
   }

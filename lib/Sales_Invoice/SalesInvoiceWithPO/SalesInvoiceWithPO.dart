@@ -1155,478 +1155,476 @@ class _SaleInvoiceWithPOState extends State<SaleInvoiceWithPO> {
   }
 
   // Selected Item Card (Same design as PackingListAgainstSO)
-  Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
-    final List<dynamic> sizes = item['sizes'] ?? [];
+Widget _buildSelectedItemCard(Map<String, dynamic> item, int index) {
+  final List<dynamic> sizes = item['sizes'] ?? [];
+  final String docId = item['Doc_Id']?.toString() ?? '';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 2,
+          offset: const Offset(0, 1),
+        ),
+      ],
+    ),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      childrenPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.inventory,
+          color: AppColors.primaryColor,
+          size: 20,
+        ),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item['Product'] ?? 'N/A',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2C3E50),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Doc: ${item['PackDocNo'] ?? item['Doc_No'] ?? 'N/A'}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Unit: ${item['Unit_Name'] ?? 'PCS'}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Shade: ${item['Shade']} | Qty: ${item['Qty']} | Amount: ₹${item['Amount']}',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
           ),
         ],
       ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        childrenPadding: EdgeInsets.zero,
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.inventory,
-            color: AppColors.primaryColor,
-            size: 20,
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              item['Product'] ?? 'N/A',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Doc: ${item['PackDocNo'] ?? item['Doc_No'] ?? 'N/A'}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Unit: ${item['Unit_Name'] ?? 'PCS'}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Qty: ${item['Qty']} | Amount: ₹${item['Amount']}',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '₹${item['Amount']}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.green,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  addedItems.removeAt(index);
-                  _calculateTotals();
-                });
-              },
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              children: [
-                // Product Details Row 1
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Product',
-                        item['Product'] ?? 'N/A',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Design',
-                        item['Design'] ?? 'N/A',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 2
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Type',
-                        item['Type'] ?? 'N/A',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Shade',
-                        item['Shade'] ?? 'N/A',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 3
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Brand',
-                        item['Brand'] ?? 'N/A',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Rate',
-                        '₹${item['Rate']}',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 4
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'MRP',
-                        '₹${item['MRP']}',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Qty',
-                        '${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 5
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Avg Rt',
-                        '₹${item['Avg Rt']}',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Item Amt',
-                        '₹${item['Item Amt']}',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 6 - Discount
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Disc',
-                        '₹${item['Disc']}',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Disc (%)',
-                        '${item['Disc (%)']}%',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 7 - Tax Details
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Tax Amt',
-                        '₹${item['Tax Amt'] ?? 0}',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildReadOnlyFieldCompact(
-                        'Tax %',
-                        '${item['TaxPerc'] ?? 5}%',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 8 - Tax Breakup
-                if (item['Tax1_Amt'] != null || item['Tax2_Amt'] != null)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tax Breakup',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber.shade800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'CGST: ₹${item['Tax1_Amt'] ?? 0}',
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'SGST: ₹${item['Tax2_Amt'] ?? 0}',
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                            ),
-                            if (item['Tax3_Amt'] != null &&
-                                item['Tax3_Amt'] != 0)
-                              Expanded(
-                                child: Text(
-                                  'Other: ₹${item['Tax3_Amt']}',
-                                  style: const TextStyle(fontSize: 10),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
+            child: Text(
+              '₹${item['Amount']}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.green,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+              size: 20,
+            ),
+            onPressed: () {
+              _deleteDespatchItems(docId);
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Product',
+                      item['Product'] ?? 'N/A',
                     ),
                   ),
-                const SizedBox(height: 8),
-                // Row 9 - Net Amount
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Design',
+                      item['Design'] ?? 'N/A',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Type',
+                      item['Type'] ?? 'N/A',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Shade',
+                      item['Shade'] ?? 'N/A',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Brand',
+                      item['Brand'] ?? 'N/A',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Rate',
+                      '₹${item['Rate']}',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'MRP',
+                      '₹${item['MRP']}',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Qty',
+                      '${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Avg Rt',
+                      '₹${item['Avg Rt']}',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Item Amt',
+                      '₹${item['Item Amt']}',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Disc',
+                      '₹${item['Disc']}',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Disc (%)',
+                      '${item['Disc (%)']}%',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Tax Amt',
+                      '₹${item['Tax Amt'] ?? 0}',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildReadOnlyFieldCompact(
+                      'Tax %',
+                      '${item['TaxPerc'] ?? 5}%',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (item['Tax1_Amt'] != null || item['Tax2_Amt'] != null)
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withOpacity(0.1),
+                    color: Colors.amber.shade50,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildReadOnlyFieldCompact(
-                          'Net Amount',
-                          '₹${item['Amount']}',
+                      Text(
+                        'Tax Breakup',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade800,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildReadOnlyFieldCompact(
-                          'Description',
-                          item['Description'] ?? 'N/A',
-                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'CGST: ₹${item['Tax1_Amt'] ?? 0}',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              'SGST: ₹${item['Tax2_Amt'] ?? 0}',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                          if (item['Tax3_Amt'] != null && item['Tax3_Amt'] != 0)
+                            Expanded(
+                              child: Text(
+                                'Other: ₹${item['Tax3_Amt']}',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                // Size-wise Details Table
-                if (sizes.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text(
-                        'Size-wise Details',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Unit: ${item['Unit_Name'] ?? 'PCS'}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Table(
-                        border: TableBorder(
-                          horizontalInside: BorderSide(
-                            color: Colors.grey.shade100,
-                          ),
-                          verticalInside: BorderSide(
-                            color: Colors.grey.shade200,
-                            width: 0.5,
-                          ),
-                        ),
-                        columnWidths: const {
-                          0: FixedColumnWidth(50),
-                          1: FixedColumnWidth(50),
-                          2: FixedColumnWidth(80),
-                          3: FixedColumnWidth(80),
-                          4: FixedColumnWidth(80),
-                        },
-                        children: [
-                          // Header Row
-                          TableRow(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                            ),
-                            children: [
-                              _buildTableHeaderCell('Size'),
-                              _buildTableHeaderCell('Qty'),
-                              _buildTableHeaderCell('MRP'),
-                              _buildTableHeaderCell('Rate'),
-                              _buildTableHeaderCell('Net Rate'),
-                            ],
-                          ),
-                          // Data Rows
-                          ...sizes.map(
-                            (size) => TableRow(
-                              children: [
-                                _buildTableCell(
-                                  size['Size_Name'] ?? size['size'] ?? 'N/A',
-                                ),
-                                _buildTableCell((size['Qty'] ?? 0).toString()),
-                                _buildTableCell(
-                                  '₹${(size['MRP'] ?? size['mrp'] ?? 0).toStringAsFixed(2)}',
-                                ),
-                                _buildTableCell(
-                                  '₹${(size['Rate'] ?? 0).toStringAsFixed(2)}',
-                                ),
-                                _buildTableCell(
-                                  '₹${(size['NettRate'] ?? 0).toStringAsFixed(2)}',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Net Amount',
+                        '₹${item['Amount']}',
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Container(
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadOnlyFieldCompact(
+                        'Description',
+                        item['Description'] ?? 'N/A',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (sizes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text(
+                      'Size-wise Details',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Total Qty: ${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
+                        'Unit: ${item['Unit_Name'] ?? 'PCS'}',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.primaryColor,
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Table(
+                      border: TableBorder(
+                        horizontalInside: BorderSide(
+                          color: Colors.grey.shade100,
+                        ),
+                        verticalInside: BorderSide(
+                          color: Colors.grey.shade200,
+                          width: 0.5,
+                        ),
+                      ),
+                      columnWidths: const {
+                        0: FixedColumnWidth(50),
+                        1: FixedColumnWidth(50),
+                        2: FixedColumnWidth(80),
+                        3: FixedColumnWidth(80),
+                        4: FixedColumnWidth(80),
+                      },
+                      children: [
+                        TableRow(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                          ),
+                          children: [
+                            _buildTableHeaderCell('Size'),
+                            _buildTableHeaderCell('Qty'),
+                            _buildTableHeaderCell('MRP'),
+                            _buildTableHeaderCell('Rate'),
+                            _buildTableHeaderCell('Net Rate'),
+                          ],
+                        ),
+                        ...sizes.map(
+                          (size) => TableRow(
+                            children: [
+                              _buildTableCell(
+                                size['Size_Name'] ?? size['size'] ?? 'N/A',
+                              ),
+                              _buildTableCell((size['Qty'] ?? 0).toString()),
+                              _buildTableCell(
+                                '₹${(size['MRP'] ?? size['mrp'] ?? 0).toStringAsFixed(2)}',
+                              ),
+                              _buildTableCell(
+                                '₹${(size['Rate'] ?? 0).toStringAsFixed(2)}',
+                              ),
+                              _buildTableCell(
+                                '₹${(size['NettRate'] ?? 0).toStringAsFixed(2)}',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Total Qty: ${item['Qty']} ${item['Unit_Name'] ?? 'PCS'}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
+void _deleteDespatchItems(String docId) {
+  if (docId.isEmpty) return;
+
+  setState(() {
+    addedItems.removeWhere((item) => item['Doc_Id']?.toString() == docId);
+    selectedDespatches.removeWhere((item) => item['Doc_Id']?.toString() == docId);
+    
+    _packingDocIds = selectedDespatches
+        .map<int>((item) {
+          return item['Doc_Id'] ?? item['packDocId'] ?? 0;
+        })
+        .where((id) => id != 0)
+        .toList();
+    _packingDocIds = _packingDocIds.toSet().toList();
+    
+    _calculateTotals();
+  });
+}
 
   Widget _buildReadOnlyFieldCompact(String label, String value) {
     return Container(
