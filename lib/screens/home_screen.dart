@@ -353,6 +353,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
    case 'Purchase Inward':
         return IconStyle(Icons.receipt, Colors.grey[700]!, Colors.grey[50]!);
+
+           case 'Purchase Return':
+        return IconStyle(Icons.receipt, Colors.yellow[700]!, Colors.yellow[50]!);
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
@@ -672,6 +675,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/purchaseInward');
       }, buttonWidth),
     );
+
+    buttons.add(
+      _buildFeatureButton(context, 'Purchase Return', () {
+        Navigator.pushNamed(context, '/purchaseReturn');
+      }, buttonWidth),
+    );
+
     buttons.add(
       _buildFeatureButton(context, 'Sales Return', () {
         Navigator.pushNamed(context, '/salesReturn');

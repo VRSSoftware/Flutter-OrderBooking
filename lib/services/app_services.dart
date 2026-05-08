@@ -1938,4 +1938,183 @@ static Future<Map<String, dynamic>> fetchOrderDetails({
     throw Exception('Error fetching order details: $e');
   }
 }
+
+//Purchase Return Apis
+// Fetch PO items for purchase return - handles both List and Map responses
+static Future<Map<String, dynamic>> fetchPOForPurchaseReturn(String supplierKey) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/POForPurRtn/$supplierKey'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final decodedResponse = jsonDecode(response.body);
+      
+      // Check if response is a List
+      if (decodedResponse is List) {
+        return {
+          'status': 'success',
+          'data': decodedResponse,
+          'message': 'Success'
+        };
+      } 
+      // Check if response is a Map
+      else if (decodedResponse is Map<String, dynamic>) {
+        return decodedResponse;
+      }
+      else {
+        return {
+          'status': 'error',
+          'message': 'Invalid response format',
+          'data': []
+        };
+      }
+    } else {
+      print('Error fetching PO for purchase return: ${response.statusCode}');
+      return {
+        'status': 'error', 
+        'message': 'Failed to fetch PO items',
+        'data': []
+      };
+    }
+  } catch (e) {
+    print('Exception in fetchPOForPurchaseReturn: $e');
+    return {
+      'status': 'error', 
+      'message': e.toString(),
+      'data': []
+    };
+  }
+}
+
+// Fetch size details for purchase return - handles both List and Map responses
+static Future<Map<String, dynamic>> fetchSizeDetailsForPurchaseReturn(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/sizeDetailsForPurRtn'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      final decodedResponse = jsonDecode(response.body);
+      
+      // Check if response is a List
+      if (decodedResponse is List) {
+        return {
+          'status': 'success',
+          'data': decodedResponse,
+          'message': 'Success'
+        };
+      }
+      // Check if response is a Map
+      else if (decodedResponse is Map<String, dynamic>) {
+        return decodedResponse;
+      }
+      else {
+        return {
+          'status': 'error',
+          'message': 'Invalid response format',
+          'data': []
+        };
+      }
+    } else {
+      print('Error fetching size details for purchase return: ${response.statusCode}');
+      return {
+        'status': 'error',
+        'message': 'Failed to fetch size details',
+        'data': []
+      };
+    }
+  } catch (e) {
+    print('Exception in fetchSizeDetailsForPurchaseReturn: $e');
+    return {
+      'status': 'error',
+      'message': e.toString(),
+      'data': []
+    };
+  }
+}
+// Save purchase return
+static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/save'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error saving purchase return: ${response.statusCode}');
+      return {'status': 'error', 'message': 'Failed to save purchase return'};
+    }
+  } catch (e) {
+    print('Exception in savePurchaseReturn: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Update purchase return
+static Future<Map<String, dynamic>> updatePurchaseReturn(Map<String, dynamic> data) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/update'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error updating purchase return: ${response.statusCode}');
+      return {'status': 'error', 'message': 'Failed to update purchase return'};
+    }
+  } catch (e) {
+    print('Exception in updatePurchaseReturn: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+// Fetch purchase return header for edit
+static Future<Map<String, dynamic>> fetchPurchaseReturnHeaderForEdit(String docId, String coBrId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/getHeader/$docId?coBrId=$coBrId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching purchase return header: ${response.statusCode}');
+      return {};
+    }
+  } catch (e) {
+    print('Exception in fetchPurchaseReturnHeaderForEdit: $e');
+    return {};
+  }
+}
+
+// Fetch purchase return items
+static Future<List<dynamic>> fetchPurchaseReturnItems(String docId, String coBrId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/getItems/$docId?coBrId=$coBrId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching purchase return items: ${response.statusCode}');
+      return [];
+    }
+  } catch (e) {
+    print('Exception in fetchPurchaseReturnItems: $e');
+    return [];
+  }
+}
 }
