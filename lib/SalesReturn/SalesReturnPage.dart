@@ -20,12 +20,12 @@ import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_data.dart';
 import 'package:vrs_erp/viewOrder/view_order_screen2.dart';
 
-class PurchaseInwardPage extends StatefulWidget {
+class SalesReturnPage extends StatefulWidget {
   final int? docId;
   final List<Catalog>? catalogs;
   final Map<String, dynamic>? routeArguments;
 
-  const PurchaseInwardPage({
+  const SalesReturnPage({
     Key? key,
     this.docId,
     this.catalogs,
@@ -33,11 +33,11 @@ class PurchaseInwardPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _PurchaseInwardPageScreenState createState() =>
-      _PurchaseInwardPageScreenState();
+  _SalesReturnPageScreenState createState() =>
+      _SalesReturnPageScreenState();
 }
 
-class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
+class _SalesReturnPageScreenState extends State<SalesReturnPage> {
   final _formKey = GlobalKey<FormState>();
   final _orderControllers = _PurchaseListControllers();
   final _dropdownData = _PurchaseListDropdownData();
@@ -54,7 +54,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
 
   Map<String, dynamic> _additionalInfo = {};
   Map<String, Map<String, double>> shadeRates = {};
-  Map<String, Map<String, Map<String, double>>> sizeRates = {};
+  // Map<String, Map<String, Map<String, double>>> sizeRates = {};
 
   List<CatalogOrderData> catalogOrderList = [];
   Map<String, Set<String>> selectedColors2 = {};
@@ -352,15 +352,14 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
               catalog.shadeName.split(',').map((e) => e.trim()).toSet();
           quantities[styleKey] = {};
           shadeRates[styleKey] = {};
-          sizeRates[styleKey] = {};
 
           for (var shade in selectedColors2[styleKey]!) {
             quantities[styleKey]![shade] = {};
             shadeRates[styleKey]![shade] = 0.0;
-            sizeRates[styleKey]![shade] = {};
+            // sizeRates[styleKey]![shade] = {};
 
             for (var size in orderMatrix.sizes) {
-              sizeRates[styleKey]![shade]![size] = 0.0;
+              // sizeRates[styleKey]![shade]![size] = 0.0;
 
               final rateCtrlKey = 'PR-$styleKey-$shade-$size';
               _rateControllers[rateCtrlKey] = TextEditingController(text: '0');
@@ -369,14 +368,14 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
                 final value =
                     double.tryParse(_rateControllers[rateCtrlKey]!.text) ?? 0.0;
 
-                sizeRates[styleKey]![shade]![size] = value;
+                // sizeRates[styleKey]![shade]![size] = value;
               });
             }
 
-            final shadeRateKey = 'SR-$styleKey-$shade';
-            _shadeRateControllers[shadeRateKey] = TextEditingController(
-              text: '0',
-            );
+            // final shadeRateKey = 'SR-$styleKey-$shade';
+            // _shadeRateControllers[shadeRateKey] = TextEditingController(
+            //   text: '0',
+            // );
           }
         } else {
           _showErrorSnackBar('Failed to load details for ${catalog.styleCode}');
@@ -517,7 +516,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
     quantities.clear();
     _controllers.clear();
     shadeRates.clear();
-    sizeRates.clear();
 
     final Map<String, List<dynamic>> styleMap = {};
     for (var item in items) {
@@ -614,12 +612,10 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
       // Initialize quantity and rate maps for this style
       if (!quantities.containsKey(styleKey)) quantities[styleKey] = {};
       if (!shadeRates.containsKey(styleKey)) shadeRates[styleKey] = {};
-      if (!sizeRates.containsKey(styleKey)) sizeRates[styleKey] = {};
 
       for (var shade in shades) {
         quantities[styleKey]![shade] = {};
         shadeRates[styleKey]![shade] = 0.0;
-        sizeRates[styleKey]![shade] = {};
 
         for (var size in sizes) {
           // Find the specific item from the server
@@ -642,7 +638,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
               ) ??
               0.0;
 
-          sizeRates[styleKey]![shade]![size] = purRate;
 
           // Persistent rate controller
           final rateCtrlKey = 'PR-$styleKey-$shade-$size';
@@ -726,24 +721,18 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
     final firstSize = sizes.first;
     final firstQuantity = _getQuantity(styleKey, shade, firstSize);
 
-    final firstRate = sizeRates[styleKey]?[shade]?[firstSize] ?? 0.0;
 
     setState(() {
       for (var size in sizes) {
         _setQuantity(styleKey, shade, size, firstQuantity);
 
-        // ✅ COPY RATE ALSO
-        sizeRates[styleKey]![shade]![size] = firstRate;
 
-        final rateCtrlKey = 'PR-$styleKey-$shade-$size';
-        _rateControllers[rateCtrlKey]?.text = firstRate.toString();
       }
 
       // ✅ UPDATE SHADE RATE ONLY HERE
-      shadeRates[styleKey]![shade] = firstRate;
+     
 
-      final shadeRateKey = 'SR-$styleKey-$shade';
-      _shadeRateControllers[shadeRateKey]?.text = firstRate.toString();
+   
 
       _refreshSelectedItems();
     });
@@ -960,7 +949,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
     selectedColors2.clear();
     quantities.clear();
     shadeRates.clear();
-    sizeRates.clear();
     _rateControllers.clear();
     _shadeRateControllers.clear();
 
@@ -972,16 +960,13 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
 
       quantities[styleKey] = {};
       shadeRates[styleKey] = {};
-      sizeRates[styleKey] = {};
 
       for (var shade in selectedColors2[styleKey]!) {
         quantities[styleKey]![shade] = {};
         shadeRates[styleKey]![shade] = 0.0;
-        sizeRates[styleKey]![shade] = {};
 
         for (var size in order.orderMatrix.sizes) {
           // ✅ ALWAYS START FROM 0
-          sizeRates[styleKey]![shade]![size] = 0.0;
 
           final rateCtrlKey = 'PR-$styleKey-$shade-$size';
           _rateControllers[rateCtrlKey] = TextEditingController(text: '0');
@@ -991,7 +976,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
             final value =
                 double.tryParse(_rateControllers[rateCtrlKey]!.text) ?? 0.0;
 
-            sizeRates[styleKey]![shade]![size] = value;
+  
           });
         }
 
@@ -1012,15 +997,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
 
     // Also persist shadeRates and sizeRates
     Map<String, dynamic> rateJson = {};
-    for (var style in sizeRates.keys) {
-      rateJson[style] = {};
-      for (var shade in sizeRates[style]!.keys) {
-        rateJson[style][shade] = {
-          'shadeRate': shadeRates[style]?[shade] ?? 0.0,
-          'sizes': sizeRates[style]![shade] ?? {},
-        };
-      }
-    }
+
 
     EditOrderData.detailsForEdit = jsonEncode({
       'quantities': qtyJson,
@@ -1058,13 +1035,12 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
         if (stored['rates'] != null) {
           final rateJson = stored['rates'] as Map<String, dynamic>;
           shadeRates.clear();
-          sizeRates.clear();
+          
           _rateControllers.clear();
           _shadeRateControllers.clear();
 
           for (var styleKey in rateJson.keys) {
             shadeRates[styleKey] = {};
-            sizeRates[styleKey] = {};
 
             final styleData = rateJson[styleKey] as Map<String, dynamic>;
             for (var shade in styleData.keys) {
@@ -1083,13 +1059,12 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
               _shadeRateControllers[shadeRateKey]?.text =
                   shadeRates[styleKey]![shade].toString();
 
-              sizeRates[styleKey]![shade] = {};
+             
               if (shadeData['sizes'] != null) {
                 final sizesData = shadeData['sizes'] as Map<String, dynamic>;
                 for (var size in sizesData.keys) {
                   final rate = (sizesData[size] as num?)?.toDouble() ?? 0.0;
-                  sizeRates[styleKey]![shade]![size] = rate;
-
+                  
                   final rateCtrlKey = 'PR-$styleKey-$shade-$size';
                   _rateControllers.putIfAbsent(
                     rateCtrlKey,
@@ -1148,10 +1123,10 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
           if (quantity > 0) {
             final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
             final mrp = double.tryParse(matrixData[0]) ?? 0.0;
-            final rate =
-                sizeRates[styleKey]?[shade]?[size] ??
-                double.tryParse(matrixData[1]) ??
-                0.0;
+            final rate = 0.0;
+                // sizeRates[styleKey]?[shade]?[size] ??
+                // double.tryParse(matrixData[1]) ??
+                // 0.0;
             final stock = int.tryParse(matrixData[2]) ?? 0;
 
             sizes.add({
@@ -1371,20 +1346,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
     setState(() => _isSaving = true);
 
     try {
-      // 🔹 KEEP YOUR EXISTING purchaseRates (NO CHANGE)
-      List<Map<String, dynamic>> purchaseRates = [];
-      for (var style in sizeRates.keys) {
-        for (var shade in sizeRates[style]!.keys) {
-          for (var size in sizeRates[style]![shade]!.keys) {
-            purchaseRates.add({
-              "style": style,
-              "shade": shade,
-              "size": size,
-              "purchaseRate": sizeRates[style]![shade]![size],
-            });
-          }
-        }
-      }
+      
 
       String? consigneeLedKey = '', stationStnKey = '';
       final selectedConsigneeName = _additionalInfo['consignee']?.toString();
@@ -1472,12 +1434,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
             if (qty > 0) {
               final String sizeName = size['size']?.toString() ?? '';
 
-              // ✅ CORRECT RATE FETCH
-              final double sizePurRate =
-                  sizeRates[styleKey]?[shadeName]?[sizeName] ?? 0.0;
 
-              final double shadePurRate =
-                  shadeRates[styleKey]?[shadeName] ?? sizePurRate;
 
               dataArray.add({
                 "designcode": styleCode,
@@ -1497,9 +1454,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
                 "user": UserSession.userName ?? '',
                 "barcode": "",
 
-                // ✅ FINAL FIXED VALUES
-                "shadePurRate": shadePurRate,
-                "sizePurRate": sizePurRate,
               });
             }
           }
@@ -1536,8 +1490,8 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
       final response = await http.post(
         Uri.parse(
           int.parse(EditOrderData.doc_id) > 0
-              ? '${AppConstants.BASE_URL}/purchase/updatePurchaseInward'
-              : '${AppConstants.BASE_URL}/purchase/savePurchaseInward',
+              ? '${AppConstants.BASE_URL}/purchase/updateSalesReturn'
+              : '${AppConstants.BASE_URL}/purchase/saveSalesReturn',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
@@ -1555,7 +1509,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
           );
         } else {
           _showErrorSnackBar(
-            responseData['message'] ?? 'Failed to save Purchase',
+            responseData['message'] ?? 'Failed to save Sales Return',
           );
         }
       } else {
@@ -1564,7 +1518,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        _showErrorSnackBar('Error saving Purchase: $e');
+        _showErrorSnackBar('Error saving Sales Return: $e');
       }
     } finally { 
       if (mounted) setState(() => _isSaving = false);
@@ -1595,7 +1549,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  'Saving Purchase List...',
+                  'Saving Sales Return...',
                   style: GoogleFonts.poppins(fontSize: 14),
                 ),
               ],
@@ -1634,7 +1588,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Purchase $docNo ${isUpdate ? 'updated' : 'saved'} successfully',
+                          'Sales Return $docNo ${isUpdate ? 'updated' : 'saved'} successfully',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -1736,7 +1690,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
-        _isEditMode ? 'Edit Purchase Inward' : 'Add Purchase Inward',
+        _isEditMode ? 'Edit Sales Return' : 'Add Sales Return',
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w600,
@@ -2150,7 +2104,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
             child: Row(
               children: [
                 _buildHeader("SHADE", 2),
-                _buildHeader("PUR RATE", 1),
                 _buildHeader("QUANTITY", 1),
                 _buildHeader("AMOUNT", 1),
               ],
@@ -2194,88 +2147,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
                   ),
                 ),
                 // Editable purchase rate (persistent controller)
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 50,
-                          child: TextField(
-                            textAlign: TextAlign.center,
-                            keyboardType: TextInputType.number,
-                            controller: _shadeRateControllers.putIfAbsent(
-                              'SR-$styleKey-$shade',
-                              () => TextEditingController(
-                                text:
-                                    (shadeRates[styleKey]?[shade] ?? 0)
-                                        .toString(),
-                              ),
-                            ),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              isDense: true,
-                            ),
-                            onChanged: (val) {
-                              final rate = double.tryParse(val) ?? 0;
-                              shadeRates[styleKey]![shade] = rate;
-                              // Update all sizes
-                              for (var size
-                                  in sizeRates[styleKey]![shade]!.keys) {
-                                sizeRates[styleKey]![shade]![size] = rate;
-                                // Also update size rate controller text
-                                final sizeCtrlKey = 'PR-$styleKey-$shade-$size';
-                                if (_rateControllers.containsKey(sizeCtrlKey)) {
-                                  _rateControllers[sizeCtrlKey]!.text =
-                                      rate.toString();
-                                }
-                              }
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.copy,
-                            size: 16,
-                            color: Colors.blue,
-                          ),
-                          constraints: const BoxConstraints(),
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Copy rate to all sizes',
-                          onPressed: () {
-                            final rate =
-                                double.tryParse(
-                                  _shadeRateControllers['SR-$styleKey-$shade']
-                                          ?.text ??
-                                      '0',
-                                ) ??
-                                0;
-                            shadeRates[styleKey]![shade] = rate;
-                            for (var size
-                                in sizeRates[styleKey]![shade]!.keys) {
-                              sizeRates[styleKey]![shade]![size] = rate;
-                              final sizeCtrlKey = 'PR-$styleKey-$shade-$size';
-                              if (_rateControllers.containsKey(sizeCtrlKey)) {
-                                _rateControllers[sizeCtrlKey]!.text =
-                                    rate.toString();
-                              }
-                            }
-                            setState(() {});
-                            _showSnackBar('Rate copied to all sizes');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                
                 _buildCell(
                   _calculateShadeQuantity(styleKey, shade).toString(),
                   1,
@@ -2298,7 +2170,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
               children: [
                 _buildHeader("SIZE", 1),
                 _buildHeader("QTY", 2),
-                _buildHeader("PUR RATE", 1), // <-- New header
                 _buildHeader("MRP", 1),
                 _buildHeader("WSP", 1),
                 _buildHeader("STOCK", 1),
@@ -2395,7 +2266,6 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
           ),
         ),
         // Editable purchase rate (new column)
-        _buildEditableRateCell(styleKey, shade, size),
         _buildCell(mrp, 1),
         _buildCell(wsp, 1),
         _buildCell(stock, 1),
@@ -2420,50 +2290,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
   );
 
   // Editable purchase rate cell
-  Widget _buildEditableRateCell(String styleKey, String shade, String size) {
-    final controllerKey = 'PR-$styleKey-$shade-$size';
-    final currentRate = sizeRates[styleKey]?[shade]?[size] ?? 0;
-
-    final controller = _rateControllers.putIfAbsent(
-      controllerKey,
-      () => TextEditingController(text: currentRate.toString()),
-    );
-
-    if (controller.text != currentRate.toString()) {
-      controller.text = currentRate.toString();
-    }
-
-    return Expanded(
-      flex: 1,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          border: Border(right: BorderSide(color: Colors.grey.shade300)),
-        ),
-        child: TextField(
-          controller: controller,
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            isDense: true,
-          ),
-          onChanged: (val) {
-            final rate = double.tryParse(val) ?? 0;
-            sizeRates[styleKey]![shade]![size] = rate;
-            // Update the shade rate to this value if desired (optional)
-            shadeRates[styleKey]![shade] = rate;
-            // Keep the shade controller in sync
-            final shadeCtrlKey = 'SR-$styleKey-$shade';
-            if (_shadeRateControllers.containsKey(shadeCtrlKey)) {
-              _shadeRateControllers[shadeCtrlKey]!.text = rate.toString();
-            }
-            setState(() {});
-          },
-        ),
-      ),
-    );
-  }
+  
 
   int _calculateShadeQuantity(String styleKey, String shade) {
     int total = 0;
@@ -2483,8 +2310,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
       final sizeIndex = matrix.sizes.indexOf(size.toString().trim());
       if (sizeIndex == -1) continue;
       final rate =
-          sizeRates[styleKey]?[shade]?[size] ??
-          double.tryParse(matrix.matrix[shadeIndex][sizeIndex].split(',')[1]) ??
+          
           0;
       total += rate * (quantities[styleKey]![shade]![size]!);
     }
@@ -2679,7 +2505,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
         builder:
             (context) => OrderBookingScreen(
               editMode: true,
-              editModeType: Constants.PURCHASE_INWARD,
+              editModeType: Constants.SALES_RETURN,
             ),
       ),
     );
@@ -2687,7 +2513,7 @@ class _PurchaseInwardPageScreenState extends State<PurchaseInwardPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => PurchaseInwardPage(docId: -1, catalogs: result),
+          builder: (context) => SalesReturnPage(docId: -1, catalogs: result),
         ),
       );
     }

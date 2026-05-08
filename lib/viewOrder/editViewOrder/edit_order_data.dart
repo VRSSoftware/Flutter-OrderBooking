@@ -16,6 +16,7 @@ class EditOrderData {
   static String remark = '';
   static String paymentDays = '';
   static String detailsForEdit = '';
+  static List<Map<String, String>> partyList = [];
   static List<Map<String, String>> brokerList = [];
   static List<Map<String, String>> transporterList = [];
   static List<Consignee> consignees = [];

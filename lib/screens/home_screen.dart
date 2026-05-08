@@ -672,6 +672,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/purchaseInward');
       }, buttonWidth),
     );
+    buttons.add(
+      _buildFeatureButton(context, 'Sales Return', () {
+        Navigator.pushNamed(context, '/salesReturn');
+      }, buttonWidth),
+    );
     // buttons.add(
     //   _buildFeatureButton(context, 'Ask VRS AI', () {
     //     Navigator.pushNamed(context, '/vrsai');

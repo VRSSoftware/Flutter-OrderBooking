@@ -34,6 +34,7 @@ import 'package:vrs_erp/Reports/Receivable/ReceivableReport.dart';
 import 'package:vrs_erp/Reports/Report_Home_Screen.dart';
 import 'package:vrs_erp/Reports/Sales/SalesAnalysis.dart';
 import 'package:vrs_erp/Reports/Stock/Stock.dart';
+import 'package:vrs_erp/SalesReturn/SalesReturnPage.dart';
 import 'package:vrs_erp/Sales_Invoice/SalesInovice/SaleInvoicePage.dart';
 import 'package:vrs_erp/Sales_Invoice/SalesInvoiceHome.dart';
 import 'package:vrs_erp/catalog/catalog.dart';
@@ -155,7 +156,8 @@ class MyApp extends StatelessWidget {
         '/SaleInvoiceWithPOPage': (context) => SaleInvoiceWithPO(),
         '/SaleInvoiceWithoutPOPage': (context) => SaleInvoicePage(),
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
-        '/purchaseInward': (context) => PurchaseInwardPage(),
+        '/purchaseInward': (context) => PurchaseInwardPage( docId: -2 ),
+        '/salesReturn': (context) => SalesReturnPage( docId: -2 ),
 
         '/production': (context) => ProductionHomeScreen(),
         '/productionhomescreen': (context) => JobCardListScreen(),
