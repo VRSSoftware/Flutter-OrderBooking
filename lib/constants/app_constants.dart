@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConstants {
-  // static String BASE_URL = "http://192.168.0.254:8080/api/v1";
+ static String BASE_URL = "http://192.168.0.7:8080/api/v1";
   static bool isLive = true;
   //  static  String? BASE_URL;
   //  static  String? BASE_URL = "https://vrserp.com/vrs_erp/api/v1";
-  static String? BASE_URL = "https://api.vrsretail.in/vrs_erp2/api/v1";
+  //static String? BASE_URL = "https://api.vrsretail.in/vrs_erp2/api/v1";
   static String? whatsappKey;
   static String? bookingType = '2';
   static String? whatsappType;

@@ -2036,20 +2036,26 @@ static Future<Map<String, dynamic>> fetchSizeDetailsForPurchaseReturn(Map<String
     };
   }
 }
-// Save purchase return
-static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> data) async {
+
+// In your ApiService class
+
+static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> payload) async {
   try {
     final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/save'),
+      Uri.parse('${AppConstants.BASE_URL}/purchase/savePurchaseRtn'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
+      body: jsonEncode(payload),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       print('Error saving purchase return: ${response.statusCode}');
-      return {'status': 'error', 'message': 'Failed to save purchase return'};
+      print('Response body: ${response.body}');
+      return {
+        'status': 'error', 
+        'message': 'Failed to save purchase return. Server error: ${response.statusCode}'
+      };
     }
   } catch (e) {
     print('Exception in savePurchaseReturn: $e');
@@ -2057,20 +2063,23 @@ static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> data
   }
 }
 
-// Update purchase return
-static Future<Map<String, dynamic>> updatePurchaseReturn(Map<String, dynamic> data) async {
+static Future<Map<String, dynamic>> updatePurchaseReturn(Map<String, dynamic> payload) async {
   try {
     final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/purchaseReturn/update'),
+      Uri.parse('${AppConstants.BASE_URL}/purchase/updatePurchaseRtn'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
+      body: jsonEncode(payload),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       print('Error updating purchase return: ${response.statusCode}');
-      return {'status': 'error', 'message': 'Failed to update purchase return'};
+      print('Response body: ${response.body}');
+      return {
+        'status': 'error', 
+        'message': 'Failed to update purchase return. Server error: ${response.statusCode}'
+      };
     }
   } catch (e) {
     print('Exception in updatePurchaseReturn: $e');
@@ -2117,4 +2126,98 @@ static Future<List<dynamic>> fetchPurchaseReturnItems(String docId, String coBrI
     return [];
   }
 }
+
+ static Future<Map<String, dynamic>> getPurRtnDocNo() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.BASE_URL}/purchase/getPurchaseRtnDocNo'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'LastCd': data['LastCd']?.toString() ?? '',
+          'DocNo': data['DocNo']?.toString() ?? '',
+        };
+      } else {
+        throw Exception('Failed to load document number');
+      }
+    } catch (e) {
+      print('Error fetching document number: $e');
+      return {'LastCd': '', 'DocNo': ''};
+    }
+  }
+
+  // Add to your existing ApiService class
+
+static Future<List<dynamic>> fetchPurchaseReturnList({
+  required String coBrId,
+  required String fcYrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/getPurchaseReturnList'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "Pur_Type": "F",
+        "CoBr_Id": coBrId,
+        "FcYr_Id": fcYrId,
+        "Bill_Sr": "A",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      print('Error fetching purchase returns: ${response.statusCode}');
+      return [];
+    }
+  } catch (e) {
+    print('Exception in fetchPurchaseReturnList: $e');
+    return [];
+  }
+}
+
+static Future<Map<String, dynamic>> deletePurchaseReturn({
+  required int docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/deletePurchaseReturn'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "doc_id": docId,
+      }),
+    );
+
+    print('Delete Response Status: ${response.statusCode}');
+    print('Delete Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      // If the API returns success without 'status' field, add it
+      if (!responseData.containsKey('status')) {
+        return {
+          'status': 'success',
+          'message': responseData['message'] ?? 'Deleted successfully',
+          ...responseData,
+        };
+      }
+      return responseData;
+    } else {
+      print('Error deleting purchase return: ${response.statusCode}');
+      return {
+        'status': 'error',
+        'message': 'Failed to delete purchase return. Server error: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    print('Exception in deletePurchaseReturn: $e');
+    return {'status': 'error', 'message': e.toString()};
+  }
+}
+
+
 }

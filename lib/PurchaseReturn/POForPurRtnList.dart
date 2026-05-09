@@ -107,141 +107,152 @@ class _POReturnListScreenState extends State<POReturnListScreen> {
       setState(() => _isLoading = false);
     }
   }
+Future<void> _fetchSizeDetailsAndAdd() async {
+  if (_selectedDocDtlIds.isEmpty) return;
 
-  Future<void> _fetchSizeDetailsAndAdd() async {
-    if (_selectedDocDtlIds.isEmpty) return;
+  setState(() => _isLoadingDetails = true);
 
-    setState(() => _isLoadingDetails = true);
+  try {
+    // Get IDs of already selected items from existing return
+    Set<int> existingSelectedIds = {};
+    for (var item in widget.existingSelectedItems) {
+      final docDtlId = item['docDtlId'] as int?;
+      if (docDtlId != null) {
+        existingSelectedIds.add(docDtlId);
+      }
+    }
+    
+    // Only get NEWLY selected item IDs (not already in return)
+    List<int> newDocDtlIds = _selectedDocDtlIds
+        .where((id) => !existingSelectedIds.contains(id))
+        .toList();
+    
+    print('All selected IDs: $_selectedDocDtlIds');
+    print('Existing IDs in return: $existingSelectedIds');
+    print('New Doc Dtl IDs to add: $newDocDtlIds');
+    
+    if (newDocDtlIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No new items to add'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      setState(() => _isLoadingDetails = false);
+      return;
+    }
+    
+    // Prepare request body
+    final Map<String, dynamic> requestBody = {
+      'docDtlIds': newDocDtlIds,
+    };
+    
+    // API returns Map<String, dynamic> with status, data
+    final response = await ApiService.fetchSizeDetailsForPurchaseReturn(requestBody);
 
-    try {
-      // Get IDs of already selected items from existing return
-      Set<int> existingSelectedIds = {};
-      for (var item in widget.existingSelectedItems) {
-        final docDtlId = item['docDtlId'] as int?;
-        if (docDtlId != null) {
-          existingSelectedIds.add(docDtlId);
-        }
+    print('Size Details Response: $response');
+
+    // Extract the data array from the response map
+    if (response['status'] == 'success' && response['data'] != null) {
+      List<dynamic> sizeDetailsData = [];
+      
+      // Check if response['data'] is a List
+      if (response['data'] is List) {
+        sizeDetailsData = response['data'];
+      } else {
+        print('Response data is not a List: ${response['data'].runtimeType}');
+        sizeDetailsData = [];
       }
       
-      // Only get NEWLY selected item IDs (not already in return)
-      List<int> newDocDtlIds = _selectedDocDtlIds
-          .where((id) => !existingSelectedIds.contains(id))
-          .toList();
+      // Transform size details to match the expected format
+      List<Map<String, dynamic>> newItems = [];
       
-      print('All selected IDs: $_selectedDocDtlIds');
-      print('Existing IDs in return: $existingSelectedIds');
-      print('New Doc Dtl IDs to add: $newDocDtlIds');
-      
-      if (newDocDtlIds.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No new items to add'),
-            backgroundColor: Colors.orange,
-          ),
+      for (var item in sizeDetailsData) {
+        final int docDtlId = item['docDtlId'] as int;
+        
+        // Find the original PO item to get other details
+        final originalItem = _poItems.firstWhere(
+          (poItem) => poItem['DocDtl_Id'] == docDtlId,
+          orElse: () => null,
         );
-        setState(() => _isLoadingDetails = false);
-        return;
-      }
-      
-      // Prepare request body
-      final Map<String, dynamic> requestBody = {
-        'docDtlIds': newDocDtlIds,
-      };
-      
-      // API returns Map<String, dynamic>
-      final response = await ApiService.fetchSizeDetailsForPurchaseReturn(requestBody);
-
-      print('Size Details Response: $response');
-
-      // Extract the data array from the response map
-      if (response['status'] == 'success' && response['data'] != null) {
-        List<dynamic> sizeDetailsData = [];
         
-        // Check if response['data'] is a List
-        if (response['data'] is List) {
-          sizeDetailsData = response['data'];
-        } else {
-          print('Response data is not a List: ${response['data'].runtimeType}');
-          sizeDetailsData = [];
+        if (originalItem == null) continue;
+        
+        double actQty = (originalItem['ActQty'] as num?)?.toDouble() ?? 0;
+        double chlnQty = (originalItem['ChlnQty'] as num?)?.toDouble() ?? 0;
+        
+        // Get sizes from the response
+        List<dynamic> sizes = item['sizes'] ?? [];
+        
+        // Calculate total quantity from sizes
+        double totalQty = 0;
+        for (var size in sizes) {
+          totalQty += (size['Qty'] as num?)?.toDouble() ?? 0;
         }
         
-        final List<Map<String, dynamic>> sizeDetails = 
-            List<Map<String, dynamic>>.from(sizeDetailsData);
+        double rate = (originalItem['PurRate'] as num?)?.toDouble() ?? 0;
+        double amount = totalQty * rate;
         
-        // Transform size details to match the expected format
-        List<Map<String, dynamic>> newItems = [];
-        
-        for (var item in sizeDetails) {
-          // Find the original PO item to get other details
-          final originalItem = _poItems.firstWhere(
-            (poItem) => poItem['DocDtl_Id'] == item['docDtlId'],
-            orElse: () => null,
-          );
-          
-          if (originalItem == null) continue;
-          
-          double actQty = (originalItem['ActQty'] as num?)?.toDouble() ?? 0;
-          double chlnQty = (originalItem['ChlnQty'] as num?)?.toDouble() ?? 0;
-          double totalQty = 0;
-          
-          // Calculate total quantity from sizes
-          List<dynamic> sizes = item['sizes'] ?? [];
-          for (var size in sizes) {
-            totalQty += (size['Qty'] as num?)?.toDouble() ?? 0;
-          }
-          
-          // Use the total quantity from sizes, or fallback to ActQty
-          double qty = totalQty > 0 ? totalQty : actQty;
-          double rate = (originalItem['PurRate'] as num?)?.toDouble() ?? 0;
-          double amount = qty * rate;
-          
-          newItems.add({
-            'docDtlId': item['docDtlId'],
-            'PONo': originalItem['PONo'] ?? '',
-            'GRNNo': originalItem['GRNNo'] ?? '',
-            'Product': originalItem['Item_Name'] ?? 'N/A',
-            'Style_Code': originalItem['Style_Code'] ?? 'N/A',
-            'Shade_Name': originalItem['Shade_Name'] ?? 'N/A',
-            'Brand_Name': originalItem['Brand_Name'] ?? 'N/A',
-            'Type_Name': originalItem['Type_Name'] ?? 'N/A',
-            'Unit_Name': originalItem['Unit_Name'] ?? 'PCS',
-            'ActQty': actQty,
-            'ChlnQty': chlnQty,
-            'Rate': rate,
-            'Qty': qty,
-            'Disc': 0.0,
-            'Amount': amount,
-            'NetAmt': amount,
-            'sizes': sizes,
+        // Transform sizes to include all required fields
+        List<Map<String, dynamic>> transformedSizes = [];
+        for (var size in sizes) {
+          transformedSizes.add({
+            'Size_Name': size['Size_Name']?.toString() ?? '',
+            'Qty': (size['Qty'] as num?)?.toDouble() ?? 0,
+            'ClQty': (size['ClQty'] as num?)?.toDouble() ?? 0,
+            'PurRate': (size['PurRate'] as num?)?.toDouble() ?? 0,
+            'NettRate': (size['NettRate'] as num?)?.toDouble() ?? 0,
+            'DocDtlSz_Id': size['DocDtlSz_Id'] as int? ?? 0,
+            'DocDtl_Id': size['DocDtl_Id'] as int? ?? docDtlId,
           });
         }
         
-        print('Returning ${newItems.length} new items');
-        
-        // Return ONLY the NEW items to the previous screen
-        Navigator.pop(context, newItems);
-        
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Failed to fetch size details'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        newItems.add({
+          'docDtlId': docDtlId,
+          'PONo': originalItem['PONo'] ?? '',
+          'GRNNo': originalItem['GRNNo'] ?? '',
+          'Product': originalItem['Item_Name'] ?? 'N/A',
+          'Style_Code': originalItem['Style_Code'] ?? 'N/A',
+          'Shade_Name': originalItem['Shade_Name'] ?? 'N/A',
+          'Brand_Name': originalItem['Brand_Name'] ?? 'N/A',
+          'Type_Name': originalItem['Type_Name'] ?? 'N/A',
+          'Unit_Name': originalItem['Unit_Name'] ?? 'PCS',
+          'ActQty': actQty,
+          'ChlnQty': chlnQty,
+          'Rate': rate,
+          'Qty': totalQty > 0 ? totalQty : actQty,
+          'Disc': 0.0,
+          'Amount': amount,
+          'NetAmt': amount,
+          'sizes': transformedSizes,
+        });
       }
-    } catch (e) {
-      print('Error fetching size details: $e');
+      
+      print('Returning ${newItems.length} new items');
+      
+      // Return ONLY the NEW items to the previous screen
+      Navigator.pop(context, newItems);
+      
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error fetching size details: $e'),
+          content: Text(response['message'] ?? 'Failed to fetch size details'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      setState(() => _isLoadingDetails = false);
     }
+  } catch (e) {
+    print('Error fetching size details: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error fetching size details: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoadingDetails = false);
   }
-
+}
   void _filterItems(String searchText) {
     if (searchText.isEmpty) {
       setState(() {

@@ -351,11 +351,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Colors.teal[50]!,
         );
 
-   case 'Purchase Inward':
+      case 'Purchase Inward':
         return IconStyle(Icons.receipt, Colors.grey[700]!, Colors.grey[50]!);
 
-           case 'Purchase Return':
-        return IconStyle(Icons.receipt, Colors.yellow[700]!, Colors.yellow[50]!);
+      case 'Purchase Return':
+        return IconStyle(
+          Icons.receipt,
+          Colors.yellow[700]!,
+          Colors.yellow[50]!,
+        );
       case 'Accounts':
         return IconStyle(Icons.receipt, Colors.red[700]!, Colors.red[50]!);
 
@@ -653,16 +657,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/saleInvoice');
       }, buttonWidth),
     );
-    
+
     buttons.add(
       _buildFeatureButton(context, 'Packing Register', () {
         Navigator.pushNamed(context, '/packingRegister');
       }, buttonWidth),
     );
 
-       buttons.add(_buildFeatureButton(context, 'Sale Bill Register', () {
+    buttons.add(
+      _buildFeatureButton(context, 'Sale Bill Register', () {
         Navigator.pushNamed(context, '/saleBillRegister');
-      }, buttonWidth));
+      }, buttonWidth),
+    );
 
     buttons.add(
       _buildFeatureButton(context, 'Production', () {

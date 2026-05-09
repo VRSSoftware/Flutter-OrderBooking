@@ -119,7 +119,7 @@ class _PurchaseReturnMainPageState extends State<PurchaseReturnMainPage> {
   }
 
   Future<void> _loadSeries() async {
-    final seriesData = await ProductionService.getSeries('22');
+    final seriesData = await ProductionService.getSeries('03');
     if (seriesData.isNotEmpty) {
       setState(() {
         _seriesCtrl.text = seriesData['Sr_Code'] ?? '';
@@ -128,7 +128,7 @@ class _PurchaseReturnMainPageState extends State<PurchaseReturnMainPage> {
   }
 
   Future<void> _loadDocNo() async {
-    final docNoData = await ApiService.getDocNo();
+    final docNoData = await ApiService.getPurRtnDocNo();
     setState(() {
       _lastCdCtrl.text = docNoData['LastCd'] ?? '';
       _docNoCtrl.text = docNoData['DocNo'] ?? '';
@@ -293,20 +293,34 @@ class _PurchaseReturnMainPageState extends State<PurchaseReturnMainPage> {
     }
   }
 
-  void _calculateTotals() {
-    grossAmt = addedItems.fold(
-      0.0,
-      (sum, item) => sum + (item['Amount'] ?? 0.0),
-    );
+ void _calculateTotals() {
+  double calculatedGrossAmt = 0.0;
+  
+  for (var item in addedItems) {
+    final List<dynamic> sizes = item['sizes'] ?? [];
+    
+    if (sizes.isNotEmpty) {
+      for (var size in sizes) {
+        double sizeQty = (size['Qty'] as num?)?.toDouble() ?? 0;
+        double sizePurRate = (size['PurRate'] as num?)?.toDouble() ?? 0;
+        calculatedGrossAmt += sizeQty * sizePurRate;
+      }
+    } else {
+      double qty = item['Qty'] as double? ?? 0;
+      double rate = item['Rate'] as double? ?? 0;
+      calculatedGrossAmt += qty * rate;
+    }
+  }
+  
+  setState(() {
+    grossAmt = calculatedGrossAmt;
     disc = grossAmt * (selectedDiscPercent ?? 0) / 100;
     taxAmt = 0.0;
     amount = grossAmt - disc;
     double calculatedNet = amount + otherChrgs;
-    setState(() {
-      netAmt = rdOff ? calculatedNet.roundToDouble() : calculatedNet;
-    });
-  }
-
+    netAmt = rdOff ? calculatedNet.roundToDouble() : calculatedNet;
+  });
+}
   void _openPOReturnList() async {
     if (selectedSupplierKey == null || selectedSupplierKey!.isEmpty) {
       _showValidationDialog(
@@ -420,93 +434,159 @@ class _PurchaseReturnMainPageState extends State<PurchaseReturnMainPage> {
       ),
     );
   }
+Future<void> _saveReturn() async {
+  if (_isSaving) return;
+  if (!_formKey.currentState!.validate()) return;
+  if (addedItems.isEmpty) {
+    _showValidationDialog(
+      'Validation Error',
+      'Please add at least one item to save purchase return.',
+    );
+    return;
+  }
 
-  Future<void> _saveReturn() async {
-    if (_isSaving) return;
-    if (!_formKey.currentState!.validate()) return;
-    if (addedItems.isEmpty) {
-      _showValidationDialog(
-        'Validation Error',
-        'Please add at least one item to save purchase return.',
-      );
+  setState(() => _isSaving = true);
+
+  try {
+    // Calculate totals from addedItems
+    double calculatedGrossAmt = 0.0;
+    
+    for (var item in addedItems) {
+      final List<dynamic> sizes = item['sizes'] ?? [];
+      
+      if (sizes.isNotEmpty) {
+        for (var size in sizes) {
+          double sizeQty = (size['Qty'] as num?)?.toDouble() ?? 0;
+          double sizePurRate = (size['PurRate'] as num?)?.toDouble() ?? 0;
+          calculatedGrossAmt += sizeQty * sizePurRate;
+        }
+      } else {
+        double qty = item['Qty'] as double? ?? 0;
+        double rate = item['Rate'] as double? ?? 0;
+        calculatedGrossAmt += qty * rate;
+      }
+    }
+    
+    double calculatedDisc = calculatedGrossAmt * (selectedDiscPercent ?? 0) / 100;
+    double calculatedAmount = calculatedGrossAmt - calculatedDisc;
+    double calculatedNetAmt = rdOff ? calculatedAmount.roundToDouble() : calculatedAmount;
+
+    // Prepare header data2 - MATCH YOUR CORRECT PAYLOAD
+    final Map<String, dynamic> data2Map = {
+      "Purchasedate": "${docDtController.text} ${DateFormat('HH:mm:ss').format(DateTime.now())}",
+      "customer": selectedSupplierKey ?? '',
+      "broker": "",
+      "comission": "",
+      "transporter": "",
+      "delivaryday": "0",
+      "delivarydate": docDtController.text,
+      "remark": _remarkCtrl.text,
+      "consignee": "",
+      "station": selectedStationKey ?? '',
+      "paymentterms": "",
+      "paymentdays": "0",
+      "duedate": docDtController.text,
+      "refno": _refNoCtrl.text,
+      "date": "${docDtController.text} 00:00:00.000",
+      "bookingtype": "",
+      "salesman": "",
+      "usertype": "A",
+      "grossAmount": calculatedGrossAmt.toStringAsFixed(0),
+      "roundOff": rdOff,
+      "roundOffAmount": rdOff ? (calculatedNetAmt - calculatedAmount).abs().toStringAsFixed(0) : "0",
+      "netAmount": calculatedNetAmt.toStringAsFixed(0),
+      "packType": "0",
+      "doc_id": "-1",
+    };
+
+    // Prepare items array - MATCH YOUR CORRECT PAYLOAD
+    List<Map<String, dynamic>> itemsArray = [];
+
+    for (var item in addedItems) {
+      final String styleCode = item['Style_Code'] ?? '';
+      final String shadeName = item['Shade_Name'] ?? '';
+      final List<dynamic> sizes = item['sizes'] ?? [];
+      
+      final double totalQty = item['Qty'] as double? ?? 0;
+      
+      if (sizes.isNotEmpty) {
+        for (var size in sizes) {
+          final String sizeName = size['Size_Name']?.toString() ?? '';
+          final double sizeQty = (size['Qty'] as num?)?.toDouble() ?? 0;
+          final int soDocDtlSzId = size['DocDtlSz_Id'] as int? ?? 0;
+          final double mrp = size['MRP'] as double? ?? 0;
+          
+          if (sizeQty > 0) {
+            itemsArray.add({
+              "designcode": styleCode,
+              "soDocId": 0,
+              "soDocDtlId": 0,
+              "soDocDtlSzId": soDocDtlSzId,
+              "stkId": 0,
+              "mrp": mrp.toString(),
+              "WSP": "0",
+              "size": sizeName,
+              "TotQty": totalQty.toString(),
+              "Note": "",
+              "color": shadeName,
+              "Qty": sizeQty.toString(),
+              "cobrid": coBrId,
+              "user": userId,
+              "barcode": "",
+            });
+          }
+        }
+      }
+    }
+
+    if (itemsArray.isEmpty) {
+      _showValidationDialog('No Items', 'Please add at least one item with quantity.');
+      setState(() => _isSaving = false);
       return;
     }
 
-    setState(() => _isSaving = true);
+    // Final payload - MATCH YOUR CORRECT PAYLOAD
+    final payload = {
+      "userId": userId,
+      "login_id": userId,
+      "coBr_id": coBrId,
+      "coBrId": coBrId,
+      "fcYr_id": fcYrId,
+      "fcYrId": fcYrId,
+      "typ": 0,
+      "docId": 0,
+      "items": itemsArray,
+      "data2": jsonEncode(data2Map),
+      "data": {},
+      "barcode": "false",
+      "doc_id": "-1",
+      "packType": "0",
+    };
 
-    try {
-      Map<String, dynamic> data2Map = {
-        "date": "${docDtController.text} 00:00:00.000",
-        "refno": _refNoCtrl.text,
-        "supplier": selectedSupplierKey ?? '',
-        "station": selectedStationKey ?? '',
-        "type": selectedType ?? '',
-        "discPercent": selectedDiscPercent?.toString() ?? "0",
-        "remark": _remarkCtrl.text,
-        "grossAmount": grossAmt.toStringAsFixed(2),
-        "discount": disc.toStringAsFixed(2),
-        "taxAmount": taxAmt.toStringAsFixed(2),
-        "otherCharges": otherChrgs.toStringAsFixed(2),
-        "amount": amount.toStringAsFixed(2),
-        "roundOff": rdOff,
-        "roundOffAmount": rdOff
-            ? (netAmt - grossAmt + disc - taxAmt - otherChrgs)
-                .abs()
-                .toStringAsFixed(2)
-            : "0",
-        "netAmount": netAmt.toStringAsFixed(2),
-        "doc_id": _isUpdateMode ? (widget.returnId ?? "-1") : "-1",
-      };
+    print('Saving Purchase Return - Payload: ${jsonEncode(payload)}');
 
-      Map<String, dynamic> response;
+    Map<String, dynamic> response;
 
-      if (_isUpdateMode) {
-        final int docId = int.tryParse(widget.returnId ?? '0') ?? 0;
-        final Map<String, dynamic> updateData = {
-          "userId": userId,
-          "login_id": userId,
-          "coBr_id": coBrId,
-          "coBrId": coBrId,
-          "fcYr_id": fcYrId,
-          "fcYrId": fcYrId,
-          "docId": docId,
-          "supplierKey": selectedSupplierKey ?? '',
-          "docDtlIds": _selectedDocDtlIds,
-          "data2": jsonEncode(data2Map),
-        };
-
-        response = await ApiService.updatePurchaseReturn(updateData);
-      } else {
-        final Map<String, dynamic> saveData = {
-          "userId": userId,
-          "login_id": userId,
-          "coBr_id": coBrId,
-          "coBrId": coBrId,
-          "fcYr_id": fcYrId,
-          "fcYrId": fcYrId,
-          "docId": 0,
-          "supplierKey": selectedSupplierKey ?? '',
-          "docDtlIds": _selectedDocDtlIds,
-          "data2": jsonEncode(data2Map),
-        };
-
-        response = await ApiService.savePurchaseReturn(saveData);
-      }
-
-      if (response['status'] == 'success') {
-        String docNo = response['docNo']?.toString() ?? _docNoCtrl.text;
-        _showSuccessDialog(docNo);
-      } else {
-        _showErrorSnackBar(response['message'] ?? 'Failed to save purchase return');
-      }
-    } catch (e) {
-      print('Error saving purchase return: $e');
-      _showErrorSnackBar('Error saving purchase return: $e');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+    if (_isUpdateMode) {
+      response = await ApiService.updatePurchaseReturn(payload);
+    } else {
+      response = await ApiService.savePurchaseReturn(payload);
     }
-  }
 
+    if (response['status'] == 'success') {
+      String docNo = response['docNo']?.toString() ?? _docNoCtrl.text;
+      _showSuccessDialog(docNo);
+    } else {
+      _showErrorSnackBar(response['message'] ?? 'Failed to save purchase return');
+    }
+  } catch (e) {
+    print('Error saving purchase return: $e');
+    _showErrorSnackBar('Error saving purchase return: $e');
+  } finally {
+    if (mounted) setState(() => _isSaving = false);
+  }
+}
+ 
   void _showSuccessDialog(String docNo) {
     showDialog(
       context: context,
