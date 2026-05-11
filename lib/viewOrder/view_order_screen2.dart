@@ -261,34 +261,51 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
   }
 
   void _initializeQuantitiesAndColors() {
-    quantities.clear();
-    selectedColors.clear();
+  quantities.clear();
+  selectedColors.clear();
 
-    for (var entry in _styleManager.groupedItems.entries) {
-      final styleKey = entry.key;
-      final items = entry.value;
-      final allShades = _getSortedUniqueValues(items, 'shadeName');
-      final sizes = _getSortedUniqueValues(items, 'sizeName');
-
-      // Initialize quantities for all shades first
+  for (var entry in _styleManager.groupedItems.entries) {
+    final styleKey = entry.key;
+    final items = entry.value;
+    final allShades = _getSortedUniqueValues(items, 'shadeName');
+    final sizes = _getSortedUniqueValues(items, 'sizeName');
+    
+    // Check if this has valid shades (not null or empty)
+    final hasValidShades = allShades.any((shade) => shade.isNotEmpty && shade != 'null');
+    
+    if (!hasValidShades) {
+      // No shades case - use placeholder
+      final shadeKey = '_no_shade_';
+      quantities[styleKey] = {};
+      quantities[styleKey]![shadeKey] = {};
+      for (var size in sizes) {
+        final item = items.firstWhere(
+          (i) => (i['sizeName']?.toString() ?? '') == size,
+          orElse: () => {'clqty': '0'},
+        );
+        quantities[styleKey]![shadeKey]![size] = int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+      }
+      // For no-shade, selectedColors should have the placeholder
+      selectedColors[styleKey] = {shadeKey};
+    } else {
+      // Has shades - normal case
       quantities[styleKey] = {};
       for (var shade in allShades) {
+        if (shade.isEmpty || shade == 'null') continue;
         quantities[styleKey]![shade] = {};
         for (var size in sizes) {
           final item = items.firstWhere(
-            (i) =>
-                (i['shadeName']?.toString() ?? '') == shade &&
-                (i['sizeName']?.toString() ?? '') == size,
+            (i) => (i['shadeName']?.toString() ?? '') == shade && (i['sizeName']?.toString() ?? '') == size,
             orElse: () => {'clqty': '0'},
           );
-          quantities[styleKey]![shade]![size] =
-              int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
+          quantities[styleKey]![shade]![size] = int.tryParse(item['clqty']?.toString() ?? '0') ?? 0;
         }
       }
-
-      // FIX: Only add shades to selectedColors if they have quantity > 0
+      
+      // Only add shades to selectedColors if they have quantity > 0
       selectedColors[styleKey] = {};
       for (var shade in allShades) {
+        if (shade.isEmpty || shade == 'null') continue;
         bool hasQuantity = false;
         for (var size in sizes) {
           if ((quantities[styleKey]![shade]?[size] ?? 0) > 0) {
@@ -302,7 +319,7 @@ class _ViewOrderScreen2State extends State<ViewOrderScreen2> {
       }
     }
   }
-
+}
   List<String> _getSortedUniqueValues(List<dynamic> items, String field) =>
       items.map((e) => e[field]?.toString() ?? '').toSet().toList();
 
@@ -1839,79 +1856,93 @@ class _StyleCardsView2 extends StatefulWidget {
 class _StyleCardsView2State extends State<_StyleCardsView2> {
   bool _isLoading = false;
 
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.styleManager.isOrderItemsLoaded) {
-      return const Center(child: CircularProgressIndicator());
-    } else if (widget.styleManager.groupedItems.isEmpty) {
-      return const Center(
-        child: Text(
-          'No item added',
-          style: TextStyle(fontSize: 18, color: Colors.grey),
+@override
+Widget build(BuildContext context) {
+  if (!widget.styleManager.isOrderItemsLoaded) {
+    return const Center(child: CircularProgressIndicator());
+  } else if (widget.styleManager.groupedItems.isEmpty) {
+    return const Center(
+      child: Text(
+        'No item added',
+        style: TextStyle(fontSize: 18, color: Colors.grey),
+      ),
+    );
+  } else {
+    final entries =
+        widget.filteredEntries ??
+        widget.styleManager.groupedItems.entries.toList();
+
+    if (entries.isEmpty && widget.filteredEntries != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'No matching styles found',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+          ],
         ),
       );
-    } else {
-      final entries =
-          widget.filteredEntries ??
-          widget.styleManager.groupedItems.entries.toList();
+    }
 
-      if (entries.isEmpty && widget.filteredEntries != null) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'No matching styles found',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        );
+    // Build slivers - each style is a SliverMainAxisGroup
+    final List<Widget> allSlivers = [];
+
+    for (var i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      final styleKey = entry.key;
+      final items = entry.value;
+      final catalogOrder = _convertToCatalogOrderData(styleKey, items);
+      
+      // Ensure selectedColors exists for this style
+      if (!widget.selectedColors.containsKey(styleKey)) {
+        widget.selectedColors[styleKey] = {};
       }
 
-      // Build slivers - each style is a SliverMainAxisGroup
-      final List<Widget> allSlivers = [];
+      // Check if this style has no shades
+      final bool hasNoShades = _hasNoShades(styleKey, catalogOrder);
+      
+      final styleSelectedColors = widget.selectedColors[styleKey]!;
 
-      for (var i = 0; i < entries.length; i++) {
-        final entry = entries[i];
-        final styleKey = entry.key;
-        final items = entry.value;
-        final catalogOrder = _convertToCatalogOrderData(styleKey, items);
-        print('Building style: $styleKey with ${items.length} items');
-        print(catalogOrder.catalog.styleCode);
-        print(catalogOrder.catalog.fullImagePath);
-        // Ensure selectedColors exists for this style
-        if (!widget.selectedColors.containsKey(styleKey)) {
-          widget.selectedColors[styleKey] = {};
-        }
+      // Create a group for this style's content
+      final List<Widget> styleSlivers = [];
 
-        final styleSelectedColors = widget.selectedColors[styleKey]!;
-
-        // Create a group for this style's content
-        final List<Widget> styleSlivers = [];
-
-        // Add header (pinned: true - sticks within its group)
-        styleSlivers.add(
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CardHeaderDelegate(
-              minHeight: 150,
-              maxHeight: 150,
-              child: Container(
-                color: Colors.white,
-                child: _buildStickyHeader(
-                  styleKey,
-                  catalogOrder.catalog,
-                  context,
-                ),
+      // Add header (pinned: true - sticks within its group)
+      styleSlivers.add(
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _CardHeaderDelegate(
+            minHeight: 150,
+            maxHeight: 150,
+            child: Container(
+              color: Colors.white,
+              child: _buildStickyHeader(
+                styleKey,
+                catalogOrder.catalog,
+                context,
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        // Add all shades for this style
+      // Handle no-shade case
+      if (hasNoShades) {
+        // Show the no-shade card
+        styleSlivers.add(
+          SliverToBoxAdapter(
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildNoShadeCard(catalogOrder, styleKey, items),
+            ),
+          ),
+        );
+      } else {
+        // Add all shades for this style (existing code)
         for (var shade in styleSelectedColors) {
           styleSlivers.add(
             SliverToBoxAdapter(
@@ -1926,12 +1957,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                       children: [
                         Expanded(
                           child: TextButton.icon(
-                            onPressed:
-                                () => _removeShadeLocally(
-                                  context,
-                                  styleKey,
-                                  shade,
-                                ),
+                            onPressed: () => _removeShadeLocally(context, styleKey, shade),
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20.0,
@@ -1942,17 +1968,10 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                               ),
                               side: BorderSide(color: Colors.red.shade600),
                             ),
-                            icon: Icon(
-                              Icons.delete,
-                              color: Colors.red.shade600,
-                            ),
+                            icon: Icon(Icons.delete, color: Colors.red.shade600),
                             label: Text(
                               'Delete',
-                              style: TextStyle(
-                                color: Colors.red.shade600,
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: TextStyle(color: Colors.red.shade600, fontSize: 16.0, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -1979,25 +1998,371 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
             ),
           );
         }
-
-        // Add spacing at the bottom of this style
-        styleSlivers.add(
-          SliverToBoxAdapter(
-            child: Container(
-              color: Colors.white,
-              child: const SizedBox(height: 16),
-            ),
-          ),
-        );
-
-        // Wrap each style's slivers in SliverMainAxisGroup
-        allSlivers.add(SliverMainAxisGroup(slivers: styleSlivers));
       }
 
-      return CustomScrollView(slivers: allSlivers);
+      // Add spacing at the bottom of this style
+      styleSlivers.add(
+        SliverToBoxAdapter(
+          child: Container(
+            color: Colors.white,
+            child: const SizedBox(height: 16),
+          ),
+        ),
+      );
+
+      // Wrap each style's slivers in SliverMainAxisGroup
+      allSlivers.add(SliverMainAxisGroup(slivers: styleSlivers));
+    }
+
+    return CustomScrollView(slivers: allSlivers);
+  }
+}
+  bool _hasNoShades(String styleKey, CatalogOrderData catalogOrder) {
+  // Check if the style has no valid shades (only empty/null shades)
+  final shades = catalogOrder.orderMatrix.shades;
+  return shades.isEmpty || (shades.length == 1 && (shades.first.isEmpty || shades.first == 'null'));
+}
+
+Widget _buildNoShadeCard(CatalogOrderData catalogOrder, String styleKey, List<dynamic> items) {
+  final sizes = catalogOrder.orderMatrix.sizes;
+  final styleQuantities = widget.quantities[styleKey] ?? {};
+  final shadeKey = '_no_shade_';
+  final shadeQuantities = styleQuantities[shadeKey] ?? {};
+  
+  // Calculate total quantity and price for this style
+  int totalQty = 0;
+  double totalPrice = 0;
+  
+  for (var size in sizes) {
+    final qty = shadeQuantities[size] ?? 0;
+    totalQty += qty;
+    
+    // Find WSP for this size
+    final sizeIndex = sizes.indexOf(size);
+    if (sizeIndex != -1) {
+      // Use first row (index 0) since no shades
+      final matrixData = catalogOrder.orderMatrix.matrix[0][sizeIndex].split(',');
+      final wsp = double.tryParse(matrixData.length > 1 ? matrixData[1] : matrixData[0]) ?? 0;
+      totalPrice += wsp * qty;
     }
   }
 
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey.shade300),
+      color: Colors.white,
+    ),
+    child: Column(
+      children: [
+        // First header row: (Empty Space), Quantity, Amount
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+                decoration: BoxDecoration(
+                  border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Text(
+                  " ", // Empty for no-shade
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.lora(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                decoration: BoxDecoration(
+                  border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Text(
+                  "Quantity",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.lora(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  "Amount",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.lora(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        Divider(height: 1, color: Colors.grey.shade300),
+
+        // Second row: Empty space with total quantity and price
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                decoration: BoxDecoration(
+                  border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Text(
+                  " ", // Empty for no-shade
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                decoration: BoxDecoration(
+                  border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Text(
+                  totalQty.toString(),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.roboto(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                child: Text(
+                  '₹${totalPrice.toStringAsFixed(2)}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.roboto(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        Divider(height: 1, color: Colors.grey.shade300),
+
+        // Third header row: Size, Qty, Rate, WSP, Stock
+        Row(
+          children: [
+            _buildHeader("Size", 1),
+            _buildHeader("Qty", 2),
+            _buildHeader("Rate", 1),
+            _buildHeader("WSP", 1),
+            _buildHeader("Stock", 1),
+          ],
+        ),
+
+        Divider(height: 1, color: Colors.grey.shade300),
+
+        // Size rows for no-shade
+        for (var size in sizes) ...[
+          _buildNoShadeSizeRow(catalogOrder, size, styleKey),
+          if (size != sizes.last) Divider(height: 1, color: Colors.grey.shade300),
+        ],
+        
+        const SizedBox(height: 8),
+      ],
+    ),
+  );
+}
+Widget _buildNoShadeSizeRow(CatalogOrderData catalogOrder, String size, String styleKey) {
+  final matrix = catalogOrder.orderMatrix;
+  final shadeKey = '_no_shade_';
+  final sizeIndex = matrix.sizes.indexOf(size.trim());
+  
+  String rate = '0';
+  String stock = '0';
+  String wsp = '0';
+  TextEditingController? controller;
+  
+  if (sizeIndex != -1) {
+    // Use first row (index 0) since no shades
+    final matrixData = matrix.matrix[0][sizeIndex].split(',');
+    rate = matrixData[0];
+    wsp = matrixData.length > 1 ? matrixData[1] : '0';
+    stock = matrixData.length > 2 ? matrixData[2] : '0';
+    
+    // Get or create controller
+    // Check if controller exists in widget.controllers
+    if (widget.controllers.containsKey(styleKey)) {
+      if (widget.controllers[styleKey]!.containsKey(shadeKey)) {
+        if (widget.controllers[styleKey]![shadeKey]!.containsKey(size)) {
+          controller = widget.controllers[styleKey]![shadeKey]![size];
+        }
+      }
+    }
+    
+    // If controller is null, create a new one
+    if (controller == null) {
+      final initialQty = widget.quantities[styleKey]?[shadeKey]?[size] ?? 0;
+      controller = TextEditingController(text: initialQty.toString())
+        ..addListener(() {
+          widget.updateTotals();
+        });
+      
+      // Add controller to the map
+      widget.controllers.putIfAbsent(styleKey, () => {});
+      widget.controllers[styleKey]!.putIfAbsent(shadeKey, () => {});
+      widget.controllers[styleKey]![shadeKey]!.putIfAbsent(size, () => controller!);
+    }
+  }
+  
+  // Get current quantity
+  int quantity = 0;
+  if (widget.quantities.containsKey(styleKey)) {
+    if (widget.quantities[styleKey]!.containsKey(shadeKey)) {
+      if (widget.quantities[styleKey]![shadeKey]!.containsKey(size)) {
+        quantity = widget.quantities[styleKey]![shadeKey]![size]!;
+      } else {
+        // Initialize if missing
+        widget.quantities[styleKey]![shadeKey]![size] = 0;
+      }
+    } else {
+      // Initialize if missing
+      widget.quantities[styleKey]![shadeKey] = {};
+      widget.quantities[styleKey]![shadeKey]![size] = 0;
+    }
+  } else {
+    // Initialize if missing
+    widget.quantities[styleKey] = {};
+    widget.quantities[styleKey]![shadeKey] = {};
+    widget.quantities[styleKey]![shadeKey]![size] = 0;
+  }
+  
+  // Update controller text if needed
+  if (controller != null && controller.text != quantity.toString()) {
+    controller.text = quantity.toString();
+  }
+  
+  return Row(
+    children: [
+      _buildCell(size, 1),
+      Expanded(
+        flex: 2,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(right: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // MINUS BUTTON
+              InkWell(
+                onTap: () {
+                  final newQuantity = (quantity - 1).clamp(0, 9999);
+                  setState(() {
+                    // Update quantities
+                    if (widget.quantities.containsKey(styleKey) &&
+                        widget.quantities[styleKey]!.containsKey(shadeKey)) {
+                      widget.quantities[styleKey]![shadeKey]![size] = newQuantity;
+                      controller?.text = newQuantity.toString();
+                    } else {
+                      // Initialize if missing
+                      widget.quantities[styleKey] ??= {};
+                      widget.quantities[styleKey]![shadeKey] ??= {};
+                      widget.quantities[styleKey]![shadeKey]![size] = newQuantity;
+                    }
+                  });
+                  widget.updateTotals();
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.remove, size: 16),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // QUANTITY TEXT FIELD
+              SizedBox(
+                width: 45,
+                child: TextField(
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                  ),
+                  style: GoogleFonts.roboto(fontSize: 13, fontWeight: FontWeight.w500),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                  ],
+                  onChanged: (value) {
+                    final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                    setState(() {
+                      if (widget.quantities.containsKey(styleKey) &&
+                          widget.quantities[styleKey]!.containsKey(shadeKey)) {
+                        widget.quantities[styleKey]![shadeKey]![size] = newQuantity.clamp(0, 999);
+                      }
+                    });
+                    widget.updateTotals();
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              // PLUS BUTTON
+              InkWell(
+                onTap: () {
+                  final newQuantity = (quantity + 1).clamp(0, 9999);
+                  setState(() {
+                    if (widget.quantities.containsKey(styleKey) &&
+                        widget.quantities[styleKey]!.containsKey(shadeKey)) {
+                      widget.quantities[styleKey]![shadeKey]![size] = newQuantity;
+                      controller?.text = newQuantity.toString();
+                    } else {
+                      // Initialize if missing
+                      widget.quantities[styleKey] ??= {};
+                      widget.quantities[styleKey]![shadeKey] ??= {};
+                      widget.quantities[styleKey]![shadeKey]![size] = newQuantity;
+                    }
+                  });
+                  widget.updateTotals();
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.add, size: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      _buildCell(rate, 1),
+      _buildCell(wsp, 1),
+      _buildCell(stock, 1),
+    ],
+  );
+}
   Widget _buildStickyHeader(
     String styleKey,
     Catalog catalog,
@@ -4889,8 +5254,8 @@ class _AddMoreInfoDialog2State extends State<AddMoreInfoDialog2> {
   void _onSave() {
     final newInfo = {
       'salesman': _selectedSalesmanKey,
-      'consignee': _selectedConsigneeKey, // Save the key
-      'paymentterms': _selectedPaymentTermKey, // Save the key
+      'consignee': _selectedConsigneeKey, 
+      'paymentterms': _selectedPaymentTermKey, 
       'bookingtype': _selectedBookingTypeKey,
       'refno': _refNoController.text,
       'station': _stationController.text,
