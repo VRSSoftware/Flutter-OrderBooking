@@ -26,6 +26,7 @@ class StyleCard extends StatefulWidget {
   final VoidCallback updateTotals;
   final Color Function(String) getColor;
   final VoidCallback onUpdate;
+  final bool isNoShade;
 
   const StyleCard({
     required this.styleCode,
@@ -35,6 +36,7 @@ class StyleCard extends StatefulWidget {
     required this.updateTotals,
     required this.getColor,
     required this.onUpdate,
+    this.isNoShade = false,
     Key? key,
   }) : super(key: key);
 
@@ -679,78 +681,96 @@ Widget _buildCompactDetailChip(String label, String value) {
     );
   }
 
-  TableRow _buildEnhancedHeaderRow(List<String> sizes) {
-    return TableRow(
-      decoration: BoxDecoration(
-        color: TableColors.headerBg, // Solid color, no gradient
+TableRow _buildEnhancedHeaderRow(List<String> sizes) {
+  return TableRow(
+    decoration: BoxDecoration(
+      color: TableColors.headerBg,
+    ),
+    children: [
+      // First cell - for no-shade, show "SIZE" text left-aligned
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          height: 50,
+          padding: const EdgeInsets.only(left: 16), // Add left padding
+          child: widget.isNoShade
+              ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'SIZE',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                      fontSize: 14,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                )
+              : CustomPaint(
+                  painter: _SimpleDiagonalPainter(),
+                  child: const Stack(
+                    children: [
+                      Positioned(
+                        left: 10,
+                        top: 22,
+                        child: Text(
+                          'SHADE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 14,
+                        bottom: 18,
+                        child: Text(
+                          'SIZE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
       ),
-      children: [
-        TableCell(
+      // Size columns - actual size values (XS, S, M, L, XL, etc.)
+      ...sizes.map(
+        (size) => TableCell(
           verticalAlignment: TableCellVerticalAlignment.middle,
           child: Container(
-            height: 50,
-            child: CustomPaint(
-              painter: _SimpleDiagonalPainter(), // Simple painter without gradient
-              child: const Stack(
-                children: [
-                  Positioned(
-                    left: 10,
-                    top: 22,
-                    child: Text(
-                      'SHADE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
-                        fontSize: 14,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 14,
-                    bottom: 22,
-                    child: Text(
-                      'SIZE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber,
-                        fontSize: 14,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: Colors.white.withOpacity(0.2), width: 0.5),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                size,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
         ),
-        ...sizes.map(
-          (size) => TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Colors.white.withOpacity(0.2), width: 0.5),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  size,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
+ 
   void _clearShadeQuantities(String shade) {
   // Show confirmation dialog
   showDialog(
@@ -808,7 +828,7 @@ Widget _buildCompactDetailChip(String label, String value) {
   );
 }
 
- TableRow _buildEnhancedShadeRow(String shade, List<String> sizes, int rowIndex) {
+TableRow _buildEnhancedShadeRow(String shade, List<String> sizes, int rowIndex) {
   final isEvenRow = rowIndex % 2 == 0;
   final imageUrl = _getShadeImageUrl(shade);
 
@@ -826,83 +846,83 @@ Widget _buildCompactDetailChip(String label, String value) {
               right: BorderSide(color: TableColors.borderColor, width: 0.5),
             ),
           ),
-          child: Row(
-            children: [
-              // ADD THIS - Clear icon for each shade
-              Container(
-                margin: const EdgeInsets.only(right: 6),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4),
-                    onTap: () => _clearShadeQuantities(shade),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Icon(
-                        Icons.clear_all,
-                        size: 14,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // END OF ADDED CODE
-              
-              Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+          child: widget.isNoShade
+              ? const SizedBox() // Empty for no-shade (no icons, no text)
+              : Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        shade,
-                        style: TextStyle(
-                          color: widget.getColor(shade),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                    if (imageUrl != null)
-                      Container(
-                        margin: const EdgeInsets.only(left: 4),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ImageZoomScreen(
-                                    imageUrls: [imageUrl],
-                                    initialIndex: 0,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              child: Icon(
-                                Icons.image,
-                                size: 12,
-                                color: TableColors.accentColor,
-                              ),
+                    // Clear icon for each shade (only for normal shades)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          onTap: () => _clearShadeQuantities(shade),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(
+                              Icons.clear_all,
+                              size: 14,
+                              color: Colors.red.shade700,
                             ),
                           ),
                         ),
                       ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              shade,
+                              style: TextStyle(
+                                color: widget.getColor(shade),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          if (imageUrl != null)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ImageZoomScreen(
+                                          imageUrls: [imageUrl],
+                                          initialIndex: 0,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 12,
+                                      color: TableColors.accentColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
       ...sizes.map(

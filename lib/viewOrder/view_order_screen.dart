@@ -1432,6 +1432,15 @@ class _StyleCardsView extends StatelessWidget {
     this.filteredEntries,
   });
 
+  // Helper method to check if style has valid shades (non-null, non-empty)
+  bool _hasValidShades(List<dynamic> items) {
+    return items.any((item) => 
+      item['shadeName'] != null && 
+      item['shadeName'].toString().isNotEmpty && 
+      item['shadeName'].toString() != 'null'
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!styleManager.isOrderItemsLoaded) {
@@ -1475,19 +1484,19 @@ class _StyleCardsView extends StatelessWidget {
 
       return Column(
         children: entries.map((entry) {
-          // FIX: Check if controllers exist for this style before building
           final controllersForStyle = styleManager.controllers[entry.key];
           
-          // If controllers don't exist, skip this entry (shouldn't happen but safe)
           if (controllersForStyle == null) {
             print('Warning: No controllers found for style ${entry.key}');
             return const SizedBox.shrink();
           }
           
+          final hasValidShades = _hasValidShades(entry.value);
+          
           return StyleCard(
             styleCode: entry.key,
             items: entry.value,
-            controllers: controllersForStyle, // Safe to use with !
+            controllers: controllersForStyle,
             onRemove: () {
               styleManager.removedStyles.add(entry.key);
               styleManager.controllers.remove(entry.key);
@@ -1496,12 +1505,14 @@ class _StyleCardsView extends StatelessWidget {
             updateTotals: updateTotals,
             getColor: getColor,
             onUpdate: onUpdate,
+            isNoShade: !hasValidShades, // Pass this flag
           );
         }).toList(),
       );
     }
   }
 }
+
 class _OrderForm extends StatefulWidget {
   final _OrderControllers controllers;
   final _DropdownData dropdownData;

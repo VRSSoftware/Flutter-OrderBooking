@@ -992,57 +992,75 @@ class _TransactionTab3State extends State<TransactionTab3> {
     _initializeData();
   }
 
-  void _initializeData() {
-    for (var order in EditOrderData.data) {
-      final styleKey = order.catalog.styleKey;
-      final shades = order.orderMatrix.shades;
-      final sizes = order.orderMatrix.sizes;
+ void _initializeData() {
+  for (var order in EditOrderData.data) {
+    final styleKey = order.catalog.styleKey;
+    // Filter out empty/null shades and add placeholder if none
+    List<String> shades = order.orderMatrix.shades
+        .where((shade) => shade.isNotEmpty && shade != 'null')
+        .toList();
+    
+    // If no valid shades, add a placeholder
+    if (shades.isEmpty) {
+      shades = [''];
+    }
+    
+    final sizes = order.orderMatrix.sizes;
 
-      sizesMap[styleKey] = sizes;
-      colorsMap[styleKey] = shades;
-      sizeMrpMap[styleKey] = {};
-      sizeWspMap[styleKey] = {};
-      controllersMap.putIfAbsent(styleKey, () => {});
-      for (var shade in shades) {
-        controllersMap[styleKey]!.putIfAbsent(shade, () => {});
-        for (var size in sizes) {
-          final value = _getMatrixValue(order, shade, size);
-          controllersMap[styleKey]![shade]![size] = TextEditingController(
-            text: value['qty'].toString(),
-          );
-          sizeMrpMap[styleKey]![size] = double.tryParse(value['mrp']) ?? 0;
-          sizeWspMap[styleKey]![size] = double.tryParse(value['wsp']) ?? 0;
-        }
+    sizesMap[styleKey] = sizes;
+    colorsMap[styleKey] = shades;
+    sizeMrpMap[styleKey] = {};
+    sizeWspMap[styleKey] = {};
+    controllersMap.putIfAbsent(styleKey, () => {});
+    for (var shade in shades) {
+      controllersMap[styleKey]!.putIfAbsent(shade, () => {});
+      for (var size in sizes) {
+        final value = _getMatrixValue(order, shade, size);
+        controllersMap[styleKey]![shade]![size] = TextEditingController(
+          text: value['qty'].toString(),
+        );
+        sizeMrpMap[styleKey]![size] = double.tryParse(value['mrp']) ?? 0;
+        sizeWspMap[styleKey]![size] = double.tryParse(value['wsp']) ?? 0;
       }
     }
   }
+}
+bool _hasValidShades(CatalogOrderData catalogOrder) {
+  return catalogOrder.orderMatrix.shades.any(
+    (shade) => shade.isNotEmpty && shade != 'null'
+  );
+}
 
-  Map<String, dynamic> _getMatrixValue(
-    CatalogOrderData order,
-    String shade,
-    String size,
-  ) {
-    final shadeIndex = order.orderMatrix.shades.indexOf(shade);
-    final sizeIndex = order.orderMatrix.sizes.indexOf(size);
+ Map<String, dynamic> _getMatrixValue(
+  CatalogOrderData order,
+  String shade,
+  String size,
+) {
+  int shadeIndex = order.orderMatrix.shades.indexOf(shade);
+  // If shade not found and it's empty string, try to use index 0
+  if (shadeIndex < 0 && shade.isEmpty && order.orderMatrix.shades.isNotEmpty) {
+    shadeIndex = 0;
+  }
+  
+  final sizeIndex = order.orderMatrix.sizes.indexOf(size);
 
-    if (shadeIndex < 0 || sizeIndex < 0) {
-      return {'mrp': '0', 'wsp': '0', 'qty': '0', 'stock': '0'};
-    }
-
-    final matrixEntry = order.orderMatrix.matrix[shadeIndex][sizeIndex];
-    final parts = matrixEntry.split(',');
-    if (parts.length < 4) {
-      return {'mrp': '0', 'wsp': '0', 'qty': '0', 'stock': '0'};
-    }
-
-    return {
-      'mrp': parts[0],
-      'wsp': parts[1],
-      'qty': parts[2],
-      'stock': parts[3],
-    };
+  if (shadeIndex < 0 || sizeIndex < 0) {
+    return {'mrp': '0', 'wsp': '0', 'qty': '0', 'stock': '0'};
   }
 
+  final matrixEntry = order.orderMatrix.matrix[shadeIndex][sizeIndex];
+  final parts = matrixEntry.split(',');
+  if (parts.length < 4) {
+    return {'mrp': '0', 'wsp': '0', 'qty': '0', 'stock': '0'};
+  }
+
+  return {
+    'mrp': parts[0],
+    'wsp': parts[1],
+    'qty': parts[2],
+    'stock': parts[3],
+  };
+}
   void _showStyleCopyDialog(BuildContext context, String styleKey) {
     showDialog(
       context: context,
@@ -1688,64 +1706,65 @@ class _TransactionTab3State extends State<TransactionTab3> {
   }
 
   // ENHANCED PRICE TABLE - FULL WIDTH
-  Widget _buildEnhancedPriceTable(CatalogOrderData catalogOrder) {
-    final styleKey = catalogOrder.catalog.styleKey;
-    final sizes = catalogOrder.orderMatrix.sizes;
-    final shades = catalogOrder.orderMatrix.shades;
-    final sizeDetails = _getSizeDetails(catalogOrder);
+ Widget _buildEnhancedPriceTable(CatalogOrderData catalogOrder) {
+  final styleKey = catalogOrder.catalog.styleKey;
+  final sizes = catalogOrder.orderMatrix.sizes;
+  final shades = catalogOrder.orderMatrix.shades;
+  final sizeDetails = _getSizeDetails(catalogOrder);
+  final hasShades = _hasValidShades(catalogOrder);
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: TableColors.borderColor),
-          bottom: BorderSide(color: TableColors.borderColor),
-        ),
-        color: Colors.white,
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      border: Border(
+        top: BorderSide(color: TableColors.borderColor),
+        bottom: BorderSide(color: TableColors.borderColor),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.of(context).size.width,
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Table(
-              border: TableBorder.all(
-                color: TableColors.borderColor,
-                width: 0.5,
-              ),
-              columnWidths: _buildColumnWidths(sizes),
-              children: [
-                // Header row with diagonal cell
-                _buildEnhancedHeaderRow(sizes),
-
-                // MRP row
-                _buildEnhancedPriceRow('MRP', sizes, sizeDetails, 'mrp'),
-
-                // WSP row
-                _buildEnhancedPriceRow('WSP', sizes, sizeDetails, 'wsp'),
-
-                // Shade rows with alternating colors
-                ...shades.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final shade = entry.value;
-                  return _buildEnhancedShadeRow(
-                    catalogOrder,
-                    shade,
-                    sizes,
-                    index,
-                    styleKey,
-                  );
-                }),
-              ],
+      color: Colors.white,
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: MediaQuery.of(context).size.width,
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Table(
+            border: TableBorder.all(
+              color: TableColors.borderColor,
+              width: 0.5,
             ),
+            columnWidths: _buildColumnWidths(sizes),
+            children: [
+              // Header row with diagonal cell
+              _buildEnhancedHeaderRow(sizes, hasShades),
+
+              // MRP row
+              _buildEnhancedPriceRow('MRP', sizes, sizeDetails, 'mrp'),
+
+              // WSP row
+              _buildEnhancedPriceRow('WSP', sizes, sizeDetails, 'wsp'),
+
+              // Shade rows with alternating colors
+              ...shades.asMap().entries.map((entry) {
+                final index = entry.key;
+                final shade = entry.value;
+                return _buildEnhancedShadeRow(
+                  catalogOrder,
+                  shade,
+                  sizes,
+                  index,
+                  styleKey,
+                );
+              }),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Map<String, Map<String, dynamic>> _getSizeDetails(
     CatalogOrderData catalogOrder,
@@ -1781,38 +1800,55 @@ class _TransactionTab3State extends State<TransactionTab3> {
         i + 1: FixedColumnWidth(sizeColumnWidth),
     };
   }
-
-  TableRow _buildEnhancedHeaderRow(List<String> sizes) {
-    return TableRow(
-      decoration: BoxDecoration(color: TableColors.headerBg),
-      children: [
-        TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            height: 50,
-            child: CustomPaint(
-              painter: _SimpleDiagonalPainter(),
-              child: const Stack(
-                children: [
-                  Positioned(
-                    left: 10,
-                    top: 22,
-                    child: Text(
-                      'SHADE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
-                        fontSize: 14,
-                        letterSpacing: 0.8,
+TableRow _buildEnhancedHeaderRow(List<String> sizes, bool hasShades) {
+  return TableRow(
+    decoration: BoxDecoration(color: TableColors.headerBg),
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          height: 50,
+          child: hasShades
+              ? CustomPaint(
+                  painter: _SimpleDiagonalPainter(),
+                  child: const Stack(
+                    children: [
+                      Positioned(
+                        left: 10,
+                        top: 22,
+                        child: Text(
+                          'SHADE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 14,
+                        bottom: 22,
+                        child: Text(
+                          'SIZE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    right: 14,
-                    bottom: 22,
+                )
+              : Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
                     child: Text(
                       'SIZE',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.amber,
                         fontSize: 14,
@@ -1820,40 +1856,39 @@ class _TransactionTab3State extends State<TransactionTab3> {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
-        ...sizes.map(
-          (size) => TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 0.5,
-                  ),
+      ),
+      ...sizes.map(
+        (size) => TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 0.5,
                 ),
               ),
-              child: Center(
-                child: Text(
-                  size,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
+            ),
+            child: Center(
+              child: Text(
+                size,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: Colors.white,
                 ),
               ),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   TableRow _buildEnhancedPriceRow(
     String label,
@@ -1909,120 +1944,117 @@ class _TransactionTab3State extends State<TransactionTab3> {
     );
   }
 
-  TableRow _buildEnhancedShadeRow(
-    CatalogOrderData catalogOrder,
-    String shade,
-    List<String> sizes,
-    int rowIndex,
-    String styleKey,
-  ) {
-    final isEvenRow = rowIndex % 2 == 0;
+ TableRow _buildEnhancedShadeRow(
+  CatalogOrderData catalogOrder,
+  String shade,
+  List<String> sizes,
+  int rowIndex,
+  String styleKey,
+) {
+  final isEvenRow = rowIndex % 2 == 0;
+  final hasShades = _hasValidShades(catalogOrder);
 
-    return TableRow(
-      decoration: BoxDecoration(
-        color: isEvenRow ? TableColors.evenRowBg : TableColors.oddRowBg,
-      ),
-      children: [
-        TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: TableColors.borderColor, width: 0.5),
-              ),
+  return TableRow(
+    decoration: BoxDecoration(
+      color: isEvenRow ? TableColors.evenRowBg : TableColors.oddRowBg,
+    ),
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: TableColors.borderColor, width: 0.5),
             ),
-            child: Row(
-              children: [
-                // Copy icon
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(4),
-                      onTap: () => _showShadeCopyOptions(styleKey, shade),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: TableColors.accentColor.withOpacity(0.1),
+          ),
+          child: hasShades
+              ? Row(
+                  children: [
+                    // Copy icon (only for shades)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          Icons.copy_all,
-                          size: 14,
-                          color: TableColors.accentColor,
+                          onTap: () => _showShadeCopyOptions(styleKey, shade),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: TableColors.accentColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(
+                              Icons.copy_all,
+                              size: 14,
+                              color: TableColors.accentColor,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    shade,
-                    style: TextStyle(
-                      color: _getColorCode(shade),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                    Expanded(
+                      child: Text(
+                        shade,
+                        style: TextStyle(
+                          color: _getColorCode(shade),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
+                  ],
+                )
+              : const SizedBox(), // Empty for no-shade
         ),
-        ...sizes.map(
-          (size) => TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: TableColors.borderColor, width: 0.5),
-                ),
+      ),
+      ...sizes.map(
+        (size) => TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: TableColors.borderColor, width: 0.5),
               ),
-              child: TextField(
-                controller: controllersMap[styleKey]?[shade]?[size],
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                onChanged: (_) {
-                  _setQuantity(
-                    styleKey,
-                    shade,
-                    size,
-                    controllersMap[styleKey]?[shade]?[size]?.text ?? '0',
-                  );
-                },
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  hintText: _getMatrixValue(catalogOrder, shade, size)['stock'],
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  // focusedBorder: UnderlineInputBorder(
-                  //   borderSide: BorderSide(
-                  //     color: TableColors.accentColor,
-                  //     width: 1,
-                  //   ),
-                  // ),
+            ),
+            child: TextField(
+              controller: controllersMap[styleKey]?[shade]?[size],
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              onChanged: (_) {
+                _setQuantity(
+                  styleKey,
+                  shade,
+                  size,
+                  controllersMap[styleKey]?[shade]?[size]?.text ?? '0',
+                );
+              },
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                hintText: _getMatrixValue(catalogOrder, shade, size)['stock'],
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
                 ),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+              ),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   void _showShadeCopyOptions(String styleKey, String shade) {
     showModalBottomSheet(

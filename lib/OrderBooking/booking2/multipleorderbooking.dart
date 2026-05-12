@@ -13,6 +13,18 @@ import 'package:vrs_erp/models/catalog.dart';
 import 'dart:typed_data';
 import 'package:http_parser/http_parser.dart';
 
+extension NullOrEmpty on Object? {
+  bool get isNullOrEmpty {
+    if (this == null) return true;
+    if (this is String) return (this as String).isEmpty;
+    if (this is List) return (this as List).isEmpty;
+    if (this is Map) return (this as Map).isEmpty;
+    return false;
+  }
+  
+  bool get isNotNullOrEmpty => !isNullOrEmpty;
+}
+
 class CatalogItem {
   final String styleCode;
   final String shadeName;
@@ -127,97 +139,103 @@ void dispose() {
   });
 }
 
-  Future<void> fetchCatalogData(Catalog catalog) async {
-    final String apiUrl = '${AppConstants.BASE_URL}/catalog/GetOrderDetails';
+bool _hasShades(Catalog catalog) {
+  final items = catalogItemsMap[catalog.styleCode] ?? [];
+  return items.any((item) => item.shadeName.isNotNullOrEmpty);
+}
 
-    final Map<String, dynamic> requestBody = {
-      "itemSubGrpKey": catalog.itemSubGrpKey.toString(),
-      "itemKey": catalog.itemKey.toString(),
-      "styleKey": catalog.styleKey.toString(),
-      "userId": userId,
-      "coBrId": coBrId,
-      "fcYrId": fcYrId,
-      "stockWise": stockWise,
-      "brandKey": null,
-      "shadeKey": null,
-      "styleSizeId": null,
-      "fromMRP": null,
-      "toMRP": null,
-    };
+Future<void> fetchCatalogData(Catalog catalog) async {
+  final String apiUrl = '${AppConstants.BASE_URL}/catalog/GetOrderDetails';
 
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      );
+  final Map<String, dynamic> requestBody = {
+    "itemSubGrpKey": catalog.itemSubGrpKey.toString(),
+    "itemKey": catalog.itemKey.toString(),
+    "styleKey": catalog.styleKey.toString(),
+    "userId": userId,
+    "coBrId": coBrId,
+    "fcYrId": fcYrId,
+    "stockWise": stockWise,
+    "brandKey": null,
+    "shadeKey": null,
+    "styleSizeId": null,
+    "fromMRP": null,
+    "toMRP": null,
+  };
 
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        if (data.isNotEmpty) {
-          final items = data.map((e) => CatalogItem.fromJson(e)).toList();
-          final uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
-          final uniqueColors = items.map((e) => e.shadeName).toSet().toList();
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
 
-          Map<String, double> tempSizeMrpMap = {};
-          Map<String, double> tempSizeWspMap = {};
-          for (var item in items) {
-            tempSizeMrpMap[item.sizeName] = item.mrp;
-            tempSizeWspMap[item.sizeName] = item.wsp;
-          }
-
-          Map<String, Map<String, TextEditingController>> tempControllers = {};
-          for (var color in uniqueColors) {
-            tempControllers[color] = {};
-            for (var size in uniqueSizes) {
-              final match = items.firstWhere(
-                (item) => item.shadeName == color && item.sizeName == size,
-                orElse:
-                    () => CatalogItem(
-                      styleCode: catalog.styleCode,
-                      shadeName: color,
-                      sizeName: size,
-                      clQty: 0,
-                      mrp: tempSizeMrpMap[size] ?? 0,
-                      wsp: tempSizeWspMap[size] ?? 0,
-                    ),
-              );
-              final controller = TextEditingController();
-              controller.addListener(() => setState(() {}));
-              tempControllers[color]![size] = controller;
-            }
-          }
-
-          setState(() {
-            catalogItemsMap[catalog.styleCode] = items;
-            sizesMap[catalog.styleCode] = uniqueSizes;
-            colorsMap[catalog.styleCode] = uniqueColors;
-            styleCodeMap[catalog.styleCode] = catalog.styleCode;
-            sizeMrpMap[catalog.styleCode] = tempSizeMrpMap;
-            sizeWspMap[catalog.styleCode] = tempSizeWspMap;
-            controllersMap[catalog.styleCode] = tempControllers;
-            isLoadingMap[catalog.styleCode] = false;
-            if (uniqueSizes.length > maxSizes) {
-              maxSizes = uniqueSizes.length;
-            }
-            _loadingCounter--;
-            if (_loadingCounter == 0) {
-              isLoading = false;
-            }
-          });
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      if (data.isNotEmpty) {
+        final items = data.map((e) => CatalogItem.fromJson(e)).toList();
+        
+        // Check if all shades are null/empty
+        final hasValidShades = items.any((e) => e.shadeName.isNotNullOrEmpty);
+        
+        List<String> uniqueSizes;
+        List<String> uniqueColors;
+        
+        if (!hasValidShades) {
+          // No shades case - use empty string as shade
+          uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
+          uniqueColors = ['']; // Empty string for no-shade
         } else {
-          setState(() {
-            isLoadingMap[catalog.styleCode] = false;
-            _loadingCounter--;
-            if (_loadingCounter == 0) {
-              isLoading = false;
-            }
-          });
+          // Has shades - normal case
+          uniqueSizes = items.map((e) => e.sizeName).toSet().toList();
+          uniqueColors = items.map((e) => e.shadeName).toSet().toList();
         }
+
+        Map<String, double> tempSizeMrpMap = {};
+        Map<String, double> tempSizeWspMap = {};
+        for (var item in items) {
+          tempSizeMrpMap[item.sizeName] = item.mrp;
+          tempSizeWspMap[item.sizeName] = item.wsp;
+        }
+
+        Map<String, Map<String, TextEditingController>> tempControllers = {};
+        for (var color in uniqueColors) {
+          tempControllers[color] = {};
+          for (var size in uniqueSizes) {
+            final match = items.firstWhere(
+              (item) => item.shadeName == color && item.sizeName == size,
+              orElse: () => CatalogItem(
+                styleCode: catalog.styleCode,
+                shadeName: color,
+                sizeName: size,
+                clQty: 0,
+                mrp: tempSizeMrpMap[size] ?? 0,
+                wsp: tempSizeWspMap[size] ?? 0,
+              ),
+            );
+            final controller = TextEditingController();
+            controller.addListener(() => setState(() {}));
+            tempControllers[color]![size] = controller;
+          }
+        }
+
+        setState(() {
+          catalogItemsMap[catalog.styleCode] = items;
+          sizesMap[catalog.styleCode] = uniqueSizes;
+          colorsMap[catalog.styleCode] = uniqueColors;
+          styleCodeMap[catalog.styleCode] = catalog.styleCode;
+          sizeMrpMap[catalog.styleCode] = tempSizeMrpMap;
+          sizeWspMap[catalog.styleCode] = tempSizeWspMap;
+          controllersMap[catalog.styleCode] = tempControllers;
+          isLoadingMap[catalog.styleCode] = false;
+          if (uniqueSizes.length > maxSizes) {
+            maxSizes = uniqueSizes.length;
+          }
+          _loadingCounter--;
+          if (_loadingCounter == 0) {
+            isLoading = false;
+          }
+        });
       } else {
-        debugPrint(
-          'Failed to fetch catalog data for ${catalog.styleCode}: ${response.statusCode}',
-        );
         setState(() {
           isLoadingMap[catalog.styleCode] = false;
           _loadingCounter--;
@@ -226,8 +244,8 @@ void dispose() {
           }
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching catalog data for ${catalog.styleCode}: $e');
+    } else {
+      debugPrint('Failed to fetch catalog data for ${catalog.styleCode}: ${response.statusCode}');
       setState(() {
         isLoadingMap[catalog.styleCode] = false;
         _loadingCounter--;
@@ -236,8 +254,17 @@ void dispose() {
         }
       });
     }
+  } catch (e) {
+    debugPrint('Error fetching catalog data for ${catalog.styleCode}: $e');
+    setState(() {
+      isLoadingMap[catalog.styleCode] = false;
+      _loadingCounter--;
+      if (_loadingCounter == 0) {
+        isLoading = false;
+      }
+    });
   }
-
+}
   int getTotalQty(String styleCode) {
     int total = 0;
     final controllers = controllersMap[styleCode];
@@ -1369,64 +1396,54 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildCatalogTable(Catalog catalog) {
-    final sizes = sizesMap[catalog.styleCode] ?? [];
-
-    return Container(
-      width: double.infinity, // Use full width
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(0), // No border radius for table
-      ),
-      child: ClipRect(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth:
-                  MediaQuery.of(context).size.width - 24, // Account for padding
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Table(
-                border: TableBorder.all(
-                  color: Colors.grey.shade300,
-                  width: 0.5,
-                ),
-                columnWidths: _buildColumnWidths(sizes.length),
-                children: [
-                  _buildPriceRow(
-                    "MRP",
-                    sizeMrpMap[catalog.styleCode] ?? {},
-                    FontWeight.w600,
-                    sizes,
-                  ),
-                  _buildPriceRow(
-                    "WSP",
-                    sizeWspMap[catalog.styleCode] ?? {},
-                    FontWeight.w400,
-                    sizes,
-                  ),
-                  _buildHeaderRow(catalog.styleCode, sizes),
-                  for (
-                    var i = 0;
-                    i < (colorsMap[catalog.styleCode]?.length ?? 0);
-                    i++
-                  )
-                    _buildQuantityRow(
-                      catalog,
-                      colorsMap[catalog.styleCode]![i],
-                      i,
-                      sizes,
-                    ),
-                ],
+Widget _buildCatalogTable(Catalog catalog) {
+  final sizes = sizesMap[catalog.styleCode] ?? [];
+  final hasShades = _hasShades(catalog);
+  
+  // For no-shade, still use the same table structure but with empty shade cells
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(0),
+    ),
+    child: ClipRect(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width - 24,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Table(
+              border: TableBorder.all(
+                color: Colors.grey.shade300,
+                width: 0.5,
               ),
+              columnWidths: _buildColumnWidths(sizes.length),
+              children: [
+                _buildPriceRow("MRP", sizeMrpMap[catalog.styleCode] ?? {}, FontWeight.w600, sizes),
+                _buildPriceRow("WSP", sizeWspMap[catalog.styleCode] ?? {}, FontWeight.w400, sizes),
+                // Use empty header cell for no-shade
+                _buildHeaderRow(catalog.styleCode, sizes, hasShades),
+                for (var i = 0; i < (colorsMap[catalog.styleCode]?.length ?? 0); i++)
+                  _buildQuantityRow(
+                    catalog,
+                    colorsMap[catalog.styleCode]![i],
+                    i,
+                    sizes,
+                    hasShades, // Pass hasShades flag
+                  ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Map<int, TableColumnWidth> _buildColumnWidths(int sizeCount) {
     // Calculate dynamic column widths based on screen size
@@ -1579,66 +1596,82 @@ Widget build(BuildContext context) {
     );
   }
 
-  TableRow _buildHeaderRow(String styleCode, List<String> sizes) {
-    return TableRow(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 236, 212, 204).withOpacity(0.2),
-      ),
-      children: [
-        const TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: _TableHeaderCell(),
-        ),
-        ...List.generate(maxSizes, (index) {
-          if (index < sizes.length) {
-            return TableCell(
-              verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Center(
+TableRow _buildHeaderRow(String styleCode, List<String> sizes, bool hasShades) {
+  return TableRow(
+    decoration: BoxDecoration(
+      color: const Color.fromARGB(255, 236, 212, 204).withOpacity(0.2),
+    ),
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: hasShades
+            ? const _TableHeaderCell() // Show diagonal with Shade/Size
+            : Container(
+                height: 48,
+                padding: const EdgeInsets.only(left: 16), // Add left padding
+                child: const Align(
+                  alignment: Alignment.centerLeft, // Align to left
                   child: Text(
-                    sizes[index],
-                    style: const TextStyle(
+                    'SIZE',
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      color: Colors.red,
                       fontSize: 12,
-                      color: Colors.black87,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-            );
-          } else {
-            return const TableCell(
-              verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Center(child: Text('')),
-            );
-          }
-        }),
-      ],
-    );
-  }
+      ),
+      ...List.generate(maxSizes, (index) {
+        if (index < sizes.length) {
+          return TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: Text(
+                  sizes[index],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        } else {
+          return const TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Center(child: Text('')),
+          );
+        }
+      }),
+    ],
+  );
+}
+ TableRow _buildQuantityRow(
+  Catalog catalog,
+  String color,
+  int i,
+  List<String> sizes,
+  bool hasShades, // Add this parameter
+) {
+  final imageUrl = hasShades ? _getShadeImageUrl(catalog, color) : null;
+  final baseStyleImageUrl = hasShades ? _getImageUrl(catalog) : '';
+  final isGenerating = hasShades ? (isGeneratingAIImage[catalog.styleCode]?[color] == true) : false;
 
-  TableRow _buildQuantityRow(
-    Catalog catalog,
-    String color,
-    int i,
-    List<String> sizes,
-  ) {
-    // Get shade image URL
-    final imageUrl = _getShadeImageUrl(catalog, color);
-  final baseStyleImageUrl = _getImageUrl(catalog);
-  final isGenerating = isGeneratingAIImage[catalog.styleCode]?[color] == true;
-
-    return TableRow(
-      children: [
-        TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                // Copy icon
+  return TableRow(
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              // Only show copy icon if has shades
+              if (hasShades) ...[
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -1659,23 +1692,25 @@ Widget build(BuildContext context) {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          color,
-                          style: TextStyle(
-                            color: _getColorCode(color),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+              ],
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        hasShades ? color : '', // Empty for no-shade
+                        style: TextStyle(
+                          color: hasShades ? _getColorCode(color) : Colors.transparent,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                       if (UserSession.imageDependsOn == 'S' && baseStyleImageUrl.isNotEmpty)
+                    ),
+                    // Only show AI and image icons if has shades
+                    if (hasShades && UserSession.imageDependsOn == 'S' && baseStyleImageUrl.isNotEmpty)
                       Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -1710,95 +1745,87 @@ Widget build(BuildContext context) {
                           ),
                         ),
                       ),
-                      if (UserSession.imageDependsOn == 'S' && imageUrl != null)
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => ImageZoomScreen(
-                                        imageUrls: [imageUrl],
-                                        initialIndex: 0,
-                                      ),
+                    if (hasShades && UserSession.imageDependsOn == 'S' && imageUrl != null)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ImageZoomScreen(
+                                  imageUrls: [imageUrl],
+                                  initialIndex: 0,
                                 ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              child: Icon(
-                                Icons.image,
-                                size: 12,
-                                color: AppColors.primaryColor,
                               ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.image,
+                              size: 12,
+                              color: AppColors.primaryColor,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        ...List.generate(maxSizes, (index) {
-          if (index < sizes.length) {
-            final size = sizes[index];
-            final controller = controllersMap[catalog.styleCode]?[color]?[size];
-            final originalQty =
-                catalogItemsMap[catalog.styleCode]
-                    ?.firstWhere(
-                      (item) =>
-                          item.shadeName == color && item.sizeName == size,
-                      orElse:
-                          () => CatalogItem(
-                            styleCode: catalog.styleCode,
-                            shadeName: color,
-                            sizeName: size,
-                            clQty: 0,
-                            mrp: sizeMrpMap[catalog.styleCode]?[size] ?? 0,
-                            wsp: sizeWspMap[catalog.styleCode]?[size] ?? 0,
-                          ),
-                    )
-                    .clQty ??
-                0;
-
-            return TableCell(
-              verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    hintText: originalQty > 0 ? originalQty.toString() : '0',
-                    hintStyle: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                  ),
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                  ],
                 ),
               ),
-            );
-          } else {
-            return const TableCell(
-              verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Center(child: Text('')),
-            );
-          }
-        }),
-      ],
-    );
-  }
+            ],
+          ),
+        ),
+      ),
+      ...List.generate(maxSizes, (index) {
+        if (index < sizes.length) {
+          final size = sizes[index];
+          final controller = controllersMap[catalog.styleCode]?[color]?[size];
+          final originalQty = catalogItemsMap[catalog.styleCode]
+              ?.firstWhere(
+                (item) => item.shadeName == color && item.sizeName == size,
+                orElse: () => CatalogItem(
+                  styleCode: catalog.styleCode,
+                  shadeName: color,
+                  sizeName: size,
+                  clQty: 0,
+                  mrp: sizeMrpMap[catalog.styleCode]?[size] ?? 0,
+                  wsp: sizeWspMap[catalog.styleCode]?[size] ?? 0,
+                ),
+              )
+              .clQty ?? 0;
+
+          return TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  hintText: originalQty > 0 ? originalQty.toString() : '0',
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              ),
+            ),
+          );
+        } else {
+          return const TableCell(
+            verticalAlignment: TableCellVerticalAlignment.middle,
+            child: Center(child: Text('')),
+          );
+        }
+      }),
+    ],
+  );
+}
 
   void _showShadeCopyDialog(Catalog catalog, String color) {
     showModalBottomSheet(
