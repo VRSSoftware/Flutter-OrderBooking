@@ -1782,6 +1782,10 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
     }
   }
 
+bool _hasValidShades(CatalogOrderData catalogOrder) {
+  final shades = selectedColors2[catalogOrder.catalog.styleKey] ?? {};
+  return shades.any((shade) => shade.isNotEmpty && shade != 'null');
+}
   // REPLACE the existing fetchCatalogData with these two methods
 
   // Method to fetch data for a specific barcode
@@ -3387,249 +3391,268 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
   }
 
   // Combined table with MRP, WSP, and all shades
-  Widget _buildCombinedTable(CatalogOrderData catalogOrder) {
-    final styleKey = catalogOrder.catalog.styleKey;
-    final sizes = catalogOrder.orderMatrix.sizes;
-    final sizeMrp = sizeMrpMap[styleKey] ?? {};
-    final sizeWsp = sizeWspMap[styleKey] ?? {};
-    final allShades = selectedColors2[styleKey] ?? {};
-    final items =
-        catalogOrderList
-            .firstWhere((order) => order.catalog.styleKey == styleKey)
-            .orderMatrix;
+Widget _buildCombinedTable(CatalogOrderData catalogOrder) {
+  final styleKey = catalogOrder.catalog.styleKey;
+  final sizes = catalogOrder.orderMatrix.sizes;
+  final sizeMrp = sizeMrpMap[styleKey] ?? {};
+  final sizeWsp = sizeWspMap[styleKey] ?? {};
+  final allShades = selectedColors2[styleKey] ?? {};
+  
+  // Filter out empty/null shades
+  final validShades = allShades.where((s) => s.isNotEmpty && s != 'null').toList();
+  final bool hasShades = validShades.isNotEmpty;
+  
+  final items = catalogOrderList
+      .firstWhere((order) => order.catalog.styleKey == styleKey)
+      .orderMatrix;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: TableColors.borderColor),
-          bottom: BorderSide(color: TableColors.borderColor),
-        ),
-        color: Colors.white,
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      border: Border(
+        top: BorderSide(color: TableColors.borderColor),
+        bottom: BorderSide(color: TableColors.borderColor),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.of(context).size.width,
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Table(
-              border: TableBorder.all(
-                color: TableColors.borderColor,
-                width: 0.5,
-              ),
-              columnWidths: _buildColumnWidths(sizes.length),
-              children: [
-                // Header row with diagonal line
-                TableRow(
-                  decoration: BoxDecoration(color: TableColors.headerBg),
-                  children: [
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        height: 50,
-                        child: CustomPaint(
-                          painter: _SimpleDiagonalPainter(),
-                          child: const Stack(
-                            children: [
-                              Positioned(
-                                left: 8,
-                                top: 22,
-                                child: Text(
-                                  'SHADE',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 10,
-                                bottom: 20,
-                                child: Text(
-                                  'SIZE',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.amber,
-                                    fontSize: 14,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    ...sizes.map(
-                      (size) => TableCell(
-                        verticalAlignment: TableCellVerticalAlignment.middle,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              size,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // MRP row (shown only once)
-                TableRow(
-                  decoration: BoxDecoration(color: TableColors.priceRowBg),
-                  children: [
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        child: const Text(
-                          'MRP',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ...sizes.map((size) {
-                      final price = sizeMrp[size] ?? 0.0;
-                      return TableCell(
-                        verticalAlignment: TableCellVerticalAlignment.middle,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: TableColors.borderColor,
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${price.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade800,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-
-                // WSP row (shown only once)
-                TableRow(
-                  decoration: BoxDecoration(color: TableColors.priceRowBg),
-                  children: [
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        child: const Text(
-                          'WSP',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ...sizes.map((size) {
-                      final price = sizeWsp[size] ?? 0.0;
-                      return TableCell(
-                        verticalAlignment: TableCellVerticalAlignment.middle,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: TableColors.borderColor,
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${price.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade800,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-
-                // All shade rows (multiple rows)
-                ...allShades.map(
-                  (shade) => _buildShadeRow(catalogOrder, shade, sizes, items),
-                ),
-              ],
+      color: Colors.white,
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: MediaQuery.of(context).size.width,
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Table(
+            border: TableBorder.all(
+              color: TableColors.borderColor,
+              width: 0.5,
             ),
+            columnWidths: _buildColumnWidths(sizes.length),
+            children: [
+              // Header row - with diagonal line (only if has shades)
+              TableRow(
+                decoration: BoxDecoration(color: TableColors.headerBg),
+                children: [
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                    child: Container(
+                      height: 50,
+                      child: hasShades
+                          ? CustomPaint(
+                              painter: _SimpleDiagonalPainter(),
+                              child: const Stack(
+                                children: [
+                                  Positioned(
+                                    left: 8,
+                                    top: 22,
+                                    child: Text(
+                                      'SHADE',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: 10,
+                                    bottom: 20,
+                                    child: Text(
+                                      'SIZE',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber,
+                                        fontSize: 14,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const Center(
+                              child: Text(
+                                'SIZE',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                  ...sizes.map(
+                    (size) => TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            size,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // MRP row (shown only once)
+              TableRow(
+                decoration: BoxDecoration(color: TableColors.priceRowBg),
+                children: [
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      child: const Text(
+                        'MRP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...sizes.map((size) {
+                    final price = sizeMrp[size] ?? 0.0;
+                    return TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: TableColors.borderColor,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+
+              // WSP row (shown only once)
+              TableRow(
+                decoration: BoxDecoration(color: TableColors.priceRowBg),
+                children: [
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      child: const Text(
+                        'WSP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...sizes.map((size) {
+                    final price = sizeWsp[size] ?? 0.0;
+                    return TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: TableColors.borderColor,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+
+              // Shade rows - if no shades, show a single row with empty shade name
+              if (hasShades)
+                ...validShades.map(
+                  (shade) => _buildShadeRow(catalogOrder, shade, sizes, items),
+                )
+              else
+                _buildShadeRow(catalogOrder, '', sizes, items), // Empty shade for no-shade
+            ],
           ),
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   // Build individual shade rows - returns TableRow
   TableRow _buildShadeRow(
-    CatalogOrderData catalogOrder,
-    String shade,
-    List<String> sizes,
-    OrderMatrix items,
-  ) {
-    final styleKey = catalogOrder.catalog.styleKey;
+  CatalogOrderData catalogOrder,
+  String shade,
+  List<String> sizes,
+  OrderMatrix items,
+) {
+  final styleKey = catalogOrder.catalog.styleKey;
+  final hasShade = shade.isNotEmpty && shade != 'null';
 
-    return TableRow(
-      decoration: BoxDecoration(color: TableColors.evenRowBg),
-      children: [
-        TableCell(
-          verticalAlignment: TableCellVerticalAlignment.middle,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(color: TableColors.borderColor, width: 0.5),
-              ),
+  return TableRow(
+    decoration: BoxDecoration(color: TableColors.evenRowBg),
+    children: [
+      TableCell(
+        verticalAlignment: TableCellVerticalAlignment.middle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: TableColors.borderColor, width: 0.5),
             ),
-            child: Row(
-              children: [
-                // Copy icon for shade
+          ),
+          child: Row(
+            children: [
+              // Only show copy icon if has shades
+              if (hasShade)
                 Container(
                   margin: const EdgeInsets.only(right: 6),
                   child: Material(
@@ -3654,83 +3677,84 @@ class _BookOnBarcode1State extends State<BookOnBarcode1> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Text(
-                    shade,
-                    style: TextStyle(
-                      color: _getColorCode(shade),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+              Expanded(
+                child: Text(
+                  hasShade ? shade : '', // Empty for no-shade
+                  style: TextStyle(
+                    color: hasShade ? _getColorCode(shade) : Colors.transparent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        ...sizes.map((size) {
-          final quantity = _getQuantity(styleKey, shade, size);
-          final controllerKey = '$styleKey-$shade-$size';
-          final controller = _controllers[controllerKey];
+      ),
+      ...sizes.map((size) {
+        final quantity = _getQuantity(styleKey, shade, size);
+        final controllerKey = '$styleKey-$shade-$size';
+        final controller = _controllers[controllerKey];
 
-          // Get clqty from matrix for hint
-          final shadeIndex = items.shades.indexOf(shade.trim());
-          final sizeIndex = items.sizes.indexOf(size.trim());
-          String clQty = '0';
-          if (shadeIndex != -1 && sizeIndex != -1) {
-            final matrixData = items.matrix[shadeIndex][sizeIndex].split(',');
-            clQty = matrixData.length > 2 ? matrixData[2] : '0';
-          }
+        // Get clqty from matrix for hint
+        int shadeIndex = items.shades.indexOf(shade.trim());
+        if (shadeIndex == -1 && !hasShade && items.shades.isNotEmpty) {
+          shadeIndex = 0; // Use first row for no-shade
+        }
+        final sizeIndex = items.sizes.indexOf(size.trim());
+        String clQty = '0';
+        if (shadeIndex != -1 && sizeIndex != -1) {
+          final matrixData = items.matrix[shadeIndex][sizeIndex].split(',');
+          clQty = matrixData.length > 2 ? matrixData[2] : '0';
+        }
 
-          return TableCell(
-            verticalAlignment: TableCellVerticalAlignment.middle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: TableColors.borderColor, width: 0.5),
-                ),
-              ),
-              child: TextField(
-                controller: controller,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  hintText: clQty,
-                  hintStyle: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade400,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(4),
-                ],
-                onChanged: (value) {
-                  final newQuantity =
-                      int.tryParse(value.isEmpty ? '0' : value) ?? 0;
-                  _setQuantity(styleKey, shade, size, newQuantity);
-                },
+        return TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: TableColors.borderColor, width: 0.5),
               ),
             ),
-          );
-        }),
-      ],
-    );
-  }
-
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                hintText: clQty,
+                hintStyle: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade400,
+                  fontStyle: FontStyle.italic,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              onChanged: (value) {
+                final newQuantity = int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                _setQuantity(styleKey, shade, size, newQuantity);
+              },
+            ),
+          ),
+        );
+      }),
+    ],
+  );
+}
   void _showShadeCopyDialog(String styleKey, String shade, List<String> sizes) {
     showModalBottomSheet(
       context: context,

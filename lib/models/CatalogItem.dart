@@ -5,6 +5,7 @@ class CatalogItem {
   final int clQty;
   final double mrp;
   final double wsp;
+   String?  itemName;
 
   CatalogItem({
     required this.styleCode,
@@ -13,6 +14,7 @@ class CatalogItem {
     required this.clQty,
     required this.mrp,
     required this.wsp,
+     this.itemName,
   });
 
   factory CatalogItem.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class CatalogItem {
       clQty: int.tryParse(json['clqty']?.toString() ?? '0') ?? 0,
       mrp: double.tryParse(json['mrp']?.toString() ?? '0') ?? 0,
       wsp: double.tryParse(json['wsp']?.toString() ?? '0') ?? 0,
+      itemName: json['itemName']?.toString() ?? '',
     );
   }
 }

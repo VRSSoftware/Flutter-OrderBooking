@@ -767,8 +767,9 @@ class OrderBookingScreen extends StatefulWidget {
   final bool startWithBarcode;
   final bool editMode;
   final String editModeType;
+  final String? bookingType;
 
-  const OrderBookingScreen({Key? key, this.startWithBarcode = false, this.editMode = false, this.editModeType = ''})
+  const OrderBookingScreen({Key? key, this.startWithBarcode = false, this.editMode = false,this.bookingType, this.editModeType = ''})
     : super(key: key);
 
   @override

@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +43,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-    
+
     if (widget.docId != '-1') {
       EditOrderData.clear();
       EditOrderData.doc_id = widget.docId;
@@ -66,7 +64,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
 
   Future<void> _saveEditedOrder() async {
     if (_isSaving) return;
-    
+
     setState(() => _isSaving = true);
 
     final payload = {
@@ -125,9 +123,9 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
-      
+
       setState(() => _isSaving = false);
-      
+
       if (response.statusCode == 200) {
         _showSuccessDialog();
       } else {
@@ -139,38 +137,43 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     }
   }
 
-void _showSuccessDialog() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Success'),
-      content: Text('Order Updated Successfully'),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context); // Close dialog
-            Navigator.pop(context, true); // Return to Register page with result = true
-          },
-          child: Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Success'),
+            content: Text('Order Updated Successfully'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(
+                    context,
+                    true,
+                  ); // Return to Register page with result = true
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+    );
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('Error'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -273,168 +276,187 @@ void _showSuccessDialog() {
     });
   }
 
-void calculateTotals() {
-  double totalAmt = 0;
-  int totalQty = 0;
-  int totalItms = 0;
+  void calculateTotals() {
+    double totalAmt = 0;
+    int totalQty = 0;
+    int totalItms = 0;
 
-  for (var item in EditOrderData.data) {
-    // Calculate total quantity from matrix
-    int itemQty = 0;
-    for (var shade in item.orderMatrix.shades) {
-      final shadeIndex = item.orderMatrix.shades.indexOf(shade);
-      for (var sizeIndex = 0; sizeIndex < item.orderMatrix.sizes.length; sizeIndex++) {
-        final matrixData = item.orderMatrix.matrix[shadeIndex][sizeIndex].split(',');
-        final qty = int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
-        itemQty += qty;
+    for (var item in EditOrderData.data) {
+      // Calculate total quantity from matrix
+      int itemQty = 0;
+      for (var shade in item.orderMatrix.shades) {
+        final shadeIndex = item.orderMatrix.shades.indexOf(shade);
+        for (
+          var sizeIndex = 0;
+          sizeIndex < item.orderMatrix.sizes.length;
+          sizeIndex++
+        ) {
+          final matrixData = item.orderMatrix.matrix[shadeIndex][sizeIndex]
+              .split(',');
+          final qty =
+              int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
+          itemQty += qty;
+        }
       }
-    }
-    
-    // Calculate total amount using WSP
-    double itemAmt = 0;
-    for (var shade in item.orderMatrix.shades) {
-      final shadeIndex = item.orderMatrix.shades.indexOf(shade);
-      for (var sizeIndex = 0; sizeIndex < item.orderMatrix.sizes.length; sizeIndex++) {
-        final matrixData = item.orderMatrix.matrix[shadeIndex][sizeIndex].split(',');
-        final qty = int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
-        final wsp = double.tryParse(matrixData.length > 1 ? matrixData[1] : '0') ?? 0;
-        itemAmt += qty * wsp;
+
+      // Calculate total amount using WSP
+      double itemAmt = 0;
+      for (var shade in item.orderMatrix.shades) {
+        final shadeIndex = item.orderMatrix.shades.indexOf(shade);
+        for (
+          var sizeIndex = 0;
+          sizeIndex < item.orderMatrix.sizes.length;
+          sizeIndex++
+        ) {
+          final matrixData = item.orderMatrix.matrix[shadeIndex][sizeIndex]
+              .split(',');
+          final qty =
+              int.tryParse(matrixData.length > 2 ? matrixData[2] : '0') ?? 0;
+          final wsp =
+              double.tryParse(matrixData.length > 1 ? matrixData[1] : '0') ?? 0;
+          itemAmt += qty * wsp;
+        }
       }
+
+      totalAmt += itemAmt;
+      totalQty += itemQty;
+      totalItms += 1;
     }
-    
-    totalAmt += itemAmt;
-    totalQty += itemQty;
-    totalItms += 1;
+
+    setState(() {
+      totalAmount = totalAmt;
+      totalQuantity = totalQty;
+      totalItems = totalItms;
+    });
   }
 
-  setState(() {
-    totalAmount = totalAmt;
-    totalQuantity = totalQty;
-    totalItems = totalItms;
-  });
-}
+  CatalogOrderData _convertToCatalogOrderData(
+    String styleKey,
+    List<dynamic> items,
+  ) {
+    if (items.isEmpty) {
+      return CatalogOrderData(
+        catalog: Catalog(
+          itemSubGrpKey: '',
+          itemSubGrpName: '',
+          itemKey: '',
+          itemName: 'Unknown',
+          brandKey: '',
+          brandName: '',
+          styleKey: styleKey,
+          styleCode: styleKey,
+          shadeKey: '',
+          shadeName: '',
+          styleSizeId: '',
+          sizeName: '',
+          mrp: 0.0,
+          wsp: 0.0,
+          onlyMRP: 0.0,
+          clqty: 0,
+          total: 0,
+          fullImagePath: '/NoImage.jpg',
+          remark: '',
+          imageId: '',
+          sizeDetails: '',
+          sizeDetailsWithoutWSp: '',
+          sizeWithMrp: '',
+          styleCodeWithcount: styleKey,
+          onlySizes: '',
+          sizeWithWsp: '',
+          createdDate: '',
+          shadeImages: '',
+          upcoming_Stk: '0',
+        ),
+        orderMatrix: OrderMatrix(shades: [], sizes: [], matrix: []),
+      );
+    }
 
-CatalogOrderData _convertToCatalogOrderData(
-  String styleKey,
-  List<dynamic> items,
-) {
-  if (items.isEmpty) {
-    return CatalogOrderData(
-      catalog: Catalog(
-        itemSubGrpKey: '',
-        itemSubGrpName: '',
-        itemKey: '',
-        itemName: 'Unknown',
-        brandKey: '',
-        brandName: '',
-        styleKey: styleKey,
-        styleCode: styleKey,
-        shadeKey: '',
-        shadeName: '',
-        styleSizeId: '',
-        sizeName: '',
-        mrp: 0.0,
-        wsp: 0.0,
-        onlyMRP: 0.0,
-        clqty: 0,
-        total: 0,
-        fullImagePath: '/NoImage.jpg',
-        remark: '',
-        imageId: '',
-        sizeDetails: '',
-        sizeDetailsWithoutWSp: '',
-        sizeWithMrp: '',
-        styleCodeWithcount: styleKey,
-        onlySizes: '',
-        sizeWithWsp: '',
-        createdDate: '',
-        shadeImages: '',
-        upcoming_Stk: '0',
+    // Get unique shades, filtering out empty/null values
+    List<String> shades =
+        items
+            .map((i) => i['shadeName']?.toString() ?? '')
+            .where((s) => s.isNotEmpty && s != 'null')
+            .toSet()
+            .toList();
+
+    // If no valid shades, add a placeholder
+    if (shades.isEmpty) {
+      shades = ['']; // Empty string for no-shade
+    }
+
+    final sizes =
+        items
+            .map((i) => i['sizeName']?.toString() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList();
+    final firstItem = items.first;
+
+    final matrix = List.generate(shades.length, (shadeIndex) {
+      return List.generate(sizes.length, (sizeIndex) {
+        final item = items.firstWhere(
+          (i) =>
+              (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
+              (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
+          orElse: () => {},
+        );
+        final mrp = item['mrp']?.toString() ?? '0';
+        final wsp = item['wsp']?.toString() ?? '0';
+        final qty = item['clqty']?.toString() ?? '0';
+        final stkQty = item['data2']?.toString() ?? '0';
+        return '$mrp,$wsp,$qty,$stkQty';
+      });
+    });
+
+    final catalog = Catalog(
+      itemSubGrpKey: '',
+      itemSubGrpName: '',
+      itemKey: '',
+      itemName: firstItem['itemName']?.toString() ?? 'Unknown',
+      brandKey: '',
+      brandName: '',
+      styleKey: styleKey,
+      styleCode: firstItem['styleCode']?.toString() ?? styleKey,
+      shadeKey: '',
+      shadeName: shades.join(','),
+      styleSizeId: '',
+      sizeName: sizes.join(','),
+      mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+      wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
+      onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
+      clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
+      total: items.fold(
+        0,
+        (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
       ),
-      orderMatrix: OrderMatrix(shades: [], sizes: [], matrix: []),
+      fullImagePath:
+          firstItem['fullImagePath']?.toString() ??
+          firstItem['imagePath']?.toString() ??
+          '/NoImage.jpg',
+      remark: firstItem['remark']?.toString() ?? '',
+      imageId: '',
+      sizeDetails: sizes
+          .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
+          .join(','),
+      sizeDetailsWithoutWSp: sizes
+          .map((s) => '$s (${firstItem['mrp']})')
+          .join(','),
+      sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
+      styleCodeWithcount: styleKey,
+      onlySizes: sizes.join(','),
+      sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
+      createdDate: '',
+      shadeImages: '',
+      upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '0',
+      barcode: firstItem['barcode']?.toString() ?? '',
+    );
+
+    return CatalogOrderData(
+      catalog: catalog,
+      orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
     );
   }
 
-  // Get unique shades, filtering out empty/null values
-  List<String> shades = items
-      .map((i) => i['shadeName']?.toString() ?? '')
-      .where((s) => s.isNotEmpty && s != 'null')
-      .toSet()
-      .toList();
-  
-  // If no valid shades, add a placeholder
-  if (shades.isEmpty) {
-    shades = ['']; // Empty string for no-shade
-  }
-  
-  final sizes = items
-      .map((i) => i['sizeName']?.toString() ?? '')
-      .where((s) => s.isNotEmpty)
-      .toSet()
-      .toList();
-  final firstItem = items.first;
-
-  final matrix = List.generate(shades.length, (shadeIndex) {
-    return List.generate(sizes.length, (sizeIndex) {
-      final item = items.firstWhere(
-        (i) =>
-            (i['shadeName']?.toString() ?? '') == shades[shadeIndex] &&
-            (i['sizeName']?.toString() ?? '') == sizes[sizeIndex],
-        orElse: () => {},
-      );
-      final mrp = item['mrp']?.toString() ?? '0';
-      final wsp = item['wsp']?.toString() ?? '0';
-      final qty = item['clqty']?.toString() ?? '0';
-      final stkQty = item['data2']?.toString() ?? '0';
-      return '$mrp,$wsp,$qty,$stkQty';
-    });
-  });
-
-  final catalog = Catalog(
-    itemSubGrpKey: '',
-    itemSubGrpName: '',
-    itemKey: '',
-    itemName: firstItem['itemName']?.toString() ?? 'Unknown',
-    brandKey: '',
-    brandName: '',
-    styleKey: styleKey,
-    styleCode: firstItem['styleCode']?.toString() ?? styleKey,
-    shadeKey: '',
-    shadeName: shades.join(','),
-    styleSizeId: '',
-    sizeName: sizes.join(','),
-    mrp: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-    wsp: double.tryParse(firstItem['wsp']?.toString() ?? '0') ?? 0.0,
-    onlyMRP: double.tryParse(firstItem['mrp']?.toString() ?? '0') ?? 0.0,
-    clqty: int.tryParse(firstItem['clqty']?.toString() ?? '0') ?? 0,
-    total: items.fold(
-      0,
-      (sum, i) => sum + (int.tryParse(i['clqty']?.toString() ?? '0') ?? 0),
-    ),
-    fullImagePath: firstItem['fullImagePath']?.toString() ?? firstItem['imagePath']?.toString() ?? '/NoImage.jpg',
-    remark: firstItem['remark']?.toString() ?? '',
-    imageId: '',
-    sizeDetails: sizes
-        .map((s) => '$s (${firstItem['mrp']},${firstItem['wsp']})')
-        .join(','),
-    sizeDetailsWithoutWSp: sizes
-        .map((s) => '$s (${firstItem['mrp']})')
-        .join(','),
-    sizeWithMrp: sizes.map((s) => '$s (${firstItem['mrp']})').join(','),
-    styleCodeWithcount: styleKey,
-    onlySizes: sizes.join(','),
-    sizeWithWsp: sizes.map((s) => '$s (${firstItem['wsp']})').join(','),
-    createdDate: '',
-    shadeImages: '',
-    upcoming_Stk: firstItem['upcoming_Stk']?.toString() ?? '0',
-    barcode: firstItem['barcode']?.toString() ?? '',
-  );
-
-  return CatalogOrderData(
-    catalog: catalog,
-    orderMatrix: OrderMatrix(shades: shades, sizes: sizes, matrix: matrix),
-  );
-}
   // ✅ Tab Bar Widget - ViewOrder Design
   Widget _buildTabBar() {
     return Container(
@@ -573,23 +595,24 @@ CatalogOrderData _convertToCatalogOrderData(
               Expanded(
                 child: TextButton(
                   onPressed: _isSaving ? null : _saveEditedOrder,
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  child:
+                      _isSaving
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            "Update Order",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          "Update Order",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
                 ),
               ),
             ],
@@ -654,113 +677,122 @@ CatalogOrderData _convertToCatalogOrderData(
   }
 
   // ✅ AppBar with Bottom Info
- AppBar _buildAppBar() {
-  return AppBar(
-    title: const Text(
-      'final Update Order',
-      style: TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-        fontSize: 18, // Reduced from 20 to 18
-      ),
-    ),
-    backgroundColor: AppColors.primaryColor,
-    elevation: 4,
-    toolbarHeight: 50, // Reduced toolbar height (default is 56)
-    leading: IconButton(
-      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22), // Slightly smaller icon
-      onPressed: () => Navigator.of(context).pop(),
-      padding: const EdgeInsets.all(12), // Reduced padding
-      constraints: const BoxConstraints(),
-    ),
-    actions: [
-      if (_activeTab == ActiveTab.transaction)
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(18), // Slightly smaller radius
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: 1==1? Container() : IconButton(
-            icon: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 20, // Reduced from 22 to 20
-            ),
-            onPressed: _handleAddAction,
-            tooltip: 'Add New Item',
-            splashRadius: 18,
-            padding: const EdgeInsets.all(6), // Reduced padding
-            constraints: const BoxConstraints(
-              minWidth: 32,
-              minHeight: 32,
-            ),
-          ),
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text(
+        'final Update Order',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 18, // Reduced from 20 to 18
         ),
-    ],
-    bottom: PreferredSize(
-      preferredSize: const Size.fromHeight(49.0),
-      child: Column(
-        children: [
-          // Divider line
-          Container(
-            height: 1,
-            color: Colors.white.withOpacity(0.2),
-          ),
-          // Bottom bar
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            color: AppColors.maroon,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    'Total: ₹${totalAmount.toStringAsFixed(2)}',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                _buildDivider(),
-                Flexible(
-                  child: Text(
-                    'Items: $totalItems',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                _buildDivider(),
-                Flexible(
-                  child: Text(
-                    'Qty: $totalQuantity',
-                    style: GoogleFonts.roboto(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
-    ),
-  );
-}
+      backgroundColor: AppColors.primaryColor,
+      elevation: 4,
+      toolbarHeight: 50, // Reduced toolbar height (default is 56)
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back,
+          color: Colors.white,
+          size: 22,
+        ), // Slightly smaller icon
+        onPressed: () => Navigator.of(context).pop(),
+        padding: const EdgeInsets.all(12), // Reduced padding
+        constraints: const BoxConstraints(),
+      ),
+      actions: [
+        if (_activeTab == ActiveTab.transaction)
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(
+                18,
+              ), // Slightly smaller radius
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child:
+                1 == 1
+                    ? Container()
+                    : IconButton(
+                      icon: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 20, // Reduced from 22 to 20
+                      ),
+                      onPressed: _handleAddAction,
+                      tooltip: 'Add New Item',
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(6), // Reduced padding
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+          ),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(49.0),
+        child: Column(
+          children: [
+            // Divider line
+            Container(height: 1, color: Colors.white.withOpacity(0.2)),
+            // Bottom bar
+            Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 8.0,
+                horizontal: 16.0,
+              ),
+              color: AppColors.maroon,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Total: ₹${totalAmount.toStringAsFixed(2)}',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  _buildDivider(),
+                  Flexible(
+                    child: Text(
+                      'Items: $totalItems',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  _buildDivider(),
+                  Flexible(
+                    child: Text(
+                      'Qty: $totalQuantity',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildDivider() {
     return Container(
@@ -785,37 +817,46 @@ CatalogOrderData _convertToCatalogOrderData(
               child:
                   isOrderItemsLoaded
                       ? PageView(
-                          controller: _pageController,
-                          physics: const NeverScrollableScrollPhysics(),
-                          onPageChanged: (index) {
-                            setState(() {
-                              _activeTab =
-                                  index == 0
-                                      ? ActiveTab.transaction
-                                      : ActiveTab.customerDetails;
-                            });
-                          },
-                          children: [
-                           TransactionTab3(onUpdate: calculateTotals),
-                            //  TransactionTab2(),
-                            const CustomerDetailTab(),
-                          ],
-                        )
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        onPageChanged: (index) {
+                          setState(() {
+                            _activeTab =
+                                index == 0
+                                    ? ActiveTab.transaction
+                                    : ActiveTab.customerDetails;
+                          });
+                        },
+                        children: [
+                          // Apply the same bookingType condition here
+                          if (AppConstants.bookingType == "1")
+                            TransactionTab3(onUpdate: calculateTotals)
+                          else if (AppConstants.bookingType == "2")
+                            TransactionTab2()
+                          else
+                            TransactionTab2(), // Default fallback (same as booking type 2)
+                          const CustomerDetailTab(),
+                        ],
+                      )
                       : const Center(child: CircularProgressIndicator()),
             ),
             _buildBottomButtons(),
           ],
         ),
       ),
-      
     );
   }
 
   void _handleAddAction() {
     Navigator.push(
       context,
-      // MaterialPageRoute(builder: (context) => AddMoreItemsForEdit()),
-      MaterialPageRoute(builder: (context) => OrderBookingScreen(editMode: true)),
+      MaterialPageRoute(
+        builder:
+            (context) => OrderBookingScreen(
+              editMode: true,
+              bookingType: AppConstants.bookingType, // Pass the booking type
+            ),
+      ),
     ).then((result) {
       if (result != null && result is List<Map<String, dynamic>>) {
         setState(() {

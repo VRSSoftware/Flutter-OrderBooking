@@ -701,7 +701,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Order Booking - BarcodeWise',
+          'Order Booking - BarcodeWise2',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.primaryColor,
@@ -940,7 +940,6 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
   Widget buildOrderItem(CatalogOrderData catalogOrder, BuildContext context) {
     final catalog = catalogOrder.catalog;
     final Set<String> selectedColors = selectedColors2[catalog.styleKey] ?? {};
-
     final String itemBarcode = catalog.barcode ?? '';
 
     return Card(
@@ -950,7 +949,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Barcode inside card at top
+          // Barcode header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -998,7 +997,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
             ),
           ),
 
-          // Product Header with Image and Copy/Delete Actions
+          // Product Header
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -1030,21 +1029,14 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                     );
                   },
                   child: Container(
-                    width: 90,
-                    height: 83,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.grey.shade300),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(7),
                       child: Image.network(
                         catalog.fullImagePath.contains("http")
                             ? catalog.fullImagePath
@@ -1052,25 +1044,8 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                         fit: BoxFit.contain,
                         errorBuilder:
                             (context, error, stackTrace) => Container(
-                              color: Colors.grey[100],
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey[400],
-                                    size: 30,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'No Image',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              color: Colors.grey.shade100,
+                              child: const Icon(Icons.broken_image, size: 30),
                             ),
                       ),
                     ),
@@ -1081,272 +1056,170 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primaryColor.withOpacity(0.08),
-                              Colors.white,
-                            ],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.primaryColor.withOpacity(0.2),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primaryColor.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primaryColor.withOpacity(0.15),
+                                    AppColors.primaryColor.withOpacity(0.08),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.primaryColor.withOpacity(
+                                    0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                catalog.styleCode,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryColor,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'STYLE :',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    catalog.styleCode,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primaryColor,
-                                      letterSpacing: 0.3,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                // Copy Style Button
-                                Material(
-                                  color: Colors.transparent,
+                          ),
+                          Row(
+                            children: [
+                              // Copy Style Button (only if has shades)
+                              Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
                                   borderRadius: BorderRadius.circular(20),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(20),
-                                    onTap: () async {
-                                      final result = await showDialog<
-                                        Set<String>
-                                      >(
-                                        context: context,
-                                        builder:
-                                            (context) => CopyToStylesDialog(
-                                              styleKeys:
-                                                  catalogOrderList
-                                                      .map(
-                                                        (order) =>
-                                                            order
-                                                                .catalog
-                                                                .styleKey,
-                                                      )
-                                                      .where(
-                                                        (key) =>
-                                                            key !=
-                                                            catalog.styleKey,
-                                                      )
-                                                      .toList(),
-                                              styleCodes:
-                                                  catalogOrderList
-                                                      .map(
-                                                        (order) =>
-                                                            order
-                                                                .catalog
-                                                                .styleCode,
-                                                      )
-                                                      .toList(),
-                                              sourceStyleKey: catalog.styleKey,
-                                              sourceStyleCode: catalog.styleCode,
-                                            ),
-                                      );
-
-                                      if (result != null && result.isNotEmpty) {
-                                        _copyStyleQuantities(
-                                          catalog.styleKey,
-                                          result,
-                                        );
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryColor
-                                            .withOpacity(0.1),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.copy,
-                                        size: 16,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Delete Button
-                                Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(20),
-                                    onTap: () {
-                                      _confirmDeleteStyle(
+                                  onTap: () async {
+                                    final result = await showDialog<
+                                      Set<String>
+                                    >(
+                                      context: context,
+                                      builder:
+                                          (context) => CopyToStylesDialog(
+                                            styleKeys:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleKey,
+                                                    )
+                                                    .where(
+                                                      (key) =>
+                                                          key !=
+                                                          catalog.styleKey,
+                                                    )
+                                                    .toList(),
+                                            styleCodes:
+                                                catalogOrderList
+                                                    .map(
+                                                      (order) =>
+                                                          order
+                                                              .catalog
+                                                              .styleCode,
+                                                    )
+                                                    .toList(),
+                                            sourceStyleKey: catalog.styleKey,
+                                            sourceStyleCode: catalog.styleCode,
+                                          ),
+                                    );
+                                    if (result != null && result.isNotEmpty) {
+                                      _copyStyleQuantities(
                                         catalog.styleKey,
-                                        catalog.styleCode,
+                                        result,
                                       );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(0.1),
-                                        shape: BoxShape.circle,
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withOpacity(
+                                        0.1,
                                       ),
-                                      child: Icon(
-                                        Icons.delete,
-                                        size: 16,
-                                        color: Colors.red.shade700,
-                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.copy,
+                                      size: 14,
+                                      color: AppColors.primaryColor,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Divider(
-                              color: AppColors.primaryColor.withOpacity(0.2),
-                              height: 1,
-                              thickness: 1,
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        catalog.upcoming_Stk == '1'
-                                            ? Colors.orange.withOpacity(0.8)
-                                            : Colors.green.withOpacity(0.8),
-                                        catalog.upcoming_Stk == '1'
-                                            ? Colors.orange
-                                            : Colors.green,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                              ),
+                              const SizedBox(width: 4),
+                              // Delete Button
+                              Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    _confirmDeleteStyle(
+                                      catalog.styleKey,
+                                      catalog.styleCode,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      shape: BoxShape.circle,
                                     ),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: (catalog.upcoming_Stk == '1'
-                                                ? Colors.orange
-                                                : Colors.green)
-                                            .withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        catalog.upcoming_Stk == '1'
-                                            ? Icons.schedule
-                                            : Icons.inventory,
-                                        size: 12,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        catalog.upcoming_Stk == '1'
-                                            ? 'Upcoming'
-                                            : 'Ready',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
+                                    child: Icon(
+                                      Icons.delete,
+                                      size: 14,
+                                      color: Colors.red.shade700,
+                                    ),
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.blue.withOpacity(0.8),
-                                        Colors.blue.shade700,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.blue.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.palette,
-                                        size: 12,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${uniqueShadesCount(catalog.styleKey)} Shades',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Stats row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatRow(
+                              'Stock',
+                              _calculateStockQuantity(
+                                catalog.styleKey,
+                              ).toString(),
+                              Icons.inventory,
+                              Colors.blue.shade700,
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _buildStatRow(
+                              'Order',
+                              _calculateCatalogQuantity(
+                                catalog.styleKey,
+                              ).toString(),
+                              Icons.shopping_bag,
+                              Colors.orange.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _buildStatRow(
+                              'Amt',
+                              '₹${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
+                              Icons.currency_rupee,
+                              Colors.green.shade700,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1357,50 +1230,10 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
 
           const SizedBox(height: 8),
 
-          // Stats row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildStatRow(
-                    'Stock',
-                    _calculateStockQuantity(catalog.styleKey).toString(),
-                    Icons.inventory,
-                    Colors.blue.shade700,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: _buildStatRow(
-                    'Order',
-                    _calculateCatalogQuantity(catalog.styleKey).toString(),
-                    Icons.shopping_bag,
-                    Colors.orange.shade700,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: _buildStatRow(
-                    'Amt',
-                    '₹${_calculateCatalogPrice(catalog.styleKey).toStringAsFixed(0)}',
-                    Icons.currency_rupee,
-                    Colors.green.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Color Sections - Conditionally show shade or no-shade table
+          _buildTableSection(catalogOrder, selectedColors),
 
-          const SizedBox(height: 16),
-
-          // Color Sections - Updated with same design as CreateOrderScreen
-          ...selectedColors.map(
-            (color) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildColorSection(catalogOrder, color),
-            ),
-          ),
+          const SizedBox(height: 12),
 
           // Note field
           Padding(
@@ -1445,6 +1278,374 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
           const SizedBox(height: 12),
         ],
       ),
+    );
+  }
+
+  // Add this helper method to build the table section
+  Widget _buildTableSection(
+    CatalogOrderData catalogOrder,
+    Set<String> selectedColors,
+  ) {
+    // Check if there are valid shades
+    final bool hasShades = selectedColors.any(
+      (color) => color.isNotEmpty && color != 'null',
+    );
+
+    if (hasShades) {
+      // Return shade cards
+      return Column(
+        children:
+            selectedColors.map((color) {
+              if (color.isEmpty || color == 'null')
+                return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildColorSection(catalogOrder, color),
+              );
+            }).toList(),
+      );
+    } else {
+      // Return no-shade table
+      return _buildNoShadeTable(catalogOrder);
+    }
+  }
+
+  Widget _buildNoShadeTable(CatalogOrderData catalogOrder) {
+    final matrix = catalogOrder.orderMatrix;
+    final styleKey = catalogOrder.catalog.styleKey;
+    final sizes = matrix.sizes;
+    final totalQty = _calculateCatalogQuantity(styleKey);
+    final totalAmount = _calculateCatalogPrice(styleKey);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.white,
+      ),
+      child: Column(
+        children: [
+          // QUANTITY and AMOUNT Header Row (NO SHADE LABEL)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: const Text(" ", textAlign: TextAlign.center),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Text(
+                      "QUANTITY",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      "AMOUNT",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Values Row
+          Container(
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: const Text(" ", textAlign: TextAlign.center),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Text(
+                      totalQty.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 8,
+                    ),
+                    child: Text(
+                      '₹${totalAmount.toStringAsFixed(0)}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Size Headers
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: Colors.grey.shade100,
+            child: Row(
+              children: [
+                _buildHeader("SIZE", 1),
+                _buildHeader("QTY", 2),
+                _buildHeader("MRP", 1),
+                _buildHeader("WSP", 1),
+                _buildHeader("STOCK", 1),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Size rows
+          for (var i = 0; i < sizes.length; i++) ...[
+            _buildNoShadeSizeRow(catalogOrder, sizes[i], matrix.matrix[0][i]),
+            if (i != sizes.length - 1)
+              Divider(height: 1, color: Colors.grey.shade300),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoShadeSizeRow(
+    CatalogOrderData catalogOrder,
+    String size,
+    String matrixData,
+  ) {
+    final styleKey = catalogOrder.catalog.styleKey;
+    final matrixParts = matrixData.split(',');
+    final rate = matrixParts.isNotEmpty ? matrixParts[0] : '0';
+    final wsp = matrixParts.length > 1 ? matrixParts[1] : '0';
+    final stock = matrixParts.length > 2 ? matrixParts[2] : '0';
+
+    final shadeKey = '';
+    final quantity = _getQuantity(styleKey, shadeKey, size);
+    final controllerKey = '$styleKey-$shadeKey-$size';
+    final controller = _controllers.putIfAbsent(
+      controllerKey,
+      () => TextEditingController(text: quantity.toString()),
+    );
+
+    if (controller.text != quantity.toString()) {
+      controller.text = quantity.toString();
+    }
+
+    return Row(
+      children: [
+        // SIZE column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              size,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // QTY column - COMPACT VERSION
+        Expanded(
+          flex: 2,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                InkWell(
+                  onTap: () {
+                    final newQuantity = quantity > 0 ? quantity - 1 : 0;
+                    _setQuantity(styleKey, shadeKey, size, newQuantity);
+                    controller.text = newQuantity.toString();
+                  },
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(Icons.remove, size: 14),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 35,
+                  child: TextField(
+                    controller: controller,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 0,
+                      ),
+                      hintText: stock,
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 10,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 11),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                    onChanged: (value) {
+                      final newQuantity =
+                          int.tryParse(value.isEmpty ? '0' : value) ?? 0;
+                      _setQuantity(styleKey, shadeKey, size, newQuantity);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () {
+                    final newQuantity = quantity + 1;
+                    _setQuantity(styleKey, shadeKey, size, newQuantity);
+                    controller.text = newQuantity.toString();
+                  },
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(Icons.add, size: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // MRP column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              rate,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // WSP column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              wsp,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // STOCK column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              stock,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1577,31 +1778,44 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
 
   Widget _buildStatRow(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            flex: 0,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
-          const SizedBox(width: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color,
+          const SizedBox(width: 2),
+          Flexible(
+            flex: 1,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              softWrap: false,
             ),
           ),
         ],
@@ -1773,312 +1987,189 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
   Widget _buildColorSection(CatalogOrderData catalogOrder, String shade) {
     final sizes = catalogOrder.orderMatrix.sizes;
     final styleKey = catalogOrder.catalog.styleKey;
-    final allShades =
-        catalogOrder.catalog.shadeName.split(',').map((e) => e.trim()).toList();
+    final totalQty = _calculateShadeQuantity(styleKey, shade);
+    final totalAmount = _calculateShadePrice(catalogOrder, shade);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Modern Card-style Header with Copy Option
-        Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: _getColorCode(shade).withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.white,
+      ),
+      child: Column(
+        children: [
+          // Header row - SHADE label only (no copy icon)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
               ),
-            ],
-            border: Border(
-              left: BorderSide(color: _getColorCode(shade), width: 3),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Text(
+                      "SHADE",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Text(
+                      "QUANTITY",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      "AMOUNT",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  gradient: SweepGradient(
-                    colors: [
-                      _getColorCode(shade),
-                      _getColorCode(shade).withOpacity(0.7),
-                      _getColorCode(shade),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  shade,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.grey[800],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              // Copy Shade Button
-              Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () async {
-                    final result = await showDialog<Map<String, dynamic>>(
-                      context: context,
-                      builder:
-                          (context) => ShadeSelectionDialog(
-                            shades:
-                                allShades.where((s) => s != shade).toList(),
-                            sourceShade: shade,
-                          ),
-                    );
+          Divider(height: 1, color: Colors.grey.shade300),
 
-                    if (result != null) {
-                      if (result['option'] == 'all_sizes') {
-                        _copyShadeToAllSizes(
-                          styleKey,
-                          shade,
-                          sizes,
-                        );
-                      } else if (result['option'] == 'other_shades') {
-                        final selectedShades = result['selectedShades']
-                            as Set<String>;
-                        if (selectedShades.isNotEmpty) {
-                          _copyShadeQuantities(
-                            styleKey,
-                            shade,
-                            selectedShades,
-                          );
-                        }
-                      }
-                    }
-                  },
+          // Values row: Shade name, Quantity, Amount
+          Container(
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.copy_all,
-                      size: 16,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _getColorCode(shade).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Qty: ${_calculateShadeQuantity(styleKey, shade)}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _getColorCode(shade),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Table structure matching CreateOrderScreen
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Column(
-            children: [
-              // Header row
-              Row(
-                children: [
-                  _buildHeader("Size", 1),
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Qty",
-                            style: GoogleFonts.lora(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.red.shade900,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          // Size copy options
-                          IconButton(
-                            icon: const Icon(
-                              Icons.copy,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () async {
-                              final choice = await showDialog<String>(
-                                context: context,
-                                builder:
-                                    (context) => AlertDialog(
-                                      title: Text(
-                                        'Quantity Options',
-                                        style: GoogleFonts.poppins(),
-                                      ),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          ListTile(
-                                            title: Text(
-                                              'Copy qty to all sizes',
-                                              style: GoogleFonts.montserrat(),
-                                            ),
-                                            onTap:
-                                                () => Navigator.pop(
-                                                  context,
-                                                  'copy',
-                                                ),
-                                          ),
-                                          ListTile(
-                                            title: Text(
-                                              'Multiply qty * value to all sizes',
-                                              style: GoogleFonts.montserrat(),
-                                            ),
-                                            onTap:
-                                                () => Navigator.pop(
-                                                  context,
-                                                  'multiply',
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(context),
-                                          child: Text(
-                                            'Cancel',
-                                            style: GoogleFonts.montserrat(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                              if (choice == 'copy') {
-                                _copyFirstSizeQuantity(styleKey, shade, sizes);
-                              } else if (choice == 'multiply') {
-                                final TextEditingController multiplierController =
-                                    TextEditingController();
-                                final multiplier = await showDialog<int>(
-                                  context: context,
-                                  builder:
-                                      (context) => AlertDialog(
-                                        title: Text(
-                                          'Multiply Quantity',
-                                          style: GoogleFonts.poppins(),
-                                        ),
-                                        content: TextField(
-                                          controller: multiplierController,
-                                          keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(
-                                            labelText: 'Enter multiplier',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter
-                                                .digitsOnly,
-                                            LengthLimitingTextInputFormatter(4),
-                                          ],
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.pop(context),
-                                            child: Text(
-                                              'Cancel',
-                                              style: GoogleFonts.montserrat(),
-                                            ),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              final value =
-                                                  int.tryParse(
-                                                    multiplierController.text,
-                                                  ) ??
-                                                  1;
-                                              Navigator.pop(context, value);
-                                            },
-                                            child: Text(
-                                              'OK',
-                                              style: GoogleFonts.montserrat(),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                );
-                                if (multiplier != null && multiplier > 0) {
-                                  _multiplyFirstSizeQuantity(
-                                    styleKey,
-                                    shade,
-                                    sizes,
-                                    multiplier,
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        ],
+                    ),
+                    child: Text(
+                      shade,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _getColorCode(shade),
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Text(
+                      totalQty.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green,
                       ),
                     ),
                   ),
-                  _buildHeader("MRP", 1),
-                  _buildHeader("WSP", 1),
-                  _buildHeader("Stock", 1),
-                ],
-              ),
-              Divider(height: 1, color: Colors.grey.shade300),
-              // Size rows
-              for (var size in sizes) ...[
-                _buildSizeRow(catalogOrder, shade, size),
-                if (size != sizes.last)
-                  Divider(height: 1, color: Colors.grey.shade300),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 8,
+                    ),
+                    child: Text(
+                      '₹${totalAmount.toStringAsFixed(0)}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Size headers
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: Colors.grey.shade100,
+            child: Row(
+              children: [
+                _buildHeader("SIZE", 1),
+                _buildHeader("QTY", 2),
+                _buildHeader("MRP", 1),
+                _buildHeader("WSP", 1),
+                _buildHeader("STOCK", 1),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Size rows
+          for (var size in sizes) ...[
+            _buildSizeRow(catalogOrder, shade, size),
+            if (size != sizes.last)
+              Divider(height: 1, color: Colors.grey.shade300),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 
@@ -2092,15 +2183,10 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: GoogleFonts.lora(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Colors.red.shade900,
-        ),
+        style: GoogleFonts.lora(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     ),
   );
-
   Widget _buildSizeRow(
     CatalogOrderData catalogOrder,
     String shade,
@@ -2111,19 +2197,18 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     final sizeIndex = matrix.sizes.indexOf(size?.trim() ?? '');
     final styleKey = catalogOrder.catalog.styleKey;
 
-    String rate = '';
+    String rate = '0';
     String wsp = '0';
     String stkQty = '0';
 
     if (shadeIndex != -1 && sizeIndex != -1) {
       final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
-      rate = matrixData[0];
+      rate = matrixData.isNotEmpty ? matrixData[0] : '0';
       wsp = matrixData.length > 1 ? matrixData[1] : '0';
-      stkQty = matrixData.length > 3 ? matrixData[2] : '0';
+      stkQty = matrixData.length > 2 ? matrixData[2] : '0';
     }
 
     int quantity = _getQuantity(styleKey, shade, size);
-
     final controllerKey = '$styleKey-$shade-$size';
     final controller = _controllers.putIfAbsent(
       controllerKey,
@@ -2136,7 +2221,22 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
 
     return Row(
       children: [
-        _buildCell(size, 1),
+        // SIZE column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              size,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // QTY column - COMPACT VERSION (like TransactionTab2)
         Expanded(
           flex: 2,
           child: Container(
@@ -2145,34 +2245,48 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                IconButton(
-                  onPressed: () {
+                InkWell(
+                  onTap: () {
                     final newQuantity = quantity > 0 ? quantity - 1 : 0;
                     _setQuantity(styleKey, shade, size, newQuantity);
                     controller.text = newQuantity.toString();
                   },
-                  icon: const Icon(Icons.remove, size: 20),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(Icons.remove, size: 14),
+                  ),
                 ),
+                const SizedBox(width: 4),
                 SizedBox(
-                  width: 22,
+                  width: 35,
                   child: TextField(
                     controller: controller,
                     textAlign: TextAlign.center,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      hintText: stkQty,
-                      hintStyle: GoogleFonts.roboto(
-                        fontSize: 14,
-                        color: Colors.grey.shade500,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 0,
                       ),
+                      hintText: stkQty,
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 10,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
                     ),
-                    style: GoogleFonts.roboto(fontSize: 14),
+                    style: const TextStyle(fontSize: 11),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
+                      LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =
@@ -2181,21 +2295,69 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                     },
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () {
                     final newQuantity = quantity + 1;
                     _setQuantity(styleKey, shade, size, newQuantity);
                     controller.text = newQuantity.toString();
                   },
-                  icon: const Icon(Icons.add, size: 20),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(Icons.add, size: 14),
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        _buildCell(rate, 1),
-        _buildCell(wsp, 1),
-        _buildCell(stkQty, 1),
+        // MRP column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              rate,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // WSP column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Text(
+              wsp,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
+        // STOCK column
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              stkQty,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+          ),
+        ),
       ],
     );
   }
