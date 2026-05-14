@@ -15,6 +15,28 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
+class ImageLoadTracker {
+  int totalImages = 0;
+  int loadedImages = 0;
+  final VoidCallback onAllLoaded;
+  final VoidCallback? onProgress;
+
+  ImageLoadTracker({required this.onAllLoaded, this.onProgress});
+
+  void imageLoaded() {
+    loadedImages++;
+    onProgress?.call();
+    if (loadedImages >= totalImages) {
+      onAllLoaded();
+    }
+  }
+
+  void reset() {
+    totalImages = 0;
+    loadedImages = 0;
+  }
+}
+
 class OrderReportViewPage extends StatefulWidget {
   final String orderNo;
   final String orderStatus;
@@ -40,10 +62,12 @@ class OrderReportViewPage extends StatefulWidget {
 class _OrderReportViewPageState extends State<OrderReportViewPage> {
   bool isLoading = true;
   bool pdfError = false;
+  bool imagesLoaded = false;
   Map<String, dynamic>? reportData;
   Map<String, dynamic> headerData = {};
   List<dynamic> items = [];
   Map<String, pw.ImageProvider?> imageCache = {};
+  ImageLoadTracker? _imageLoadTracker;
 
   @override
   void initState() {
@@ -53,15 +77,18 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
   Future<void> _fetchReportData() async {
     try {
-      final data = await ApiService.fetchOrderReportDataPost(widget.orderNo, widget.orderStatus);
+      final data = await ApiService.fetchOrderReportDataPost(
+        widget.orderNo,
+        widget.orderStatus,
+      );
       setState(() {
         reportData = data;
         headerData = data['headerData'] ?? {};
         items = data['tableData']?['items'] ?? [];
-        isLoading = false;
       });
-      await _loadImages();
+      await _loadImagesWithTracking();
     } catch (e) {
+      print('Error fetching report data: $e');
       setState(() {
         isLoading = false;
         pdfError = true;
@@ -69,39 +96,91 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     }
   }
 
-  Future<void> _loadImages() async {
+  Future<void> _loadImagesWithTracking() async {
+    int totalImageCount = 0;
+
     for (var item in items) {
       List styles = item['styles'] ?? [];
       for (var style in styles) {
-        // Load style image
         String styleImageUrl = style['Style_Image'] ?? '';
-        if (styleImageUrl.isNotEmpty && !imageCache.containsKey(styleImageUrl)) {
-          try {
-            final response = await http.get(Uri.parse(styleImageUrl));
-            if (response.statusCode == 200) {
-              imageCache[styleImageUrl] = pw.MemoryImage(response.bodyBytes);
-            }
-          } catch (e) {
-            print('Error loading style image: $e');
-          }
+        if (styleImageUrl.isNotEmpty && styleImageUrl != 'null') {
+          totalImageCount++;
         }
-        
-        // Load shade images
+
         List shades = style['shades'] ?? [];
         for (var shade in shades) {
           String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
-          if (shadeImageUrl.isNotEmpty && !imageCache.containsKey(shadeImageUrl)) {
-            try {
-              final response = await http.get(Uri.parse(shadeImageUrl));
-              if (response.statusCode == 200) {
-                imageCache[shadeImageUrl] = pw.MemoryImage(response.bodyBytes);
-              }
-            } catch (e) {
-              print('Error loading shade image: $e');
+          if (shadeImageUrl.isNotEmpty && shadeImageUrl != 'null') {
+            totalImageCount++;
+          }
+        }
+      }
+    }
+
+    if (totalImageCount == 0) {
+      setState(() {
+        imagesLoaded = true;
+        isLoading = false;
+      });
+      return;
+    }
+
+    _imageLoadTracker = ImageLoadTracker(
+      onAllLoaded: () {
+        setState(() {
+          imagesLoaded = true;
+          isLoading = false;
+        });
+      },
+      onProgress: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
+    _imageLoadTracker!.totalImages = totalImageCount;
+
+    for (var item in items) {
+      List styles = item['styles'] ?? [];
+      for (var style in styles) {
+        String styleImageUrl = style['Style_Image'] ?? '';
+        if (styleImageUrl.isNotEmpty && styleImageUrl != 'null') {
+          if (imageCache.containsKey(styleImageUrl)) {
+            _imageLoadTracker!.imageLoaded();
+          } else {
+            _loadSingleImage(styleImageUrl);
+          }
+        }
+
+        List shades = style['shades'] ?? [];
+        for (var shade in shades) {
+          String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+          if (shadeImageUrl.isNotEmpty && shadeImageUrl != 'null') {
+            if (imageCache.containsKey(shadeImageUrl)) {
+              _imageLoadTracker!.imageLoaded();
+            } else {
+              _loadSingleImage(shadeImageUrl);
             }
           }
         }
       }
+    }
+  }
+
+  Future<void> _loadSingleImage(String imageUrl) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        imageCache[imageUrl] = pw.MemoryImage(response.bodyBytes);
+      } else {
+        print(
+          'Failed to load image: $imageUrl, status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Error loading image $imageUrl: $e');
+    } finally {
+      _imageLoadTracker?.imageLoaded();
     }
   }
 
@@ -147,8 +226,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
   List<String> _getSizesForCategory(dynamic category) {
     const int totalSizePositions = 12;
     List<dynamic> apiSizes = category['sizes'] ?? [];
-    
-    List<String> availableSizes = apiSizes.map((size) => size.toString()).toList();
+
+    List<String> availableSizes =
+        apiSizes.map((size) => size.toString()).toList();
     availableSizes.sort((a, b) {
       int aNum = int.tryParse(a) ?? 0;
       int bNum = int.tryParse(b) ?? 0;
@@ -186,6 +266,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
       return await pdf.save();
     } catch (e) {
+      print('PDF generation error: $e');
       return Uint8List(0);
     }
   }
@@ -260,16 +341,14 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                     width: 60,
                     height: 60,
                     margin: const pw.EdgeInsets.only(left: 8, right: 8),
-                    child: pw.Image(
-                      logoImage,
-                      fit: pw.BoxFit.contain,
-                    ),
+                    child: pw.Image(logoImage, fit: pw.BoxFit.contain),
                   ),
                 pw.Expanded(
                   child: pw.Column(
                     children: [
                       pw.Text(
-                        headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
+                        headerData['Co_Name']?.toString() ??
+                            "VRS Software Pvt Ltd",
                         style: pw.TextStyle(
                           fontSize: 18,
                           fontWeight: pw.FontWeight.bold,
@@ -278,10 +357,16 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                       ),
                       pw.SizedBox(height: 2),
                       pw.Text(
-                        headerData['RegdAdd']?.toString() ?? "",
+                        addressLine1,
                         style: const pw.TextStyle(fontSize: 12),
                         textAlign: pw.TextAlign.center,
                       ),
+                      if (addressLine2.isNotEmpty)
+                        pw.Text(
+                          addressLine2,
+                          style: const pw.TextStyle(fontSize: 12),
+                          textAlign: pw.TextAlign.center,
+                        ),
                       pw.Text(
                         "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
                         style: const pw.TextStyle(fontSize: 12),
@@ -290,8 +375,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                     ],
                   ),
                 ),
-                if (logoImage != null)
-                  pw.SizedBox(width: 68),
+                if (logoImage != null) pw.SizedBox(width: 68),
               ],
             ),
           ),
@@ -639,18 +723,25 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
       int categoryTotalQty = 0;
       int categoryStyleCount = 0;
 
-      // Check if any shade exists in this category
       bool hasAnyShade = false;
+      bool hasRealShade = false;
       for (var style in styles) {
         List shades = style['shades'] ?? [];
         for (var shade in shades) {
           String shadeName = shade['shade_name']?.toString() ?? '';
-          if (shadeName.isNotEmpty && shadeName != 'null') {
+          if (shadeName.isNotEmpty &&
+              shadeName != 'null' &&
+              shadeName != 'No Shade') {
             hasAnyShade = true;
+            hasRealShade = true;
             break;
+          } else if (shadeName.isEmpty ||
+              shadeName == 'null' ||
+              shadeName == 'No Shade') {
+            hasAnyShade = true;
           }
         }
-        if (hasAnyShade) break;
+        if (hasRealShade) break;
       }
 
       List<pw.TableRow> categoryRows = [];
@@ -661,29 +752,34 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         String styleRemark = style['Remark']?.toString() ?? '';
         List shades = style['shades'] ?? [];
 
-        // Get style image from cache
         pw.ImageProvider? styleImage;
         if (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)) {
           styleImage = imageCache[styleImageUrl];
         }
 
-        bool hasValidShades = false;
+        bool isFirstRowForStyle = true;
+        int processedShadeCount = 0;
+
         for (var shade in shades) {
           String shadeName = shade['shade_name']?.toString() ?? '';
-          if (shadeName.isNotEmpty && shadeName != 'null') {
-            hasValidShades = true;
-            break;
-          }
-        }
+          if (shadeName == 'null') continue;
 
-        if (!hasValidShades) {
-          // Handle styles without shades
-          var shade = shades.isNotEmpty ? shades[0] : {'shade_name': '', 'shade_Img': null, 'size_data': []};
-          
+          String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
           List sizeData = shade['size_data'] ?? [];
 
+          if (sizeData.isEmpty) continue;
+
+          pw.ImageProvider? shadeImage;
+          if (shadeImageUrl.isNotEmpty &&
+              imageCache.containsKey(shadeImageUrl)) {
+            shadeImage = imageCache[shadeImageUrl];
+          }
+
+          bool isNoShade = (shadeName.isEmpty || shadeName == 'No Shade');
+          String displayShadeName = isNoShade ? '-' : shadeName;
+
           Map<String, int> sizeQtyMap = {};
-          double? wsp;
+          double totalWsp = 0;
 
           for (var size in sizeData) {
             String sizeName = size['Size_Name']?.toString() ?? '';
@@ -693,154 +789,26 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
               sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
             }
 
-            if (wsp == null) {
-              num rate = size['Rate'] ?? 0;
-              wsp = rate.toDouble();
-            }
+            num rate = size['Rate'] ?? 0;
+            totalWsp += rate.toDouble();
           }
+
+          double wsp = totalWsp;
 
           int totalQty = 0;
           for (var size in categorySizes) {
             totalQty += sizeQtyMap[size] ?? 0;
           }
 
+          if (totalQty == 0) continue;
+
           categoryTotalQty += totalQty;
           grandTotalQty += totalQty;
-          categoryStyleCount++;
-          totalStylesCount++;
+          processedShadeCount++;
 
           List<pw.Widget> dataCells = [];
 
-          // Style column
-          dataCells.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    styleCode,
-                    style: const pw.TextStyle(fontSize: 8),
-                  ),
-                  if (styleRemark.isNotEmpty)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text(
-                        'Remark: $styleRemark',
-                        style: pw.TextStyle(
-                          fontSize: 6,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-
-          // Style Image column
-          dataCells.add(
-            pw.Container(
-              width: 40,
-              height: 40,
-              padding: const pw.EdgeInsets.all(2),
-              child: styleImage != null
-                  ? pw.Image(styleImage, fit: pw.BoxFit.contain)
-                  : pw.Center(
-                      child: pw.Text(
-                        'No Image',
-                        style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
-                      ),
-                    ),
-            ),
-          );
-
-          // Size columns
-          for (var size in categorySizes) {
-            dataCells.add(
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(4),
-                child: pw.Text(
-                  sizeQtyMap[size]?.toString() ?? '-',
-                  style: const pw.TextStyle(fontSize: 8),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-            );
-          }
-
-          // WSP and Total Qty columns
-          dataCells.addAll([
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                wsp?.toStringAsFixed(0) ?? "0",
-                style: const pw.TextStyle(fontSize: 8),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                totalQty.toString(),
-                style: pw.TextStyle(
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-          ]);
-
-          categoryRows.add(pw.TableRow(children: dataCells));
-          
-        } else {
-          // Handle styles with shades
-          bool isFirstRowForStyle = true;
-          int shadeCount = 0;
-
-          for (var shade in shades) {
-            String shadeName = shade['shade_name']?.toString() ?? '';
-            if (shadeName.isEmpty || shadeName == 'null') continue;
-            
-            String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
-            List sizeData = shade['size_data'] ?? [];
-
-            // Get shade image from cache
-            pw.ImageProvider? shadeImage;
-            if (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl)) {
-              shadeImage = imageCache[shadeImageUrl];
-            }
-
-            Map<String, int> sizeQtyMap = {};
-            double? wsp;
-
-            for (var size in sizeData) {
-              String sizeName = size['Size_Name']?.toString() ?? '';
-              int qty = (size['Qty'] ?? 0).toInt();
-
-              if (sizeName.isNotEmpty) {
-                sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
-              }
-
-              if (wsp == null) {
-                num rate = size['Rate'] ?? 0;
-                wsp = rate.toDouble();
-              }
-            }
-
-            int totalQty = 0;
-            for (var size in categorySizes) {
-              totalQty += sizeQtyMap[size] ?? 0;
-            }
-
-            categoryTotalQty += totalQty;
-            grandTotalQty += totalQty;
-            shadeCount++;
-
-            List<pw.Widget> dataCells = [];
-
-            // Style column (only for first row of this style)
+          if (hasAnyShade) {
             if (isFirstRowForStyle) {
               dataCells.add(
                 pw.Container(
@@ -871,38 +839,39 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
               dataCells.add(pw.Container());
             }
 
-            // Shade column
             dataCells.add(
               pw.Padding(
                 padding: const pw.EdgeInsets.all(4),
                 child: pw.Text(
-                  shadeName,
+                  displayShadeName,
                   style: const pw.TextStyle(fontSize: 8),
                   textAlign: pw.TextAlign.center,
                 ),
               ),
             );
 
-            // Style Image column (only for first row of this style)
             dataCells.add(
               pw.Container(
                 width: 35,
                 height: 35,
                 padding: const pw.EdgeInsets.all(2),
-                child: (isFirstRowForStyle && styleImage != null)
-                    ? pw.Image(styleImage, fit: pw.BoxFit.contain)
-                    : (isFirstRowForStyle)
+                child:
+                    (isFirstRowForStyle && styleImage != null)
+                        ? pw.Image(styleImage, fit: pw.BoxFit.contain)
+                        : (isFirstRowForStyle)
                         ? pw.Center(
-                            child: pw.Text(
-                              'No Image',
-                              style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+                          child: pw.Text(
+                            'No Image',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
                             ),
-                          )
+                          ),
+                        )
                         : pw.Container(),
               ),
             );
 
-            // Shade Image column
             dataCells.add(
               pw.Container(
                 width: 35,
@@ -911,90 +880,170 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                   border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
                   color: PdfColors.grey50,
                 ),
-                child: shadeImage != null
-                    ? pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          child: pw.Image(shadeImage, fit: pw.BoxFit.contain),
+                child:
+                    (!isNoShade && shadeImage != null)
+                        ? pw.Center(
+                          child: pw.Container(
+                            width: 33,
+                            height: 33,
+                            child: pw.Image(shadeImage, fit: pw.BoxFit.contain),
+                          ),
+                        )
+                        : pw.Center(
+                          child: pw.Text(
+                            isNoShade ? '-' : 'No Image',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
                         ),
-                      )
-                    : pw.Center(
-                        child: pw.Text(
-                          'No Image',
-                          style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
-                        ),
-                      ),
               ),
             );
-
-            // Size columns
-            for (var size in categorySizes) {
+          } else {
+            if (isFirstRowForStyle) {
               dataCells.add(
-                pw.Padding(
+                pw.Container(
                   padding: const pw.EdgeInsets.all(4),
-                  child: pw.Text(
-                    sizeQtyMap[size]?.toString() ?? '-',
-                    style: const pw.TextStyle(fontSize: 8),
-                    textAlign: pw.TextAlign.center,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        styleCode,
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                      if (styleRemark.isNotEmpty)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Text(
+                            'Remark: $styleRemark',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               );
-            }
 
-            // WSP and Total Qty columns
-            dataCells.addAll([
+              dataCells.add(
+                pw.Container(
+                  width: 40,
+                  height: 40,
+                  padding: const pw.EdgeInsets.all(2),
+                  child:
+                      styleImage != null
+                          ? pw.Image(styleImage, fit: pw.BoxFit.contain)
+                          : pw.Center(
+                            child: pw.Text(
+                              'No Image',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          ),
+                ),
+              );
+            } else {
+              dataCells.add(pw.Container());
+              dataCells.add(pw.Container());
+            }
+          }
+
+          for (var size in categorySizes) {
+            dataCells.add(
               pw.Padding(
                 padding: const pw.EdgeInsets.all(4),
                 child: pw.Text(
-                  wsp?.toStringAsFixed(0) ?? "0",
+                  sizeQtyMap[size]?.toString() ?? '-',
                   style: const pw.TextStyle(fontSize: 8),
                   textAlign: pw.TextAlign.center,
                 ),
               ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(4),
-                child: pw.Text(
-                  totalQty.toString(),
-                  style: pw.TextStyle(
-                    fontSize: 8,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                  textAlign: pw.TextAlign.center,
-                ),
+            );
+          }
+
+          dataCells.addAll([
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                wsp.toStringAsFixed(2),
+                style: const pw.TextStyle(fontSize: 8),
+                textAlign: pw.TextAlign.center,
               ),
-            ]);
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                totalQty.toString(),
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ]);
 
-            categoryRows.add(pw.TableRow(children: dataCells));
-            isFirstRowForStyle = false;
-          }
+          categoryRows.add(pw.TableRow(children: dataCells));
+          isFirstRowForStyle = false;
+        }
 
-          if (shadeCount > 0) {
-            categoryStyleCount++;
-            totalStylesCount++;
-          }
+        if (processedShadeCount > 0) {
+          categoryStyleCount++;
+          totalStylesCount++;
         }
       }
 
       if (categoryStyleCount > 0) {
-        // Header cells
         List<pw.Widget> headerCells = [];
 
-        if (!hasAnyShade) {
+        if (hasAnyShade) {
           headerCells.addAll([
             pw.Padding(
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 "Style",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Shade",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(2),
               child: pw.Text(
-                "Image",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                "Style Image",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(2),
+              child: pw.Text(
+                "Shade Image",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -1005,31 +1054,21 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 "Style",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                "Shade",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(2),
               child: pw.Text(
-                "Style Image",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(2),
-              child: pw.Text(
-                "Shade Image",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                "Image",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -1042,7 +1081,10 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 size,
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -1077,21 +1119,39 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         );
 
         int totalColumns = (hasAnyShade ? 4 : 2) + categorySizes.length + 2;
-        
+
         List<pw.Widget> categoryTotalRowCells = [];
 
-        if (!hasAnyShade) {
+        if (hasAnyShade) {
           categoryTotalRowCells.add(
             pw.Container(
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 "Total Item: $categoryStyleCount",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
               ),
             ),
           );
           categoryTotalRowCells.add(
-            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Container(),
+            ),
+          );
+          categoryTotalRowCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Container(),
+            ),
+          );
+          categoryTotalRowCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Container(),
+            ),
           );
         } else {
           categoryTotalRowCells.add(
@@ -1099,24 +1159,27 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
               padding: const pw.EdgeInsets.all(4),
               child: pw.Text(
                 "Total Item: $categoryStyleCount",
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
               ),
             ),
           );
           categoryTotalRowCells.add(
-            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-          );
-          categoryTotalRowCells.add(
-            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-          );
-          categoryTotalRowCells.add(
-            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Container(),
+            ),
           );
         }
 
         for (int i = (hasAnyShade ? 4 : 2); i < totalColumns - 1; i++) {
           categoryTotalRowCells.add(
-            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Container(),
+            ),
           );
         }
 
@@ -1138,18 +1201,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           ),
         );
 
-        // Set column widths
         Map<int, pw.TableColumnWidth> columnWidths = {};
 
-        if (!hasAnyShade) {
-          columnWidths[0] = const pw.FixedColumnWidth(80);
-          columnWidths[1] = const pw.FixedColumnWidth(45);
-          for (int i = 0; i < categorySizes.length; i++) {
-            columnWidths[2 + i] = const pw.FixedColumnWidth(28);
-          }
-          columnWidths[2 + categorySizes.length] = const pw.FixedColumnWidth(40);
-          columnWidths[3 + categorySizes.length] = const pw.FixedColumnWidth(65);
-        } else {
+        if (hasAnyShade) {
           columnWidths[0] = const pw.FixedColumnWidth(55);
           columnWidths[1] = const pw.FixedColumnWidth(55);
           columnWidths[2] = const pw.FixedColumnWidth(45);
@@ -1157,8 +1211,24 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           for (int i = 0; i < categorySizes.length; i++) {
             columnWidths[4 + i] = const pw.FixedColumnWidth(28);
           }
-          columnWidths[4 + categorySizes.length] = const pw.FixedColumnWidth(40);
-          columnWidths[5 + categorySizes.length] = const pw.FixedColumnWidth(65);
+          columnWidths[4 + categorySizes.length] = const pw.FixedColumnWidth(
+            40,
+          );
+          columnWidths[5 + categorySizes.length] = const pw.FixedColumnWidth(
+            65,
+          );
+        } else {
+          columnWidths[0] = const pw.FixedColumnWidth(80);
+          columnWidths[1] = const pw.FixedColumnWidth(45);
+          for (int i = 0; i < categorySizes.length; i++) {
+            columnWidths[2 + i] = const pw.FixedColumnWidth(28);
+          }
+          columnWidths[2 + categorySizes.length] = const pw.FixedColumnWidth(
+            40,
+          );
+          columnWidths[3 + categorySizes.length] = const pw.FixedColumnWidth(
+            65,
+          );
         }
 
         tables.add(
@@ -1190,7 +1260,6 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
       }
     }
 
-    // Determine if any shade exists globally for grand total row
     bool hasAnyShadeGlobal = false;
     for (var category in items) {
       List styles = category['styles'] ?? [];
@@ -1217,7 +1286,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
     List<pw.Widget> grandTotalRowCells = [];
 
-    if (!hasAnyShadeGlobal) {
+    if (hasAnyShadeGlobal) {
       grandTotalRowCells.add(
         pw.Container(
           padding: const pw.EdgeInsets.all(4),
@@ -1228,7 +1297,22 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         ),
       );
       grandTotalRowCells.add(
-        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
+      );
+      grandTotalRowCells.add(
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
+      );
+      grandTotalRowCells.add(
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
       );
     } else {
       grandTotalRowCells.add(
@@ -1241,19 +1325,19 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         ),
       );
       grandTotalRowCells.add(
-        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-      );
-      grandTotalRowCells.add(
-        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-      );
-      grandTotalRowCells.add(
-        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
       );
     }
 
     for (int i = (hasAnyShadeGlobal ? 4 : 2); i < totalColumns - 1; i++) {
       grandTotalRowCells.add(
-        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Container(),
+        ),
       );
     }
 
@@ -1290,10 +1374,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
   pw.Widget _buildPDFFooter() {
     String ledgerName = headerData['Ledger_Name']?.toString() ?? '';
-    String createdByText = ledgerName.isNotEmpty 
-        ? "Created By: $ledgerName" 
-        : "Created By: ";
-    
+    String createdByText =
+        ledgerName.isNotEmpty ? "Created By: $ledgerName" : "Created By: ";
+
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(12),
@@ -1319,17 +1402,20 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
 
   Future<void> _shareViaWhatsApp() async {
     try {
-      String? defaultMobileNo = widget.defaultWhatsAppMobileNo ?? 
-                                widget.orderData?.whatsAppMobileNo ?? 
-                                headerData['WhatsAppMobileNo']?.toString();
-      
-      final result = await _showMobileNumberDialog(defaultMobileNo: defaultMobileNo);
+      String? defaultMobileNo =
+          widget.defaultWhatsAppMobileNo ??
+          widget.orderData?.whatsAppMobileNo ??
+          headerData['WhatsAppMobileNo']?.toString();
+
+      final result = await _showMobileNumberDialog(
+        defaultMobileNo: defaultMobileNo,
+      );
       if (result == null) return;
-      
+
       String mobileNo = result['mobileNo'] ?? '';
-      
+
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -1354,9 +1440,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           );
         },
       );
-      
+
       String whatsappType = AppConstants.whatsappType ?? '1';
-      
+
       if (whatsappType == "1") {
         await _shareViaWhatsAppNode(mobileNo);
       } else if (whatsappType == "2") {
@@ -1364,11 +1450,10 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
       } else {
         await _shareViaWhatsAppNode(mobileNo);
       }
-      
+
       if (mounted) {
         Navigator.pop(context);
       }
-      
     } catch (e) {
       print('Error sending via WhatsApp: $e');
       if (mounted) {
@@ -1386,58 +1471,61 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
   Future<void> _shareViaWhatsAppNode(String mobileNo) async {
     try {
       final pdfBytes = await _generatePDF();
-      
+
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
       await file.writeAsBytes(pdfBytes);
-      
+
       final pdfBytesData = await file.readAsBytes();
       String fileBase64 = base64Encode(pdfBytesData);
-      
+
       String caption = _prepareOrderReportCaption();
-      
+
       if (mounted) {
         Navigator.pop(context);
       }
-      
+
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('📤 Sending via WhatsApp...'),
           duration: Duration(seconds: 2),
         ),
       );
-      
+
       String whatsappKey = AppConstants.whatsappKey ?? '';
       if (whatsappKey.isEmpty) {
         throw Exception('WhatsApp API key not configured');
       }
-      
-      final response = await http.post(
-        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
-        body: {
-          'data': fileBase64,
-          'filename': 'Order_${widget.orderNo}.pdf',
-          'key': whatsappKey,
-          'number': '91$mobileNo',
-          'caption': caption,
-        },
-      ).timeout(const Duration(seconds: 30));
-      
+
+      final response = await http
+          .post(
+            Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+            body: {
+              'data': fileBase64,
+              'filename': 'Order_${widget.orderNo}.pdf',
+              'key': whatsappKey,
+              'number': '91$mobileNo',
+              'caption': caption,
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
       if (response.statusCode == 200 && mounted) {
         try {
           final responseData = json.decode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                responseData['status'] == 'success' 
-                  ? '✓ Order report sent successfully to $mobileNo'
-                  : 'Failed: ${responseData['message'] ?? 'Unknown error'}',
+                responseData['status'] == 'success'
+                    ? '✓ Order report sent successfully to $mobileNo'
+                    : 'Failed: ${responseData['message'] ?? 'Unknown error'}',
               ),
-              backgroundColor: responseData['status'] == 'success' 
-                ? Colors.green 
-                : Colors.red,
+              backgroundColor:
+                  responseData['status'] == 'success'
+                      ? Colors.green
+                      : Colors.red,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -1458,9 +1546,8 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           ),
         );
       }
-      
+
       await file.delete();
-      
     } catch (e) {
       print('Error sending via Node API: $e');
       rethrow;
@@ -1470,19 +1557,21 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
   Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
     try {
       final pdfBytes = await _generatePDF();
-      
+
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
       await file.writeAsBytes(pdfBytes);
-      
+
       final uri = Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf');
       var request = http.MultipartRequest('POST', uri);
-      
+
       request.fields['mobile_no'] = mobileNo;
       request.fields['order_no'] = widget.orderNo;
       request.fields['party_name'] = headerData['Led_Name']?.toString() ?? '';
-      request.fields['order_date'] = _formatDate(headerData['Doc_Dt']?.toString());
-      
+      request.fields['order_date'] = _formatDate(
+        headerData['Doc_Dt']?.toString(),
+      );
+
       request.files.add(
         await http.MultipartFile.fromPath(
           'file',
@@ -1490,27 +1579,29 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           filename: 'Order_${widget.orderNo}.pdf',
         ),
       );
-      
+
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('📤 Sending order report...'),
           duration: Duration(seconds: 2),
         ),
       );
-      
+
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 45),
       );
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       if (response.statusCode == 200 && mounted) {
         try {
           final responseBody = json.decode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(responseBody['message'] ?? '✓ Order report sent successfully'),
+              content: Text(
+                responseBody['message'] ?? '✓ Order report sent successfully',
+              ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
             ),
@@ -1532,18 +1623,21 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
           ),
         );
       }
-      
+
       await file.delete();
-      
     } catch (e) {
       print('Error sending PDF via Backend API: $e');
       rethrow;
     }
   }
 
-  Future<Map<String, String>?> _showMobileNumberDialog({String? defaultMobileNo}) {
-    TextEditingController mobileController = TextEditingController(text: defaultMobileNo ?? '');
-    
+  Future<Map<String, String>?> _showMobileNumberDialog({
+    String? defaultMobileNo,
+  }) {
+    TextEditingController mobileController = TextEditingController(
+      text: defaultMobileNo ?? '',
+    );
+
     return showDialog<Map<String, String>?>(
       context: context,
       builder: (context) {
@@ -1628,7 +1722,9 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                 if (mobileNo.length != 10) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Please enter valid 10-digit mobile number'),
+                      content: Text(
+                        'Please enter valid 10-digit mobile number',
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1665,7 +1761,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     String orderDate = _formatDate(headerData['Doc_Dt']?.toString());
     String partyName = headerData['Led_Name']?.toString() ?? '';
     int totalItems = items.length;
-    
+
     int totalQty = 0;
     for (var category in items) {
       List styles = category['styles'] ?? [];
@@ -1686,7 +1782,7 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
         }
       }
     }
-    
+
     return '''
 *📋 VRS ORDER REPORT*
 ━━━━━━━━━━━━━━━━━━━━
@@ -1773,7 +1869,11 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
                 ],
               ),
               child: IconButton(
-                icon: const Icon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
+                icon: const Icon(
+                  FontAwesomeIcons.whatsapp,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: isLoading ? null : _shareViaWhatsApp,
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -1781,23 +1881,58 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
             ),
           ],
         ),
-        body: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : pdfError
-            ? const Center(child: Text("Error loading PDF"))
-            : PdfPreview(
-                build: (format) => _generatePDF(),
-                allowSharing: false,
-                allowPrinting: false,
-                pdfFileName: 'Order_${widget.orderNo}.pdf',
-                initialPageFormat: PdfPageFormat.a4,
-                canChangePageFormat: false,
-                canChangeOrientation: false,
-                canDebug: false,
-                onError: (context, error) {
-                  return Center(child: Text("PDF Error: $error"));
-                },
-              ),
+        body:
+            isLoading || !imagesLoaded
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        !imagesLoaded &&
+                                _imageLoadTracker != null &&
+                                _imageLoadTracker!.totalImages > 0
+                            ? 'Loading images (${_imageLoadTracker?.loadedImages ?? 0}/${_imageLoadTracker?.totalImages ?? 0})...'
+                            : 'Preparing report...',
+                        style: GoogleFonts.poppins(fontSize: 14),
+                      ),
+                      if (_imageLoadTracker != null &&
+                          _imageLoadTracker!.totalImages > 0 &&
+                          !imagesLoaded)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SizedBox(
+                            width: 200,
+                            child: LinearProgressIndicator(
+                              value:
+                                  (_imageLoadTracker?.loadedImages ?? 0) /
+                                  (_imageLoadTracker?.totalImages ?? 1),
+                              backgroundColor: Colors.grey[200],
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+                : pdfError
+                ? const Center(child: Text("Error loading PDF"))
+                : PdfPreview(
+                  build: (format) => _generatePDF(),
+                  allowSharing: false,
+                  allowPrinting: false,
+                  pdfFileName: 'Order_${widget.orderNo}.pdf',
+                  initialPageFormat: PdfPageFormat.a4,
+                  canChangePageFormat: false,
+                  canChangeOrientation: false,
+                  canDebug: false,
+                  onError: (context, error) {
+                    return Center(child: Text("PDF Error: $error"));
+                  },
+                ),
       ),
     );
   }
