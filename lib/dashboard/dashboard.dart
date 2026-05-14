@@ -85,52 +85,61 @@ class _OrderSummaryPageState extends State<OrderSummaryPage> {
     _dateRangeScrollController.dispose();
     super.dispose();
   }
+Future<void> _loadDropdownData() async {
+  setState(() {
+    isLoadingLedgers = true;
+    isLoadingSalesperson = true;
+  });
 
-  Future<void> _loadDropdownData() async {
+  try {
+    final fetchedLedgersResponse = await ApiService.fetchLedgers(
+      ledCat: 'w',
+      coBrId: UserSession.coBrId ?? '',
+    );
+    final fetchedSalespersonResponse = await ApiService.fetchLedgers(
+      ledCat: 's',
+      coBrId: UserSession.coBrId ?? '',
+    );
+    final fetchedStatesResponse = await ApiService.fetchStates();
+    final fetchedCitiesResponse = await ApiService.fetchCities(stateKey: "");
+
     setState(() {
-      isLoadingLedgers = true;
-      isLoadingSalesperson = true;
+      // For ledgers - response is already List<dynamic> with ledKey and ledName
+      final ledgersData = fetchedLedgersResponse['result'] as List? ?? [];
+      ledgerList = ledgersData.map((item) => KeyName(
+        key: item['ledKey']?.toString() ?? '',
+        name: item['ledName']?.toString() ?? '',
+      )).toList();
+      
+      // For salespersons - response is already List<dynamic> with ledKey and ledName
+      final salespersonsData = fetchedSalespersonResponse['result'] as List? ?? [];
+      salespersonList = salespersonsData.map((item) => KeyName(
+        key: item['ledKey']?.toString() ?? '',
+        name: item['ledName']?.toString() ?? '',
+      )).toList();
+      
+      // For states - response already returns KeyName objects from ApiService
+      final statesData = fetchedStatesResponse['result'] as List? ?? [];
+      statesList = statesData.cast<KeyName>();
+      
+      // For cities - response already returns KeyName objects from ApiService
+      final citiesData = fetchedCitiesResponse['result'] as List? ?? [];
+      citiesList = citiesData.cast<KeyName>();
+      
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
     });
-
-    try {
-      final fetchedLedgersResponse = await ApiService.fetchLedgers(
-        ledCat: 'w',
-        coBrId: UserSession.coBrId ?? '',
-      );
-      final fetchedSalespersonResponse = await ApiService.fetchLedgers(
-        ledCat: 's',
-        coBrId: UserSession.coBrId ?? '',
-      );
-      final fetchedStatesResponse = await ApiService.fetchStates();
-      final fetchedCitiesResponse = await ApiService.fetchCities(stateKey: "");
-
-      setState(() {
-        ledgerList = [
-          ...List<KeyName>.from(fetchedLedgersResponse['result'] ?? []),
-        ];
-        salespersonList = [
-          ...List<KeyName>.from(fetchedSalespersonResponse['result'] ?? []),
-        ];
-        statesList = [
-          ...List<KeyName>.from(fetchedStatesResponse['result'] ?? []),
-        ];
-        citiesList = [
-          ...List<KeyName>.from(fetchedCitiesResponse['result'] ?? []),
-        ];
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching dropdown data: $e')),
-      );
-    }
+  } catch (e) {
+    print('Error fetching dropdown data: $e');
+    setState(() {
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching dropdown data: $e')),
+    );
   }
-
+}
   Future<void> _selectDate(BuildContext context, bool isFromDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,

@@ -97,41 +97,50 @@ String selectedRange = 'Today';
   'Previous Year',
 ];
 
-  Future<void> _loadDropdownData() async {
+Future<void> _loadDropdownData() async {
+  setState(() {
+    isLoadingLedgers = true;
+    isLoadingSalesperson = true;
+  });
+
+  try {
+    final fetchedLedgersResponse = await ApiService.fetchLedgers(
+      ledCat: 'w',
+      coBrId: UserSession.coBrId ?? '',
+    );
+    final fetchedSalespersonResponse = await ApiService.fetchLedgers(
+      ledCat: 's',
+      coBrId: UserSession.coBrId ?? '',
+    );
+
+    // Get the result list from the response Map
+    final ledgersData = fetchedLedgersResponse['result'] as List? ?? [];
+    final salespersonsData = fetchedSalespersonResponse['result'] as List? ?? [];
+
     setState(() {
-      isLoadingLedgers = true;
-      isLoadingSalesperson = true;
+      ledgerList = ledgersData.map((item) => KeyName(
+        key: item['ledKey']?.toString() ?? '',
+        name: item['ledName']?.toString() ?? '',
+      )).toList();
+      
+      salespersonList = salespersonsData.map((item) => KeyName(
+        key: item['ledKey']?.toString() ?? '',
+        name: item['ledName']?.toString() ?? '',
+      )).toList();
+      
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
     });
-
-    try {
-      final fetchedLedgersResponse = await ApiService.fetchLedgers(
-        ledCat: 'w',
-        coBrId: UserSession.coBrId ?? '',
-      );
-      final fetchedSalespersonResponse = await ApiService.fetchLedgers(
-        ledCat: 's',
-        coBrId: UserSession.coBrId ?? '',
-      );
-
-      setState(() {
-        ledgerList = List<KeyName>.from(fetchedLedgersResponse['result'] ?? []);
-        salespersonList = List<KeyName>.from(
-          fetchedSalespersonResponse['result'] ?? [],
-        );
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching dropdown data: $e')),
-      );
-    }
+  } catch (e) {
+    setState(() {
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching dropdown data: $e')),
+    );
   }
-
+}
   void _changeDate(TextEditingController controller, int days) {
     DateTime currentDate = DateFormat('yyyy-MM-dd').parse(controller.text);
     DateTime newDate = currentDate.add(Duration(days: days));

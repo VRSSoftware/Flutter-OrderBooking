@@ -637,6 +637,8 @@ pw.Widget _buildPDFHeader() {
     ),
   );
 }
+
+
 pw.Widget _buildPDFItemsTable() {
   if (items.isEmpty) {
     return pw.Center(child: pw.Text("No Items Found"));
@@ -653,6 +655,19 @@ pw.Widget _buildPDFItemsTable() {
     int categoryTotalQty = 0;
     int categoryStyleCount = 0;
 
+    bool hasAnyShade = false;
+    for (var style in styles) {
+      List shades = style['shades'] ?? [];
+      for (var shade in shades) {
+        String shadeName = shade['shade_name']?.toString() ?? '';
+        if (shadeName.isNotEmpty && shadeName != 'null') {
+          hasAnyShade = true;
+          break;
+        }
+      }
+      if (hasAnyShade) break;
+    }
+
     List<pw.TableRow> categoryRows = [];
 
     for (var style in styles) {
@@ -661,12 +676,18 @@ pw.Widget _buildPDFItemsTable() {
       String styleRemark = style['Remark']?.toString() ?? '';
       List shades = style['shades'] ?? [];
 
-      bool isFirstRowForStyle = true;
-      int shadeCount = 0;
-
+      bool hasValidShades = false;
       for (var shade in shades) {
         String shadeName = shade['shade_name']?.toString() ?? '';
-        String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+        if (shadeName.isNotEmpty && shadeName != 'null') {
+          hasValidShades = true;
+          break;
+        }
+      }
+
+      if (!hasValidShades) {
+        var shade = shades.isNotEmpty ? shades[0] : {'shade_name': '', 'shade_Img': null, 'size_data': []};
+        
         List sizeData = shade['size_data'] ?? [];
 
         Map<String, int> sizeQtyMap = {};
@@ -693,135 +714,193 @@ pw.Widget _buildPDFItemsTable() {
 
         categoryTotalQty += totalQty;
         grandTotalQty += totalQty;
-        shadeCount++;
+        categoryStyleCount++;
+        totalStylesCount++;
 
-        List<pw.Widget> dataCells = [
-          // Style column
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                if (isFirstRowForStyle)
+        List<pw.Widget> dataCells = [];
+
+        if (!hasAnyShade) {
+          dataCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
                   pw.Text(
                     styleCode,
                     style: const pw.TextStyle(fontSize: 8),
                     textAlign: pw.TextAlign.center,
                   ),
-                if (isFirstRowForStyle && styleRemark.isNotEmpty)
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.only(top: 2),
+                  if (styleRemark.isNotEmpty)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 2),
+                      child: pw.Text(
+                        'Remark: $styleRemark',
+                        style: pw.TextStyle(
+                          fontSize: 6,
+                          color: PdfColors.grey700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+
+          dataCells.add(
+            pw.Container(
+              width: 35,
+              height: 35,
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                color: PdfColors.grey50,
+              ),
+              child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
+                  ? pw.Center(
+                      child: pw.Container(
+                        width: 33,
+                        height: 33,
+                        child: pw.Image(
+                          imageCache[styleImageUrl]!,
+                          fit: pw.BoxFit.contain,
+                        ),
+                      ),
+                    )
+                  : pw.Center(
+                      child: pw.Container(
+                        width: 33,
+                        height: 33,
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.grey200,
+                          borderRadius: pw.BorderRadius.circular(2),
+                        ),
+                        child: pw.Center(
+                          child: pw.Text(
+                            'No Image',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          );
+        } else {
+          dataCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    styleCode,
+                    style: const pw.TextStyle(fontSize: 8),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                  if (styleRemark.isNotEmpty)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 2),
+                      child: pw.Text(
+                        'Remark: $styleRemark',
+                        style: pw.TextStyle(
+                          fontSize: 6,
+                          color: PdfColors.grey700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+
+          dataCells.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "-",
+                style: const pw.TextStyle(fontSize: 8),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          );
+
+          dataCells.add(
+            pw.Container(
+              width: 35,
+              height: 35,
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                color: PdfColors.grey50,
+              ),
+              child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
+                  ? pw.Center(
+                      child: pw.Container(
+                        width: 33,
+                        height: 33,
+                        child: pw.Image(
+                          imageCache[styleImageUrl]!,
+                          fit: pw.BoxFit.contain,
+                        ),
+                      ),
+                    )
+                  : pw.Center(
+                      child: pw.Container(
+                        width: 33,
+                        height: 33,
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.grey200,
+                          borderRadius: pw.BorderRadius.circular(2),
+                        ),
+                        child: pw.Center(
+                          child: pw.Text(
+                            'No Image',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          );
+
+          dataCells.add(
+            pw.Container(
+              width: 35,
+              height: 35,
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                color: PdfColors.grey50,
+              ),
+              child: pw.Center(
+                child: pw.Container(
+                  width: 33,
+                  height: 33,
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey200,
+                    borderRadius: pw.BorderRadius.circular(2),
+                  ),
+                  child: pw.Center(
                     child: pw.Text(
-                      'Remark: $styleRemark',
+                      '-',
                       style: pw.TextStyle(
                         fontSize: 6,
                         color: PdfColors.grey700,
                       ),
+                      textAlign: pw.TextAlign.center,
                     ),
                   ),
-              ],
+                ),
+              ),
             ),
-          ),
-          // Shade column
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              shadeName,
-              style: const pw.TextStyle(fontSize: 8),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        ];
+          );
+        }
 
-        // Style Image column (only for first shade of this style)
-        dataCells.add(
-          pw.Container(
-            width: 35,
-            height: 35,
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-              color: PdfColors.grey50,
-            ),
-            child: isFirstRowForStyle
-                ? (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)
-                    ? pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          child: pw.Image(
-                            imageCache[styleImageUrl]!,
-                            fit: pw.BoxFit.contain,
-                          ),
-                        ),
-                      )
-                    : pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          decoration: pw.BoxDecoration(
-                            color: PdfColors.grey200,
-                            borderRadius: pw.BorderRadius.circular(2),
-                          ),
-                          child: pw.Center(
-                            child: pw.Text(
-                              'No Image',
-                              style: pw.TextStyle(
-                                fontSize: 6,
-                                color: PdfColors.grey700,
-                              ),
-                              textAlign: pw.TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ))
-                : pw.Container(),
-          ),
-        );
-
-        // Shade Image column (for every shade)
-        dataCells.add(
-          pw.Container(
-            width: 35,
-            height: 35,
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-              color: PdfColors.grey50,
-            ),
-            child: (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl))
-                ? pw.Center(
-                    child: pw.Container(
-                      width: 33,
-                      height: 33,
-                      child: pw.Image(
-                        imageCache[shadeImageUrl]!,
-                        fit: pw.BoxFit.contain,
-                      ),
-                    ),
-                  )
-                : pw.Center(
-                    child: pw.Container(
-                      width: 33,
-                      height: 33,
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.grey200,
-                        borderRadius: pw.BorderRadius.circular(2),
-                      ),
-                      child: pw.Center(
-                        child: pw.Text(
-                          'No Image',
-                          style: pw.TextStyle(
-                            fontSize: 6,
-                            color: PdfColors.grey700,
-                          ),
-                          textAlign: pw.TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-        );
-
-        // Size columns
         for (var size in categorySizes) {
           dataCells.add(
             pw.Padding(
@@ -858,57 +937,372 @@ pw.Widget _buildPDFItemsTable() {
         ]);
 
         categoryRows.add(pw.TableRow(children: dataCells));
-        isFirstRowForStyle = false;
-      }
+        
+      } else {
+        bool isFirstRowForStyle = true;
+        int shadeCount = 0;
 
-      if (shadeCount > 0) {
-        categoryStyleCount++;
-        totalStylesCount++;
+        for (var shade in shades) {
+          String shadeName = shade['shade_name']?.toString() ?? '';
+          if (shadeName.isEmpty || shadeName == 'null') continue;
+          
+          String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+          List sizeData = shade['size_data'] ?? [];
+
+          Map<String, int> sizeQtyMap = {};
+          double? wsp;
+
+          for (var size in sizeData) {
+            String sizeName = size['Size_Name']?.toString() ?? '';
+            int qty = (size['Qty'] ?? 0).toInt();
+
+            if (sizeName.isNotEmpty) {
+              sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
+            }
+
+            if (wsp == null) {
+              num rate = size['Rate'] ?? 0;
+              wsp = rate.toDouble();
+            }
+          }
+
+          int totalQty = 0;
+          for (var size in categorySizes) {
+            totalQty += sizeQtyMap[size] ?? 0;
+          }
+
+          categoryTotalQty += totalQty;
+          grandTotalQty += totalQty;
+          shadeCount++;
+
+          List<pw.Widget> dataCells = [];
+
+          if (!hasAnyShade) {
+            if (isFirstRowForStyle) {
+              dataCells.add(
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        styleCode,
+                        style: const pw.TextStyle(fontSize: 8),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      if (styleRemark.isNotEmpty)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Text(
+                            'Remark: $styleRemark',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              dataCells.add(pw.Container());
+            }
+          } else {
+            if (isFirstRowForStyle) {
+              dataCells.add(
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        styleCode,
+                        style: const pw.TextStyle(fontSize: 8),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      if (styleRemark.isNotEmpty)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Text(
+                            'Remark: $styleRemark',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              dataCells.add(pw.Container());
+            }
+
+            dataCells.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Text(
+                  shadeName,
+                  style: const pw.TextStyle(fontSize: 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          if (!hasAnyShade) {
+            dataCells.add(
+              pw.Container(
+                width: 35,
+                height: 35,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  color: PdfColors.grey50,
+                ),
+                child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
+                    ? pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          child: pw.Image(
+                            imageCache[styleImageUrl]!,
+                            fit: pw.BoxFit.contain,
+                          ),
+                        ),
+                      )
+                    : pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.grey200,
+                            borderRadius: pw.BorderRadius.circular(2),
+                          ),
+                          child: pw.Center(
+                            child: pw.Text(
+                              'No Image',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                color: PdfColors.grey700,
+                              ),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            );
+          } else {
+            dataCells.add(
+              pw.Container(
+                width: 35,
+                height: 35,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  color: PdfColors.grey50,
+                ),
+                child: isFirstRowForStyle
+                    ? (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)
+                        ? pw.Center(
+                            child: pw.Container(
+                              width: 33,
+                              height: 33,
+                              child: pw.Image(
+                                imageCache[styleImageUrl]!,
+                                fit: pw.BoxFit.contain,
+                              ),
+                            ),
+                          )
+                        : pw.Center(
+                            child: pw.Container(
+                              width: 33,
+                              height: 33,
+                              decoration: pw.BoxDecoration(
+                                color: PdfColors.grey200,
+                                borderRadius: pw.BorderRadius.circular(2),
+                              ),
+                              child: pw.Center(
+                                child: pw.Text(
+                                  'No Image',
+                                  style: pw.TextStyle(
+                                    fontSize: 6,
+                                    color: PdfColors.grey700,
+                                  ),
+                                  textAlign: pw.TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ))
+                    : pw.Container(),
+              ),
+            );
+
+            dataCells.add(
+              pw.Container(
+                width: 35,
+                height: 35,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  color: PdfColors.grey50,
+                ),
+                child: (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl))
+                    ? pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          child: pw.Image(
+                            imageCache[shadeImageUrl]!,
+                            fit: pw.BoxFit.contain,
+                          ),
+                        ),
+                      )
+                    : pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.grey200,
+                            borderRadius: pw.BorderRadius.circular(2),
+                          ),
+                          child: pw.Center(
+                            child: pw.Text(
+                              'No Image',
+                              style: pw.TextStyle(
+                                fontSize: 6,
+                                color: PdfColors.grey700,
+                              ),
+                              textAlign: pw.TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            );
+          }
+
+          for (var size in categorySizes) {
+            dataCells.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Text(
+                  sizeQtyMap[size]?.toString() ?? '-',
+                  style: const pw.TextStyle(fontSize: 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          dataCells.addAll([
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                wsp?.toStringAsFixed(0) ?? "0",
+                style: const pw.TextStyle(fontSize: 8),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                totalQty.toString(),
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ]);
+
+          categoryRows.add(pw.TableRow(children: dataCells));
+          isFirstRowForStyle = false;
+        }
+
+        if (shadeCount > 0) {
+          categoryStyleCount++;
+          totalStylesCount++;
+        }
       }
     }
 
     if (categoryStyleCount > 0) {
-      // Header cells
-      List<pw.Widget> headerCells = [
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "Style",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "Shade",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(2),
-          child: pw.Text(
-            "Style Image",
-            style: pw.TextStyle(
-              fontWeight: pw.FontWeight.bold,
-              fontSize: 9,
+      List<pw.Widget> headerCells = [];
+
+      if (!hasAnyShade) {
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "Style",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              textAlign: pw.TextAlign.center,
             ),
-            textAlign: pw.TextAlign.center,
           ),
-        ),
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(2),
-          child: pw.Text(
-            "Shade Image",
-            style: pw.TextStyle(
-              fontWeight: pw.FontWeight.bold,
-              fontSize: 9,
+        );
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(2),
+            child: pw.Text(
+              "Image",
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+              ),
+              textAlign: pw.TextAlign.center,
             ),
-            textAlign: pw.TextAlign.center,
           ),
-        ),
-      ];
+        );
+      } else {
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "Style",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        );
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "Shade",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        );
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(2),
+            child: pw.Text(
+              "Style Image",
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        );
+        headerCells.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(2),
+            child: pw.Text(
+              "Shade Image",
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        );
+      }
 
       for (var size in categorySizes) {
         headerCells.add(
@@ -953,30 +1347,57 @@ pw.Widget _buildPDFItemsTable() {
         ),
       );
 
-      int totalColumns = 4 + categorySizes.length + 2;
-      List<pw.Widget> categoryTotalRowCells = [
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "Total Item: $categoryStyleCount",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-          ),
-        ),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Container(),
-        ),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Container(),
-        ),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Container(),
-        ),
-      ];
+      int totalColumns = (!hasAnyShade ? 2 : 4) + categorySizes.length + 2;
+      
+      List<pw.Widget> categoryTotalRowCells = [];
 
-      for (int i = 4; i < totalColumns - 1; i++) {
+      if (!hasAnyShade) {
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "Total Item: $categoryStyleCount",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            ),
+          ),
+        );
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Container(),
+          ),
+        );
+      } else {
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "Total Item: $categoryStyleCount",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            ),
+          ),
+        );
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Container(),
+          ),
+        );
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Container(),
+          ),
+        );
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Container(),
+          ),
+        );
+      }
+
+      for (int i = (!hasAnyShade ? 2 : 4); i < totalColumns - 1; i++) {
         categoryTotalRowCells.add(
           pw.Container(
             padding: const pw.EdgeInsets.all(4),
@@ -1003,6 +1424,28 @@ pw.Widget _buildPDFItemsTable() {
         ),
       );
 
+      Map<int, pw.TableColumnWidth> columnWidths = {};
+
+      if (!hasAnyShade) {
+        columnWidths[0] = const pw.FixedColumnWidth(80);
+        columnWidths[1] = const pw.FixedColumnWidth(40);
+        for (int i = 0; i < categorySizes.length; i++) {
+          columnWidths[2 + i] = const pw.FixedColumnWidth(28);
+        }
+        columnWidths[2 + categorySizes.length] = const pw.FixedColumnWidth(40);
+        columnWidths[3 + categorySizes.length] = const pw.FixedColumnWidth(65);
+      } else {
+        columnWidths[0] = const pw.FixedColumnWidth(55);
+        columnWidths[1] = const pw.FixedColumnWidth(55);
+        columnWidths[2] = const pw.FixedColumnWidth(40);
+        columnWidths[3] = const pw.FixedColumnWidth(40);
+        for (int i = 0; i < categorySizes.length; i++) {
+          columnWidths[4 + i] = const pw.FixedColumnWidth(28);
+        }
+        columnWidths[4 + categorySizes.length] = const pw.FixedColumnWidth(40);
+        columnWidths[5 + categorySizes.length] = const pw.FixedColumnWidth(65);
+      }
+
       tables.add(
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -1021,16 +1464,7 @@ pw.Widget _buildPDFItemsTable() {
               ),
               child: pw.Table(
                 border: pw.TableBorder.all(width: 0.5),
-                columnWidths: {
-                  0: const pw.FixedColumnWidth(55), // Style
-                  1: const pw.FixedColumnWidth(55), // Shade
-                  2: const pw.FixedColumnWidth(40), // Style Image
-                  3: const pw.FixedColumnWidth(40), // Shade Image
-                  for (int i = 0; i < categorySizes.length; i++)
-                    4 + i: const pw.FixedColumnWidth(28),
-                  (4 + categorySizes.length): const pw.FixedColumnWidth(40), // WSP
-                  (5 + categorySizes.length): const pw.FixedColumnWidth(65), // TotQty
-                },
+                columnWidths: columnWidths,
                 children: categoryRows,
               ),
             ),
@@ -1045,23 +1479,81 @@ pw.Widget _buildPDFItemsTable() {
   if (items.isNotEmpty) {
     var lastCategory = items.last;
     List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
-    totalColumns = 4 + lastCategorySizes.length + 2;
+    
+    bool hasAnyShade = false;
+    for (var category in items) {
+      List styles = category['styles'] ?? [];
+      for (var style in styles) {
+        List shades = style['shades'] ?? [];
+        for (var shade in shades) {
+          String shadeName = shade['shade_name']?.toString() ?? '';
+          if (shadeName.isNotEmpty && shadeName != 'null') {
+            hasAnyShade = true;
+            break;
+          }
+        }
+        if (hasAnyShade) break;
+      }
+      if (hasAnyShade) break;
+    }
+    
+    totalColumns = (hasAnyShade ? 4 : 2) + lastCategorySizes.length + 2;
   }
 
-  List<pw.Widget> grandTotalRowCells = [
-    pw.Container(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(
-        "Total Item: $totalStylesCount",
-        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-      ),
-    ),
-    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-  ];
+  List<pw.Widget> grandTotalRowCells = [];
 
-  for (int i = 4; i < totalColumns - 1; i++) {
+  bool hasAnyShadeGlobal = false;
+  for (var category in items) {
+    List styles = category['styles'] ?? [];
+    for (var style in styles) {
+      List shades = style['shades'] ?? [];
+      for (var shade in shades) {
+        String shadeName = shade['shade_name']?.toString() ?? '';
+        if (shadeName.isNotEmpty && shadeName != 'null') {
+          hasAnyShadeGlobal = true;
+          break;
+        }
+      }
+      if (hasAnyShadeGlobal) break;
+    }
+    if (hasAnyShadeGlobal) break;
+  }
+
+  if (!hasAnyShadeGlobal) {
+    grandTotalRowCells.add(
+      pw.Container(
+        padding: const pw.EdgeInsets.all(4),
+        child: pw.Text(
+          "Total Item: $totalStylesCount",
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+        ),
+      ),
+    );
+    grandTotalRowCells.add(
+      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    );
+  } else {
+    grandTotalRowCells.add(
+      pw.Container(
+        padding: const pw.EdgeInsets.all(4),
+        child: pw.Text(
+          "Total Item: $totalStylesCount",
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+        ),
+      ),
+    );
+    grandTotalRowCells.add(
+      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    );
+    grandTotalRowCells.add(
+      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    );
+    grandTotalRowCells.add(
+      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+    );
+  }
+
+  for (int i = (hasAnyShadeGlobal ? 4 : 2); i < totalColumns - 1; i++) {
     grandTotalRowCells.add(
       pw.Container(
         padding: const pw.EdgeInsets.all(4),
@@ -1100,6 +1592,7 @@ pw.Widget _buildPDFItemsTable() {
 
   return pw.Column(children: tables);
 }
+
 pw.Widget _buildPDFFooter() {
   // Get Ledger_Name from backend data
   String ledgerName = headerData['Ledger_Name']?.toString() ?? '';
