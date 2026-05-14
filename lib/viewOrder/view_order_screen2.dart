@@ -2441,7 +2441,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                     ),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                     // LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =
@@ -3245,170 +3245,174 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
     }
   }
 
-  void _submitUpdate(BuildContext context, String styleKey) async {
-    int totalQty = _calculateCatalogQuantity(styleKey);
-    if (totalQty <= 0) {
-      _showErrorDialog(context, "Total quantity must be greater than zero.");
-      return;
-    }
+void _submitUpdate(BuildContext context, String styleKey) async {
+  int totalQty = _calculateCatalogQuantity(styleKey);
+  if (totalQty <= 0) {
+    _showErrorDialog(context, "Total quantity must be greater than zero.");
+    return;
+  }
 
-    final items = widget.styleManager.groupedItems[styleKey] ?? [];
-    if (items.isEmpty) return;
+  final items = widget.styleManager.groupedItems[styleKey] ?? [];
+  if (items.isEmpty) return;
 
-    final firstItem = items.first;
-    final styleQuantities = widget.quantities[styleKey] ?? {};
+  final firstItem = items.first;
+  final styleQuantities = widget.quantities[styleKey] ?? {};
 
-    String sCode = styleKey;
-    String bCode = "";
-    if (sCode.contains('---')) {
-      final parts = styleKey.split('---');
-      sCode = parts[0];
-      bCode = parts.length > 1 ? parts[1] : "";
-    }
+  String sCode = styleKey;
+  String bCode = "";
+  if (sCode.contains('---')) {
+    final parts = styleKey.split('---');
+    sCode = parts[0];
+    bCode = parts.length > 1 ? parts[1] : "";
+  }
 
-    setState(() {
-      _isLoading = true;
-    });
+  // Check if this is a no-shade style (has '_no_shade_' key)
+  final bool isNoShade = styleQuantities.containsKey('_no_shade_');
 
-    final initialPayload = {
-      "userId": UserSession.userName ?? '',
-      "coBrId": UserSession.coBrId ?? '',
-      "fcYrId": UserSession.userFcYr ?? '',
-      "data": {
-        "designcode": sCode,
-        "mrp": firstItem['mrp']?.toString() ?? '0',
-        "WSP": firstItem['wsp']?.toString() ?? '0',
-        "size": firstItem['sizeName']?.toString() ?? '',
-        "TotQty": totalQty.toString(),
-        "Note": firstItem['remark']?.toString() ?? '',
-        "color": firstItem['shadeName']?.toString() ?? '',
-        "cobrid": UserSession.coBrId ?? '',
-        "user": "admin",
-        "barcode": bCode,
-      },
-      "typ": 1,
-    };
+  setState(() {
+    _isLoading = true;
+  });
 
-    try {
-      final initialResponse = await http.post(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(initialPayload),
-      );
+  final initialPayload = {
+    "userId": UserSession.userName ?? '',
+    "coBrId": UserSession.coBrId ?? '',
+    "fcYrId": UserSession.userFcYr ?? '',
+    "data": {
+      "designcode": sCode,
+      "mrp": firstItem['mrp']?.toString() ?? '0',
+      "WSP": firstItem['wsp']?.toString() ?? '0',
+      "size": firstItem['sizeName']?.toString() ?? '',
+      "TotQty": totalQty.toString(),
+      "Note": firstItem['remark']?.toString() ?? '',
+      "color": isNoShade ? "" : (firstItem['shadeName']?.toString() ?? ''), // Empty string for no-shade
+      "cobrid": UserSession.coBrId ?? '',
+      "user": "admin",
+      "barcode": bCode,
+    },
+    "typ": 1,
+  };
 
-      if (initialResponse.statusCode != 200) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(
-          context,
-          "Failed to update style: ${initialResponse.statusCode}",
-        );
-        return;
-      }
+  try {
+    final initialResponse = await http.post(
+      Uri.parse(
+        '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(initialPayload),
+    );
 
-      if (styleQuantities.isNotEmpty) {
-        List<Future<http.Response>> requests = [];
-
-        for (final shade in styleQuantities.keys) {
-          final sizeMap = styleQuantities[shade]!;
-          for (final size in sizeMap.keys) {
-            final qty = sizeMap[size]!;
-            if (qty <= 0) continue;
-
-            final payload = {
-              "userId": UserSession.userName ?? '',
-              "coBrId": UserSession.coBrId ?? '',
-              "fcYrId": UserSession.userFcYr ?? '',
-              "data": {
-                "designcode": sCode,
-                "mrp": firstItem['mrp']?.toString() ?? '0',
-                "WSP": firstItem['wsp']?.toString() ?? '0',
-                "size": size,
-                "TotQty": totalQty.toString(),
-                "Note": firstItem['remark']?.toString() ?? '',
-                "color": shade,
-                "Qty": qty.toString(),
-                "cobrid": UserSession.coBrId ?? '',
-                "user": "admin",
-                "barcode": bCode,
-              },
-              "typ": 0,
-            };
-
-            requests.add(
-              http.post(
-                Uri.parse(
-                  '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-                ),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode(payload),
-              ),
-            );
-          }
-        }
-
-        final responses = await Future.wait(requests);
-
-        bool allSuccessful = true;
-        for (var i = 0; i < responses.length; i++) {
-          final response = responses[i];
-          if (response.statusCode != 200) {
-            allSuccessful = false;
-            print(
-              'Failed to update shade/size, status: ${response.statusCode}',
-            );
-          }
-        }
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (allSuccessful) {
-          await showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Success"),
-                content: const Text("Style updated successfully"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-
-          // Use addPostFrameCallback to avoid nested updates
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            widget.onUpdate();
-          });
-        } else {
-          _showErrorDialog(
-            context,
-            "Some shade/size updates failed. Check logs for details.",
-          );
-        }
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(context, "No quantities found for style: $styleKey");
-      }
-    } catch (e) {
+    if (initialResponse.statusCode != 200) {
       setState(() {
         _isLoading = false;
       });
-      print('Error updating style: $e');
-      _showErrorDialog(context, "Error updating style: $e");
+      _showErrorDialog(
+        context,
+        "Failed to update style: ${initialResponse.statusCode}",
+      );
+      return;
     }
-  }
 
+    if (styleQuantities.isNotEmpty) {
+      List<Future<http.Response>> requests = [];
+
+      for (final shade in styleQuantities.keys) {
+        final sizeMap = styleQuantities[shade]!;
+        
+        // For no-shade, use empty string as color
+        final String colorValue = (shade == '_no_shade_' || shade.isEmpty) ? "" : shade;
+        
+        for (final size in sizeMap.keys) {
+          final qty = sizeMap[size]!;
+          if (qty <= 0) continue;
+
+          final payload = {
+            "userId": UserSession.userName ?? '',
+            "coBrId": UserSession.coBrId ?? '',
+            "fcYrId": UserSession.userFcYr ?? '',
+            "data": {
+              "designcode": sCode,
+              "mrp": firstItem['mrp']?.toString() ?? '0',
+              "WSP": firstItem['wsp']?.toString() ?? '0',
+              "size": size,
+              "TotQty": totalQty.toString(),
+              "Note": firstItem['remark']?.toString() ?? '',
+              "color": colorValue, // Empty string for no-shade
+              "Qty": qty.toString(),
+              "cobrid": UserSession.coBrId ?? '',
+              "user": "admin",
+              "barcode": bCode,
+            },
+            "typ": 0,
+          };
+
+          requests.add(
+            http.post(
+              Uri.parse(
+                '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
+              ),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode(payload),
+            ),
+          );
+        }
+      }
+
+      final responses = await Future.wait(requests);
+
+      bool allSuccessful = true;
+      for (var i = 0; i < responses.length; i++) {
+        final response = responses[i];
+        if (response.statusCode != 200) {
+          allSuccessful = false;
+          print('Failed to update shade/size, status: ${response.statusCode}');
+        }
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (allSuccessful) {
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Success"),
+              content: const Text("Style updated successfully"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+
+        // Use addPostFrameCallback to avoid nested updates
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onUpdate();
+        });
+      } else {
+        _showErrorDialog(
+          context,
+          "Some shade/size updates failed. Check logs for details.",
+        );
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog(context, "No quantities found for style: $styleKey");
+    }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
+    print('Error updating style: $e');
+    _showErrorDialog(context, "Error updating style: $e");
+  }
+}
   Widget _buildUpdateButton(String styleKey, BuildContext context) {
     return TextButton(
       onPressed: () => _submitUpdate(context, styleKey),
@@ -3745,7 +3749,7 @@ class _StyleCardsView2State extends State<_StyleCardsView2> {
                     style: GoogleFonts.roboto(fontSize: 12),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                      //LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =

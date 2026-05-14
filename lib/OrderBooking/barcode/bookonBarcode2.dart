@@ -433,130 +433,138 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
     });
   }
 
-  Future<void> _submitAllOrders() async {
-    List<Future<http.Response>> apiCalls = [];
-    List<String> apiCallStyles = [];
-    addedItems.clear();
+Future<void> _submitAllOrders() async {
+  List<Future<http.Response>> apiCalls = [];
+  List<String> apiCallStyles = [];
+  addedItems.clear();
 
-    List<CatalogOrderData> updatedCatalogOrderList = [];
+  List<CatalogOrderData> updatedCatalogOrderList = [];
 
-    for (var catalogOrder in catalogOrderList) {
-      final catalog = catalogOrder.catalog;
-      final matrix = catalogOrder.orderMatrix;
-      final styleCode = catalog.styleCode;
-      final styleKey = catalog.styleKey;
-      final itemBarcode = catalog.barcode ?? '';
+  for (var catalogOrder in catalogOrderList) {
+    final catalog = catalogOrder.catalog;
+    final matrix = catalogOrder.orderMatrix;
+    final styleCode = catalog.styleCode;
+    final styleKey = catalog.styleKey;
+    final itemBarcode = catalog.barcode ?? '';
 
-      final updatedMatrix = <List<String>>[];
-      for (
-        var shadeIndex = 0;
-        shadeIndex < matrix.shades.length;
-        shadeIndex++
-      ) {
-        final shade = matrix.shades[shadeIndex];
-        final row = <String>[];
-        for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
-          final size = matrix.sizes[sizeIndex];
-          final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
-          final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
-          final wsp = matrixData.length > 1 ? matrixData[1] : '0';
-          final stkQty = matrixData.length > 2 ? matrixData[2] : '0';
-          final qty = quantities[styleKey]?[shade]?[size]?.toString() ?? '1';
-          row.add('$mrp,$wsp,$qty,$stkQty');
-        }
-        updatedMatrix.add(row);
+    final updatedMatrix = <List<String>>[];
+    for (
+      var shadeIndex = 0;
+      shadeIndex < matrix.shades.length;
+      shadeIndex++
+    ) {
+      final shade = matrix.shades[shadeIndex];
+      final row = <String>[];
+      for (var sizeIndex = 0; sizeIndex < matrix.sizes.length; sizeIndex++) {
+        final size = matrix.sizes[sizeIndex];
+        final matrixData = matrix.matrix[shadeIndex][sizeIndex].split(',');
+        final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
+        final wsp = matrixData.length > 1 ? matrixData[1] : '0';
+        final stkQty = matrixData.length > 2 ? matrixData[2] : '0';
+        final qty = quantities[styleKey]?[shade]?[size]?.toString() ?? '1';
+        row.add('$mrp,$wsp,$qty,$stkQty');
       }
+      updatedMatrix.add(row);
+    }
 
-      final updatedOrderMatrix = OrderMatrix(
-        shades: matrix.shades,
-        sizes: matrix.sizes,
-        matrix: updatedMatrix,
-      );
+    final updatedOrderMatrix = OrderMatrix(
+      shades: matrix.shades,
+      sizes: matrix.sizes,
+      matrix: updatedMatrix,
+    );
 
-      final updatedCatalogOrder = CatalogOrderData(
-        catalog: catalog,
-        orderMatrix: updatedOrderMatrix,
-      );
+    final updatedCatalogOrder = CatalogOrderData(
+      catalog: catalog,
+      orderMatrix: updatedOrderMatrix,
+    );
 
-      updatedCatalogOrderList.add(updatedCatalogOrder);
+    updatedCatalogOrderList.add(updatedCatalogOrder);
 
-      final quantityMap = quantities[styleKey];
-      if (quantityMap != null) {
-        for (var shade in quantityMap.keys) {
-          final shadeIndex = matrix.shades.indexOf(shade.trim());
-          if (shadeIndex == -1) continue;
+    final quantityMap = quantities[styleKey];
+    if (quantityMap != null) {
+      for (var shade in quantityMap.keys) {
+        final shadeIndex = matrix.shades.indexOf(shade.trim());
+        if (shadeIndex == -1) continue;
 
-          for (var size in quantityMap[shade]!.keys) {
-            final sizeIndex = matrix.sizes.indexOf(size.trim());
-            if (sizeIndex == -1) continue;
+        // Check if this is a no-shade placeholder
+        final bool isNoShade = shade == '' || shade == '_no_shade_' || shade.isEmpty;
+        
+        // For no-shade, use empty string as color
+        final String colorValue = isNoShade ? "" : shade;
 
-            final quantity = quantityMap[shade]![size]!;
-            if (quantity > 0) {
-              final matrixData = updatedMatrix[shadeIndex][sizeIndex].split(
-                ',',
-              );
-              final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
-              final wsp = matrixData.length > 1 ? matrixData[1] : mrp;
-              final stkQty = matrixData.length > 2 ? matrixData[2] : '0';
-              final item = {
+        for (var size in quantityMap[shade]!.keys) {
+          final sizeIndex = matrix.sizes.indexOf(size.trim());
+          if (sizeIndex == -1) continue;
+
+          final quantity = quantityMap[shade]![size]!;
+          if (quantity > 0) {
+            final matrixData = updatedMatrix[shadeIndex][sizeIndex].split(
+              ',',
+            );
+            final mrp = matrixData.isNotEmpty ? matrixData[0] : '0';
+            final wsp = matrixData.length > 1 ? matrixData[1] : mrp;
+            final stkQty = matrixData.length > 2 ? matrixData[2] : '0';
+            
+            final item = {
+              "designcode": styleCode,
+              "mrp": mrp,
+              "wsp": wsp,
+              "size": size,
+              "TotQty": _calculateCatalogQuantity(styleKey).toString(),
+              "Note": "",
+              "color": colorValue, // Use empty string for no-shade
+              "Qty": quantity.toString(),
+              "clqty": quantity.toString(),
+              "cobrid": UserSession.coBrId ?? '',
+              "user": "admin",
+              "barcode": itemBarcode,
+              "styleCode": styleCode,
+              "shadeName": colorValue, // Use empty string for no-shade
+              "sizeName": size,
+              "imagePath": catalog.fullImagePath ?? '/NoImage.jpg',
+              "itemName": catalog.itemName ?? 'Unknown Product',
+              "upcoming_Stk": stkQty,
+            };
+            addedItems.add(item);
+
+            final payload = {
+              "userId": UserSession.userName ?? '',
+              "coBrId": UserSession.coBrId ?? '',
+              "fcYrId": UserSession.userFcYr ?? '',
+              "data": {
                 "designcode": styleCode,
                 "mrp": mrp,
                 "wsp": wsp,
                 "size": size,
                 "TotQty": _calculateCatalogQuantity(styleKey).toString(),
                 "Note": "",
-                "color": shade,
+                "color": colorValue, // Use empty string for no-shade
                 "Qty": quantity.toString(),
-                "clqty": quantity.toString(),
                 "cobrid": UserSession.coBrId ?? '',
                 "user": "admin",
                 "barcode": itemBarcode,
-                "styleCode": styleCode,
-                "shadeName": shade,
-                "sizeName": size,
-                "imagePath": catalog.fullImagePath ?? '/NoImage.jpg',
-                "itemName": catalog.itemName ?? 'Unknown Product',
-                "upcoming_Stk": stkQty,
-              };
-              addedItems.add(item);
-
-              final payload = {
-                "userId": UserSession.userName ?? '',
-                "coBrId": UserSession.coBrId ?? '',
-                "fcYrId": UserSession.userFcYr ?? '',
-                "data": {
-                  "designcode": styleCode,
-                  "mrp": mrp,
-                  "wsp": wsp,
-                  "size": size,
-                  "TotQty": _calculateCatalogQuantity(styleKey).toString(),
-                  "Note": "",
-                  "color": shade,
-                  "Qty": quantity.toString(),
-                  "cobrid": UserSession.coBrId ?? '',
-                  "user": "admin",
-                  "barcode": itemBarcode,
-                },
-                "typ": 0,
-                "barcode": "true",
-              };
-              if (!widget.edit) {
-                apiCalls.add(
-                  http.post(
-                    Uri.parse(
-                      '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
-                    ),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode(payload),
+              },
+              "typ": 0,
+              "barcode": "true",
+            };
+            if (!widget.edit) {
+              apiCalls.add(
+                http.post(
+                  Uri.parse(
+                    '${AppConstants.BASE_URL}/orderBooking/Insertsalesorderdetails',
                   ),
-                );
-              }
-              apiCallStyles.add(styleCode);
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(payload),
+                ),
+              );
             }
+            apiCallStyles.add(styleCode);
           }
         }
       }
     }
+  }
+
 
     if (apiCalls.isEmpty && addedItems.isEmpty) {
       if (mounted) {
@@ -1573,7 +1581,7 @@ class _BookOnBarcode2State extends State<BookOnBarcode2> {
                     style: const TextStyle(fontSize: 11),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                      //LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =

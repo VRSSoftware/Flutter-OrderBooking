@@ -62,81 +62,86 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     super.dispose();
   }
 
-  Future<void> _saveEditedOrder() async {
-    if (_isSaving) return;
+Future<void> _saveEditedOrder() async {
+  if (_isSaving) return;
 
-    setState(() => _isSaving = true);
+  setState(() => _isSaving = true);
 
-    final payload = {
-      "doc_id": EditOrderData.doc_id,
-      "login_id": UserSession.userName ?? 'admin',
-      "coBr_id": UserSession.coBrId ?? '01',
-      "fcYr_id": UserSession.userFcYr ?? '25',
-      "data": {
-        "delivarydate": EditOrderData.deliveryDate,
-        "broker": EditOrderData.brokerKey,
-        "comission": EditOrderData.commission,
-        "transporter": EditOrderData.transporterKey,
-        "remark": EditOrderData.remark,
-        "delivaryday": EditOrderData.deliveryDays,
-        "customer": EditOrderData.partyKey,
-      },
-      "items":
-          EditOrderData.data.expand((item) {
-            final styleCode = item.catalog.styleCode;
-            final shade = item.catalog.shadeName;
-            final mrp = item.catalog.mrp;
-            final wsp = item.catalog.wsp;
-            final barcode = item.catalog.barcode;
-            final totalQty = item.catalog.clqty;
-            final List<Map<String, dynamic>> matrixItems = [];
-            for (int i = 0; i < item.orderMatrix.shades.length; i++) {
-              for (int j = 0; j < item.orderMatrix.sizes.length; j++) {
-                final matrixEntry = item.orderMatrix.matrix[i][j];
-                final split = matrixEntry.split(',');
-                final qty =
-                    int.tryParse(split.length > 2 ? split[2] : '0') ?? 0;
-                if (qty > 0) {
-                  matrixItems.add({
-                    "style_code": styleCode,
-                    "shade": item.orderMatrix.shades[i],
-                    "size": item.orderMatrix.sizes[j],
-                    "qty": qty,
-                    "totQty": totalQty,
-                    "mrp": double.tryParse(split[0]) ?? mrp,
-                    "wsp": double.tryParse(split[1]) ?? wsp,
-                    "barcode": barcode,
-                    "note": "",
-                  });
-                }
+  final payload = {
+    "doc_id": EditOrderData.doc_id,
+    "login_id": UserSession.userName ?? 'admin',
+    "coBr_id": UserSession.coBrId ?? '01',
+    "fcYr_id": UserSession.userFcYr ?? '25',
+    "data": {
+      "delivarydate": EditOrderData.deliveryDate,
+      "broker": EditOrderData.brokerKey,
+      "comission": EditOrderData.commission,
+      "transporter": EditOrderData.transporterKey,
+      "remark": EditOrderData.remark,
+      "delivaryday": EditOrderData.deliveryDays,
+      "customer": EditOrderData.partyKey,
+    },
+    "items":
+        EditOrderData.data.expand((item) {
+          final styleCode = item.catalog.styleCode;
+          final mrp = item.catalog.mrp;
+          final wsp = item.catalog.wsp;
+          final barcode = item.catalog.barcode;
+          final totalQty = item.catalog.clqty;
+          final List<Map<String, dynamic>> matrixItems = [];
+          
+          for (int i = 0; i < item.orderMatrix.shades.length; i++) {
+            final shade = item.orderMatrix.shades[i];
+            
+            // Check if this is a no-shade (empty string)
+            final bool isNoShade = shade.isEmpty || shade == '_no_shade_';
+            // For no-shade, use empty string as color
+            final String colorValue = isNoShade ? "" : shade;
+            
+            for (int j = 0; j < item.orderMatrix.sizes.length; j++) {
+              final matrixEntry = item.orderMatrix.matrix[i][j];
+              final split = matrixEntry.split(',');
+              final qty = int.tryParse(split.length > 2 ? split[2] : '0') ?? 0;
+              if (qty > 0) {
+                matrixItems.add({
+                  "style_code": styleCode,
+                  "shade": colorValue, // Use colorValue (empty string for no-shade)
+                  "size": item.orderMatrix.sizes[j],
+                  "qty": qty,
+                  "totQty": totalQty,
+                  "mrp": double.tryParse(split[0]) ?? mrp,
+                  "wsp": double.tryParse(split[1]) ?? wsp,
+                  "barcode": barcode,
+                  "note": "",
+                });
               }
             }
-            return matrixItems;
-          }).toList(),
-    };
+          }
+          return matrixItems;
+        }).toList(),
+  };
 
-    try {
-      final response = await http.post(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/orderRegister/saveEditedSalesOrder',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '${AppConstants.BASE_URL}/orderRegister/saveEditedSalesOrder',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
 
-      setState(() => _isSaving = false);
+    setState(() => _isSaving = false);
 
-      if (response.statusCode == 200) {
-        _showSuccessDialog();
-      } else {
-        _showErrorDialog('Failed: ${response.body}');
-      }
-    } catch (e) {
-      setState(() => _isSaving = false);
-      _showErrorDialog('Error: $e');
+    if (response.statusCode == 200) {
+      _showSuccessDialog();
+    } else {
+      _showErrorDialog('Failed: ${response.body}');
     }
+  } catch (e) {
+    setState(() => _isSaving = false);
+    _showErrorDialog('Error: $e');
   }
-
+}
   void _showSuccessDialog() {
     showDialog(
       context: context,

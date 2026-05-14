@@ -1081,13 +1081,19 @@ class _CatalogPageState extends State<CatalogPage> {
         bool isSelected = selectedItems.contains(item);
 
         List<String> shades =
-            item.shadeName.isNotEmpty
+            item.shadeName.isNotEmpty && item.shadeName != 'null'
                 ? item.shadeName
                     .split(',')
                     .map((shade) => shade.trim())
                     .toList()
                 : [];
 
+        String shadeDisplayText = '';
+        if (item.shadeName.isEmpty || item.shadeName == 'null') {
+          shadeDisplayText = '';
+        } else {
+          shadeDisplayText = shades.join(', ');
+        }
         final imageUrls = _getImageUrl(item);
         final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
 
@@ -1306,13 +1312,17 @@ class _CatalogPageState extends State<CatalogPage> {
                                       ],
                                     ),
                                     _buildSpacerRow(),
-                                    if (showShades && shades.isNotEmpty)
+                                    if (showShades)
                                       TableRow(
                                         children: [
                                           _buildLabelText('Shade'),
                                           const Text(':'),
                                           Text(
-                                            shades.join(', '),
+                                            shades.isEmpty ||
+                                                    (shades.length == 1 &&
+                                                        shades.first.isEmpty)
+                                                ? 'No Shade'
+                                                : shades.join(', '),
                                             style: TextStyle(
                                               fontSize: isLargeScreen ? 14 : 13,
                                               color: Colors.grey[700],
@@ -1320,8 +1330,8 @@ class _CatalogPageState extends State<CatalogPage> {
                                           ),
                                         ],
                                       ),
-                                    if (showShades && shades.isNotEmpty)
-                                      _buildSpacerRow(),
+                                    if (showShades) _buildSpacerRow(),
+                                    _buildSpacerRow(),
                                     if (showMRP)
                                       TableRow(
                                         children: [
@@ -1453,7 +1463,18 @@ class _CatalogPageState extends State<CatalogPage> {
         }
         final item = filteredItems[index];
         final isSelected = selectedItems.contains(item);
-        final shades = item.shadeName.split(',').map((s) => s.trim()).toList();
+        final shades =
+            item.shadeName.isNotEmpty && item.shadeName != 'null'
+                ? item.shadeName.split(',').map((s) => s.trim()).toList()
+                : [];
+
+        // Determine display text for shades
+        String shadeDisplayText = '';
+        if (item.shadeName.isEmpty || item.shadeName == 'null') {
+          shadeDisplayText = '';
+        } else {
+          shadeDisplayText = shades.join(', ');
+        }
         final imageUrls = _getImageUrl(item);
         print('Image URLs: $imageUrls');
         final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
@@ -1577,7 +1598,7 @@ class _CatalogPageState extends State<CatalogPage> {
                             ],
                           ),
                           _buildSpacerRow(),
-                          if (showShades && shades.isNotEmpty)
+                          if (showShades)
                             TableRow(
                               children: [
                                 Text(
@@ -1586,7 +1607,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                 ),
                                 const Text(':'),
                                 Text(
-                                  shades.join(', '),
+                                  shadeDisplayText,
                                   style: TextStyle(
                                     fontSize: isLargeScreen ? 14 : 13,
                                     color: Colors.grey[700],
@@ -1594,8 +1615,8 @@ class _CatalogPageState extends State<CatalogPage> {
                                 ),
                               ],
                             ),
-                          if (showShades && shades.isNotEmpty)
-                            _buildSpacerRow(),
+                          if (showShades) _buildSpacerRow(),
+                          _buildSpacerRow(),
                           if (showMRP)
                             TableRow(
                               children: [
@@ -1825,7 +1846,18 @@ class _CatalogPageState extends State<CatalogPage> {
   Widget _buildItemCard(Catalog item, bool isLargeScreen) {
     bool isSelected = selectedItems.contains(item);
     List<String> shades =
-        item.shadeName.split(',').map((s) => s.trim()).toList();
+        item.shadeName.isNotEmpty && item.shadeName != 'null'
+            ? item.shadeName.split(',').map((s) => s.trim()).toList()
+            : []; // Empty list for no shades
+
+    // Determine display text for shades
+    String shadeDisplayText = '';
+    if (item.shadeName.isEmpty || item.shadeName == 'null') {
+      shadeDisplayText = '';
+    } else {
+      shadeDisplayText = shades.join(', ');
+    }
+
     final imageUrls = _getImageUrl(item);
     print('Image URLs before use: $imageUrls');
     final ValueNotifier<int> currentImageIndex = ValueNotifier<int>(0);
@@ -1937,8 +1969,7 @@ class _CatalogPageState extends State<CatalogPage> {
                           ),
                         ],
                       ),
-                      _buildSpacerRow(),
-                      if (showShades && shades.isNotEmpty)
+                      if (showShades)
                         TableRow(
                           children: [
                             _buildLabelText('Shade'),
@@ -1946,7 +1977,7 @@ class _CatalogPageState extends State<CatalogPage> {
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Text(
-                                shades.join(', '),
+                                shadeDisplayText,
                                 style: TextStyle(
                                   fontSize: isLargeScreen ? 14 : 13,
                                   color: Colors.grey[700],
@@ -1955,7 +1986,7 @@ class _CatalogPageState extends State<CatalogPage> {
                             ),
                           ],
                         ),
-                      if (showShades && shades.isNotEmpty) _buildSpacerRow(),
+                      if (showShades) _buildSpacerRow(),
                       if (showMRP)
                         TableRow(
                           children: [

@@ -19,9 +19,9 @@ class OrderReportViewPage extends StatefulWidget {
   final String orderNo;
   final String orderStatus;
   final dynamic orderData;
-  final bool showOnlyWithImage; // Controls whether to show image column
+  final bool showOnlyWithImage;
   final bool fromRegisterPage;
-   final String? defaultWhatsAppMobileNo; 
+  final String? defaultWhatsAppMobileNo;
 
   const OrderReportViewPage({
     Key? key,
@@ -30,7 +30,7 @@ class OrderReportViewPage extends StatefulWidget {
     this.orderData,
     this.showOnlyWithImage = false,
     this.fromRegisterPage = false,
-    this.defaultWhatsAppMobileNo, 
+    this.defaultWhatsAppMobileNo,
   }) : super(key: key);
 
   @override
@@ -73,15 +73,32 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     for (var item in items) {
       List styles = item['styles'] ?? [];
       for (var style in styles) {
-        String imageUrl = style['Style_Image'] ?? '';
-        if (imageUrl.isNotEmpty) {
+        // Load style image
+        String styleImageUrl = style['Style_Image'] ?? '';
+        if (styleImageUrl.isNotEmpty && !imageCache.containsKey(styleImageUrl)) {
           try {
-            final response = await http.get(Uri.parse(imageUrl));
+            final response = await http.get(Uri.parse(styleImageUrl));
             if (response.statusCode == 200) {
-              imageCache[imageUrl] = pw.MemoryImage(response.bodyBytes);
+              imageCache[styleImageUrl] = pw.MemoryImage(response.bodyBytes);
             }
           } catch (e) {
-            print('Error loading image: $e');
+            print('Error loading style image: $e');
+          }
+        }
+        
+        // Load shade images
+        List shades = style['shades'] ?? [];
+        for (var shade in shades) {
+          String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+          if (shadeImageUrl.isNotEmpty && !imageCache.containsKey(shadeImageUrl)) {
+            try {
+              final response = await http.get(Uri.parse(shadeImageUrl));
+              if (response.statusCode == 200) {
+                imageCache[shadeImageUrl] = pw.MemoryImage(response.bodyBytes);
+              }
+            } catch (e) {
+              print('Error loading shade image: $e');
+            }
           }
         }
       }
@@ -89,21 +106,20 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
   }
 
   pw.ImageProvider? _getLogoImage() {
-  try {
-    String logoBase64 = headerData['logo']?.toString() ?? '';
-    if (logoBase64.isNotEmpty) {
-      // Remove any data URL prefix if present (like "data:image/jpeg;base64,")
-      if (logoBase64.contains(',')) {
-        logoBase64 = logoBase64.split(',').last;
+    try {
+      String logoBase64 = headerData['logo']?.toString() ?? '';
+      if (logoBase64.isNotEmpty) {
+        if (logoBase64.contains(',')) {
+          logoBase64 = logoBase64.split(',').last;
+        }
+        Uint8List bytes = base64.decode(logoBase64);
+        return pw.MemoryImage(bytes);
       }
-      Uint8List bytes = base64.decode(logoBase64);
-      return pw.MemoryImage(bytes);
+    } catch (e) {
+      print('Error decoding logo: $e');
     }
-  } catch (e) {
-    print('Error decoding logo: $e');
+    return null;
   }
-  return null;
-}
 
   String _formatDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return '';
@@ -128,42 +144,17 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     }
   }
 
-  // UPDATED METHOD: Now returns 12-size array with sizes starting from 0th index
   List<String> _getSizesForCategory(dynamic category) {
     const int totalSizePositions = 12;
-
-    // Get the available sizes from the API
     List<dynamic> apiSizes = category['sizes'] ?? [];
-
-    // Convert to strings and sort
-    List<String> availableSizes =
-        apiSizes.map((size) => size.toString()).toList();
+    
+    List<String> availableSizes = apiSizes.map((size) => size.toString()).toList();
     availableSizes.sort((a, b) {
       int aNum = int.tryParse(a) ?? 0;
       int bNum = int.tryParse(b) ?? 0;
       return aNum.compareTo(bNum);
     });
 
-    // Create a new list with 12 elements
-    // Fill first N positions with available sizes, rest with "-"
-    return List.generate(totalSizePositions, (index) {
-      if (index < availableSizes.length) {
-        return availableSizes[index];
-      } else {
-        return "-";
-      }
-    });
-  }
-
-  // ALTERNATIVE METHOD: If you want to just take first 12 sizes and fill rest with hyphens
-  List<String> _getSizesWithFill(dynamic category) {
-    const int totalSizePositions = 12;
-
-    List<dynamic> apiSizes = category['sizes'] ?? [];
-    List<String> availableSizes =
-        apiSizes.map((size) => size.toString()).toList();
-
-    // Create a new list with 12 elements
     return List.generate(totalSizePositions, (index) {
       if (index < availableSizes.length) {
         return availableSizes[index];
@@ -199,754 +190,496 @@ class _OrderReportViewPageState extends State<OrderReportViewPage> {
     }
   }
 
-pw.Widget _buildPDFHeader() {
-  String address = headerData['RegdAdd']?.toString() ?? "";
-  String addressLine1 = "";
-  String addressLine2 = "";
+  pw.Widget _buildPDFHeader() {
+    String address = headerData['RegdAdd']?.toString() ?? "";
+    String addressLine1 = "";
+    String addressLine2 = "";
 
-  if (address.length > 40) {
-    int splitIndex = address.indexOf(',', 30);
-    if (splitIndex == -1) {
-      splitIndex = address.lastIndexOf(' ', 40);
-    }
-    if (splitIndex > 0 && splitIndex < address.length - 1) {
-      addressLine1 = address.substring(0, splitIndex + 1);
-      addressLine2 = address.substring(splitIndex + 1).trim();
+    if (address.length > 40) {
+      int splitIndex = address.indexOf(',', 30);
+      if (splitIndex == -1) {
+        splitIndex = address.lastIndexOf(' ', 40);
+      }
+      if (splitIndex > 0 && splitIndex < address.length - 1) {
+        addressLine1 = address.substring(0, splitIndex + 1);
+        addressLine2 = address.substring(splitIndex + 1).trim();
+      } else {
+        addressLine1 = address.substring(0, 40);
+        addressLine2 = address.substring(40);
+      }
     } else {
-      addressLine1 = address.substring(0, 40);
-      addressLine2 = address.substring(40);
+      addressLine1 = address;
     }
-  } else {
-    addressLine1 = address;
-  }
 
-  String partyAddress = headerData['OAddr']?.toString() ?? "";
-  String partyAddressLine1 = "";
-  String partyAddressLine2 = "";
+    String partyAddress = headerData['OAddr']?.toString() ?? "";
+    String partyAddressLine1 = "";
+    String partyAddressLine2 = "";
 
-  if (partyAddress.length > 30) {
-    int splitIndex = partyAddress.indexOf(',', 25);
-    if (splitIndex == -1) {
-      splitIndex = partyAddress.lastIndexOf(' ', 30);
-    }
-    if (splitIndex > 0 && splitIndex < partyAddress.length - 1) {
-      partyAddressLine1 = partyAddress.substring(0, splitIndex + 1);
-      partyAddressLine2 = partyAddress.substring(splitIndex + 1).trim();
+    if (partyAddress.length > 30) {
+      int splitIndex = partyAddress.indexOf(',', 25);
+      if (splitIndex == -1) {
+        splitIndex = partyAddress.lastIndexOf(' ', 30);
+      }
+      if (splitIndex > 0 && splitIndex < partyAddress.length - 1) {
+        partyAddressLine1 = partyAddress.substring(0, splitIndex + 1);
+        partyAddressLine2 = partyAddress.substring(splitIndex + 1).trim();
+      } else {
+        partyAddressLine1 = partyAddress.substring(0, 30);
+        partyAddressLine2 = partyAddress.substring(30);
+      }
     } else {
-      partyAddressLine1 = partyAddress.substring(0, 30);
-      partyAddressLine2 = partyAddress.substring(30);
+      partyAddressLine1 = partyAddress;
     }
-  } else {
-    partyAddressLine1 = partyAddress;
-  }
 
-  // Get logo image
-  pw.ImageProvider? logoImage = _getLogoImage();
+    pw.ImageProvider? logoImage = _getLogoImage();
 
-  return pw.Container(
-    width: double.infinity,
-    padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-    decoration: pw.BoxDecoration(
-      border: pw.Border.all(color: PdfColors.black),
-    ),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
-      children: [
-        // Container with background color for the section above divider
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.only(top: 8, bottom: 8),
-          decoration: pw.BoxDecoration(
-            color: PdfColors.blue300, // Light blue-grey background
-            borderRadius: const pw.BorderRadius.only(
-              topLeft: pw.Radius.circular(4),
-              topRight: pw.Radius.circular(4),
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.black),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.only(top: 8, bottom: 8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue300,
+              borderRadius: const pw.BorderRadius.only(
+                topLeft: pw.Radius.circular(4),
+                topRight: pw.Radius.circular(4),
+              ),
             ),
-          ),
-          child: pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Logo on left side
-              if (logoImage != null)
-                pw.Container(
-                  width: 60,
-                  height: 60,
-                  margin: const pw.EdgeInsets.only(left: 8, right: 8),
-                  child: pw.Image(
-                    logoImage,
-                    fit: pw.BoxFit.contain,
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                if (logoImage != null)
+                  pw.Container(
+                    width: 60,
+                    height: 60,
+                    margin: const pw.EdgeInsets.only(left: 8, right: 8),
+                    child: pw.Image(
+                      logoImage,
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                pw.Expanded(
+                  child: pw.Column(
+                    children: [
+                      pw.Text(
+                        headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        headerData['RegdAdd']?.toString() ?? "",
+                        style: const pw.TextStyle(fontSize: 12),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                      pw.Text(
+                        "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
+                        style: const pw.TextStyle(fontSize: 12),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
-              // Company info in center/right
+                if (logoImage != null)
+                  pw.SizedBox(width: 68),
+              ],
+            ),
+          ),
+          pw.Divider(height: 15, thickness: 0.2),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
               pw.Expanded(
-                child: pw.Column(
+                flex: 2,
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      headerData['Co_Name']?.toString() ?? "VRS Software Pvt Ltd",
+                      "Party : ",
                       style: pw.TextStyle(
-                        fontSize: 18,
-                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 12,
+                        color: PdfColors.grey900,
                       ),
-                      textAlign: pw.TextAlign.center,
                     ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      headerData['RegdAdd']?.toString() ?? "",
-                      style: const pw.TextStyle(fontSize: 12),
-                      textAlign: pw.TextAlign.center,
-                    ),
-                    pw.Text(
-                      "Mobile: ${headerData['TelNo']?.toString() ?? ''}   Email: ${headerData['Email']?.toString() ?? ''}",
-                      style: const pw.TextStyle(fontSize: 12),
-                      textAlign: pw.TextAlign.center,
+                    pw.Expanded(
+                      child: pw.Text(
+                        headerData['Led_Name']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                        softWrap: true,
+                      ),
                     ),
                   ],
                 ),
               ),
-              // Placeholder to balance the layout (optional)
-              if (logoImage != null)
-                pw.SizedBox(width: 68), // This maintains symmetry
+              pw.Expanded(flex: 1, child: pw.Container()),
             ],
           ),
-        ),
-        pw.Divider(height: 15, thickness: 0.2),
-        // ... rest of your existing code remains the same ...
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    "Party : ",
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                  pw.Expanded(
-                    child: pw.Text(
-                      headerData['Led_Name']?.toString() ?? '',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                      softWrap: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(flex: 1, child: pw.Container()),
-          ],
-        ),
-        pw.SizedBox(height: 4),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        "Address : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            if (partyAddressLine1.isNotEmpty)
-                              pw.Text(
-                                partyAddressLine1,
-                                style: pw.TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: pw.FontWeight.bold,
-                                ),
-                                softWrap: true,
-                              ),
-                            if (partyAddressLine2.isNotEmpty)
-                              pw.Text(
-                                partyAddressLine2,
-                                style: pw.TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: pw.FontWeight.bold,
-                                ),
-                                softWrap: true,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(
-              flex: 1,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Text(
-                        "Order No : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Text(
-                        headerData['Doc_No']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        pw.SizedBox(height: 4),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Row(
-                children: [
-                  pw.Text(
-                    "GST No : ",
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                  pw.Text(
-                    headerData['GSTNo']?.toString() ?? '',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(
-              flex: 1,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Text(
-                        "Date : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Text(
-                        _formatDate(headerData['Doc_Dt']?.toString()),
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        pw.SizedBox(height: 4),
-        pw.Row(
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Row(
-                children: [
-                  pw.Text(
-                    "Mobile : ",
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                  pw.Text(
-                    headerData['Mobile']?.toString() ?? '',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(
-              flex: 1,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Text(
-                        "Salesman : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Text(
-                        headerData['SalesPerson_Name']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        pw.SizedBox(height: 4),
-        pw.Row(
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Row(
-                children: [
-                  pw.Text(
-                    "Del.Date : ",
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                  pw.Text(
-                    _formatDate(headerData['DlvDate']?.toString()),
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(
-              flex: 1,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Text(
-                        "Transport : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Text(
-                        headerData['Transporter_Name']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        pw.SizedBox(height: 4),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              flex: 2,
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    "Remark : ",
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey900,
-                    ),
-                  ),
-                  pw.Expanded(
-                    child: pw.Text(
-                      headerData['Remark']?.toString() ?? '',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                      softWrap: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.Expanded(
-              flex: 1,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Text(
-                        "Broker : ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey900,
-                        ),
-                      ),
-                      pw.Text(
-                        headerData['Broker_Name']?.toString() ?? '',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-
-pw.Widget _buildPDFItemsTable() {
-  if (items.isEmpty) {
-    return pw.Center(child: pw.Text("No Items Found"));
-  }
-
-  int grandTotalQty = 0;
-  int totalStylesCount = 0;
-  List<pw.Widget> tables = [];
-
-  for (var category in items) {
-    String categoryName = category['item_name']?.toString() ?? '';
-    List<String> categorySizes = _getSizesForCategory(category);
-    List styles = category['styles'] ?? [];
-    int categoryTotalQty = 0;
-    int categoryStyleCount = 0;
-
-    bool hasAnyShade = false;
-    for (var style in styles) {
-      List shades = style['shades'] ?? [];
-      for (var shade in shades) {
-        String shadeName = shade['shade_name']?.toString() ?? '';
-        if (shadeName.isNotEmpty && shadeName != 'null') {
-          hasAnyShade = true;
-          break;
-        }
-      }
-      if (hasAnyShade) break;
-    }
-
-    List<pw.TableRow> categoryRows = [];
-
-    for (var style in styles) {
-      String styleCode = style['style_code']?.toString() ?? '';
-      String styleImageUrl = style['Style_Image']?.toString() ?? '';
-      String styleRemark = style['Remark']?.toString() ?? '';
-      List shades = style['shades'] ?? [];
-
-      bool hasValidShades = false;
-      for (var shade in shades) {
-        String shadeName = shade['shade_name']?.toString() ?? '';
-        if (shadeName.isNotEmpty && shadeName != 'null') {
-          hasValidShades = true;
-          break;
-        }
-      }
-
-      if (!hasValidShades) {
-        var shade = shades.isNotEmpty ? shades[0] : {'shade_name': '', 'shade_Img': null, 'size_data': []};
-        
-        List sizeData = shade['size_data'] ?? [];
-
-        Map<String, int> sizeQtyMap = {};
-        double? wsp;
-
-        for (var size in sizeData) {
-          String sizeName = size['Size_Name']?.toString() ?? '';
-          int qty = (size['Qty'] ?? 0).toInt();
-
-          if (sizeName.isNotEmpty) {
-            sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
-          }
-
-          if (wsp == null) {
-            num rate = size['Rate'] ?? 0;
-            wsp = rate.toDouble();
-          }
-        }
-
-        int totalQty = 0;
-        for (var size in categorySizes) {
-          totalQty += sizeQtyMap[size] ?? 0;
-        }
-
-        categoryTotalQty += totalQty;
-        grandTotalQty += totalQty;
-        categoryStyleCount++;
-        totalStylesCount++;
-
-        List<pw.Widget> dataCells = [];
-
-        if (!hasAnyShade) {
-          dataCells.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    styleCode,
-                    style: const pw.TextStyle(fontSize: 8),
-                    textAlign: pw.TextAlign.center,
-                  ),
-                  if (styleRemark.isNotEmpty)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text(
-                        'Remark: $styleRemark',
-                        style: pw.TextStyle(
-                          fontSize: 6,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-
-          dataCells.add(
-            pw.Container(
-              width: 35,
-              height: 35,
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                color: PdfColors.grey50,
-              ),
-              child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
-                  ? pw.Center(
-                      child: pw.Container(
-                        width: 33,
-                        height: 33,
-                        child: pw.Image(
-                          imageCache[styleImageUrl]!,
-                          fit: pw.BoxFit.contain,
-                        ),
-                      ),
-                    )
-                  : pw.Center(
-                      child: pw.Container(
-                        width: 33,
-                        height: 33,
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.grey200,
-                          borderRadius: pw.BorderRadius.circular(2),
-                        ),
-                        child: pw.Center(
-                          child: pw.Text(
-                            'No Image',
-                            style: pw.TextStyle(
-                              fontSize: 6,
-                              color: PdfColors.grey700,
-                            ),
-                            textAlign: pw.TextAlign.center,
+          pw.SizedBox(height: 4),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                flex: 2,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          "Address : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
                           ),
                         ),
-                      ),
-                    ),
-            ),
-          );
-        } else {
-          dataCells.add(
-            pw.Container(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    styleCode,
-                    style: const pw.TextStyle(fontSize: 8),
-                    textAlign: pw.TextAlign.center,
-                  ),
-                  if (styleRemark.isNotEmpty)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text(
-                        'Remark: $styleRemark',
-                        style: pw.TextStyle(
-                          fontSize: 6,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-
-          dataCells.add(
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                "-",
-                style: const pw.TextStyle(fontSize: 8),
-                textAlign: pw.TextAlign.center,
-              ),
-            ),
-          );
-
-          dataCells.add(
-            pw.Container(
-              width: 35,
-              height: 35,
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                color: PdfColors.grey50,
-              ),
-              child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
-                  ? pw.Center(
-                      child: pw.Container(
-                        width: 33,
-                        height: 33,
-                        child: pw.Image(
-                          imageCache[styleImageUrl]!,
-                          fit: pw.BoxFit.contain,
-                        ),
-                      ),
-                    )
-                  : pw.Center(
-                      child: pw.Container(
-                        width: 33,
-                        height: 33,
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.grey200,
-                          borderRadius: pw.BorderRadius.circular(2),
-                        ),
-                        child: pw.Center(
-                          child: pw.Text(
-                            'No Image',
-                            style: pw.TextStyle(
-                              fontSize: 6,
-                              color: PdfColors.grey700,
-                            ),
-                            textAlign: pw.TextAlign.center,
+                        pw.Expanded(
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              if (partyAddressLine1.isNotEmpty)
+                                pw.Text(
+                                  partyAddressLine1,
+                                  style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                  softWrap: true,
+                                ),
+                              if (partyAddressLine2.isNotEmpty)
+                                pw.Text(
+                                  partyAddressLine2,
+                                  style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                  softWrap: true,
+                                ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
                     ),
-            ),
-          );
-
-          dataCells.add(
-            pw.Container(
-              width: 35,
-              height: 35,
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                color: PdfColors.grey50,
-              ),
-              child: pw.Center(
-                child: pw.Container(
-                  width: 33,
-                  height: 33,
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.grey200,
-                    borderRadius: pw.BorderRadius.circular(2),
-                  ),
-                  child: pw.Center(
-                    child: pw.Text(
-                      '-',
-                      style: pw.TextStyle(
-                        fontSize: 6,
-                        color: PdfColors.grey700,
-                      ),
-                      textAlign: pw.TextAlign.center,
-                    ),
-                  ),
+                  ],
                 ),
               ),
-            ),
-          );
-        }
-
-        for (var size in categorySizes) {
-          dataCells.add(
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(4),
-              child: pw.Text(
-                sizeQtyMap[size]?.toString() ?? '-',
-                style: const pw.TextStyle(fontSize: 8),
-                textAlign: pw.TextAlign.center,
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      children: [
+                        pw.Text(
+                          "Order No : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                        pw.Text(
+                          headerData['Doc_No']?.toString() ?? '',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        }
-
-        dataCells.addAll([
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              wsp?.toStringAsFixed(0) ?? "0",
-              style: const pw.TextStyle(fontSize: 8),
-              textAlign: pw.TextAlign.center,
-            ),
+            ],
           ),
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              totalQty.toString(),
-              style: pw.TextStyle(
-                fontSize: 8,
-                fontWeight: pw.FontWeight.bold,
+          pw.SizedBox(height: 4),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                flex: 2,
+                child: pw.Row(
+                  children: [
+                    pw.Text(
+                      "GST No : ",
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        color: PdfColors.grey900,
+                      ),
+                    ),
+                    pw.Text(
+                      headerData['GSTNo']?.toString() ?? '',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              textAlign: pw.TextAlign.center,
-            ),
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      children: [
+                        pw.Text(
+                          "Date : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                        pw.Text(
+                          _formatDate(headerData['Doc_Dt']?.toString()),
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ]);
+          pw.SizedBox(height: 4),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                flex: 2,
+                child: pw.Row(
+                  children: [
+                    pw.Text(
+                      "Mobile : ",
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        color: PdfColors.grey900,
+                      ),
+                    ),
+                    pw.Text(
+                      headerData['Mobile']?.toString() ?? '',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      children: [
+                        pw.Text(
+                          "Salesman : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                        pw.Text(
+                          headerData['SalesPerson_Name']?.toString() ?? '',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 4),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                flex: 2,
+                child: pw.Row(
+                  children: [
+                    pw.Text(
+                      "Del.Date : ",
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        color: PdfColors.grey900,
+                      ),
+                    ),
+                    pw.Text(
+                      _formatDate(headerData['DlvDate']?.toString()),
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      children: [
+                        pw.Text(
+                          "Transport : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                        pw.Text(
+                          headerData['Transporter_Name']?.toString() ?? '',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 4),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                flex: 2,
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      "Remark : ",
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        color: PdfColors.grey900,
+                      ),
+                    ),
+                    pw.Expanded(
+                      child: pw.Text(
+                        headerData['Remark']?.toString() ?? '',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                        softWrap: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      children: [
+                        pw.Text(
+                          "Broker : ",
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                        pw.Text(
+                          headerData['Broker_Name']?.toString() ?? '',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-        categoryRows.add(pw.TableRow(children: dataCells));
-        
-      } else {
-        bool isFirstRowForStyle = true;
-        int shadeCount = 0;
+  pw.Widget _buildPDFItemsTable() {
+    if (items.isEmpty) {
+      return pw.Center(child: pw.Text("No Items Found"));
+    }
 
+    int grandTotalQty = 0;
+    int totalStylesCount = 0;
+    List<pw.Widget> tables = [];
+
+    for (var category in items) {
+      String categoryName = category['item_name']?.toString() ?? '';
+      List<String> categorySizes = _getSizesForCategory(category);
+      List styles = category['styles'] ?? [];
+      int categoryTotalQty = 0;
+      int categoryStyleCount = 0;
+
+      // Check if any shade exists in this category
+      bool hasAnyShade = false;
+      for (var style in styles) {
+        List shades = style['shades'] ?? [];
         for (var shade in shades) {
           String shadeName = shade['shade_name']?.toString() ?? '';
-          if (shadeName.isEmpty || shadeName == 'null') continue;
+          if (shadeName.isNotEmpty && shadeName != 'null') {
+            hasAnyShade = true;
+            break;
+          }
+        }
+        if (hasAnyShade) break;
+      }
+
+      List<pw.TableRow> categoryRows = [];
+
+      for (var style in styles) {
+        String styleCode = style['style_code']?.toString() ?? '';
+        String styleImageUrl = style['Style_Image']?.toString() ?? '';
+        String styleRemark = style['Remark']?.toString() ?? '';
+        List shades = style['shades'] ?? [];
+
+        // Get style image from cache
+        pw.ImageProvider? styleImage;
+        if (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)) {
+          styleImage = imageCache[styleImageUrl];
+        }
+
+        bool hasValidShades = false;
+        for (var shade in shades) {
+          String shadeName = shade['shade_name']?.toString() ?? '';
+          if (shadeName.isNotEmpty && shadeName != 'null') {
+            hasValidShades = true;
+            break;
+          }
+        }
+
+        if (!hasValidShades) {
+          // Handle styles without shades
+          var shade = shades.isNotEmpty ? shades[0] : {'shade_name': '', 'shade_Img': null, 'size_data': []};
           
-          String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
           List sizeData = shade['size_data'] ?? [];
 
           Map<String, int> sizeQtyMap = {};
@@ -973,215 +706,56 @@ pw.Widget _buildPDFItemsTable() {
 
           categoryTotalQty += totalQty;
           grandTotalQty += totalQty;
-          shadeCount++;
+          categoryStyleCount++;
+          totalStylesCount++;
 
           List<pw.Widget> dataCells = [];
 
-          if (!hasAnyShade) {
-            if (isFirstRowForStyle) {
-              dataCells.add(
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(4),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        styleCode,
-                        style: const pw.TextStyle(fontSize: 8),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                      if (styleRemark.isNotEmpty)
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.only(top: 2),
-                          child: pw.Text(
-                            'Remark: $styleRemark',
-                            style: pw.TextStyle(
-                              fontSize: 6,
-                              color: PdfColors.grey700,
-                            ),
-                          ),
-                        ),
-                    ],
+          // Style column
+          dataCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    styleCode,
+                    style: const pw.TextStyle(fontSize: 8),
                   ),
-                ),
-              );
-            } else {
-              dataCells.add(pw.Container());
-            }
-          } else {
-            if (isFirstRowForStyle) {
-              dataCells.add(
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(4),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        styleCode,
-                        style: const pw.TextStyle(fontSize: 8),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                      if (styleRemark.isNotEmpty)
-                        pw.Padding(
-                          padding: const pw.EdgeInsets.only(top: 2),
-                          child: pw.Text(
-                            'Remark: $styleRemark',
-                            style: pw.TextStyle(
-                              fontSize: 6,
-                              color: PdfColors.grey700,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            } else {
-              dataCells.add(pw.Container());
-            }
-
-            dataCells.add(
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(4),
-                child: pw.Text(
-                  shadeName,
-                  style: const pw.TextStyle(fontSize: 8),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-            );
-          }
-
-          if (!hasAnyShade) {
-            dataCells.add(
-              pw.Container(
-                width: 35,
-                height: 35,
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                  color: PdfColors.grey50,
-                ),
-                child: (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl))
-                    ? pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          child: pw.Image(
-                            imageCache[styleImageUrl]!,
-                            fit: pw.BoxFit.contain,
-                          ),
-                        ),
-                      )
-                    : pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          decoration: pw.BoxDecoration(
-                            color: PdfColors.grey200,
-                            borderRadius: pw.BorderRadius.circular(2),
-                          ),
-                          child: pw.Center(
-                            child: pw.Text(
-                              'No Image',
-                              style: pw.TextStyle(
-                                fontSize: 6,
-                                color: PdfColors.grey700,
-                              ),
-                              textAlign: pw.TextAlign.center,
-                            ),
-                          ),
+                  if (styleRemark.isNotEmpty)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 2),
+                      child: pw.Text(
+                        'Remark: $styleRemark',
+                        style: pw.TextStyle(
+                          fontSize: 6,
+                          color: PdfColors.grey700,
                         ),
                       ),
+                    ),
+                ],
               ),
-            );
-          } else {
-            dataCells.add(
-              pw.Container(
-                width: 35,
-                height: 35,
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                  color: PdfColors.grey50,
-                ),
-                child: isFirstRowForStyle
-                    ? (styleImageUrl.isNotEmpty && imageCache.containsKey(styleImageUrl)
-                        ? pw.Center(
-                            child: pw.Container(
-                              width: 33,
-                              height: 33,
-                              child: pw.Image(
-                                imageCache[styleImageUrl]!,
-                                fit: pw.BoxFit.contain,
-                              ),
-                            ),
-                          )
-                        : pw.Center(
-                            child: pw.Container(
-                              width: 33,
-                              height: 33,
-                              decoration: pw.BoxDecoration(
-                                color: PdfColors.grey200,
-                                borderRadius: pw.BorderRadius.circular(2),
-                              ),
-                              child: pw.Center(
-                                child: pw.Text(
-                                  'No Image',
-                                  style: pw.TextStyle(
-                                    fontSize: 6,
-                                    color: PdfColors.grey700,
-                                  ),
-                                  textAlign: pw.TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ))
-                    : pw.Container(),
-              ),
-            );
+            ),
+          );
 
-            dataCells.add(
-              pw.Container(
-                width: 35,
-                height: 35,
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                  color: PdfColors.grey50,
-                ),
-                child: (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl))
-                    ? pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          child: pw.Image(
-                            imageCache[shadeImageUrl]!,
-                            fit: pw.BoxFit.contain,
-                          ),
-                        ),
-                      )
-                    : pw.Center(
-                        child: pw.Container(
-                          width: 33,
-                          height: 33,
-                          decoration: pw.BoxDecoration(
-                            color: PdfColors.grey200,
-                            borderRadius: pw.BorderRadius.circular(2),
-                          ),
-                          child: pw.Center(
-                            child: pw.Text(
-                              'No Image',
-                              style: pw.TextStyle(
-                                fontSize: 6,
-                                color: PdfColors.grey700,
-                              ),
-                              textAlign: pw.TextAlign.center,
-                            ),
-                          ),
-                        ),
+          // Style Image column
+          dataCells.add(
+            pw.Container(
+              width: 40,
+              height: 40,
+              padding: const pw.EdgeInsets.all(2),
+              child: styleImage != null
+                  ? pw.Image(styleImage, fit: pw.BoxFit.contain)
+                  : pw.Center(
+                      child: pw.Text(
+                        'No Image',
+                        style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
                       ),
-              ),
-            );
-          }
+                    ),
+            ),
+          );
 
+          // Size columns
           for (var size in categorySizes) {
             dataCells.add(
               pw.Padding(
@@ -1195,6 +769,7 @@ pw.Widget _buildPDFItemsTable() {
             );
           }
 
+          // WSP and Total Qty columns
           dataCells.addAll([
             pw.Padding(
               padding: const pw.EdgeInsets.all(4),
@@ -1218,269 +793,405 @@ pw.Widget _buildPDFItemsTable() {
           ]);
 
           categoryRows.add(pw.TableRow(children: dataCells));
-          isFirstRowForStyle = false;
+          
+        } else {
+          // Handle styles with shades
+          bool isFirstRowForStyle = true;
+          int shadeCount = 0;
+
+          for (var shade in shades) {
+            String shadeName = shade['shade_name']?.toString() ?? '';
+            if (shadeName.isEmpty || shadeName == 'null') continue;
+            
+            String shadeImageUrl = shade['shade_Img']?.toString() ?? '';
+            List sizeData = shade['size_data'] ?? [];
+
+            // Get shade image from cache
+            pw.ImageProvider? shadeImage;
+            if (shadeImageUrl.isNotEmpty && imageCache.containsKey(shadeImageUrl)) {
+              shadeImage = imageCache[shadeImageUrl];
+            }
+
+            Map<String, int> sizeQtyMap = {};
+            double? wsp;
+
+            for (var size in sizeData) {
+              String sizeName = size['Size_Name']?.toString() ?? '';
+              int qty = (size['Qty'] ?? 0).toInt();
+
+              if (sizeName.isNotEmpty) {
+                sizeQtyMap[sizeName] = (sizeQtyMap[sizeName] ?? 0) + qty;
+              }
+
+              if (wsp == null) {
+                num rate = size['Rate'] ?? 0;
+                wsp = rate.toDouble();
+              }
+            }
+
+            int totalQty = 0;
+            for (var size in categorySizes) {
+              totalQty += sizeQtyMap[size] ?? 0;
+            }
+
+            categoryTotalQty += totalQty;
+            grandTotalQty += totalQty;
+            shadeCount++;
+
+            List<pw.Widget> dataCells = [];
+
+            // Style column (only for first row of this style)
+            if (isFirstRowForStyle) {
+              dataCells.add(
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        styleCode,
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                      if (styleRemark.isNotEmpty)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Text(
+                            'Remark: $styleRemark',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              dataCells.add(pw.Container());
+            }
+
+            // Shade column
+            dataCells.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Text(
+                  shadeName,
+                  style: const pw.TextStyle(fontSize: 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            );
+
+            // Style Image column (only for first row of this style)
+            dataCells.add(
+              pw.Container(
+                width: 35,
+                height: 35,
+                padding: const pw.EdgeInsets.all(2),
+                child: (isFirstRowForStyle && styleImage != null)
+                    ? pw.Image(styleImage, fit: pw.BoxFit.contain)
+                    : (isFirstRowForStyle)
+                        ? pw.Center(
+                            child: pw.Text(
+                              'No Image',
+                              style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+                            ),
+                          )
+                        : pw.Container(),
+              ),
+            );
+
+            // Shade Image column
+            dataCells.add(
+              pw.Container(
+                width: 35,
+                height: 35,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  color: PdfColors.grey50,
+                ),
+                child: shadeImage != null
+                    ? pw.Center(
+                        child: pw.Container(
+                          width: 33,
+                          height: 33,
+                          child: pw.Image(shadeImage, fit: pw.BoxFit.contain),
+                        ),
+                      )
+                    : pw.Center(
+                        child: pw.Text(
+                          'No Image',
+                          style: pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
+                        ),
+                      ),
+              ),
+            );
+
+            // Size columns
+            for (var size in categorySizes) {
+              dataCells.add(
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text(
+                    sizeQtyMap[size]?.toString() ?? '-',
+                    style: const pw.TextStyle(fontSize: 8),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+              );
+            }
+
+            // WSP and Total Qty columns
+            dataCells.addAll([
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Text(
+                  wsp?.toStringAsFixed(0) ?? "0",
+                  style: const pw.TextStyle(fontSize: 8),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Text(
+                  totalQty.toString(),
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            ]);
+
+            categoryRows.add(pw.TableRow(children: dataCells));
+            isFirstRowForStyle = false;
+          }
+
+          if (shadeCount > 0) {
+            categoryStyleCount++;
+            totalStylesCount++;
+          }
+        }
+      }
+
+      if (categoryStyleCount > 0) {
+        // Header cells
+        List<pw.Widget> headerCells = [];
+
+        if (!hasAnyShade) {
+          headerCells.addAll([
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Style",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(2),
+              child: pw.Text(
+                "Image",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ]);
+        } else {
+          headerCells.addAll([
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Style",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Shade",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(2),
+              child: pw.Text(
+                "Style Image",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(2),
+              child: pw.Text(
+                "Shade Image",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ]);
         }
 
-        if (shadeCount > 0) {
-          categoryStyleCount++;
-          totalStylesCount++;
+        for (var size in categorySizes) {
+          headerCells.add(
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                size,
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          );
         }
-      }
-    }
 
-    if (categoryStyleCount > 0) {
-      List<pw.Widget> headerCells = [];
-
-      if (!hasAnyShade) {
-        headerCells.add(
+        headerCells.addAll([
           pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "Style",
+              "WSP",
               style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
               textAlign: pw.TextAlign.center,
             ),
           ),
-        );
-        headerCells.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(2),
-            child: pw.Text(
-              "Image",
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        );
-      } else {
-        headerCells.add(
           pw.Padding(
             padding: const pw.EdgeInsets.all(4),
             child: pw.Text(
-              "Style",
+              "TotQty",
               style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
               textAlign: pw.TextAlign.center,
             ),
           ),
-        );
-        headerCells.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              "Shade",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        );
-        headerCells.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(2),
-            child: pw.Text(
-              "Style Image",
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        );
-        headerCells.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(2),
-            child: pw.Text(
-              "Shade Image",
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        );
-      }
+        ]);
 
-      for (var size in categorySizes) {
-        headerCells.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              size,
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-              ),
-              textAlign: pw.TextAlign.center,
-            ),
+        categoryRows.insert(
+          0,
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            children: headerCells,
           ),
         );
-      }
 
-      headerCells.addAll([
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "WSP",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "TotQty",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-      ]);
+        int totalColumns = (hasAnyShade ? 4 : 2) + categorySizes.length + 2;
+        
+        List<pw.Widget> categoryTotalRowCells = [];
 
-      categoryRows.insert(
-        0,
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          children: headerCells,
-        ),
-      );
-
-      int totalColumns = (!hasAnyShade ? 2 : 4) + categorySizes.length + 2;
-      
-      List<pw.Widget> categoryTotalRowCells = [];
-
-      if (!hasAnyShade) {
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              "Total Item: $categoryStyleCount",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            ),
-          ),
-        );
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        );
-      } else {
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text(
-              "Total Item: $categoryStyleCount",
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            ),
-          ),
-        );
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        );
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        );
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        );
-      }
-
-      for (int i = (!hasAnyShade ? 2 : 4); i < totalColumns - 1; i++) {
-        categoryTotalRowCells.add(
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Container(),
-          ),
-        );
-      }
-
-      categoryTotalRowCells.add(
-        pw.Container(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(
-            "$categoryName Total: $categoryTotalQty",
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-      );
-
-      categoryRows.add(
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          children: categoryTotalRowCells,
-        ),
-      );
-
-      Map<int, pw.TableColumnWidth> columnWidths = {};
-
-      if (!hasAnyShade) {
-        columnWidths[0] = const pw.FixedColumnWidth(80);
-        columnWidths[1] = const pw.FixedColumnWidth(40);
-        for (int i = 0; i < categorySizes.length; i++) {
-          columnWidths[2 + i] = const pw.FixedColumnWidth(28);
-        }
-        columnWidths[2 + categorySizes.length] = const pw.FixedColumnWidth(40);
-        columnWidths[3 + categorySizes.length] = const pw.FixedColumnWidth(65);
-      } else {
-        columnWidths[0] = const pw.FixedColumnWidth(55);
-        columnWidths[1] = const pw.FixedColumnWidth(55);
-        columnWidths[2] = const pw.FixedColumnWidth(40);
-        columnWidths[3] = const pw.FixedColumnWidth(40);
-        for (int i = 0; i < categorySizes.length; i++) {
-          columnWidths[4 + i] = const pw.FixedColumnWidth(28);
-        }
-        columnWidths[4 + categorySizes.length] = const pw.FixedColumnWidth(40);
-        columnWidths[5 + categorySizes.length] = const pw.FixedColumnWidth(65);
-      }
-
-      tables.add(
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              categoryName,
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 10,
-              ),
-            ),
-            pw.SizedBox(height: 5),
+        if (!hasAnyShade) {
+          categoryTotalRowCells.add(
             pw.Container(
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey400),
-              ),
-              child: pw.Table(
-                border: pw.TableBorder.all(width: 0.5),
-                columnWidths: columnWidths,
-                children: categoryRows,
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Total Item: $categoryStyleCount",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
               ),
             ),
-            pw.SizedBox(height: 15),
-          ],
-        ),
-      );
-    }
-  }
+          );
+          categoryTotalRowCells.add(
+            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+          );
+        } else {
+          categoryTotalRowCells.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Text(
+                "Total Item: $categoryStyleCount",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              ),
+            ),
+          );
+          categoryTotalRowCells.add(
+            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+          );
+          categoryTotalRowCells.add(
+            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+          );
+          categoryTotalRowCells.add(
+            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+          );
+        }
 
-  int totalColumns = 0;
-  if (items.isNotEmpty) {
-    var lastCategory = items.last;
-    List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
-    
-    bool hasAnyShade = false;
+        for (int i = (hasAnyShade ? 4 : 2); i < totalColumns - 1; i++) {
+          categoryTotalRowCells.add(
+            pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+          );
+        }
+
+        categoryTotalRowCells.add(
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text(
+              "$categoryName Total: $categoryTotalQty",
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        );
+
+        categoryRows.add(
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            children: categoryTotalRowCells,
+          ),
+        );
+
+        // Set column widths
+        Map<int, pw.TableColumnWidth> columnWidths = {};
+
+        if (!hasAnyShade) {
+          columnWidths[0] = const pw.FixedColumnWidth(80);
+          columnWidths[1] = const pw.FixedColumnWidth(45);
+          for (int i = 0; i < categorySizes.length; i++) {
+            columnWidths[2 + i] = const pw.FixedColumnWidth(28);
+          }
+          columnWidths[2 + categorySizes.length] = const pw.FixedColumnWidth(40);
+          columnWidths[3 + categorySizes.length] = const pw.FixedColumnWidth(65);
+        } else {
+          columnWidths[0] = const pw.FixedColumnWidth(55);
+          columnWidths[1] = const pw.FixedColumnWidth(55);
+          columnWidths[2] = const pw.FixedColumnWidth(45);
+          columnWidths[3] = const pw.FixedColumnWidth(45);
+          for (int i = 0; i < categorySizes.length; i++) {
+            columnWidths[4 + i] = const pw.FixedColumnWidth(28);
+          }
+          columnWidths[4 + categorySizes.length] = const pw.FixedColumnWidth(40);
+          columnWidths[5 + categorySizes.length] = const pw.FixedColumnWidth(65);
+        }
+
+        tables.add(
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                categoryName,
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Container(
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey400),
+                ),
+                child: pw.Table(
+                  border: pw.TableBorder.all(width: 0.5),
+                  columnWidths: columnWidths,
+                  children: categoryRows,
+                ),
+              ),
+              pw.SizedBox(height: 15),
+            ],
+          ),
+        );
+      }
+    }
+
+    // Determine if any shade exists globally for grand total row
+    bool hasAnyShadeGlobal = false;
     for (var category in items) {
       List styles = category['styles'] ?? [];
       for (var style in styles) {
@@ -1488,462 +1199,495 @@ pw.Widget _buildPDFItemsTable() {
         for (var shade in shades) {
           String shadeName = shade['shade_name']?.toString() ?? '';
           if (shadeName.isNotEmpty && shadeName != 'null') {
-            hasAnyShade = true;
+            hasAnyShadeGlobal = true;
             break;
           }
         }
-        if (hasAnyShade) break;
-      }
-      if (hasAnyShade) break;
-    }
-    
-    totalColumns = (hasAnyShade ? 4 : 2) + lastCategorySizes.length + 2;
-  }
-
-  List<pw.Widget> grandTotalRowCells = [];
-
-  bool hasAnyShadeGlobal = false;
-  for (var category in items) {
-    List styles = category['styles'] ?? [];
-    for (var style in styles) {
-      List shades = style['shades'] ?? [];
-      for (var shade in shades) {
-        String shadeName = shade['shade_name']?.toString() ?? '';
-        if (shadeName.isNotEmpty && shadeName != 'null') {
-          hasAnyShadeGlobal = true;
-          break;
-        }
+        if (hasAnyShadeGlobal) break;
       }
       if (hasAnyShadeGlobal) break;
     }
-    if (hasAnyShadeGlobal) break;
-  }
 
-  if (!hasAnyShadeGlobal) {
+    int totalColumns = 0;
+    if (items.isNotEmpty) {
+      var lastCategory = items.last;
+      List<String> lastCategorySizes = _getSizesForCategory(lastCategory);
+      totalColumns = (hasAnyShadeGlobal ? 4 : 2) + lastCategorySizes.length + 2;
+    }
+
+    List<pw.Widget> grandTotalRowCells = [];
+
+    if (!hasAnyShadeGlobal) {
+      grandTotalRowCells.add(
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "Total Item: $totalStylesCount",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          ),
+        ),
+      );
+      grandTotalRowCells.add(
+        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+      );
+    } else {
+      grandTotalRowCells.add(
+        pw.Container(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Text(
+            "Total Item: $totalStylesCount",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          ),
+        ),
+      );
+      grandTotalRowCells.add(
+        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+      );
+      grandTotalRowCells.add(
+        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+      );
+      grandTotalRowCells.add(
+        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+      );
+    }
+
+    for (int i = (hasAnyShadeGlobal ? 4 : 2); i < totalColumns - 1; i++) {
+      grandTotalRowCells.add(
+        pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
+      );
+    }
+
     grandTotalRowCells.add(
       pw.Container(
         padding: const pw.EdgeInsets.all(4),
         child: pw.Text(
-          "Total Item: $totalStylesCount",
+          "Grand Total: $grandTotalQty",
           style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          textAlign: pw.TextAlign.center,
         ),
       ),
     );
-    grandTotalRowCells.add(
-      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    );
-  } else {
-    grandTotalRowCells.add(
+
+    tables.add(
       pw.Container(
-        padding: const pw.EdgeInsets.all(4),
-        child: pw.Text(
-          "Total Item: $totalStylesCount",
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey400),
+        ),
+        child: pw.Table(
+          border: pw.TableBorder.all(width: 0.5),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey400),
+              children: grandTotalRowCells,
+            ),
+          ],
         ),
       ),
     );
-    grandTotalRowCells.add(
-      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    );
-    grandTotalRowCells.add(
-      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    );
-    grandTotalRowCells.add(
-      pw.Container(padding: const pw.EdgeInsets.all(4), child: pw.Container()),
-    );
+
+    return pw.Column(children: tables);
   }
 
-  for (int i = (hasAnyShadeGlobal ? 4 : 2); i < totalColumns - 1; i++) {
-    grandTotalRowCells.add(
-      pw.Container(
-        padding: const pw.EdgeInsets.all(4),
-        child: pw.Container(),
-      ),
-    );
-  }
-
-  grandTotalRowCells.add(
-    pw.Container(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(
-        "Grand Total: $grandTotalQty",
-        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-        textAlign: pw.TextAlign.center,
-      ),
-    ),
-  );
-
-  tables.add(
-    pw.Container(
+  pw.Widget _buildPDFFooter() {
+    String ledgerName = headerData['Ledger_Name']?.toString() ?? '';
+    String createdByText = ledgerName.isNotEmpty 
+        ? "Created By: $ledgerName" 
+        : "Created By: ";
+    
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey400),
       ),
-      child: pw.Table(
-        border: pw.TableBorder.all(width: 0.5),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey400),
-            children: grandTotalRowCells,
+          pw.Text(createdByText, style: const pw.TextStyle(fontSize: 12)),
+          pw.Text(
+            "${headerData['Co_Name']?.toString() ?? ''}",
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.Text(
+            "Print Date: ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
+            style: const pw.TextStyle(fontSize: 12),
           ),
         ],
       ),
-    ),
-  );
-
-  return pw.Column(children: tables);
-}
-
-pw.Widget _buildPDFFooter() {
-  // Get Ledger_Name from backend data
-  String ledgerName = headerData['Ledger_Name']?.toString() ?? '';
-  
-  // Determine the creator text based on ledger name
-  String createdByText = ledgerName.isNotEmpty 
-      ? "Created By: $ledgerName" 
-      : "Created By: ";
-  
-  return pw.Container(
-    width: double.infinity,
-    padding: const pw.EdgeInsets.all(12),
-    decoration: pw.BoxDecoration(
-      border: pw.Border.all(color: PdfColors.grey400),
-    ),
-    child: pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(createdByText, style: const pw.TextStyle(fontSize: 12)),
-        pw.Text(
-          "${headerData['Co_Name']?.toString() ?? ''}",
-          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-        ),
-        pw.Text(
-          "Print Date: ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
-          style: const pw.TextStyle(fontSize: 12),
-        ),
-      ],
-    ),
-  );
-}
- 
-
-// Replace the existing _shareViaWhatsApp method with this version
-Future<void> _shareViaWhatsApp() async {
-  try {
-    // Get the mobile number from order data (passed from RegisterPage)
-    String? defaultMobileNo = widget.defaultWhatsAppMobileNo ?? 
-                              widget.orderData?.whatsAppMobileNo ?? 
-                              headerData['WhatsAppMobileNo']?.toString();
-    
-    // Show dialog with pre-filled number if available
-    final result = await _showMobileNumberDialog(defaultMobileNo: defaultMobileNo);
-    
-    if (result == null) return; // User cancelled
-    
-    String mobileNo = result['mobileNo'] ?? '';
-    
-    // Show loading dialog
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Preparing order report for WhatsApp...',
-                  style: GoogleFonts.poppins(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
-    
-    // Get WhatsApp type from AppConstants (set during login)
-    String whatsappType = AppConstants.whatsappType ?? '1'; // Default to '1' if not set
-    
-    // Send based on whatsapp type from backend configuration
-    if (whatsappType == "1") {
-      // Send PDF via Node API
-      await _shareViaWhatsAppNode(mobileNo);
-    } else if (whatsappType == "2") {
-      // Send PDF via Backend API
-      await _shareViaWhatsAppBackend(mobileNo);
-    } else {
-      // Fallback to Node API if type is unknown
-      await _shareViaWhatsAppNode(mobileNo);
-    }
-    
-    if (context.mounted) {
-      Navigator.pop(context); // Close loading dialog
-    }
-    
-  } catch (e) {
-    print('Error sending via WhatsApp: $e');
-    if (mounted) {
-      Navigator.pop(context); // Close loading dialog if open
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
-}
-// Rename existing method to _shareViaWhatsAppNode
-Future<void> _shareViaWhatsAppNode(String mobileNo) async {
-  try {
-    // Generate PDF
-    final pdfBytes = await _generatePDF();
-    
-    // Save to temp file
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
-    await file.writeAsBytes(pdfBytes);
-    
-    // Read file bytes and convert to base64
-    final pdfBytesData = await file.readAsBytes();
-    String fileBase64 = base64Encode(pdfBytesData);
-    
-    // Prepare caption
-    String caption = _prepareOrderReportCaption();
-    
-    if (context.mounted) {
-      Navigator.pop(context); // Close loading dialog
-    }
-    
-    // Show sending indicator
-    if (!mounted) return;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📤 Sending via WhatsApp...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    
-    // Get WhatsApp key from AppConstants
-    String whatsappKey = AppConstants.whatsappKey ?? '';
-    if (whatsappKey.isEmpty) {
-      throw Exception('WhatsApp API key not configured');
-    }
-    
-    // Send via Node API
-    final response = await http.post(
-      Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
-      body: {
-        'data': fileBase64,
-        'filename': 'Order_${widget.orderNo}.pdf',
-        'key': whatsappKey,
-        'number': '91$mobileNo',
-        'caption': caption,
-      },
-    ).timeout(const Duration(seconds: 30));
-    
-    if (response.statusCode == 200 && mounted) {
-      try {
-        final responseData = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              responseData['status'] == 'success' 
-                ? '✓ Order report sent successfully to $mobileNo'
-                : 'Failed: ${responseData['message'] ?? 'Unknown error'}',
-            ),
-            backgroundColor: responseData['status'] == 'success' 
-              ? Colors.green 
-              : Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ Order report sent successfully to $mobileNo'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to send via WhatsApp'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-    
-    // Clean up temp file
-    await file.delete();
-    
-  } catch (e) {
-    print('Error sending via Node API: $e');
-    rethrow;
-  }
-}
-// Mobile number dialog method
-// Replace the existing _showMobileNumberDialog method with this version
-Future<Map<String, String>?> _showMobileNumberDialog({String? defaultMobileNo}) {
-  TextEditingController mobileController = TextEditingController(text: defaultMobileNo ?? '');
-  
-  return showDialog<Map<String, String>?>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text(
-          "Enter Mobile Number",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: mobileController,
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-              decoration: InputDecoration(
-                labelText: "Mobile Number",
-                prefixIcon: const Icon(Icons.phone, size: 20),
-                counterText: '',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.green, width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+
+  Future<void> _shareViaWhatsApp() async {
+    try {
+      String? defaultMobileNo = widget.defaultWhatsAppMobileNo ?? 
+                                widget.orderData?.whatsAppMobileNo ?? 
+                                headerData['WhatsAppMobileNo']?.toString();
+      
+      final result = await _showMobileNumberDialog(defaultMobileNo: defaultMobileNo);
+      if (result == null) return;
+      
+      String mobileNo = result['mobileNo'] ?? '';
+      
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Colors.green[700],
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Order report will be sent as PDF via WhatsApp',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[900],
-                      ),
-                    ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Preparing order report for WhatsApp...',
+                    style: GoogleFonts.poppins(fontSize: 14),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final mobileNo = mobileController.text.trim();
-              if (mobileNo.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter mobile number'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              if (mobileNo.length != 10) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter valid 10-digit mobile number'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter numbers only'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context, {'mobileNo': mobileNo});
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text("Send via WhatsApp"),
-          ),
-        ],
+          );
+        },
       );
-    },
-  );
-}
-// Prepare caption for order report
-String _prepareOrderReportCaption() {
-  String orderNo = widget.orderNo;
-  String orderDate = _formatDate(headerData['Doc_Dt']?.toString());
-  String partyName = headerData['Led_Name']?.toString() ?? '';
-  int totalItems = items.length;
-  
-  // Calculate total quantity - FIXED TYPE ERROR
-  int totalQty = 0;
-  for (var category in items) {
-    List styles = category['styles'] ?? [];
-    for (var style in styles) {
-      List shades = style['shades'] ?? [];
-      for (var shade in shades) {
-        List sizeData = shade['size_data'] ?? [];
-        for (var size in sizeData) {
-          // Convert num to int using .toInt() or handle null
-          dynamic qtyValue = size['Qty'] ?? 0;
-          if (qtyValue is num) {
-            totalQty += qtyValue.toInt();
-          } else if (qtyValue is int) {
-            totalQty += qtyValue;
-          } else {
-            totalQty += int.tryParse(qtyValue.toString()) ?? 0;
+      
+      String whatsappType = AppConstants.whatsappType ?? '1';
+      
+      if (whatsappType == "1") {
+        await _shareViaWhatsAppNode(mobileNo);
+      } else if (whatsappType == "2") {
+        await _shareViaWhatsAppBackend(mobileNo);
+      } else {
+        await _shareViaWhatsAppNode(mobileNo);
+      }
+      
+      if (mounted) {
+        Navigator.pop(context);
+      }
+      
+    } catch (e) {
+      print('Error sending via WhatsApp: $e');
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareViaWhatsAppNode(String mobileNo) async {
+    try {
+      final pdfBytes = await _generatePDF();
+      
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
+      await file.writeAsBytes(pdfBytes);
+      
+      final pdfBytesData = await file.readAsBytes();
+      String fileBase64 = base64Encode(pdfBytesData);
+      
+      String caption = _prepareOrderReportCaption();
+      
+      if (mounted) {
+        Navigator.pop(context);
+      }
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📤 Sending via WhatsApp...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      String whatsappKey = AppConstants.whatsappKey ?? '';
+      if (whatsappKey.isEmpty) {
+        throw Exception('WhatsApp API key not configured');
+      }
+      
+      final response = await http.post(
+        Uri.parse("http://node4.wabapi.com/v4/postfile.php"),
+        body: {
+          'data': fileBase64,
+          'filename': 'Order_${widget.orderNo}.pdf',
+          'key': whatsappKey,
+          'number': '91$mobileNo',
+          'caption': caption,
+        },
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200 && mounted) {
+        try {
+          final responseData = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                responseData['status'] == 'success' 
+                  ? '✓ Order report sent successfully to $mobileNo'
+                  : 'Failed: ${responseData['message'] ?? 'Unknown error'}',
+              ),
+              backgroundColor: responseData['status'] == 'success' 
+                ? Colors.green 
+                : Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Order report sent successfully to $mobileNo'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send via WhatsApp'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+      await file.delete();
+      
+    } catch (e) {
+      print('Error sending via Node API: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
+    try {
+      final pdfBytes = await _generatePDF();
+      
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
+      await file.writeAsBytes(pdfBytes);
+      
+      final uri = Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf');
+      var request = http.MultipartRequest('POST', uri);
+      
+      request.fields['mobile_no'] = mobileNo;
+      request.fields['order_no'] = widget.orderNo;
+      request.fields['party_name'] = headerData['Led_Name']?.toString() ?? '';
+      request.fields['order_date'] = _formatDate(headerData['Doc_Dt']?.toString());
+      
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file.path,
+          filename: 'Order_${widget.orderNo}.pdf',
+        ),
+      );
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📤 Sending order report...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 45),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200 && mounted) {
+        try {
+          final responseBody = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseBody['message'] ?? '✓ Order report sent successfully'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Order report sent successfully'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: ${response.body}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+      await file.delete();
+      
+    } catch (e) {
+      print('Error sending PDF via Backend API: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, String>?> _showMobileNumberDialog({String? defaultMobileNo}) {
+    TextEditingController mobileController = TextEditingController(text: defaultMobileNo ?? '');
+    
+    return showDialog<Map<String, String>?>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Enter Mobile Number",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: mobileController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  labelText: "Mobile Number",
+                  prefixIcon: const Icon(Icons.phone, size: 20),
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.green, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.green[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Order report will be sent as PDF via WhatsApp',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[900],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final mobileNo = mobileController.text.trim();
+                if (mobileNo.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter mobile number'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (mobileNo.length != 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter valid 10-digit mobile number'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                if (!RegExp(r'^[0-9]+$').hasMatch(mobileNo)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter numbers only'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {'mobileNo': mobileNo});
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text("Send via WhatsApp"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _prepareOrderReportCaption() {
+    String orderNo = widget.orderNo;
+    String orderDate = _formatDate(headerData['Doc_Dt']?.toString());
+    String partyName = headerData['Led_Name']?.toString() ?? '';
+    int totalItems = items.length;
+    
+    int totalQty = 0;
+    for (var category in items) {
+      List styles = category['styles'] ?? [];
+      for (var style in styles) {
+        List shades = style['shades'] ?? [];
+        for (var shade in shades) {
+          List sizeData = shade['size_data'] ?? [];
+          for (var size in sizeData) {
+            dynamic qtyValue = size['Qty'] ?? 0;
+            if (qtyValue is num) {
+              totalQty += qtyValue.toInt();
+            } else if (qtyValue is int) {
+              totalQty += qtyValue;
+            } else {
+              totalQty += int.tryParse(qtyValue.toString()) ?? 0;
+            }
           }
         }
       }
     }
-  }
-  
-  return '''
+    
+    return '''
 *📋 VRS ORDER REPORT*
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1957,99 +1701,7 @@ String _prepareOrderReportCaption() {
 ━━━━━━━━━━━━━━━━━━━━
 *Generated from VRS ERP App*
   ''';
-}
-
-// Method to send PDF via Backend API (whatsappType == "2")
-Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
-  try {
-    // Generate PDF
-    final pdfBytes = await _generatePDF();
-    
-    // Save to temp file
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/Order_${widget.orderNo}.pdf');
-    await file.writeAsBytes(pdfBytes);
-    
-    // Create multipart request for backend API
-    final uri = Uri.parse('${AppConstants.BASE_URL}/pdf/send-pdf');
-    var request = http.MultipartRequest('POST', uri);
-    
-    // Add parameters
-    request.fields['mobile_no'] = mobileNo;
-    request.fields['order_no'] = widget.orderNo;
-    request.fields['party_name'] = headerData['Led_Name']?.toString() ?? '';
-    request.fields['order_date'] = _formatDate(headerData['Doc_Dt']?.toString());
-    
-    // Add PDF file to request
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'file', // This must match @RequestParam("file") in your backend
-        file.path,
-        filename: 'Order_${widget.orderNo}.pdf',
-      ),
-    );
-    
-    // Show sending indicator
-    if (!mounted) return;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📤 Sending order report...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    
-    // Send request with timeout
-    final streamedResponse = await request.send().timeout(
-      const Duration(seconds: 45),
-    );
-    final response = await http.Response.fromStream(streamedResponse);
-    
-    if (response.statusCode == 200 && mounted) {
-      try {
-        final responseBody = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(responseBody['message'] ?? '✓ Order report sent successfully'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ Order report sent successfully'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed: ${response.body}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-    
-    // Clean up temp file
-    await file.delete();
-    
-  } catch (e) {
-    print('Error sending PDF via Backend API: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-    rethrow;
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -2057,7 +1709,7 @@ Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
       canPop: false,
       onPopInvoked: (didPop) {
         if (!didPop) {
-          _handleBackNavigation(); // Use the same method here
+          _handleBackNavigation();
         }
       },
       child: Scaffold(
@@ -2070,95 +1722,90 @@ Future<void> _shareViaWhatsAppBackend(String mobileNo) async {
           ),
           leading: IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
-            onPressed: _handleBackNavigation, // Use the same method
+            onPressed: _handleBackNavigation,
           ),
-       actions: [
-  // Share PDF button (existing)
-  Container(
-    margin: const EdgeInsets.only(right: 4),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.25),
-          Colors.white.withOpacity(0.15),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: IconButton(
-      icon: const Icon(Icons.share, color: Colors.white, size: 20),
-      onPressed: isLoading ? null : _sharePDF,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-    ),
-  ),
-  // WhatsApp button (NEW)
-  Container(
-    margin: const EdgeInsets.only(right: 8),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.25),
-          Colors.white.withOpacity(0.15),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: IconButton(
-      icon: const Icon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
-      onPressed: isLoading ? null : _shareViaWhatsApp,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-    ),
-  ),
-],
-        ),
-        body:
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : pdfError
-                ? const Center(child: Text("Error loading PDF"))
-                : PdfPreview(
-                  build: (format) => _generatePDF(),
-                  allowSharing: false,
-                  allowPrinting: false,
-                  pdfFileName: 'Order_${widget.orderNo}.pdf',
-                  initialPageFormat: PdfPageFormat.a4,
-                  canChangePageFormat: false,
-                  canChangeOrientation: false,
-                  canDebug: false,
-                  onError: (context, error) {
-                    return Center(child: Text("PDF Error: $error"));
-                  },
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.25),
+                    Colors.white.withOpacity(0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.share, color: Colors.white, size: 20),
+                onPressed: isLoading ? null : _sharePDF,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.25),
+                    Colors.white.withOpacity(0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
+                onPressed: isLoading ? null : _shareViaWhatsApp,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              ),
+            ),
+          ],
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : pdfError
+            ? const Center(child: Text("Error loading PDF"))
+            : PdfPreview(
+                build: (format) => _generatePDF(),
+                allowSharing: false,
+                allowPrinting: false,
+                pdfFileName: 'Order_${widget.orderNo}.pdf',
+                initialPageFormat: PdfPageFormat.a4,
+                canChangePageFormat: false,
+                canChangeOrientation: false,
+                canDebug: false,
+                onError: (context, error) {
+                  return Center(child: Text("PDF Error: $error"));
+                },
+              ),
       ),
     );
   }
 
   void _handleBackNavigation() {
     if (widget.fromRegisterPage) {
-      // If from RegisterPage, go back to previous screen (RegisterPage)
       Navigator.pop(context);
     } else {
-      // If from anywhere else, go to OrderBookingScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => OrderBookingScreen()),

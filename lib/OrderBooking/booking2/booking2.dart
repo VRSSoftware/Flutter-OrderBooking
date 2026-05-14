@@ -1504,7 +1504,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     style: const TextStyle(fontSize: 12),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                    //  LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =
@@ -2450,7 +2450,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     style: const TextStyle(fontSize: 12),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                      //LengthLimitingTextInputFormatter(3),
                     ],
                     onChanged: (value) {
                       final newQuantity =
@@ -2967,7 +2967,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     style: GoogleFonts.roboto(fontSize: 14),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
+                      //LengthLimitingTextInputFormatter(4),
                     ],
                     onChanged: (value) {
                       final newQuantity =
