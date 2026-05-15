@@ -1,22 +1,21 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
-import 'package:vrs_erp/Accounts_Reports/AccountBook/Ledger/LedgerFilterPage.dart';
+import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/keyName.dart';
 import 'package:vrs_erp/services/AccountReport_Services.dart';
 
-class LedgerPage extends StatefulWidget {
-  const LedgerPage({super.key});
+class GroupTrialBalancePage extends StatefulWidget {
+  const GroupTrialBalancePage({super.key});
 
   @override
-  State<LedgerPage> createState() => _LedgerPageState();
+  State<GroupTrialBalancePage> createState() => _GroupTrialBalancePageState();
 }
 
-class _LedgerPageState extends State<LedgerPage> {
+class _GroupTrialBalancePageState extends State<GroupTrialBalancePage> {
   final _formKey = GlobalKey<FormState>();
 
   // Date Controllers
@@ -24,182 +23,44 @@ class _LedgerPageState extends State<LedgerPage> {
   final TextEditingController toDateController = TextEditingController();
 
   // Selected Filters
-  String selectedLedgerType = 'ledger'; // Default to 'ledger'
-  List<KeyName> selectedLedgers = [];
-  List<KeyName> selectedStates = [];
-  List<KeyName> selectedCities = [];
   List<KeyName> selectedGroups = [];
   List<KeyName> selectedSubGroups = [];
-  String selectedReportType = 'summary';
-  bool isBillWise = false;
-  bool isNarration = false;
+  List<KeyName> selectedLedgers = [];
+  String selectedReportType = 'summary'; // 'summary' or 'detail'
+  bool isLedgerWise = false;
+  bool isDueOnly = false;
 
-  // Lists
-  List<KeyName> ledgers = [];
-  List<KeyName> states = [];
-  List<KeyName> cities = [];
+  // Lists for dropdowns
   List<KeyName> groups = [];
   List<KeyName> subGroups = [];
+  List<KeyName> ledgers = [];
 
   // Loading
-  bool _isLoading = false;
-  bool _isLoadingReport = false;
+  bool _isLoadingGroups = false;
+  bool _isLoadingSubGroups = false;
   bool _isLoadingLedgers = false;
+  bool _isLoadingReport = false;
 
   String? _dateRangeError;
 
   int get _filterCount {
     int count = 0;
-    if (selectedLedgerType != 'ledger') count++;
-    if (selectedLedgers.isNotEmpty) count++;
-    if (selectedStates.isNotEmpty) count++;
-    if (selectedCities.isNotEmpty) count++;
     if (selectedGroups.isNotEmpty) count++;
     if (selectedSubGroups.isNotEmpty) count++;
+    if (selectedLedgers.isNotEmpty) count++;
     if (selectedReportType != 'summary') count++;
-    if (isBillWise) count++;
-    if (isNarration) count++;
+    if (isLedgerWise) count++;
+    if (isDueOnly) count++;
     return count;
   }
 
   bool get _hasFilters => _filterCount > 0;
 
-  String? _getLedCat() {
-    switch (selectedLedgerType) {
-      case 'customer':
-        return 'W';
-      case 'vendor':
-        return 'V';
-      case 'ledger':
-        return 'L';
-      case 'all':
-        return 'ALL';
-      default:
-        return 'L';
-    }
-  }
-
-  Future<void> _fetchLedgers() async {
-    setState(() => _isLoadingLedgers = true);
-    
-    try {
-      final ledCat = _getLedCat();
-      final fetchedLedgers = await AccountReportService.fetchLedgersByFilters(
-        ledCat: ledCat,
-      );
-      
-      setState(() {
-        ledgers = fetchedLedgers;
-        selectedLedgers = selectedLedgers
-            .where((selected) => fetchedLedgers.any((ledger) => ledger.key == selected.key))
-            .toList();
-      });
-    } catch (e) {
-      _showError(e);
-      setState(() {
-        ledgers = [];
-      });
-    } finally {
-      setState(() => _isLoadingLedgers = false);
-    }
-  }
-
-  Future<void> _openFilterPage() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LedgerFilterPage(
-          ledgers: ledgers,
-          states: states,
-          cities: cities,
-          groups: groups,
-          subGroups: subGroups,
-          initialLedgerType: selectedLedgerType,
-          initialLedgers: selectedLedgers,
-          initialStates: selectedStates,
-          initialCities: selectedCities,
-          initialGroups: selectedGroups,
-          initialSubGroups: selectedSubGroups,
-          initialReportType: selectedReportType,
-          initialBillWise: isBillWise,
-          initialNarration: isNarration,
-          onLedgerTypeChanged: (v) {
-            setState(() {
-              selectedLedgerType = v;
-            });
-            _fetchLedgers();
-          },
-          onLedgersChanged: (v) {
-            setState(() {
-              selectedLedgers = v;
-            });
-          },
-          onStatesChanged: (v) {
-            setState(() {
-              selectedStates = v;
-            });
-          },
-          onCitiesChanged: (v) {
-            setState(() {
-              selectedCities = v;
-            });
-          },
-          onGroupsChanged: (v) {
-            setState(() {
-              selectedGroups = v;
-            });
-          },
-          onSubGroupsChanged: (v) {
-            setState(() {
-              selectedSubGroups = v;
-            });
-          },
-          onReportTypeChanged: (v) {
-            setState(() {
-              selectedReportType = v;
-            });
-          },
-          onBillWiseChanged: (v) {
-            setState(() {
-              isBillWise = v;
-            });
-          },
-          onNarrationChanged: (v) {
-            setState(() {
-              isNarration = v;
-            });
-          },
-          onApply: () {},
-          onClear: () {
-            setState(() {
-              selectedLedgerType = 'ledger';
-              selectedLedgers = [];
-              selectedStates = [];
-              selectedCities = [];
-              selectedGroups = [];
-              selectedSubGroups = [];
-              selectedReportType = 'summary';
-              isBillWise = false;
-              isNarration = false;
-            });
-            _fetchLedgers();
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
     _initializeDates();
-    fetchStates();
-    fetchCities();
-    fetchGroups();
-    fetchSubGroups();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchLedgers();
-    });
+    _fetchDropdownData();
   }
 
   @override
@@ -211,12 +72,56 @@ class _LedgerPageState extends State<LedgerPage> {
 
   void _initializeDates() {
     final now = DateTime.now();
-     int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
-   int fullYear = 2000 + fyYear;
-   DateTime financialYearStart = DateTime(fullYear, 4, 1);
-   fromDateController.text = DateFormat( 'dd/MM/yyyy',).format(financialYearStart);
+    int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
+    int fullYear = 2000 + fyYear;
+    DateTime financialYearStart = DateTime(fullYear, 4, 1);
+    fromDateController.text = DateFormat('dd/MM/yyyy').format(financialYearStart);
     toDateController.text = DateFormat('dd/MM/yyyy').format(now);
     _dateRangeError = null;
+  }
+
+  Future<void> _fetchDropdownData() async {
+    await Future.wait([
+      fetchGroups(),
+      fetchSubGroups(),
+      fetchLedgers(),
+    ]);
+  }
+
+  Future<void> fetchGroups() async {
+    setState(() => _isLoadingGroups = true);
+    try {
+      final data = await AccountReportService.fetchAccountGroups();
+      setState(() => groups = data);
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingGroups = false);
+    }
+  }
+
+  Future<void> fetchSubGroups() async {
+    setState(() => _isLoadingSubGroups = true);
+    try {
+      final data = await AccountReportService.fetchAccountSubGroups();
+      setState(() => subGroups = data);
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingSubGroups = false);
+    }
+  }
+
+  Future<void> fetchLedgers() async {
+    setState(() => _isLoadingLedgers = true);
+    try {
+      final data = await AccountReportService.fetchLedgersByFilters(ledCat: 'ALL');
+      setState(() => ledgers = data);
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingLedgers = false);
+    }
   }
 
   void _validateDateRange() {
@@ -384,45 +289,6 @@ class _LedgerPageState extends State<LedgerPage> {
     return null;
   }
 
-  Future<void> fetchStates() async {
-    try {
-      final data = await AccountReportService.fetchStates();
-      setState(() => states = data);
-    } catch (e) {
-      _showError(e);
-    }
-  }
-
-  Future<void> fetchCities() async {
-    try {
-      final data = await AccountReportService.fetchCities();
-      setState(() => cities = data);
-    } catch (e) {
-      _showError(e);
-    }
-  }
-
-  Future<void> fetchGroups() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await AccountReportService.fetchAccountGroups();
-      setState(() => groups = data);
-    } catch (e) {
-      _showError(e);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> fetchSubGroups() async {
-    try {
-      final data = await AccountReportService.fetchAccountSubGroups();
-      setState(() => subGroups = data);
-    } catch (e) {
-      _showError(e);
-    }
-  }
-
   void _showError(e) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -432,148 +298,205 @@ class _LedgerPageState extends State<LedgerPage> {
   String _getSubtitle() {
     List<String> parts = [];
     
-    if (selectedLedgerType != 'ledger') {
-      parts.add('${selectedLedgerType.toUpperCase()}s');
-    }
-    if (selectedLedgers.isNotEmpty) {
-      parts.add('${selectedLedgers.length} Ledger(s)');
-    }
-    if (selectedStates.isNotEmpty) {
-      parts.add('${selectedStates.length} State(s)');
-    }
-    if (selectedCities.isNotEmpty) {
-      parts.add('${selectedCities.length} City(s)');
-    }
     if (selectedGroups.isNotEmpty) {
-      parts.add('${selectedGroups.length} Group(s)');
+      if (selectedGroups.length == 1) {
+        parts.add('Group: ${selectedGroups.first.name}');
+      } else {
+        parts.add('${selectedGroups.length} Groups');
+      }
     }
+    
     if (selectedSubGroups.isNotEmpty) {
-      parts.add('${selectedSubGroups.length} Sub Group(s)');
+      if (selectedSubGroups.length == 1) {
+        parts.add('Sub Group: ${selectedSubGroups.first.name}');
+      } else {
+        parts.add('${selectedSubGroups.length} Sub Groups');
+      }
+    }
+    
+    if (selectedLedgers.isNotEmpty) {
+      if (selectedLedgers.length == 1) {
+        parts.add('Ledger: ${selectedLedgers.first.name}');
+      } else {
+        parts.add('${selectedLedgers.length} Ledgers');
+      }
+    }
+    
+    if (isLedgerWise) {
+      parts.add('Ledger Wise');
+    }
+    if (isDueOnly) {
+      parts.add('Due Only');
+    }
+    if (selectedReportType == 'detail') {
+      parts.add('Detailed');
     }
     
     if (parts.isEmpty) {
-      return 'All Ledgers';
+      return 'Group Trial Balance';
     }
     return parts.join(' • ');
   }
 
-
   Future<void> _openPdfDirectly(String pdfPath) async {
-  try {
-    final file = File(pdfPath);
-    if (!await file.exists()) {
-      if (mounted) {
+    try {
+      final file = File(pdfPath);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final result = await OpenFile.open(pdfPath);
+
+      if (!mounted) return;
+
+      if (result.type == ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('PDF file not found'),
+            content: Text('Opening PDF...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else if (result.type == ResultType.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No PDF viewer app found on your device'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      debugPrint('Error opening PDF: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open PDF: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _viewReport() async {
+    setState(() {
+      _dateRangeError = null;
+    });
+
+    if (!_formKey.currentState!.validate()) return;
+
+    final dateError = _validateFormDateRange();
+    if (dateError != null) {
+      setState(() {
+        _dateRangeError = dateError;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+      );
       return;
     }
 
-    final result = await OpenFile.open(pdfPath);
+    setState(() => _isLoadingReport = true);
 
-    if (!mounted) return;
+    try {
+      final groupKeys = selectedGroups.map((e) => e.key).toList();
+      final subGroupKeys = selectedSubGroups.map((e) => e.key).toList();
+      final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
 
-    if (result.type == ResultType.done) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Opening PDF...'),
-          duration: Duration(seconds: 1),
-        ),
+      debugPrint('From Date: ${fromDateController.text}');
+      debugPrint('To Date: ${toDateController.text}');
+      debugPrint('Group Keys: $groupKeys');
+      debugPrint('Sub Group Keys: $subGroupKeys');
+      debugPrint('Ledger Keys: $ledgerKeys');
+      debugPrint('Report Type: $selectedReportType');
+      debugPrint('Ledger Wise: $isLedgerWise');
+      debugPrint('Due Only: $isDueOnly');
+
+      final pdfBytes = await AccountReportService.generateGroupTrialBalanceReport(
+        fromDate: fromDateController.text,
+        toDate: toDateController.text,
+        groupKeys: groupKeys,
+        subGroupKeys: subGroupKeys,
+        ledgerKeys: ledgerKeys,
+        reportType: selectedReportType,
+        isLedgerWise: isLedgerWise,
+        isDueOnly: isDueOnly,
       );
-    } else if (result.type == ResultType.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No PDF viewer app found on your device'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  } catch (e) {
-    debugPrint('Error opening PDF: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to open PDF: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      if (pdfBytes != null && mounted) {
+        final path = await AccountReportService.savePdfToTemp(
+          pdfBytes,
+          'GroupTrialBalance_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+
+        // Directly open PDF without navigation
+        await _openPdfDirectly(path);
+      }
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingReport = false);
     }
   }
-}
 
-Future<void> _viewReport() async {
-  setState(() {
-    _dateRangeError = null;
-  });
-
-  if (!_formKey.currentState!.validate()) return;
-
-  final dateError = _validateFormDateRange();
-  if (dateError != null) {
-    setState(() {
-      _dateRangeError = dateError;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-    );
-    return;
-  }
-
-  setState(() => _isLoadingReport = true);
-
-  try {
-    final ledgerKeys = selectedLedgers.map((e) => e.key).toList();
-    final stateIds = selectedStates.map((e) => e.key).toList();
-    final cityIds = selectedCities.map((e) => e.key).toList();
-    final groupIds = selectedGroups.map((e) => e.key).toList();
-    final subGroupIds = selectedSubGroups.map((e) => e.key).toList();
-
-    final pdfBytes = await AccountReportService.generateLedgerReport(
-      fromDate: fromDateController.text,
-      toDate: toDateController.text,
-      ledgerType: selectedLedgerType,
-      ledgerKeys: ledgerKeys,
-      stateIds: stateIds,
-      cityIds: cityIds,
-      groupIds: groupIds,
-      subGroupIds: subGroupIds,
-      reportType: selectedReportType,
-      isBillWise: isBillWise,
-      isNarration: isNarration,
-    );
-
-    if (pdfBytes != null && mounted) {
-      final path = await AccountReportService.savePdfToTemp(
-        pdfBytes,
-        'Ledger_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-
-      // Directly open PDF without navigation
-      await _openPdfDirectly(path);
-    }
-  } catch (e) {
-    _showError(e);
-  } finally {
-    setState(() => _isLoadingReport = false);
-  }
-}
   @override
   Widget build(BuildContext context) {
+    bool isLoading = _isLoadingGroups || _isLoadingSubGroups || _isLoadingLedgers;
+    
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
       appBar: CommonAppBar(
-        title: 'Ledger',
+        title: 'Group Trial Balance',
         showBackButton: true,
         actions: [
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Icons.filter_alt),
-                onPressed: _openFilterPage,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CommonFilterPage(
+                        title: 'Group Trial Balance Filters',
+                        reportType: 'GroupTrialBalance',
+                        groups: groups,
+                        subGroups: subGroups,
+                        ledgers: ledgers,
+                        initialGroups: selectedGroups,
+                        initialSubGroups: selectedSubGroups,
+                        initialLedgers: selectedLedgers,
+                        initialReportType: selectedReportType,
+                        initialShowLedgerWise: isLedgerWise,
+                        initialShowDueOnly: isDueOnly,
+                        onGroupsChanged: (v) => setState(() => selectedGroups = v ?? []),
+                        onSubGroupsChanged: (v) => setState(() => selectedSubGroups = v ?? []),
+                        onLedgersChanged: (v) => setState(() => selectedLedgers = v ?? []),
+                        onReportTypeChanged: (v) => setState(() => selectedReportType = v ?? 'summary'),
+                        onLedgerWiseChanged: (v) => setState(() => isLedgerWise = v ?? false),
+                        onDueOnlyChanged: (v) => setState(() => isDueOnly = v ?? false),
+                        onApply: () {},
+                        onClear: () {
+                          setState(() {
+                            selectedGroups = [];
+                            selectedSubGroups = [];
+                            selectedLedgers = [];
+                            selectedReportType = 'summary';
+                            isLedgerWise = false;
+                            isDueOnly = false;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
               if (_hasFilters)
                 Positioned(
@@ -604,15 +527,14 @@ Future<void> _viewReport() async {
           ),
         ],
       ),
-      body:SafeArea(child:
-       _isLoadingLedgers
+      body: isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Loading ledgers...'),
+                  Text('Loading filters...'),
                 ],
               ),
             )
@@ -623,6 +545,7 @@ Future<void> _viewReport() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Date Range Section
                     CommonCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,7 +770,8 @@ Future<void> _viewReport() async {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+
+                    // View Report Button
                     CommonButton(
                       text: 'View Report',
                       onPressed: _viewReport,
@@ -857,7 +781,48 @@ Future<void> _viewReport() async {
                   ],
                 ),
               ),
-       ) ),
+            ),
     );
   }
+
+  Widget _buildFilterChip({
+    required String label,
+    required VoidCallback onDeleted,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryColor.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onDeleted,
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  
 }

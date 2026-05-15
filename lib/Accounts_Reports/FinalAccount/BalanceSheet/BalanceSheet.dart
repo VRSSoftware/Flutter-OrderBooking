@@ -8,14 +8,14 @@ import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/services/AccountReport_Services.dart';
 
-class ProfitLossPage extends StatefulWidget {
-  const ProfitLossPage({super.key});
+class BalanceSheetPage extends StatefulWidget {
+  const BalanceSheetPage({super.key});
 
   @override
-  State<ProfitLossPage> createState() => _ProfitLossPageState();
+  State<BalanceSheetPage> createState() => _BalanceSheetPageState();
 }
 
-class _ProfitLossPageState extends State<ProfitLossPage> {
+class _BalanceSheetPageState extends State<BalanceSheetPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Date Controllers
@@ -53,7 +53,10 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
 
   void _initializeDates() {
     final now = DateTime.now();
-    fromDateController.text = DateFormat('dd/MM/yyyy').format(now);
+    int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
+   int fullYear = 2000 + fyYear;
+   DateTime financialYearStart = DateTime(fullYear, 4, 1);
+   fromDateController.text = DateFormat( 'dd/MM/yyyy',).format(financialYearStart);
     toDateController.text = DateFormat('dd/MM/yyyy').format(now);
     _dateRangeError = null;
   }
@@ -233,7 +236,7 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
     if (isLedgerWise) {
       return 'Ledger Wise';
     }
-    return 'Profit & Loss';
+    return 'Balance Sheet';
   }
 
   Future<void> _openPdfDirectly(String pdfPath) async {
@@ -282,7 +285,6 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
     }
   }
 }
-
 Future<void> _viewReport() async {
   setState(() {
     _dateRangeError = null;
@@ -308,7 +310,7 @@ Future<void> _viewReport() async {
     debugPrint('To Date: ${toDateController.text}');
     debugPrint('Ledger Wise: $isLedgerWise');
 
-    final pdfBytes = await AccountReportService.generateProfitLossReport(
+    final pdfBytes = await AccountReportService.generateBalanceSheetReport(
       fromDate: fromDateController.text,
       toDate: toDateController.text,
       isLedgerWise: isLedgerWise,
@@ -317,7 +319,7 @@ Future<void> _viewReport() async {
     if (pdfBytes != null && mounted) {
       final path = await AccountReportService.savePdfToTemp(
         pdfBytes,
-        'ProfitLoss_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        'BalanceSheet_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
 
       // Directly open PDF without navigation
@@ -334,7 +336,7 @@ Future<void> _viewReport() async {
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
       appBar: CommonAppBar(
-        title: 'Profit & Loss',
+        title: 'Balance Sheet',
         showBackButton: true,
         actions: [
           Stack(
@@ -346,8 +348,8 @@ Future<void> _viewReport() async {
                     context,
                     MaterialPageRoute(
                       builder: (_) => CommonFilterPage(
-                        title: 'Profit & Loss Filters',
-                        reportType: 'ProfitLoss',
+                        title: 'Balance Sheet Filters',
+                        reportType: 'BalanceSheet',
                         initialShowLedgerWise: isLedgerWise,
                         onLedgerWiseChanged: (v) => setState(() => isLedgerWise = v ?? false),
                         onApply: () {},

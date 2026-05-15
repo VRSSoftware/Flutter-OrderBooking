@@ -608,27 +608,30 @@ class AccountReportService {
   }
 
   // Fetch Cities
-  static Future<List<KeyName>> fetchCities() async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConstants.BASE_URL}/accounts/getCity'),
-      );
+static Future<List<KeyName>> fetchCities() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getCity'),
+    );
 
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        return data.map((item) {
-          return KeyName(
-            key: item['Stn_Key'].toString(),
-            name: item['Stn_Name'],
-          );
-        }).toList();
-      } else {
-        throw Exception('Failed to load cities');
-      }
-    } catch (e) {
-      throw Exception('Error fetching cities: $e');
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((item) {
+        return KeyName(
+          key: item['Stn_Key'].toString(),
+          name: item['Stn_Name'],
+          extra: {
+            'State_Key': item['State_Key'].toString(),
+          },
+        );
+      }).toList();
+    } else {
+      throw Exception('Failed to load cities');
     }
+  } catch (e) {
+    throw Exception('Error fetching cities: $e');
   }
+}
 
   static Future<Uint8List?> generateTrialBalanceReport({
     required String fromDate,
@@ -1332,7 +1335,6 @@ class AccountReportService {
     }
   }
 
-  //customer Ac Billwise Api
   // Generate Customer Billwise Report
   static Future<Uint8List?> generateCustomerBillwiseReport({
     required String fromDate,
@@ -1416,4 +1418,294 @@ class AccountReportService {
       throw Exception('Error generating customer billwise report: $e');
     }
   }
+
+
+  // Add this method to your AccountReportService class
+
+static Future<Uint8List?> generateGroupTrialBalanceReport({
+  required String fromDate,
+  required String toDate,
+  required List<String> groupKeys,
+  required List<String> subGroupKeys,
+  required List<String> ledgerKeys,
+  required String reportType, // 'summary' or 'detail'
+  required bool isLedgerWise,
+  required bool isDueOnly,
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+
+    // Build the request body
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": "trialBalance", // Report name for group trial balance
+      "report_type": reportType,
+      "showLedgerWise": isLedgerWise ? "1" : "0",
+      "showDueOnly": isDueOnly ? "1" : "0",
+      "coBr": UserSession.coBrId,
+    };
+
+    // Add group keys (AccGrp_Ids - numeric IDs, no quotes)
+    if (groupKeys.isNotEmpty) {
+      final formattedGroupIds = groupKeys.join(',');
+      requestBody["AccGrp_Ids"] = "[$formattedGroupIds]";
+    }
+
+    // Add sub group keys (AccLGrp_Keys - string IDs with quotes)
+    if (subGroupKeys.isNotEmpty) {
+      final formattedSubGroupKeys = subGroupKeys.map((key) => "'$key'").join(',');
+      requestBody["AccLGrp_Keys"] = "[$formattedSubGroupKeys]";
+    }
+
+    // Add ledger keys (format as "['01100','01110']")
+    if (ledgerKeys.isNotEmpty) {
+      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+      requestBody["led_keys"] = "[$formattedLedgerKeys]";
+    }
+
+    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+    debugPrint('Report Name: group_trial_balance');
+    debugPrint('Group Keys: $groupKeys');
+    debugPrint('Sub Group Keys: $subGroupKeys');
+    debugPrint('Ledger Keys: $ledgerKeys');
+    debugPrint('Report Type: $reportType');
+    debugPrint('Ledger Wise: $isLedgerWise');
+    debugPrint('Due Only: $isDueOnly');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null && contentType.contains('application/pdf')) {
+        debugPrint(
+          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+        );
+        return response.bodyBytes;
+      } else {
+        final responseData = jsonDecode(response.body);
+        throw Exception(
+          responseData['message'] ?? 'Failed to generate group trial balance report',
+        );
+      }
+    } else {
+      throw Exception(
+        'Failed to load group trial balance report: ${response.statusCode}',
+      );
+    }
+  } catch (e) {
+    debugPrint('Error generating group trial balance report: $e');
+    throw Exception('Error generating group trial balance report: $e');
+  }
+}
+
+// Add this method to AccountReportService class
+
+
+static Future<Uint8List?> generateJournalRegisterReport({
+  required String fromDate,
+  required String toDate,
+  required String reportType,
+  required bool isBillWise,
+  required bool isNarration,
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+
+    // Dynamic report name
+    final String reportName =
+        isBillWise
+            ? "JournalRegisterBillWise"
+            : "JournalRegister";
+
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": reportName,
+      "report_type": reportType,
+      "showBillWise": isBillWise,
+      "showNarration": isNarration,
+      "coBr": UserSession.coBrId,
+    };
+
+    debugPrint(
+      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+    );
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null &&
+          contentType.contains('application/pdf')) {
+        debugPrint(
+          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+        );
+        return response.bodyBytes;
+      } else {
+        final responseData = jsonDecode(response.body);
+        throw Exception(
+          responseData['message'] ??
+              'Failed to generate journal register report',
+        );
+      }
+    } else {
+      throw Exception(
+        'Failed to load journal register report: ${response.statusCode}',
+      );
+    }
+  } catch (e) {
+    debugPrint('Error generating journal register report: $e');
+    throw Exception('Error generating journal note register report: $e');
+  }
+}
+
+// Add this method to AccountReportService class
+
+static Future<Uint8List?> generateDebitNoteRegisterReport({
+  required String fromDate,
+  required String toDate,
+  required String reportType,
+  required bool isBillWise,
+  required bool isNarration,
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+
+    // Dynamic report name
+    final String reportName =
+        isBillWise
+            ? "debitNoteRegisterBillWise"
+            : "debitNoteRegister";
+
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": reportName,
+      "report_type": reportType,
+      "showBillWise": isBillWise,
+      "showNarration": isNarration,
+      "coBr": UserSession.coBrId,
+    };
+
+    debugPrint(
+      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+    );
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null &&
+          contentType.contains('application/pdf')) {
+        debugPrint(
+          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+        );
+        return response.bodyBytes;
+      } else {
+        final responseData = jsonDecode(response.body);
+        throw Exception(
+          responseData['message'] ??
+              'Failed to generate debit note register report',
+        );
+      }
+    } else {
+      throw Exception(
+        'Failed to load debit note register report: ${response.statusCode}',
+      );
+    }
+  } catch (e) {
+    debugPrint('Error generating debit note register report: $e');
+    throw Exception('Error generating debit note register report: $e');
+  }
+}
+
+
+// Add this method to AccountReportService class
+
+static Future<Uint8List?> generateCreditNoteRegisterReport({
+  required String fromDate,
+  required String toDate,
+  required String reportType,
+  required bool isBillWise,
+  required bool isNarration,
+}) async {
+  try {
+    final dateRange = "$fromDate to $toDate";
+
+    // Dynamic report name
+    final String reportName =
+        isBillWise
+          ? "CreditNoteRegisterBillWise"
+        : "CreditNoteRegister";
+
+    final Map<String, dynamic> requestBody = {
+      "date_range": dateRange,
+      "report": reportName,
+      "report_type": reportType,
+      "showBillWise": isBillWise,
+      "showNarration": isNarration,
+      "coBr": UserSession.coBrId,
+    };
+
+    debugPrint(
+      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+    );
+    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers['content-type'];
+
+      if (contentType != null &&
+          contentType.contains('application/pdf')) {
+        debugPrint(
+          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+        );
+        return response.bodyBytes;
+      } else {
+        final responseData = jsonDecode(response.body);
+        throw Exception(
+          responseData['message'] ??
+              'Failed to generate credit note register report',
+        );
+      }
+    } else {
+      throw Exception(
+        'Failed to load credit note register report: ${response.statusCode}',
+      );
+    }
+  } catch (e) {
+    debugPrint('Error generating credit note register report: $e');
+    throw Exception('Error generating credit note register report: $e');
+  }
+}
 }

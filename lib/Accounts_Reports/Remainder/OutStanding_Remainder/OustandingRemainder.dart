@@ -68,7 +68,10 @@ class _OutstandingRemainderPageState extends State<OutstandingRemainderPage> {
 
   void _initializeDates() {
     final now = DateTime.now();
-    fromDateController.text = DateFormat('dd/MM/yyyy').format(now);
+   int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
+   int fullYear = 2000 + fyYear;
+   DateTime financialYearStart = DateTime(fullYear, 4, 1);
+   fromDateController.text = DateFormat( 'dd/MM/yyyy',).format(financialYearStart);
     toDateController.text = DateFormat('dd/MM/yyyy').format(now);
     _dateRangeError = null;
   }

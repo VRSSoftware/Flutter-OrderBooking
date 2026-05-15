@@ -85,20 +85,43 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
     FilterFieldId.city,
     FilterFieldId.ledger,
   ],
-   'OutstandingRemainder': [
+  'OutstandingRemainder': [
     FilterFieldId.state,
     FilterFieldId.city,
     FilterFieldId.ledger,
   ],
-     'CustomerLedger': [
+  'CustomerLedger': [
     FilterFieldId.state,
     FilterFieldId.city,
     FilterFieldId.ledger,
   ],
-    'CustomerLedgerBillWise': [
+  'CustomerLedgerBillWise': [
     FilterFieldId.state,
     FilterFieldId.city,
     FilterFieldId.ledger,
+  ],
+  'GroupTrialBalance': [
+    FilterFieldId.group,
+    FilterFieldId.subGroup,
+    FilterFieldId.ledger,
+    FilterFieldId.radioSummaryDetail,
+    FilterFieldId.checkBoxLedgerWise,
+    FilterFieldId.checkBoxDueOnly,
+  ],
+  'JournalRegister': [
+    FilterFieldId.radioSummaryDetail,
+    FilterFieldId.checkBoxBillWise,
+    FilterFieldId.checkBoxNarration,
+  ],
+  'DebitNoteRegister': [
+    FilterFieldId.radioSummaryDetail,
+    FilterFieldId.checkBoxBillWise,
+    FilterFieldId.checkBoxNarration,
+  ],
+  'CreditNoteRegister': [
+    FilterFieldId.radioSummaryDetail,
+    FilterFieldId.checkBoxBillWise,
+    FilterFieldId.checkBoxNarration,
   ],
 };
 
@@ -249,7 +272,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   late bool _showDueOnly;
   late bool _showAgeWise;
   late bool _showOverdueOnly;
-  
+
   // Track which dropdown is currently open
   String? _openDropdownId;
 
@@ -267,7 +290,9 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _selectedCities = List.from(widget.initialCities ?? []);
     _selectedGroups = List.from(widget.initialGroups ?? []);
     _selectedSubGroups = List.from(widget.initialSubGroups ?? []);
-    _selectedBrokers = List.from(widget.initialBrokers ?? []); // Added brokers initialization
+    _selectedBrokers = List.from(
+      widget.initialBrokers ?? [],
+    ); // Added brokers initialization
     _selectedReportType = widget.initialReportType ?? 'summary';
     _showBillWise = widget.initialShowBillWise ?? false;
     _showNarration = widget.initialShowNarration ?? false;
@@ -611,29 +636,30 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
         return Wrap(
-          children: ledgerTypeRadioOptions.map((option) {
-            return SizedBox(
-              width: MediaQuery.of(context).size.width / 2.5,
-              child: RadioListTile<String>(
-                title: Text(
-                  option['label'],
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                ),
-                value: option['value'],
-                groupValue: _selectedLedgerType,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLedgerType = value;
-                  });
-                  // CRITICAL: Call the callback to notify parent
-                  widget.onLedgerTypeChanged?.call(value);
-                },
-                activeColor: AppColors.primaryColor,
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
-            );
-          }).toList(),
+          children:
+              ledgerTypeRadioOptions.map((option) {
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: RadioListTile<String>(
+                    title: Text(
+                      option['label'],
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                    ),
+                    value: option['value'],
+                    groupValue: _selectedLedgerType,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLedgerType = value;
+                      });
+                      // CRITICAL: Call the callback to notify parent
+                      widget.onLedgerTypeChanged?.call(value);
+                    },
+                    activeColor: AppColors.primaryColor,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                );
+              }).toList(),
         );
 
       case FilterFieldId.state:

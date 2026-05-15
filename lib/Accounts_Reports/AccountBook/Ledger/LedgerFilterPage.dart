@@ -81,6 +81,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
   // Local ledgers list that can be updated dynamically
   List<KeyName> _availableLedgers = [];
   bool _isLoadingLedgers = false;
+  
+  // Filtered cities based on selected states
+  List<KeyName> _filteredCities = [];
 
   // Unique key to force dropdown rebuild
   int _dropdownKey = 0;
@@ -149,6 +152,33 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     }
   }
 
+  // Filter cities based on selected states using the extra field
+  void _filterCitiesByStates() {
+    setState(() {
+      if (_selectedStates.isEmpty) {
+        // If no states selected, show all cities
+        _filteredCities = List.from(widget.cities);
+      } else {
+        // Get selected state keys
+        final selectedStateKeys = _selectedStates.map((state) => state.key.toString()).toSet();
+        
+        // Filter cities that belong to selected states using extra field
+        _filteredCities = widget.cities.where((city) {
+          final cityStateKey = city.extra?['State_Key']?.toString();
+          return cityStateKey != null && selectedStateKeys.contains(cityStateKey);
+        }).toList();
+        
+        print('Selected States: $selectedStateKeys');
+        print('Filtered Cities Count: ${_filteredCities.length}');
+        
+        // Remove selected cities that are no longer in filtered list
+        _selectedCities = _selectedCities
+            .where((selectedCity) => _filteredCities.any((city) => city.key == selectedCity.key))
+            .toList();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -162,6 +192,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     _showBillWise = widget.initialBillWise;
     _showNarration = widget.initialNarration;
     _availableLedgers = List.from(widget.ledgers);
+    
+    // Initialize filtered cities with all cities
+    _filteredCities = List.from(widget.cities);
   }
 
   int get _totalActiveFilters {
@@ -203,6 +236,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       _selectedReportType = 'summary';
       _showBillWise = false;
       _showNarration = false;
+      _filteredCities = List.from(widget.cities);
     });
     _fetchLedgersByType();
     widget.onClear?.call();
@@ -301,7 +335,6 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
                       setState(() {
                         _selectedLedgerType = option['value'];
                       });
-                      // Pass the correct ledCat from the option
                       _fetchLedgersByType();
                     },
                     child: Container(
@@ -365,10 +398,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
                     });
                   },
                   displayName: (keyName) => keyName.name ?? '',
-                  hintText:
-                      _availableLedgers.isEmpty && !_isLoadingLedgers
-                          ? 'No ledgers found'
-                          : 'Select Ledgers',
+                  hintText: _availableLedgers.isEmpty && !_isLoadingLedgers
+                      ? 'No ledgers found'
+                      : 'Select Ledgers',
                   searchHintText: 'Search Ledgers',
                   primaryColor: AppColors.primaryColor,
                 ),
@@ -406,6 +438,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
           onChanged: (items) {
             setState(() {
               _selectedStates = items;
+              _filterCitiesByStates(); // Filter cities when states change
             });
           },
           displayName: (keyName) => keyName.name ?? '',
@@ -422,7 +455,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       title: 'Select Cities',
       child: CommonMultiSelectDropdown<KeyName>(
         config: MultiSelectConfig<KeyName>(
-          items: widget.cities,
+          items: _filteredCities,
           selectedItems: _selectedCities,
           onChanged: (items) {
             setState(() {
@@ -430,7 +463,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
             });
           },
           displayName: (keyName) => keyName.name ?? '',
-          hintText: 'Select Cities',
+          hintText: _filteredCities.isEmpty && _selectedStates.isNotEmpty
+              ? 'No cities found for selected states'
+              : 'Select Cities',
           searchHintText: 'Search Cities',
           primaryColor: AppColors.primaryColor,
         ),

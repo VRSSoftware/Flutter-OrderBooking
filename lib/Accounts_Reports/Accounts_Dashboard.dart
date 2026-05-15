@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:vrs_erp/Accounts_Reports/FinalAccount/Group_Trial_Balance/group_trial_balance.dart';
+import 'package:vrs_erp/Accounts_Reports/JournalRegister/CreditNoteRegister/credit_note_register.dart';
+import 'package:vrs_erp/Accounts_Reports/JournalRegister/DebitNoteRegister/debit_note_register.dart';
+import 'package:vrs_erp/Accounts_Reports/JournalRegister/JournalRegister/journal_register.dart';
 import 'package:vrs_erp/Accounts_Reports/Ledger/Customer_Ac_BillWise/CustomerAcBillwise.dart';
 import 'package:vrs_erp/Accounts_Reports/Ledger/Customer_Ledger/CustomerLedger.dart';
-import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/BalanceSheet/BalanceSheet.dart';
+import 'package:vrs_erp/Accounts_Reports/FinalAccount/BalanceSheet/BalanceSheet.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Bank_Book/bank_book.dart';
 import 'package:vrs_erp/Accounts_Reports/Misc_Report/Broker_Comm_Rcpt_Billwise/Broker_comm_Rcpt_Billwise.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Cash_Book/cash_book.dart';
@@ -11,14 +15,12 @@ import 'package:vrs_erp/Accounts_Reports/AccountBook/Group_Summary/group_summary
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Group_Voucher/group_voucher.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Ledger/ledger.dart';
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Payable/payable.dart';
-import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Profit_Loss/Profit_Loss.dart';
+import 'package:vrs_erp/Accounts_Reports/FinalAccount/Profit_Loss/Profit_Loss.dart';
 import 'package:vrs_erp/Accounts_Reports/OutstandingAnalysis/Receivables/receivables.dart';
-import 'package:vrs_erp/Accounts_Reports/AccountBook/Trial_Balance/trial_balance.dart';
+import 'package:vrs_erp/Accounts_Reports/FinalAccount/Trial_Balance/trial_balance.dart';
 import 'package:vrs_erp/Accounts_Reports/Remainder/OutStanding_Remainder/OustandingRemainder.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/Accounts_Reports/AccountBook/Day_Book/day_book.dart';
-
-
 
 class AccountDashboard extends StatefulWidget {
   const AccountDashboard({super.key});
@@ -28,7 +30,6 @@ class AccountDashboard extends StatefulWidget {
 }
 
 class _AccountDashboardState extends State<AccountDashboard> {
-  // List to store recently viewed items dynamically
   List<Map<String, dynamic>> recentlyViewedItems = [];
 
   // Search query
@@ -97,12 +98,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
       "category": "Accounts Book",
       "route": "/dayBook",
     },
-    {
-      "title": "Trial Balance",
-      "icon": Icons.balance,
-      "category": "Accounts Book",
-      "route": "/trialBalance",
-    },
+
     // Outstanding Analysis Items
     {
       "title": "Receivable",
@@ -116,17 +112,31 @@ class _AccountDashboardState extends State<AccountDashboard> {
       "category": "Outstanding Analysis",
       "route": "/payable",
     },
+
+    // Final Account
     {
       "title": "Profit Loss",
       "icon": Icons.trending_up,
-      "category": "Outstanding Analysis",
+      "category": "Final Account",
       "route": "/profitLoss",
     },
     {
       "title": "Balance Sheet",
       "icon": Icons.account_balance_wallet,
-      "category": "Outstanding Analysis",
+      "category": "Final Account",
       "route": "/balanceSheet",
+    },
+    {
+      "title": "Trial Balance",
+      "icon": Icons.balance,
+      "category": "Final Account",
+      "route": "/trialBalance",
+    },
+    {
+      "title": "Group Trial Balance",
+      "icon": Icons.balance,
+      "category": "Final Account",
+      "route": "/groupTrialBalance",
     },
     // Misc Report Items
     {
@@ -141,6 +151,26 @@ class _AccountDashboardState extends State<AccountDashboard> {
       "icon": Icons.notifications_active,
       "category": "Remainder",
       "route": "/outstandingRemainder",
+    },
+
+    //Journal Register
+    {
+      "title": "Journal Register",
+      "icon": Icons.menu_book_rounded,
+      "category": "Journal Register",
+      "route": "/journalRegister",
+    },
+    {
+      "title": "Debit Note Register",
+      "icon": Icons.arrow_circle_down_rounded,
+      "category": "Journal Register",
+      "route": "/debitNoteRegister",
+    },
+    {
+      "title": "Credit Note Register",
+      "icon": Icons.arrow_circle_up_rounded,
+      "category": "Journal Register",
+      "route": "/creditNoteRegister",
     },
   ];
 
@@ -190,6 +220,21 @@ class _AccountDashboardState extends State<AccountDashboard> {
         .toList();
   }
 
+  List<Map<String, dynamic>> get filteredFinalAccountItems {
+    if (searchQuery.isEmpty) {
+      return allMenuItems
+          .where((item) => item['category'] == 'Final Account')
+          .toList();
+    }
+    return allMenuItems
+        .where(
+          (item) =>
+              item['category'] == 'Final Account' &&
+              item['title'].toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
   List<Map<String, dynamic>> get filteredMiscReportItems {
     if (searchQuery.isEmpty) {
       return allMenuItems
@@ -220,18 +265,37 @@ class _AccountDashboardState extends State<AccountDashboard> {
         .toList();
   }
 
+  List<Map<String, dynamic>> get filteredJournalRegisterItems {
+    if (searchQuery.isEmpty) {
+      return allMenuItems
+          .where((item) => item['category'] == 'Journal Register')
+          .toList();
+    }
+    return allMenuItems
+        .where(
+          (item) =>
+              item['category'] == 'Journal Register' &&
+              item['title'].toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
   // Check if any section has items to show
   bool get hasAccountsBookItems => filteredAccountsBookItems.isNotEmpty;
   bool get hasOutstandingItems => filteredOutstandingItems.isNotEmpty;
   bool get hasLedgerItems => filteredLedgerItems.isNotEmpty;
+  bool get hasFinalAccountItems => filteredFinalAccountItems.isNotEmpty;
   bool get hasMiscReportItems => filteredMiscReportItems.isNotEmpty;
   bool get hasRemainderItems => filteredRemainderItems.isNotEmpty;
-  bool get hasSearchResults => 
-      hasAccountsBookItems || 
-      hasOutstandingItems || 
-      hasLedgerItems || 
-      hasMiscReportItems || 
-      hasRemainderItems;
+  bool get hasJournalRegisterItems => filteredJournalRegisterItems.isNotEmpty;
+  bool get hasSearchResults =>
+      hasAccountsBookItems ||
+      hasOutstandingItems ||
+      hasLedgerItems ||
+      hasFinalAccountItems ||
+      hasMiscReportItems ||
+      hasRemainderItems ||
+      hasJournalRegisterItems;
 
   // Helper method to add item to recently viewed
   void addToRecentlyViewed(String title, IconData icon) {
@@ -281,11 +345,13 @@ class _AccountDashboardState extends State<AccountDashboard> {
           context,
           MaterialPageRoute(builder: (context) => const CustomerLedgerPage()),
         );
-       break;
+        break;
       case '/customerBillwise':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const CustomerAcBillwisePage()),
+          MaterialPageRoute(
+            builder: (context) => const CustomerAcBillwisePage(),
+          ),
         );
         break;
       case '/groupSummary':
@@ -330,24 +396,60 @@ class _AccountDashboardState extends State<AccountDashboard> {
           MaterialPageRoute(builder: (context) => const ProfitLossPage()),
         );
         break;
+
       case '/balanceSheet':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const BalanceSheetPage()),
         );
         break;
+      case '/groupTrialBalance':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const GroupTrialBalancePage(),
+          ),
+        );
+        break;
       case '/brokerCommission':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const BrokerCommissionReceiptPage()),
+          MaterialPageRoute(
+            builder: (context) => const BrokerCommissionReceiptPage(),
+          ),
         );
         break;
       case '/outstandingRemainder':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const OutstandingRemainderPage()),
+          MaterialPageRoute(
+            builder: (context) => const OutstandingRemainderPage(),
+          ),
         );
         break;
+      case '/journalRegister':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JournalRegisterPage()),
+        );
+        break;
+      case '/creditNoteRegister':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CreditNoteRegisterPage(),
+          ),
+        );
+        break;
+      case '/debitNoteRegister':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const DebitNoteRegisterPage(),
+          ),
+        );
+        break;
+
       default:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -601,14 +703,19 @@ class _AccountDashboardState extends State<AccountDashboard> {
                       _buildNoResultsFound(),
 
                     if (hasAccountsBookItems) _buildAccountsBook(),
-                    
+
+                     if (hasJournalRegisterItems) _buildJournalRegisterSection(),
+
+                     if (hasOutstandingItems) _buildOutstandingAnalysis(),
+
+                     if (hasMiscReportItems) _buildMiscReportSection(),
+
+                     if (hasFinalAccountItems) _buildFinalAccountSection(),
+
                     if (hasLedgerItems) _buildLedgerSection(),
-                    
-                    if (hasOutstandingItems) _buildOutstandingAnalysis(),
-                    
-                    if (hasMiscReportItems) _buildMiscReportSection(),
-                    
+
                     if (hasRemainderItems) _buildRemainderSection(),
+
                   ],
                 ),
               ),
@@ -662,7 +769,10 @@ class _AccountDashboardState extends State<AccountDashboard> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)),
+        border: Border(
+          left: BorderSide(color: AppColors.primaryColor, width: 2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,6 +809,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
                   child: Container(
                     width: 70,
                     margin: const EdgeInsets.only(right: 12),
+
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -745,6 +856,14 @@ class _AccountDashboardState extends State<AccountDashboard> {
     );
   }
 
+  // 🔔 Journal Report Section
+  Widget _buildJournalRegisterSection() {
+    return _buildSection(
+      title: "Journal Report",
+      items: filteredJournalRegisterItems,
+    );
+  }
+
   // 📊 Outstanding Analysis
   Widget _buildOutstandingAnalysis() {
     return _buildSection(
@@ -753,29 +872,30 @@ class _AccountDashboardState extends State<AccountDashboard> {
     );
   }
 
+  // 📊 Final Account
+  Widget _buildFinalAccountSection() {
+    return _buildSection(
+      title: "Final Account",
+      items: filteredFinalAccountItems,
+    );
+  }
+
   // 📒 Ledger Section
   Widget _buildLedgerSection() {
-    return _buildSection(
-      title: "Ledger",
-      items: filteredLedgerItems,
-    );
+    return _buildSection(title: "Ledger", items: filteredLedgerItems);
   }
 
   // 📋 Misc Report Section
   Widget _buildMiscReportSection() {
-    return _buildSection(
-      title: "Misc Report",
-      items: filteredMiscReportItems,
-    );
+    return _buildSection(title: "Misc Report", items: filteredMiscReportItems);
   }
 
   // 🔔 Remainder Section
   Widget _buildRemainderSection() {
-    return _buildSection(
-      title: "Remainder",
-      items: filteredRemainderItems,
-    );
+    return _buildSection(title: "Remainder", items: filteredRemainderItems);
   }
+
+  
 
   // 🔹 Reusable Section Widget
   Widget _buildSection({
@@ -783,11 +903,14 @@ class _AccountDashboardState extends State<AccountDashboard> {
     required List<Map<String, dynamic>> items,
   }) {
     return Container(
-      margin: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)),
+        border: Border(
+          left: BorderSide(color: AppColors.primaryColor, width: 2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,7 +923,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           GridView.builder(
             itemCount: items.length,
             shrinkWrap: true,

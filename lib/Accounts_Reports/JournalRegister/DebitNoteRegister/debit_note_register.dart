@@ -1,48 +1,41 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_filter_page.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
-import 'package:vrs_erp/models/keyName.dart';
 import 'package:vrs_erp/services/AccountReport_Services.dart';
 
-class GroupVoucherPage extends StatefulWidget {
-  const GroupVoucherPage({super.key});
+class DebitNoteRegisterPage extends StatefulWidget {
+  const DebitNoteRegisterPage({super.key});
 
   @override
-  State<GroupVoucherPage> createState() => _GroupVoucherPageState();
+  State<DebitNoteRegisterPage> createState() => _DebitNoteRegisterPageState();
 }
 
-class _GroupVoucherPageState extends State<GroupVoucherPage> {
+class _DebitNoteRegisterPageState extends State<DebitNoteRegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Date Controllers
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
-  // Selected Filters - MULTI SELECT
-  List<KeyName> selectedGroups = [];
-  List<KeyName> selectedSubGroups = [];
-  String selectedReportType = 'summary';
-
-  // Lists
-  List<KeyName> groups = [];
-  List<KeyName> subGroups = [];
+  // Selected Filters
+  String selectedReportType = 'summary'; // 'summary' or 'detail'
+  bool isBillWise = false;
+  bool isNarration = false;
 
   // Loading
-  bool _isLoading = false;
   bool _isLoadingReport = false;
 
   String? _dateRangeError;
 
   int get _filterCount {
     int count = 0;
-    if (selectedGroups.isNotEmpty) count++;
-    if (selectedSubGroups.isNotEmpty) count++;
     if (selectedReportType != 'summary') count++;
+    if (isBillWise) count++;
+    if (isNarration) count++;
     return count;
   }
 
@@ -52,8 +45,6 @@ class _GroupVoucherPageState extends State<GroupVoucherPage> {
   void initState() {
     super.initState();
     _initializeDates();
-    fetchGroups();
-    fetchSubGroups();
   }
 
   @override
@@ -65,10 +56,10 @@ class _GroupVoucherPageState extends State<GroupVoucherPage> {
 
   void _initializeDates() {
     final now = DateTime.now();
-     int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
-   int fullYear = 2000 + fyYear;
-   DateTime financialYearStart = DateTime(fullYear, 4, 1);
-   fromDateController.text = DateFormat( 'dd/MM/yyyy',).format(financialYearStart);
+    int fyYear = int.tryParse(UserSession.userFcYr ?? '') ?? now.year % 100;
+    int fullYear = 2000 + fyYear;
+    DateTime financialYearStart = DateTime(fullYear, 4, 1);
+    fromDateController.text = DateFormat('dd/MM/yyyy').format(financialYearStart);
     toDateController.text = DateFormat('dd/MM/yyyy').format(now);
     _dateRangeError = null;
   }
@@ -78,9 +69,7 @@ class _GroupVoucherPageState extends State<GroupVoucherPage> {
       if (fromDateController.text.isNotEmpty &&
           toDateController.text.isNotEmpty) {
         try {
-          final fromDate = DateFormat(
-            'dd/MM/yyyy',
-          ).parse(fromDateController.text);
+          final fromDate = DateFormat('dd/MM/yyyy').parse(fromDateController.text);
           final toDate = DateFormat('dd/MM/yyyy').parse(toDateController.text);
 
           if (toDate.isBefore(fromDate)) {
@@ -240,27 +229,6 @@ class _GroupVoucherPageState extends State<GroupVoucherPage> {
     return null;
   }
 
-  Future<void> fetchGroups() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await AccountReportService.fetchAccountGroups();
-      setState(() => groups = data);
-    } catch (e) {
-      _showError(e);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> fetchSubGroups() async {
-    try {
-      final data = await AccountReportService.fetchAccountSubGroups();
-      setState(() => subGroups = data);
-    } catch (e) {
-      _showError(e);
-    }
-  }
-
   void _showError(e) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -268,115 +236,128 @@ class _GroupVoucherPageState extends State<GroupVoucherPage> {
   }
 
   String _getSubtitle() {
-    if (selectedSubGroups.isNotEmpty) {
-      return '${selectedSubGroups.length} Sub Group(s)';
-    } else if (selectedGroups.isNotEmpty) {
-      return '${selectedGroups.length} Group(s)';
-    } else {
-      return 'All Groups';
+    List<String> parts = [];
+    
+    if (selectedReportType == 'detail') {
+      parts.add('Detailed');
     }
+    if (isBillWise) {
+      parts.add('Bill Wise');
+    }
+    if (isNarration) {
+      parts.add('Narration');
+    }
+    
+    if (parts.isEmpty) {
+      return 'Debit Note Register';
+    }
+    return parts.join(' • ');
   }
 
   Future<void> _openPdfDirectly(String pdfPath) async {
-  try {
-    final file = File(pdfPath);
-    if (!await file.exists()) {
-      if (mounted) {
+    try {
+      final file = File(pdfPath);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final result = await OpenFile.open(pdfPath);
+
+      if (!mounted) return;
+
+      if (result.type == ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('PDF file not found'),
+            content: Text('Opening PDF...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else if (result.type == ResultType.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No PDF viewer app found on your device'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      debugPrint('Error opening PDF: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open PDF: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _viewReport() async {
+    setState(() {
+      _dateRangeError = null;
+    });
+
+    if (!_formKey.currentState!.validate()) return;
+
+    final dateError = _validateFormDateRange();
+    if (dateError != null) {
+      setState(() {
+        _dateRangeError = dateError;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(dateError), backgroundColor: Colors.red),
+      );
       return;
     }
 
-    final result = await OpenFile.open(pdfPath);
+    setState(() => _isLoadingReport = true);
 
-    if (!mounted) return;
+    try {
+      debugPrint('From Date: ${fromDateController.text}');
+      debugPrint('To Date: ${toDateController.text}');
+      debugPrint('Report Type: $selectedReportType');
+      debugPrint('Bill Wise: $isBillWise');
+      debugPrint('Narration: $isNarration');
 
-    if (result.type == ResultType.done) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Opening PDF...'),
-          duration: Duration(seconds: 1),
-        ),
+      final pdfBytes = await AccountReportService.generateDebitNoteRegisterReport(
+        fromDate: fromDateController.text,
+        toDate: toDateController.text,
+        reportType: selectedReportType,
+        isBillWise: isBillWise,
+        isNarration: isNarration,
       );
-    } else if (result.type == ResultType.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No PDF viewer app found on your device'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  } catch (e) {
-    debugPrint('Error opening PDF: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to open PDF: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      if (pdfBytes != null && mounted) {
+        final path = await AccountReportService.savePdfToTemp(
+          pdfBytes,
+          'DebitNoteRegister_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+
+        // Directly open PDF without navigation
+        await _openPdfDirectly(path);
+      }
+    } catch (e) {
+      _showError(e);
+    } finally {
+      setState(() => _isLoadingReport = false);
     }
   }
-}
-Future<void> _viewReport() async {
-  setState(() {
-    _dateRangeError = null;
-  });
 
-  if (!_formKey.currentState!.validate()) return;
-
-  final dateError = _validateFormDateRange();
-  if (dateError != null) {
-    setState(() {
-      _dateRangeError = dateError;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(dateError), backgroundColor: Colors.red),
-    );
-    return;
-  }
-
-  setState(() => _isLoadingReport = true);
-
-  try {
-    final groupKeys = selectedGroups.map((e) => e.key).toList();
-    final subGroupKeys = selectedSubGroups.map((e) => e.key).toList();
-
-    final pdfBytes = await AccountReportService.generateGroupVoucherReport(
-      fromDate: fromDateController.text,
-      toDate: toDateController.text,
-      groupKeys: groupKeys,
-      subGroupKeys: subGroupKeys,
-      reportType: selectedReportType,
-    );
-
-    if (pdfBytes != null && mounted) {
-      final path = await AccountReportService.savePdfToTemp(
-        pdfBytes,
-        'GroupVoucher_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-
-      // Directly open PDF without navigation
-      await _openPdfDirectly(path);
-    }
-  } catch (e) {
-    _showError(e);
-  } finally {
-    setState(() => _isLoadingReport = false);
-  }
-}
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
       appBar: CommonAppBar(
-        title: 'Group Voucher',
+        title: 'Debit Note Register',
         showBackButton: true,
         actions: [
           Stack(
@@ -387,33 +368,24 @@ Future<void> _viewReport() async {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (_) => CommonFilterPage(
-                            title: 'Group Voucher Filters',
-                            reportType: 'GroupVoucher',
-                            groups: groups,
-                            subGroups: subGroups,
-                            initialGroups: selectedGroups,
-                            initialSubGroups: selectedSubGroups,
-                            initialReportType: selectedReportType,
-                            onGroupsChanged:
-                                (v) => setState(() => selectedGroups = v ?? []),
-                            onSubGroupsChanged:
-                                (v) =>
-                                    setState(() => selectedSubGroups = v ?? []),
-                            onReportTypeChanged:
-                                (v) => setState(
-                                  () => selectedReportType = v ?? 'summary',
-                                ),
-                            onApply: () {},
-                            onClear: () {
-                              setState(() {
-                                selectedGroups = [];
-                                selectedSubGroups = [];
-                                selectedReportType = 'summary';
-                              });
-                            },
-                          ),
+                      builder: (_) => CommonFilterPage(
+                        title: 'Debit Note Register Filters',
+                        reportType: 'DebitNoteRegister',
+                        initialReportType: selectedReportType,
+                        initialShowBillWise: isBillWise,
+                        initialShowNarration: isNarration,
+                        onReportTypeChanged: (v) => setState(() => selectedReportType = v ?? 'summary'),
+                        onBillWiseChanged: (v) => setState(() => isBillWise = v ?? false),
+                        onNarrationChanged: (v) => setState(() => isNarration = v ?? false),
+                        onApply: () {},
+                        onClear: () {
+                          setState(() {
+                            selectedReportType = 'summary';
+                            isBillWise = false;
+                            isNarration = false;
+                          });
+                        },
+                      ),
                     ),
                   );
                 },
@@ -487,10 +459,9 @@ Future<void> _viewReport() async {
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        _dateRangeError != null
-                                            ? Colors.red
-                                            : AppColors.slateBorder,
+                                    color: _dateRangeError != null
+                                        ? Colors.red
+                                        : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -514,9 +485,7 @@ Future<void> _viewReport() async {
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap:
-                                            () =>
-                                                _selectDate(fromDateController),
+                                        onTap: () => _selectDate(fromDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,
@@ -575,10 +544,9 @@ Future<void> _viewReport() async {
                               Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        _dateRangeError != null
-                                            ? Colors.red
-                                            : AppColors.slateBorder,
+                                    color: _dateRangeError != null
+                                        ? Colors.red
+                                        : AppColors.slateBorder,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -602,8 +570,7 @@ Future<void> _viewReport() async {
                                     ),
                                     Expanded(
                                       child: InkWell(
-                                        onTap:
-                                            () => _selectDate(toDateController),
+                                        onTap: () => _selectDate(toDateController),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 10,
@@ -685,8 +652,6 @@ Future<void> _viewReport() async {
                 ),
               ),
 
-              const SizedBox(height: 12),
-
               // View Report Button
               CommonButton(
                 text: 'View Report',
@@ -697,6 +662,44 @@ Future<void> _viewReport() async {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required VoidCallback onDeleted,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryColor.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onDeleted,
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ],
       ),
     );
   }
