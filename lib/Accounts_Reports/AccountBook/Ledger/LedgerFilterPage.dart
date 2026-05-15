@@ -84,6 +84,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
   
   // Filtered cities based on selected states
   List<KeyName> _filteredCities = [];
+  
+  // Filtered sub-groups based on selected groups
+  List<KeyName> _filteredSubGroups = [];
 
   // Unique key to force dropdown rebuild
   int _dropdownKey = 0;
@@ -179,6 +182,33 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     });
   }
 
+  // Filter sub-groups based on selected groups using the extra field (AccGrp_Id)
+  void _filterSubGroupsByGroups() {
+    setState(() {
+      if (_selectedGroups.isEmpty) {
+        // If no groups selected, show all sub-groups
+        _filteredSubGroups = List.from(widget.subGroups);
+      } else {
+        // Get selected group IDs (convert to string for comparison)
+        final selectedGroupIds = _selectedGroups.map((group) => group.key.toString()).toSet();
+        
+        // Filter sub-groups that belong to selected groups using extra field
+        _filteredSubGroups = widget.subGroups.where((subGroup) {
+          final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
+          return subGroupGroupId != null && selectedGroupIds.contains(subGroupGroupId);
+        }).toList();
+        
+        print('Selected Groups: $selectedGroupIds');
+        print('Filtered Sub-Groups Count: ${_filteredSubGroups.length}');
+        
+        // Remove selected sub-groups that are no longer in filtered list
+        _selectedSubGroups = _selectedSubGroups
+            .where((selectedSubGroup) => _filteredSubGroups.any((subGroup) => subGroup.key == selectedSubGroup.key))
+            .toList();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -195,6 +225,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     
     // Initialize filtered cities with all cities
     _filteredCities = List.from(widget.cities);
+    
+    // Initialize filtered sub-groups with all sub-groups
+    _filteredSubGroups = List.from(widget.subGroups);
   }
 
   int get _totalActiveFilters {
@@ -237,6 +270,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       _showBillWise = false;
       _showNarration = false;
       _filteredCities = List.from(widget.cities);
+      _filteredSubGroups = List.from(widget.subGroups);
     });
     _fetchLedgersByType();
     widget.onClear?.call();
@@ -483,6 +517,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
           onChanged: (items) {
             setState(() {
               _selectedGroups = items;
+              _filterSubGroupsByGroups(); // Filter sub-groups when groups change
             });
           },
           displayName: (keyName) => keyName.name ?? '',
@@ -499,7 +534,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       title: 'Select Sub Groups',
       child: CommonMultiSelectDropdown<KeyName>(
         config: MultiSelectConfig<KeyName>(
-          items: widget.subGroups,
+          items: _filteredSubGroups,
           selectedItems: _selectedSubGroups,
           onChanged: (items) {
             setState(() {
@@ -507,7 +542,9 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
             });
           },
           displayName: (keyName) => keyName.name ?? '',
-          hintText: 'Select Sub Groups',
+          hintText: _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
+              ? 'No sub-groups found for selected groups'
+              : 'Select Sub Groups',
           searchHintText: 'Search Sub Groups',
           primaryColor: AppColors.primaryColor,
         ),

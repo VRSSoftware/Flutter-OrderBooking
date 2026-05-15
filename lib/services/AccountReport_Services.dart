@@ -268,27 +268,30 @@ class AccountReportService {
       throw Exception('Error fetching groups: $e');
     }
   }
+static Future<List<KeyName>> fetchAccountSubGroups() async {
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccLGrp'),
+    );
 
-  static Future<List<KeyName>> fetchAccountSubGroups() async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConstants.BASE_URL}/accounts/getAccLGrp'),
-      );
-
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-
-        return data.map((item) {
-          return KeyName(key: item['AccLGrp_Key'], name: item['AccLGrp_Name']);
-        }).toList();
-      } else {
-        throw Exception('Failed to load sub groups');
-      }
-    } catch (e) {
-      throw Exception('Error fetching sub groups: $e');
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((item) {
+        return KeyName(
+          key: item['AccLGrp_Key'].toString(),
+          name: item['AccLGrp_Name'],
+          extra: {
+            'AccGrp_Id': item['AccGrp_Id']?.toString() ?? '',
+          },
+        );
+      }).toList();
+    } else {
+      throw Exception('Failed to load sub groups');
     }
+  } catch (e) {
+    throw Exception('Error fetching sub groups: $e');
   }
-
+}
   static Future<Uint8List?> generateGroupSummaryReport({
     required String fromDate,
     required String toDate,

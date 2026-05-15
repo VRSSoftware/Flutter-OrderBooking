@@ -12,7 +12,7 @@ enum FilterFieldId {
   group,
   subGroup,
   ledger,
-  broker, // Added broker field
+  broker,
   radioSummaryDetail,
   checkBoxBillWise,
   checkBoxNarration,
@@ -80,7 +80,7 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
   'ProfitLoss': [FilterFieldId.checkBoxLedgerWise],
   'BalanceSheet': [FilterFieldId.checkBoxLedgerWise],
   'BrokerCommReceipt': [
-    FilterFieldId.broker, // Changed from state, city, ledger to broker
+    FilterFieldId.broker,
     FilterFieldId.state,
     FilterFieldId.city,
     FilterFieldId.ledger,
@@ -148,7 +148,7 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? cities;
   final List<KeyName>? groups;
   final List<KeyName>? subGroups;
-  final List<KeyName>? brokers; // Added brokers data
+  final List<KeyName>? brokers;
 
   // Initial selected values
   final String? initialLedgerType;
@@ -173,7 +173,7 @@ class CommonFilterPage extends StatefulWidget {
   final List<KeyName>? initialCustomers;
   final List<KeyName>? initialVendors;
   final List<KeyName>? initialBanks;
-  final List<KeyName>? initialBrokers; // Added initial brokers
+  final List<KeyName>? initialBrokers;
 
   // Callbacks
   final Function(String?)? onLedgerTypeChanged;
@@ -185,7 +185,7 @@ class CommonFilterPage extends StatefulWidget {
   final Function(List<KeyName>?)? onCitiesChanged;
   final Function(List<KeyName>?)? onGroupsChanged;
   final Function(List<KeyName>?)? onSubGroupsChanged;
-  final Function(List<KeyName>?)? onBrokersChanged; // Added brokers callback
+  final Function(List<KeyName>?)? onBrokersChanged;
   final Function(String?)? onReportTypeChanged;
   final Function(bool?)? onBillWiseChanged;
   final Function(bool?)? onNarrationChanged;
@@ -208,7 +208,7 @@ class CommonFilterPage extends StatefulWidget {
     this.cities,
     this.groups,
     this.subGroups,
-    this.brokers, // Added brokers
+    this.brokers,
     this.initialLedgerType,
     this.initialCustomer,
     this.initialVendor,
@@ -229,7 +229,7 @@ class CommonFilterPage extends StatefulWidget {
     this.initialCustomers,
     this.initialVendors,
     this.initialBanks,
-    this.initialBrokers, // Added initial brokers
+    this.initialBrokers,
     this.onLedgerTypeChanged,
     this.onCustomersChanged,
     this.onVendorsChanged,
@@ -239,7 +239,7 @@ class CommonFilterPage extends StatefulWidget {
     this.onCitiesChanged,
     this.onGroupsChanged,
     this.onSubGroupsChanged,
-    this.onBrokersChanged, // Added brokers callback
+    this.onBrokersChanged,
     this.onReportTypeChanged,
     this.onBillWiseChanged,
     this.onNarrationChanged,
@@ -264,7 +264,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   late List<KeyName> _selectedCities;
   late List<KeyName> _selectedGroups;
   late List<KeyName> _selectedSubGroups;
-  late List<KeyName> _selectedBrokers; // Added brokers state
+  late List<KeyName> _selectedBrokers;
   late String? _selectedReportType;
   late bool _showBillWise;
   late bool _showNarration;
@@ -272,6 +272,12 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   late bool _showDueOnly;
   late bool _showAgeWise;
   late bool _showOverdueOnly;
+
+  // Filtered cities based on selected states
+  List<KeyName> _filteredCities = [];
+  
+  // Filtered sub-groups based on selected groups
+  List<KeyName> _filteredSubGroups = [];
 
   // Track which dropdown is currently open
   String? _openDropdownId;
@@ -290,9 +296,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _selectedCities = List.from(widget.initialCities ?? []);
     _selectedGroups = List.from(widget.initialGroups ?? []);
     _selectedSubGroups = List.from(widget.initialSubGroups ?? []);
-    _selectedBrokers = List.from(
-      widget.initialBrokers ?? [],
-    ); // Added brokers initialization
+    _selectedBrokers = List.from(widget.initialBrokers ?? []);
     _selectedReportType = widget.initialReportType ?? 'summary';
     _showBillWise = widget.initialShowBillWise ?? false;
     _showNarration = widget.initialShowNarration ?? false;
@@ -300,6 +304,64 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _showDueOnly = widget.initialShowDueOnly ?? false;
     _showAgeWise = widget.initialShowAgeWise ?? false;
     _showOverdueOnly = widget.initialShowOverdueOnly ?? false;
+
+    // Initialize filtered cities with all cities
+    _filteredCities = List.from(widget.cities ?? []);
+    
+    // Initialize filtered sub-groups with all sub-groups
+    _filteredSubGroups = List.from(widget.subGroups ?? []);
+  }
+
+  // Filter cities based on selected states using the extra field
+  void _filterCitiesByStates() {
+    setState(() {
+      final allCities = widget.cities ?? [];
+      
+      if (_selectedStates.isEmpty) {
+        // If no states selected, show all cities
+        _filteredCities = List.from(allCities);
+      } else {
+        // Get selected state keys
+        final selectedStateKeys = _selectedStates.map((state) => state.key.toString()).toSet();
+        
+        // Filter cities that belong to selected states using extra field
+        _filteredCities = allCities.where((city) {
+          final cityStateKey = city.extra?['State_Key']?.toString();
+          return cityStateKey != null && selectedStateKeys.contains(cityStateKey);
+        }).toList();
+        
+        // Remove selected cities that are no longer in filtered list
+        _selectedCities = _selectedCities
+            .where((selectedCity) => _filteredCities.any((city) => city.key == selectedCity.key))
+            .toList();
+      }
+    });
+  }
+
+  // Filter sub-groups based on selected groups using the extra field (AccGrp_Id)
+  void _filterSubGroupsByGroups() {
+    setState(() {
+      final allSubGroups = widget.subGroups ?? [];
+      
+      if (_selectedGroups.isEmpty) {
+        // If no groups selected, show all sub-groups
+        _filteredSubGroups = List.from(allSubGroups);
+      } else {
+        // Get selected group IDs (convert to string for comparison)
+        final selectedGroupIds = _selectedGroups.map((group) => group.key.toString()).toSet();
+        
+        // Filter sub-groups that belong to selected groups using extra field
+        _filteredSubGroups = allSubGroups.where((subGroup) {
+          final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
+          return subGroupGroupId != null && selectedGroupIds.contains(subGroupGroupId);
+        }).toList();
+        
+        // Remove selected sub-groups that are no longer in filtered list
+        _selectedSubGroups = _selectedSubGroups
+            .where((selectedSubGroup) => _filteredSubGroups.any((subGroup) => subGroup.key == selectedSubGroup.key))
+            .toList();
+      }
+    });
   }
 
   void _closeAllDropdowns() {
@@ -314,7 +376,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         return _selectedLedgerType != 'all';
       case FilterFieldId.ledger:
         return _selectedLedgers.isNotEmpty;
-      case FilterFieldId.broker: // Added broker case
+      case FilterFieldId.broker:
         return _selectedBrokers.isNotEmpty;
       case FilterFieldId.radioSummaryDetail:
         return _selectedReportType != 'summary';
@@ -363,7 +425,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     widget.onCitiesChanged?.call(_selectedCities);
     widget.onGroupsChanged?.call(_selectedGroups);
     widget.onSubGroupsChanged?.call(_selectedSubGroups);
-    widget.onBrokersChanged?.call(_selectedBrokers); // Added brokers callback
+    widget.onBrokersChanged?.call(_selectedBrokers);
     widget.onReportTypeChanged?.call(_selectedReportType);
     widget.onBillWiseChanged?.call(_showBillWise);
     widget.onNarrationChanged?.call(_showNarration);
@@ -386,7 +448,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       _selectedCities = [];
       _selectedGroups = [];
       _selectedSubGroups = [];
-      _selectedBrokers = []; // Added brokers clear
+      _selectedBrokers = [];
       _selectedReportType = 'summary';
       _showBillWise = false;
       _showNarration = false;
@@ -394,6 +456,8 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       _showDueOnly = false;
       _showAgeWise = false;
       _showOverdueOnly = false;
+      _filteredCities = List.from(widget.cities ?? []);
+      _filteredSubGroups = List.from(widget.subGroups ?? []);
     });
 
     widget.onClear?.call();
@@ -542,8 +606,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              hasActiveFilter ? AppColors.primaryColor : Colors.grey.shade200,
+          color: hasActiveFilter ? AppColors.primaryColor : Colors.grey.shade200,
           width: hasActiveFilter ? 1.5 : 1,
         ),
         boxShadow: [
@@ -611,7 +674,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         return 'Select Sub Groups';
       case FilterFieldId.ledger:
         return 'Select Ledgers';
-      case FilterFieldId.broker: // Added broker title
+      case FilterFieldId.broker:
         return 'Select Brokers';
       case FilterFieldId.radioSummaryDetail:
         return 'Report Type';
@@ -636,30 +699,28 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
         return Wrap(
-          children:
-              ledgerTypeRadioOptions.map((option) {
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width / 2.5,
-                  child: RadioListTile<String>(
-                    title: Text(
-                      option['label'],
-                      style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                    ),
-                    value: option['value'],
-                    groupValue: _selectedLedgerType,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedLedgerType = value;
-                      });
-                      // CRITICAL: Call the callback to notify parent
-                      widget.onLedgerTypeChanged?.call(value);
-                    },
-                    activeColor: AppColors.primaryColor,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                );
-              }).toList(),
+          children: ledgerTypeRadioOptions.map((option) {
+            return SizedBox(
+              width: MediaQuery.of(context).size.width / 2.5,
+              child: RadioListTile<String>(
+                title: Text(
+                  option['label'],
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                ),
+                value: option['value'],
+                groupValue: _selectedLedgerType,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLedgerType = value;
+                  });
+                  widget.onLedgerTypeChanged?.call(value);
+                },
+                activeColor: AppColors.primaryColor,
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            );
+          }).toList(),
         );
 
       case FilterFieldId.state:
@@ -670,6 +731,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             onChanged: (items) {
               setState(() {
                 _selectedStates = items;
+                _filterCitiesByStates();
               });
               widget.onStatesChanged?.call(items);
             },
@@ -693,7 +755,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       case FilterFieldId.city:
         return CommonMultiSelectDropdown<KeyName>(
           config: MultiSelectConfig<KeyName>(
-            items: widget.cities ?? [],
+            items: _filteredCities,
             selectedItems: _selectedCities,
             onChanged: (items) {
               setState(() {
@@ -702,7 +764,9 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
               widget.onCitiesChanged?.call(items);
             },
             displayName: (keyName) => keyName.name ?? '',
-            hintText: 'Select Cities',
+            hintText: _filteredCities.isEmpty && _selectedStates.isNotEmpty
+                ? 'No cities found for selected states'
+                : 'Select Cities',
             searchHintText: 'Search Cities',
             primaryColor: AppColors.primaryColor,
           ),
@@ -726,6 +790,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             onChanged: (items) {
               setState(() {
                 _selectedGroups = items;
+                _filterSubGroupsByGroups(); // Filter sub-groups when groups change
               });
               widget.onGroupsChanged?.call(items);
             },
@@ -749,7 +814,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       case FilterFieldId.subGroup:
         return CommonMultiSelectDropdown<KeyName>(
           config: MultiSelectConfig<KeyName>(
-            items: widget.subGroups ?? [],
+            items: _filteredSubGroups,
             selectedItems: _selectedSubGroups,
             onChanged: (items) {
               setState(() {
@@ -758,7 +823,9 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
               widget.onSubGroupsChanged?.call(items);
             },
             displayName: (keyName) => keyName.name ?? '',
-            hintText: 'Select Sub Groups',
+            hintText: _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
+                ? 'No sub-groups found for selected groups'
+                : 'Select Sub Groups',
             searchHintText: 'Search Sub Groups',
             primaryColor: AppColors.primaryColor,
           ),
@@ -802,7 +869,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
           },
         );
 
-      case FilterFieldId.broker: // Added broker dropdown
+      case FilterFieldId.broker:
         return CommonMultiSelectDropdown<KeyName>(
           config: MultiSelectConfig<KeyName>(
             items: widget.brokers ?? [],
