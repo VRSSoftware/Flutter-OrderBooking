@@ -285,6 +285,8 @@ class ProductionService {
     }
   }
 
+
+
   static Future<List<Map<String, dynamic>>> getFabricTypes() async {
     try {
       final response = await http.get(
