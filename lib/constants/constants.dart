@@ -12,6 +12,7 @@ class Constants {
    static const String PURCHASE_INWARD = "PURCHASE_INWARD";
    static const String TRANSACTION_TYPE = "TRANSACTION_TYPE";
    static const String SALES_RETURN = "SALES_RETURN";
+   static const String PURCHASE_ORDER = "PURCHASE_ORDER";
   //  static const String s = "";
   //  static const String s = "";
   //  static const String s = "";

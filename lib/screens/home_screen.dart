@@ -663,6 +663,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     buttons.add(
+      _buildFeatureButton(context, 'Purchase Order', () {
+        Navigator.pushNamed(context, '/purchaseOrder');
+      }, buttonWidth),
+    );
+
+    buttons.add(
       _buildFeatureButton(context, 'Purchase Return', () {
         Navigator.pushNamed(context, '/purchaseReturn');
       }, buttonWidth),

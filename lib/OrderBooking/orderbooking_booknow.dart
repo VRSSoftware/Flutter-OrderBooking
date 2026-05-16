@@ -8,6 +8,7 @@ import 'package:vrs_erp/OrderBooking/booking2/booking2.dart';
 import 'package:vrs_erp/OrderBooking/booking2/booking3.dart';
 import 'package:vrs_erp/OrderBooking/booking2/multipleorderbooking.dart';
 import 'package:vrs_erp/PurchaseInward/purchaseInward.dart';
+import 'package:vrs_erp/PurchaseOrder/purchaseOrder.dart';
 import 'package:vrs_erp/SalesReturn/SalesReturnPage.dart';
 import 'package:vrs_erp/Sales_Invoice/SalesInovice/SaleInvoicePage.dart';
 import 'package:vrs_erp/catalog/dotIndicatorDesign.dart';
@@ -2104,6 +2105,22 @@ class _OrderPageState extends State<OrderPage> {
                     MaterialPageRoute(
                       builder:
                           (context) => SalesReturnPage(
+                            docId: -1,
+                            catalogs:
+                                selectedItems, // Pass the selected catalogs
+                            routeArguments:
+                                currentArgs as Map<String, dynamic>?,
+                          ),
+                    ),
+                  );
+                  return; // Stop further execution
+                }
+                if (widget.editModeType == Constants.PURCHASE_ORDER) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => PurchaseOrderPage(
                             docId: -1,
                             catalogs:
                                 selectedItems, // Pass the selected catalogs
