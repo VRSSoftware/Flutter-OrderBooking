@@ -314,11 +314,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       case 'Sale Bill':
         return IconStyle(Icons.receipt_long, Colors.red[700]!, Colors.red[50]!);
-
-      case 'Packing Register':
-        return IconStyle(Icons.checklist, Colors.cyan[700]!, Colors.cyan[50]!);
-      case 'Sale Bill Register':
-        return IconStyle(Icons.receipt, Colors.teal[700]!, Colors.teal[50]!);
       case 'Stock Report':
         return IconStyle(
           Icons.assessment,
@@ -638,37 +633,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     buttons.add(
       _buildFeatureButton(context, 'Order Register', () {
         Navigator.pushNamed(context, '/registerOrders');
-        // Navigator.pushNamed(
-        //     context,
-        //     '/registerOrders',
-        //     // (Route<dynamic> route) => false,
-        //   );
-      }, buttonWidth),
-    );
-
-    buttons.add(
-      _buildFeatureButton(context, 'Packing', () {
-        Navigator.pushNamed(context, '/packingList');
       }, buttonWidth),
     );
 
     buttons.add(
       _buildFeatureButton(context, 'Sale Bill', () {
-        Navigator.pushNamed(context, '/saleInvoice');
+        Navigator.pushNamed(context, '/saleBillRegister');
       }, buttonWidth),
     );
 
     buttons.add(
-      _buildFeatureButton(context, 'Packing Register', () {
+      _buildFeatureButton(context, 'Packing', () {
         Navigator.pushNamed(context, '/packingRegister');
       }, buttonWidth),
     );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Sale Bill Register', () {
-        Navigator.pushNamed(context, '/saleBillRegister');
-      }, buttonWidth),
-    );
+
 
     buttons.add(
       _buildFeatureButton(context, 'Production', () {
@@ -693,6 +673,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/salesReturn');
       }, buttonWidth),
     );
+    
     // buttons.add(
     //   _buildFeatureButton(context, 'Ask VRS AI', () {
     //     Navigator.pushNamed(context, '/vrsai');
@@ -708,11 +689,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     //   }, buttonWidth),
     // );
 
-    buttons.add(
-      _buildFeatureButton(context, 'Report', () {
-        Navigator.pushNamed(context, '/reportHomeScreen');
-      }, buttonWidth),
-    );
+    // buttons.add(
+    //   _buildFeatureButton(context, 'Report', () {
+    //     Navigator.pushNamed(context, '/reportHomeScreen');
+    //   }, buttonWidth),
+    // );
 
     buttons.add(
       _buildFeatureButton(context, 'Accounts', () {

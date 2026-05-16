@@ -1,8 +1,7 @@
+
 import 'dart:convert';
 import 'dart:io';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,34 +10,26 @@ import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:vrs_erp/models/brand.dart';
-import 'package:vrs_erp/models/catalog.dart';
-import 'package:vrs_erp/models/category.dart';
-import 'package:vrs_erp/models/item.dart';
+import 'package:vrs_erp/Sales_Invoice/SaleBillReportViewPage.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInovice/SaleInvoicePage.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInvoiceHome.dart';
+import 'package:vrs_erp/Sales_Invoice/SalesInvoiceWithPO/SalesInvoiceWithPO.dart';
 import 'package:vrs_erp/models/keyName.dart';
 import 'package:vrs_erp/models/registerModel.dart';
-import 'package:vrs_erp/models/shade.dart';
-import 'package:vrs_erp/models/size.dart';
-import 'package:vrs_erp/models/stockReportModel.dart';
-import 'package:vrs_erp/models/style.dart';
-import 'package:vrs_erp/packing/PackingOrderReportViewPage.dart';
-import 'package:vrs_erp/packing/packing_order_withoutSO.dart';
 import 'package:vrs_erp/register/registerFilteration.dart';
 import 'package:vrs_erp/screens/drawer_screen.dart';
-import 'package:vrs_erp/packing/packinglIst_AgainstSO.dart';
 import 'package:vrs_erp/services/app_services.dart';
 import 'package:vrs_erp/viewOrder/Pdf_viewer_screen.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_barcode2.dart';
 import 'package:vrs_erp/viewOrder/editViewOrder/edit_order_screen.dart';
 import '../constants/app_constants.dart';
-import '../models/consignee.dart';
 
-class PackingPage extends StatefulWidget {
+class SaleBillRegisterPage extends StatefulWidget {
   @override
-  _PackingPageState createState() => _PackingPageState();
+  _SaleBillRegisterPageState createState() => _SaleBillRegisterPageState();
 }
 
-class _PackingPageState extends State<PackingPage>
+class _SaleBillRegisterPageState extends State<SaleBillRegisterPage>
     with SingleTickerProviderStateMixin {
   bool isLoading = false;
   List<RegisterOrder> registerOrderList = [];
@@ -122,40 +113,47 @@ class _PackingPageState extends State<PackingPage>
     super.dispose();
   }
 
-  Future<void> _loadDropdownData() async {
+Future<void> _loadDropdownData() async {
+  setState(() {
+    isLoadingLedgers = true;
+    isLoadingSalesperson = true;
+  });
+
+  try {
+    final fetchedLedgersResponse = await ApiService.fetchLedgers(
+      ledCat: 'w',
+      coBrId: UserSession.coBrId ?? '',
+    );
+    final fetchedSalespersonResponse = await ApiService.fetchLedgers(
+      ledCat: 's',
+      coBrId: UserSession.coBrId ?? '',
+    );
+
     setState(() {
-      isLoadingLedgers = true;
-      isLoadingSalesperson = true;
+      // Extract the result list and convert each map to KeyName
+      final ledgersList = fetchedLedgersResponse['result'] as List? ?? [];
+      ledgerList = ledgersList
+          .map((item) => KeyName.fromJson(item as Map<String, dynamic>))
+          .toList();
+      
+      final salespersonListData = fetchedSalespersonResponse['result'] as List? ?? [];
+      salespersonList = salespersonListData
+          .map((item) => KeyName.fromJson(item as Map<String, dynamic>))
+          .toList();
+      
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
     });
-
-    try {
-      final fetchedLedgersResponse = await ApiService.fetchLedgers(
-        ledCat: 'w',
-        coBrId: UserSession.coBrId ?? '',
-      );
-      final fetchedSalespersonResponse = await ApiService.fetchLedgers(
-        ledCat: 's',
-        coBrId: UserSession.coBrId ?? '',
-      );
-
-      setState(() {
-        ledgerList = List<KeyName>.from(fetchedLedgersResponse['result'] ?? []);
-        salespersonList = List<KeyName>.from(
-          fetchedSalespersonResponse['result'] ?? [],
-        );
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoadingLedgers = false;
-        isLoadingSalesperson = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching dropdown data: $e')),
-      );
-    }
+  } catch (e) {
+    setState(() {
+      isLoadingLedgers = false;
+      isLoadingSalesperson = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching dropdown data: $e')),
+    );
   }
+}
 
   Future<void> fetchOrders({required bool isLoadMore}) async {
     if (!isLoadMore) {
@@ -173,7 +171,7 @@ class _PackingPageState extends State<PackingPage>
     });
 
     try {
-      final orders = await ApiService.fetchPackingRegister(
+      final orders = await ApiService.fetchSaleBillRegister(
         fromDate: fromDateController.text,
         toDate: toDateController.text,
         custKey:
@@ -377,81 +375,6 @@ class _PackingPageState extends State<PackingPage>
     }
   }
 
-  Widget _buildCustomDatePickerField({
-    required String label,
-    required DateTime? date,
-    required VoidCallback onTap,
-    required bool isFromDate,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 48,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 40,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.chevron_left,
-                    color: AppColors.primaryColor,
-                    size: 20,
-                  ),
-                  onPressed: () => _changeCustomDate(isFromDate, -1),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: onTap,
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Text(
-                      date != null
-                          ? '${date.day}/${date.month}/${date.year}'
-                          : 'Select Date',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF334155),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 40,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.chevron_right,
-                    color: AppColors.primaryColor,
-                    size: 20,
-                  ),
-                  onPressed: () => _changeCustomDate(isFromDate, 1),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> _openFilterPage() async {
     await Navigator.push(
       context,
@@ -652,7 +575,7 @@ class _PackingPageState extends State<PackingPage>
         '${AppConstants.Pdf_url}',
         data: {
           "doc_id": registerOrder.orderId,
-          "rptName": "Packing",
+          "rptName": "SaleBillGST",
           "dbName": UserSession.dbName,
           "dbUser": UserSession.dbUser,
           "dbPassword": UserSession.dbPassword,
@@ -666,7 +589,7 @@ class _PackingPageState extends State<PackingPage>
         fileBytes: response.data,
         mobileNo: number,
         fileType: 'pdf',
-        caption: 'Packing Slip',
+        caption: 'Sale Bill',
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -686,48 +609,147 @@ class _PackingPageState extends State<PackingPage>
     }
   }
 
-  Future<void> _updatePacking(RegisterOrder registerOrder) async {
-    Widget targetScreen;
+  Future<void> _downloadPDF(RegisterOrder registerOrder) async {
+    try {
+      if (Platform.isAndroid) {
+        var status = await Permission.storage.status;
+        if (!status.isGranted) {
+          status = await Permission.storage.request();
+          if (!status.isGranted) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Storage permission denied')),
+              );
+            }
+            return;
+          }
+        }
+      }
 
-    // Check packType to decide which screen to navigate to
-    if (registerOrder.packType == "1") {
-      // Against Sales Order
-      targetScreen = PackingListAgainstSO(
-        orderId: registerOrder.orderId,
-        orderData: {
-          'docNo': registerOrder.orderNo,
-          'partyName': registerOrder.partyName,
-          'itemName': registerOrder.itemName,
-          'quantity': registerOrder.quantity,
-          'amount': registerOrder.amount,
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => AlertDialog(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: Colors.blue),
+                  const SizedBox(width: 16),
+                  const Text('Downloading...'),
+                ],
+              ),
+            ),
+      );
+
+      final dio = Dio();
+      final response = await dio.post(
+        '${AppConstants.Pdf_url}',
+        data: {
+          "doc_id": registerOrder.orderId,
+          "rptName": "SaleBillGST",
+          "dbName": UserSession.dbName,
+          "dbUser": UserSession.dbUser,
+          "dbPassword": UserSession.dbPassword,
+          "dbServer": UserSession.dbSourceForRpt,
+          "rptPath": UserSession.rptPath,
         },
+        options: Options(responseType: ResponseType.bytes),
       );
-    } else {
-      // Without Sales Order (packType == "0" or any other value)
-      targetScreen = PackingListWithoutSOScreen(
-        docId: int.parse(registerOrder.orderId),
-      );
-    }
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => targetScreen),
-    );
+      if (response.statusCode == 200) {
+        Directory? directory;
+        String filePath;
+        if (Platform.isAndroid) {
+          directory = Directory('/storage/emulated/0/Download');
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          filePath = '${directory.path}/SaleBill_${registerOrder.orderNo}.pdf';
+        } else if (Platform.isIOS) {
+          directory = await getApplicationDocumentsDirectory();
+          filePath = '${directory.path}/SaleBill_${registerOrder.orderNo}.pdf';
+        } else {
+          throw Exception('Unsupported platform');
+        }
 
-    // Force refresh when returning from update screen
-    if (result == true || result == null) {
-      // Reset pagination state
-      setState(() {
-        pageNo = 1;
-        registerOrderList.clear();
-        hasMoreData = true;
-      });
-      // Fetch fresh data
-      await fetchOrders(isLoadMore: false);
+        final file = File(filePath);
+        await file.writeAsBytes(response.data, flush: true);
+
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('PDF downloaded to $filePath'),
+              action: SnackBarAction(
+                label: 'Open',
+                textColor: Colors.blue,
+                onPressed: () async {
+                  final result = await OpenFile.open(filePath);
+                  if (result.type != ResultType.done && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to open PDF: ${result.message}'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load PDF: ${response.statusCode}'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Download failed: $e')));
+      }
     }
   }
+Future<void> _updateSaleBill(RegisterOrder registerOrder) async {
+  Widget targetScreen;
 
-  Future<void> _deletePacking(RegisterOrder registerOrder) async {
+  final hasPackingDocs =
+      registerOrder.packingDocNo.isNotEmpty &&
+      registerOrder.packingDocNo != 'null';
+
+  if (hasPackingDocs) {
+    targetScreen = SaleInvoiceWithPO(
+      invoiceId: registerOrder.orderId,
+     
+    );
+  } else {
+    targetScreen = SaleInvoicePage(
+      docId: int.parse(registerOrder.orderId),
+    );
+  }
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => targetScreen),
+  );
+
+  if (result == true || result == null) {
+    setState(() {
+      pageNo = 1;
+      registerOrderList.clear();
+      hasMoreData = true;
+    });
+    await fetchOrders(isLoadMore: false);
+  }
+}
+  Future<void> _deleteSaleBill(RegisterOrder registerOrder) async {
     // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
@@ -745,7 +767,7 @@ class _PackingPageState extends State<PackingPage>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Delete Packing',
+                  'Delete Sale Bill',
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -754,7 +776,7 @@ class _PackingPageState extends State<PackingPage>
               ],
             ),
             content: Text(
-              'Are you sure you want to delete packing order ${registerOrder.orderNo}?',
+              'Are you sure you want to delete sale bill ${registerOrder.orderNo}?',
               style: GoogleFonts.poppins(fontSize: 14),
             ),
             actions: [
@@ -812,7 +834,7 @@ class _PackingPageState extends State<PackingPage>
     );
 
     try {
-      final response = await ApiService.deletePacking(
+      final response = await ApiService.deleteSaleBill(
         docId: registerOrder.orderId,
         coBrId: UserSession.coBrId ?? '',
       );
@@ -825,7 +847,7 @@ class _PackingPageState extends State<PackingPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Packing order ${registerOrder.orderNo} deleted successfully',
+              'Sale bill ${registerOrder.orderNo} deleted successfully',
             ),
             backgroundColor: Colors.green,
           ),
@@ -841,7 +863,7 @@ class _PackingPageState extends State<PackingPage>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Failed to delete packing'),
+            content: Text(response['message'] ?? 'Failed to delete sale bill'),
             backgroundColor: Colors.red,
           ),
         );
@@ -852,7 +874,7 @@ class _PackingPageState extends State<PackingPage>
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error deleting packing: $e'),
+          content: Text('Error deleting sale bill: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -868,12 +890,12 @@ class _PackingPageState extends State<PackingPage>
         _showWhatsAppDialog(registerOrder);
         break;
 
-      case 'reportView': // CHANGED FROM 'download' TO 'reportView'
+      case 'reportView':
         Navigator.push(
           context,
           MaterialPageRoute(
             builder:
-                (context) => PackingOrderReportViewPage(
+                (context) => SaleBillReportViewPage(
                   orderId: registerOrder.orderId,
                   orderNo: registerOrder.orderNo,
                   defaultWhatsAppMobileNo: registerOrder.whatsAppMobileNo,
@@ -881,6 +903,7 @@ class _PackingPageState extends State<PackingPage>
                 ),
           ),
         );
+        break;
 
       case 'view':
         Navigator.push(
@@ -888,7 +911,7 @@ class _PackingPageState extends State<PackingPage>
           MaterialPageRoute(
             builder:
                 (context) => PdfViewerScreen(
-                  rptName: 'Packing',
+                  rptName: 'SaleBillGST',
                   orderNo: registerOrder.orderId,
                   whatsappNo: registerOrder.whatsAppMobileNo,
                   partyName: registerOrder.partyName,
@@ -898,17 +921,23 @@ class _PackingPageState extends State<PackingPage>
         );
         break;
 
-      case 'updatePacking':
-        await _updatePacking(registerOrder);
+      case 'updateSaleBill':
+        await _updateSaleBill(
+          registerOrder,
+        ); // This now uses packingDocNo check
         break;
 
       case 'delete':
-        await _deletePacking(registerOrder);
+        await _deleteSaleBill(registerOrder);
         break;
     }
   }
 
   Widget buildOrderItem(RegisterOrder registerOrder) {
+    final hasPackingDocs =
+        registerOrder.packingDocNo.isNotEmpty &&
+        registerOrder.packingDocNo != 'null';
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -977,7 +1006,7 @@ class _PackingPageState extends State<PackingPage>
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
-                                  Icons.inventory,
+                                  Icons.receipt_long,
                                   color: AppColors.primaryColor,
                                   size: 20,
                                 ),
@@ -1044,13 +1073,13 @@ class _PackingPageState extends State<PackingPage>
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Icon(
-                                                Icons.local_shipping,
+                                                Icons.location_on,
                                                 color: Colors.blue,
                                                 size: 12,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                registerOrder.deliveryType,
+                                                registerOrder.city,
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w500,
@@ -1060,44 +1089,44 @@ class _PackingPageState extends State<PackingPage>
                                             ],
                                           ),
                                         ),
-                                        if (registerOrder.packType == "1")
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 4,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple.withOpacity(
+                                              0.1,
                                             ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.pink.withOpacity(
-                                                0.1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                              border: Border.all(
-                                                color: Colors.pink.withOpacity(
-                                                  0.2,
-                                                ),
-                                              ),
+                                            borderRadius: BorderRadius.circular(
+                                              30,
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.inventory,
-                                                  color: Colors.pink,
-                                                  size: 12,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  "Against SO",
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.pink,
-                                                  ),
-                                                ),
-                                              ],
+                                            border: Border.all(
+                                              color: Colors.purple.withOpacity(
+                                                0.2,
+                                              ),
                                             ),
                                           ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.local_shipping,
+                                                color: Colors.purple,
+                                                size: 12,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                registerOrder.deliveryType,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.purple,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -1167,20 +1196,20 @@ class _PackingPageState extends State<PackingPage>
                                   child: Row(
                                     children: [
                                       Icon(
-                                        Icons.visibility,
+                                        Icons.picture_as_pdf,
                                         color: AppColors.primaryColor,
                                         size: 20,
                                       ),
                                       SizedBox(width: 12),
                                       Text(
-                                        'View',
+                                        'View PDF',
                                         style: TextStyle(fontSize: 14),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const PopupMenuItem<String>(
-                                  value: 'updatePacking',
+                                  value: 'updateSaleBill',
                                   child: Row(
                                     children: [
                                       Icon(
@@ -1190,7 +1219,7 @@ class _PackingPageState extends State<PackingPage>
                                       ),
                                       SizedBox(width: 12),
                                       Text(
-                                        'Update Packing',
+                                        'Update',
                                         style: TextStyle(fontSize: 14),
                                       ),
                                     ],
@@ -1264,6 +1293,92 @@ class _PackingPageState extends State<PackingPage>
                         ],
                       ),
                     ),
+                    if (hasPackingDocs) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.inventory_2,
+                                size: 16,
+                                color: Colors.orange[700],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Packing Order',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.orange[800],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    registerOrder.packingDocNo,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping,
+                                    size: 12,
+                                    color: Colors.orange[700],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'With PO',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (registerOrder.salesPersonName.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -1341,292 +1456,6 @@ class _PackingPageState extends State<PackingPage>
           overflow: TextOverflow.ellipsis,
         ),
       ],
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading packing orders...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.inventory,
-              size: 50,
-              color: AppColors.primaryColor.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Packing Orders Found',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try adjusting your filters or date range',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      drawer: DrawerScreen(),
-      appBar: AppBar(
-        title: Text(
-          'Packing Register',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: AppColors.primaryColor,
-        elevation: 0,
-        leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.filter_list, color: Colors.white, size: 22),
-                  if (activeFilterCount > 0)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$activeFilterCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              onPressed: _openFilterPage,
-            ),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.maroon.withOpacity(0.95),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(0),
-              ),
-              border: const Border(
-                top: BorderSide(color: Colors.white, width: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  label: 'Total Amount',
-                  value: '₹${_calculateTotalAmount().toStringAsFixed(0)}',
-                  icon: Icons.currency_rupee,
-                ),
-                Container(
-                  height: 30,
-                  width: 1,
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                _buildStatItem(
-                  label: 'Packing Orders',
-                  value: '${registerOrderList.length}',
-                  icon: Icons.receipt_long,
-                ),
-                Container(
-                  height: 30,
-                  width: 1,
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                _buildStatItem(
-                  label: 'Quantity',
-                  value: '${_calculateTotalQuantity()}',
-                  icon: Icons.inventory,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child:
-            isLoading && registerOrderList.isEmpty
-                ? _buildLoadingIndicator()
-                : FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: RefreshIndicator(
-                    onRefresh: () => fetchOrders(isLoadMore: false),
-                    color: AppColors.primaryColor,
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDateRangeSelector(),
-                          const SizedBox(height: 20),
-                          if (registerOrderList.isEmpty)
-                            _buildEmptyState()
-                          else
-                            ...registerOrderList.map(
-                              (order) => Column(
-                                children: [
-                                  buildOrderItem(order),
-                                  const SizedBox(height: 12),
-                                ],
-                              ),
-                            ),
-                          if (isLoading && registerOrderList.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          if (!hasMoreData && registerOrderList.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(
-                                child: Text('No more orders to load'),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1726,6 +1555,377 @@ class _PackingPageState extends State<PackingPage>
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildCustomDatePickerField({
+    required String label,
+    required DateTime? date,
+    required VoidCallback onTap,
+    required bool isFromDate,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 48,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 40,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.chevron_left,
+                    color: AppColors.primaryColor,
+                    size: 20,
+                  ),
+                  onPressed: () => _changeCustomDate(isFromDate, -1),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: onTap,
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: Text(
+                      date != null
+                          ? '${date.day}/${date.month}/${date.year}'
+                          : 'Select Date',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF334155),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 40,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.chevron_right,
+                    color: AppColors.primaryColor,
+                    size: 20,
+                  ),
+                  onPressed: () => _changeCustomDate(isFromDate, 1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading sale bills...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.receipt_long,
+              size: 50,
+              color: AppColors.primaryColor.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Sale Bills Found',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try adjusting your filters or date range',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: const Color(0xFF64748B),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      drawer: DrawerScreen(),
+      appBar: AppBar(
+        title: Text(
+          'Sale Bill Register',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: AppColors.primaryColor,
+        elevation: 0,
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.filter_list, color: Colors.white, size: 22),
+                  if (activeFilterCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$activeFilterCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: _openFilterPage,
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.maroon.withOpacity(0.95),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(0),
+              ),
+              border: const Border(
+                top: BorderSide(color: Colors.white, width: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  label: 'Total Amount',
+                  value: '₹${_calculateTotalAmount().toStringAsFixed(0)}',
+                  icon: Icons.currency_rupee,
+                ),
+                Container(
+                  height: 30,
+                  width: 1,
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                _buildStatItem(
+                  label: 'Sale Bills',
+                  value: '${registerOrderList.length}',
+                  icon: Icons.receipt_long,
+                ),
+                Container(
+                  height: 30,
+                  width: 1,
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                _buildStatItem(
+                  label: 'Quantity',
+                  value: '${_calculateTotalQuantity()}',
+                  icon: Icons.inventory,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child:
+            isLoading && registerOrderList.isEmpty
+                ? _buildLoadingIndicator()
+                : FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: RefreshIndicator(
+                    onRefresh: () => fetchOrders(isLoadMore: false),
+                    color: AppColors.primaryColor,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDateRangeSelector(),
+                          const SizedBox(height: 20),
+                          if (registerOrderList.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ...registerOrderList.map(
+                              (order) => Column(
+                                children: [
+                                  buildOrderItem(order),
+                                  const SizedBox(height: 12),
+                                ],
+                              ),
+                            ),
+                          if (isLoading && registerOrderList.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          if (!hasMoreData && registerOrderList.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: Text('No more orders to load'),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SaleInvoiceHome()),
+          );
+        },
+        backgroundColor: AppColors.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
