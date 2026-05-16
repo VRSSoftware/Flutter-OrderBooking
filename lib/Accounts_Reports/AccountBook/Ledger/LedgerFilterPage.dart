@@ -81,10 +81,10 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
   // Local ledgers list that can be updated dynamically
   List<KeyName> _availableLedgers = [];
   bool _isLoadingLedgers = false;
-  
+
   // Filtered cities based on selected states
   List<KeyName> _filteredCities = [];
-  
+
   // Filtered sub-groups based on selected groups
   List<KeyName> _filteredSubGroups = [];
 
@@ -92,8 +92,18 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
   int _dropdownKey = 0;
 
   final List<Map<String, dynamic>> ledgerTypeOptions = [
-    {'value': 'customer', 'label': 'Customer', 'ledCat': 'W', 'icon': Icons.people},
-    {'value': 'vendor', 'label': 'Vendor', 'ledCat': 'V', 'icon': Icons.business},
+    {
+      'value': 'customer',
+      'label': 'Customer',
+      'ledCat': 'W',
+      'icon': Icons.people,
+    },
+    {
+      'value': 'vendor',
+      'label': 'Vendor',
+      'ledCat': 'V',
+      'icon': Icons.business,
+    },
     {'value': 'ledger', 'label': 'Ledger', 'ledCat': 'L', 'icon': Icons.book},
     {'value': 'all', 'label': 'All', 'ledCat': 'ALL', 'icon': Icons.apps},
   ];
@@ -113,18 +123,67 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     }
   }
 
-  Future<void> _fetchLedgersByType() async {
+  Future<void> _fetchLedgersByFilters() async {
     setState(() {
       _isLoadingLedgers = true;
     });
 
     try {
       final ledCat = _getLedCat();
-      print('Fetching ledgers with ledCat: $ledCat');
 
-      final fetchedLedgers = await AccountReportService.fetchLedgersByFilters(
-        ledCat: ledCat,
+      // Priority 1: If cities are selected directly, use ONLY those city keys
+      List<String> cityKeys = _selectedCities.map((city) => city.key).toList();
+
+      // Priority 2: If NO cities selected but states are selected,
+      // then get all city keys for those states
+      if (cityKeys.isEmpty && _selectedStates.isNotEmpty) {
+        final selectedStateKeys =
+            _selectedStates.map((state) => state.key).toSet();
+        cityKeys =
+            widget.cities
+                .where((city) {
+                  final cityStateKey = city.extra?['State_Key']?.toString();
+                  return cityStateKey != null &&
+                      selectedStateKeys.contains(cityStateKey);
+                })
+                .map((city) => city.key)
+                .toList();
+      }
+
+      print('========== FETCHING LEDGERS ==========');
+      print('ledCat: $ledCat');
+      print(
+        'Selected States: ${_selectedStates.map((s) => '${s.name} (${s.key})')}',
       );
+      print(
+        'Selected Cities: ${_selectedCities.map((c) => '${c.name} (${c.key})')}',
+      );
+      print('City Keys to filter: $cityKeys');
+      print('City Keys count: ${cityKeys.length}');
+
+      List<KeyName> fetchedLedgers;
+
+      // Case 1: No filters at all - show all ledgers
+      if (_selectedStates.isEmpty && _selectedCities.isEmpty) {
+        print('No filters - fetching all ledgers');
+        fetchedLedgers = await AccountReportService.fetchLedgersByFilters(
+          ledCat: ledCat,
+          cityKeys: null,
+        );
+      }
+      // Case 2: Has city keys (from direct city selection OR from states with cities)
+      else if (cityKeys.isNotEmpty) {
+        print('Filtering by city keys: $cityKeys');
+        fetchedLedgers = await AccountReportService.fetchLedgersByFilters(
+          ledCat: ledCat,
+          cityKeys: cityKeys,
+        );
+      }
+      // Case 3: States selected but NO cities found for those states
+      else {
+        print('States selected but no cities found - returning empty list');
+        fetchedLedgers = [];
+      }
 
       setState(() {
         _availableLedgers = fetchedLedgers;
@@ -140,6 +199,18 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       });
 
       print('Fetched ${fetchedLedgers.length} ledgers');
+
+      if (fetchedLedgers.isEmpty &&
+          (_selectedStates.isNotEmpty || _selectedCities.isNotEmpty) &&
+          mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No ledgers found for selected filters'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       print('Error fetching ledgers: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,52 +230,57 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
   void _filterCitiesByStates() {
     setState(() {
       if (_selectedStates.isEmpty) {
-        // If no states selected, show all cities
-        _filteredCities = List.from(widget.cities);
+        // When no states selected, show empty list
+        _filteredCities = [];
       } else {
-        // Get selected state keys
-        final selectedStateKeys = _selectedStates.map((state) => state.key.toString()).toSet();
-        
-        // Filter cities that belong to selected states using extra field
-        _filteredCities = widget.cities.where((city) {
-          final cityStateKey = city.extra?['State_Key']?.toString();
-          return cityStateKey != null && selectedStateKeys.contains(cityStateKey);
-        }).toList();
-        
+        final selectedStateKeys =
+            _selectedStates.map((state) => state.key.toString()).toSet();
+        _filteredCities =
+            widget.cities.where((city) {
+              final cityStateKey = city.extra?['State_Key']?.toString();
+              return cityStateKey != null &&
+                  selectedStateKeys.contains(cityStateKey);
+            }).toList();
+
         print('Selected States: $selectedStateKeys');
         print('Filtered Cities Count: ${_filteredCities.length}');
-        
-        // Remove selected cities that are no longer in filtered list
-        _selectedCities = _selectedCities
-            .where((selectedCity) => _filteredCities.any((city) => city.key == selectedCity.key))
-            .toList();
+
+        // Clear selected cities that are no longer available
+        _selectedCities =
+            _selectedCities
+                .where(
+                  (selectedCity) => _filteredCities.any(
+                    (city) => city.key == selectedCity.key,
+                  ),
+                )
+                .toList();
       }
     });
   }
 
-  // Filter sub-groups based on selected groups using the extra field (AccGrp_Id)
+  // Filter sub-groups based on selected groups
   void _filterSubGroupsByGroups() {
     setState(() {
       if (_selectedGroups.isEmpty) {
-        // If no groups selected, show all sub-groups
         _filteredSubGroups = List.from(widget.subGroups);
       } else {
-        // Get selected group IDs (convert to string for comparison)
-        final selectedGroupIds = _selectedGroups.map((group) => group.key.toString()).toSet();
-        
-        // Filter sub-groups that belong to selected groups using extra field
-        _filteredSubGroups = widget.subGroups.where((subGroup) {
-          final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
-          return subGroupGroupId != null && selectedGroupIds.contains(subGroupGroupId);
-        }).toList();
-        
-        print('Selected Groups: $selectedGroupIds');
-        print('Filtered Sub-Groups Count: ${_filteredSubGroups.length}');
-        
-        // Remove selected sub-groups that are no longer in filtered list
-        _selectedSubGroups = _selectedSubGroups
-            .where((selectedSubGroup) => _filteredSubGroups.any((subGroup) => subGroup.key == selectedSubGroup.key))
-            .toList();
+        final selectedGroupIds =
+            _selectedGroups.map((group) => group.key.toString()).toSet();
+        _filteredSubGroups =
+            widget.subGroups.where((subGroup) {
+              final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
+              return subGroupGroupId != null &&
+                  selectedGroupIds.contains(subGroupGroupId);
+            }).toList();
+
+        _selectedSubGroups =
+            _selectedSubGroups
+                .where(
+                  (selectedSubGroup) => _filteredSubGroups.any(
+                    (subGroup) => subGroup.key == selectedSubGroup.key,
+                  ),
+                )
+                .toList();
       }
     });
   }
@@ -222,12 +298,16 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     _showBillWise = widget.initialBillWise;
     _showNarration = widget.initialNarration;
     _availableLedgers = List.from(widget.ledgers);
-    
-    // Initialize filtered cities with all cities
-    _filteredCities = List.from(widget.cities);
-    
-    // Initialize filtered sub-groups with all sub-groups
+
+    // Initialize filtered cities as EMPTY
+    _filteredCities = [];
+
     _filteredSubGroups = List.from(widget.subGroups);
+
+    // If there are initial states, filter cities for them
+    if (_selectedStates.isNotEmpty) {
+      _filterCitiesByStates();
+    }
   }
 
   int get _totalActiveFilters {
@@ -269,10 +349,10 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
       _selectedReportType = 'summary';
       _showBillWise = false;
       _showNarration = false;
-      _filteredCities = List.from(widget.cities);
+      _filteredCities = []; // Empty list
       _filteredSubGroups = List.from(widget.subGroups);
     });
-    _fetchLedgersByType();
+    _fetchLedgersByFilters();
     widget.onClear?.call();
   }
 
@@ -361,53 +441,177 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 14, left: 14, right: 14),
             child: Row(
-              children: ledgerTypeOptions.map((option) {
-                final isSelected = _selectedLedgerType == option['value'];
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedLedgerType = option['value'];
-                      });
-                      _fetchLedgersByType();
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primaryColor : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected ? AppColors.primaryColor : Colors.grey.shade300,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            option['icon'],
-                            color: isSelected ? Colors.white : Colors.grey.shade700,
-                            size: 24,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            option['label'],
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              color: isSelected ? Colors.white : Colors.grey.shade700,
+              children:
+                  ledgerTypeOptions.map((option) {
+                    final isSelected = _selectedLedgerType == option['value'];
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedLedgerType = option['value'];
+                          });
+                          _fetchLedgersByFilters();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? AppColors.primaryColor
+                                    : Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? AppColors.primaryColor
+                                      : Colors.grey.shade300,
+                              width: isSelected ? 2 : 1,
                             ),
                           ),
-                        ],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                option['icon'],
+                                color:
+                                    isSelected
+                                        ? Colors.white
+                                        : Colors.grey.shade700,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                option['label'],
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight:
+                                      isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                  color:
+                                      isSelected
+                                          ? Colors.white
+                                          : Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStateDropdownCard() {
+    return _buildCard(
+      title: 'Select States',
+      child: CommonMultiSelectDropdown<KeyName>(
+        config: MultiSelectConfig<KeyName>(
+          items: widget.states,
+          selectedItems: _selectedStates,
+          onChanged: (items) {
+            setState(() {
+              _selectedStates = items;
+              _filterCitiesByStates();
+              _fetchLedgersByFilters();
+            });
+            widget.onStatesChanged(items);
+          },
+          displayName: (keyName) => keyName.name ?? '',
+          hintText: 'Select States',
+          searchHintText: 'Search States',
+          primaryColor: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityDropdownCard() {
+    return _buildCard(
+      title: 'Select Cities',
+      child: IgnorePointer(
+        ignoring:
+            _selectedStates
+                .isEmpty, // Disable interaction when no state selected
+        child: Opacity(
+          opacity: _selectedStates.isEmpty ? 0.5 : 1.0,
+          child: CommonMultiSelectDropdown<KeyName>(
+            config: MultiSelectConfig<KeyName>(
+              items: _filteredCities,
+              selectedItems: _selectedCities,
+              onChanged: (items) {
+                setState(() {
+                  _selectedCities = items;
+                  _fetchLedgersByFilters();
+                });
+                widget.onCitiesChanged(items);
+              },
+              displayName: (keyName) => keyName.name ?? '',
+              hintText:
+                  _selectedStates.isEmpty
+                      ? 'Select state first to see cities'
+                      : (_filteredCities.isEmpty
+                          ? 'No cities found for selected states'
+                          : 'Select Cities'),
+              searchHintText: 'Search Cities',
+              primaryColor: AppColors.primaryColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupDropdownCard() {
+    return _buildCard(
+      title: 'Select Groups',
+      child: CommonMultiSelectDropdown<KeyName>(
+        config: MultiSelectConfig<KeyName>(
+          items: widget.groups,
+          selectedItems: _selectedGroups,
+          onChanged: (items) {
+            setState(() {
+              _selectedGroups = items;
+              _filterSubGroupsByGroups();
+            });
+            widget.onGroupsChanged(items);
+          },
+          displayName: (keyName) => keyName.name ?? '',
+          hintText: 'Select Groups',
+          searchHintText: 'Search Groups',
+          primaryColor: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubGroupDropdownCard() {
+    return _buildCard(
+      title: 'Select Sub Groups',
+      child: CommonMultiSelectDropdown<KeyName>(
+        config: MultiSelectConfig<KeyName>(
+          items: _filteredSubGroups,
+          selectedItems: _selectedSubGroups,
+          onChanged: (items) {
+            setState(() {
+              _selectedSubGroups = items;
+            });
+            widget.onSubGroupsChanged(items);
+          },
+          displayName: (keyName) => keyName.name ?? '',
+          hintText:
+              _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
+                  ? 'No sub-groups found for selected groups'
+                  : 'Select Sub Groups',
+          searchHintText: 'Search Sub Groups',
+          primaryColor: AppColors.primaryColor,
+        ),
       ),
     );
   }
@@ -430,11 +634,13 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
                     setState(() {
                       _selectedLedgers = items;
                     });
+                    widget.onLedgersChanged(items);
                   },
                   displayName: (keyName) => keyName.name ?? '',
-                  hintText: _availableLedgers.isEmpty && !_isLoadingLedgers
-                      ? 'No ledgers found'
-                      : 'Select Ledgers',
+                  hintText:
+                      _availableLedgers.isEmpty && !_isLoadingLedgers
+                          ? 'No ledgers found for selected filters'
+                          : 'Select Ledgers',
                   searchHintText: 'Search Ledgers',
                   primaryColor: AppColors.primaryColor,
                 ),
@@ -462,96 +668,6 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
     );
   }
 
-  Widget _buildStateDropdownCard() {
-    return _buildCard(
-      title: 'Select States',
-      child: CommonMultiSelectDropdown<KeyName>(
-        config: MultiSelectConfig<KeyName>(
-          items: widget.states,
-          selectedItems: _selectedStates,
-          onChanged: (items) {
-            setState(() {
-              _selectedStates = items;
-              _filterCitiesByStates(); // Filter cities when states change
-            });
-          },
-          displayName: (keyName) => keyName.name ?? '',
-          hintText: 'Select States',
-          searchHintText: 'Search States',
-          primaryColor: AppColors.primaryColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCityDropdownCard() {
-    return _buildCard(
-      title: 'Select Cities',
-      child: CommonMultiSelectDropdown<KeyName>(
-        config: MultiSelectConfig<KeyName>(
-          items: _filteredCities,
-          selectedItems: _selectedCities,
-          onChanged: (items) {
-            setState(() {
-              _selectedCities = items;
-            });
-          },
-          displayName: (keyName) => keyName.name ?? '',
-          hintText: _filteredCities.isEmpty && _selectedStates.isNotEmpty
-              ? 'No cities found for selected states'
-              : 'Select Cities',
-          searchHintText: 'Search Cities',
-          primaryColor: AppColors.primaryColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGroupDropdownCard() {
-    return _buildCard(
-      title: 'Select Groups',
-      child: CommonMultiSelectDropdown<KeyName>(
-        config: MultiSelectConfig<KeyName>(
-          items: widget.groups,
-          selectedItems: _selectedGroups,
-          onChanged: (items) {
-            setState(() {
-              _selectedGroups = items;
-              _filterSubGroupsByGroups(); // Filter sub-groups when groups change
-            });
-          },
-          displayName: (keyName) => keyName.name ?? '',
-          hintText: 'Select Groups',
-          searchHintText: 'Search Groups',
-          primaryColor: AppColors.primaryColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubGroupDropdownCard() {
-    return _buildCard(
-      title: 'Select Sub Groups',
-      child: CommonMultiSelectDropdown<KeyName>(
-        config: MultiSelectConfig<KeyName>(
-          items: _filteredSubGroups,
-          selectedItems: _selectedSubGroups,
-          onChanged: (items) {
-            setState(() {
-              _selectedSubGroups = items;
-            });
-          },
-          displayName: (keyName) => keyName.name ?? '',
-          hintText: _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
-              ? 'No sub-groups found for selected groups'
-              : 'Select Sub Groups',
-          searchHintText: 'Search Sub Groups',
-          primaryColor: AppColors.primaryColor,
-        ),
-      ),
-    );
-  }
-
   Widget _buildReportTypeCard() {
     return _buildCard(
       title: 'Report Type',
@@ -566,6 +682,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
                 setState(() {
                   _selectedReportType = value!;
                 });
+                widget.onReportTypeChanged(value!);
               },
               activeColor: AppColors.primaryColor,
               contentPadding: EdgeInsets.zero,
@@ -581,6 +698,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
                 setState(() {
                   _selectedReportType = value!;
                 });
+                widget.onReportTypeChanged(value!);
               },
               activeColor: AppColors.primaryColor,
               contentPadding: EdgeInsets.zero,
@@ -607,6 +725,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
               setState(() {
                 _showBillWise = value ?? false;
               });
+              widget.onBillWiseChanged(value ?? false);
             },
             activeColor: AppColors.primaryColor,
             contentPadding: EdgeInsets.zero,
@@ -622,6 +741,7 @@ class _LedgerFilterPageState extends State<LedgerFilterPage> {
               setState(() {
                 _showNarration = value ?? false;
               });
+              widget.onNarrationChanged(value ?? false);
             },
             activeColor: AppColors.primaryColor,
             contentPadding: EdgeInsets.zero,

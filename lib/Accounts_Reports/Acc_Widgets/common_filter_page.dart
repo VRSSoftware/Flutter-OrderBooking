@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:vrs_erp/Accounts_Reports/Acc_Widgets/common_widgets.dart';
 import 'package:vrs_erp/constants/app_constants.dart';
 import 'package:vrs_erp/models/keyName.dart';
+import 'package:vrs_erp/services/AccountReport_Services.dart';
 
 // Filter field IDs
 enum FilterFieldId {
@@ -80,10 +81,10 @@ const Map<String, List<FilterFieldId>> reportFilterConfig = {
   'ProfitLoss': [FilterFieldId.checkBoxLedgerWise],
   'BalanceSheet': [FilterFieldId.checkBoxLedgerWise],
   'BrokerCommReceipt': [
-    FilterFieldId.broker,
     FilterFieldId.state,
     FilterFieldId.city,
     FilterFieldId.ledger,
+    FilterFieldId.broker,
   ],
   'OutstandingRemainder': [
     FilterFieldId.state,
@@ -275,7 +276,11 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
 
   // Filtered cities based on selected states
   List<KeyName> _filteredCities = [];
-  
+
+  // Filtered ledgers based on selected states/cities
+  List<KeyName> _filteredLedgers = [];
+  bool _isLoadingLedgers = false;
+
   // Filtered sub-groups based on selected groups
   List<KeyName> _filteredSubGroups = [];
 
@@ -305,61 +310,191 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     _showAgeWise = widget.initialShowAgeWise ?? false;
     _showOverdueOnly = widget.initialShowOverdueOnly ?? false;
 
-    // Initialize filtered cities with all cities
-    _filteredCities = List.from(widget.cities ?? []);
-    
-    // Initialize filtered sub-groups with all sub-groups
-    _filteredSubGroups = List.from(widget.subGroups ?? []);
+    // Initialize filtered cities as EMPTY
+    _filteredCities = [];
+    _filteredLedgers = widget.ledgers ?? [];
+    _filteredSubGroups = widget.subGroups ?? [];
+
+    // If there are initial states, filter cities and ledgers
+    if (_selectedStates.isNotEmpty) {
+      _filterCitiesByStates();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _filterLedgersByLocation();
+      });
+    }
   }
 
-  // Filter cities based on selected states using the extra field
+  // Filter cities based on selected states
   void _filterCitiesByStates() {
     setState(() {
-      final allCities = widget.cities ?? [];
-      
       if (_selectedStates.isEmpty) {
-        // If no states selected, show all cities
-        _filteredCities = List.from(allCities);
+        _filteredCities = [];
       } else {
-        // Get selected state keys
-        final selectedStateKeys = _selectedStates.map((state) => state.key.toString()).toSet();
-        
-        // Filter cities that belong to selected states using extra field
-        _filteredCities = allCities.where((city) {
-          final cityStateKey = city.extra?['State_Key']?.toString();
-          return cityStateKey != null && selectedStateKeys.contains(cityStateKey);
-        }).toList();
-        
-        // Remove selected cities that are no longer in filtered list
-        _selectedCities = _selectedCities
-            .where((selectedCity) => _filteredCities.any((city) => city.key == selectedCity.key))
-            .toList();
+        final selectedStateKeys =
+            _selectedStates.map((state) => state.key.toString()).toSet();
+        _filteredCities =
+            (widget.cities ?? []).where((city) {
+              final cityStateKey = city.extra?['State_Key']?.toString();
+              return cityStateKey != null &&
+                  selectedStateKeys.contains(cityStateKey);
+            }).toList();
+
+        // Clear selected cities that are no longer available
+        _selectedCities =
+            _selectedCities
+                .where(
+                  (selectedCity) => _filteredCities.any(
+                    (city) => city.key == selectedCity.key,
+                  ),
+                )
+                .toList();
       }
     });
   }
 
-  // Filter sub-groups based on selected groups using the extra field (AccGrp_Id)
+  // Filter ledgers based on selected states/cities
+  // Filter ledgers based on selected states/cities
+  Future<void> _filterLedgersByLocation() async {
+    setState(() {
+      _isLoadingLedgers = true;
+    });
+
+    try {
+      // Priority 1: If cities are selected directly, use ONLY those city keys
+      List<String> cityKeys = _selectedCities.map((city) => city.key).toList();
+
+      // Priority 2: If NO cities selected but states are selected,
+      // get ALL city keys for ALL selected states
+      if (cityKeys.isEmpty && _selectedStates.isNotEmpty) {
+        final selectedStateKeys =
+            _selectedStates.map((state) => state.key).toSet();
+        cityKeys =
+            (widget.cities ?? [])
+                .where((city) {
+                  final cityStateKey = city.extra?['State_Key']?.toString();
+                  return cityStateKey != null &&
+                      selectedStateKeys.contains(cityStateKey);
+                })
+                .map((city) => city.key)
+                .toList();
+      }
+
+      print('========== FILTERING LEDGERS ==========');
+      print(
+        'Selected States: ${_selectedStates.map((s) => '${s.name} (${s.key})')}',
+      );
+      print(
+        'Selected Cities: ${_selectedCities.map((c) => '${c.name} (${c.key})')}',
+      );
+      print('City Keys to filter: $cityKeys');
+      print('City Keys count: ${cityKeys.length}');
+
+      List<KeyName> fetchedLedgers = [];
+
+      // Case 1: No filters at all - show all ledgers
+      if (_selectedStates.isEmpty && _selectedCities.isEmpty) {
+        print('No filters - showing all ledgers');
+        fetchedLedgers = widget.ledgers ?? [];
+      }
+      // Case 2: Has city keys - fetch ledgers for those cities
+      else if (cityKeys.isNotEmpty) {
+        print('Filtering by city keys: $cityKeys');
+
+        if (widget.reportType == 'OutstandingRemainder') {
+          fetchedLedgers =
+              await AccountReportService.fetchOutstandingRemainderLedgers(
+                cityKeys: cityKeys,
+              );
+        } else if (widget.reportType == 'CustomerLedger' ||
+            widget.reportType == 'CustomerLedgerBillWise') {
+          fetchedLedgers = await AccountReportService.fetchCustomerLedgers(
+            cityKeys: cityKeys,
+          );
+        } else if (widget.reportType == 'BrokerCommReceipt') {
+          fetchedLedgers = await AccountReportService.fetchBrokerLedgers(
+            cityKeys: cityKeys,
+          );
+        } else {
+          fetchedLedgers = widget.ledgers ?? [];
+        }
+      }
+      // Case 3: States selected but NO cities found for those states
+      else {
+        print('States selected but no cities found - returning empty list');
+        fetchedLedgers = [];
+      }
+
+      // Local debug: Check if any ledgers have matching Stn_Key
+      if (cityKeys.isNotEmpty && fetchedLedgers.isEmpty) {
+        print('WARNING: No ledgers found for city keys: $cityKeys');
+        print('Available ledgers with Stn_Key:');
+        (widget.ledgers ?? []).forEach((ledger) {
+          if (ledger.extra?['Stn_Key']?.toString().isNotEmpty == true) {
+            print('  ${ledger.name} -> Stn_Key: ${ledger.extra?['Stn_Key']}');
+          }
+        });
+      }
+
+      setState(() {
+        _filteredLedgers = fetchedLedgers;
+        // Clear selected ledgers that are no longer available
+        _selectedLedgers =
+            _selectedLedgers
+                .where(
+                  (selected) => fetchedLedgers.any(
+                    (ledger) => ledger.key == selected.key,
+                  ),
+                )
+                .toList();
+      });
+
+      print('Filtered ledgers count: ${fetchedLedgers.length}');
+
+      if (fetchedLedgers.isEmpty &&
+          (_selectedStates.isNotEmpty || _selectedCities.isNotEmpty) &&
+          mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No ledgers found for selected filters'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error filtering ledgers: $e');
+    } finally {
+      setState(() {
+        _isLoadingLedgers = false;
+      });
+    }
+  }
+
+  // Filter sub-groups based on selected groups
   void _filterSubGroupsByGroups() {
     setState(() {
       final allSubGroups = widget.subGroups ?? [];
-      
+
       if (_selectedGroups.isEmpty) {
-        // If no groups selected, show all sub-groups
         _filteredSubGroups = List.from(allSubGroups);
       } else {
-        // Get selected group IDs (convert to string for comparison)
-        final selectedGroupIds = _selectedGroups.map((group) => group.key.toString()).toSet();
-        
-        // Filter sub-groups that belong to selected groups using extra field
-        _filteredSubGroups = allSubGroups.where((subGroup) {
-          final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
-          return subGroupGroupId != null && selectedGroupIds.contains(subGroupGroupId);
-        }).toList();
-        
-        // Remove selected sub-groups that are no longer in filtered list
-        _selectedSubGroups = _selectedSubGroups
-            .where((selectedSubGroup) => _filteredSubGroups.any((subGroup) => subGroup.key == selectedSubGroup.key))
-            .toList();
+        final selectedGroupIds =
+            _selectedGroups.map((group) => group.key.toString()).toSet();
+        _filteredSubGroups =
+            allSubGroups.where((subGroup) {
+              final subGroupGroupId = subGroup.extra?['AccGrp_Id']?.toString();
+              return subGroupGroupId != null &&
+                  selectedGroupIds.contains(subGroupGroupId);
+            }).toList();
+
+        _selectedSubGroups =
+            _selectedSubGroups
+                .where(
+                  (selectedSubGroup) => _filteredSubGroups.any(
+                    (subGroup) => subGroup.key == selectedSubGroup.key,
+                  ),
+                )
+                .toList();
       }
     });
   }
@@ -415,7 +550,6 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
   }
 
   void _applyFilters() {
-    // Call all the callbacks with current local state
     widget.onLedgerTypeChanged?.call(_selectedLedgerType);
     widget.onCustomersChanged?.call(_selectedCustomers);
     widget.onVendorsChanged?.call(_selectedVendors);
@@ -456,8 +590,9 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
       _showDueOnly = false;
       _showAgeWise = false;
       _showOverdueOnly = false;
-      _filteredCities = List.from(widget.cities ?? []);
-      _filteredSubGroups = List.from(widget.subGroups ?? []);
+      _filteredCities = [];
+      _filteredLedgers = widget.ledgers ?? [];
+      _filteredSubGroups = widget.subGroups ?? [];
     });
 
     widget.onClear?.call();
@@ -606,7 +741,8 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hasActiveFilter ? AppColors.primaryColor : Colors.grey.shade200,
+          color:
+              hasActiveFilter ? AppColors.primaryColor : Colors.grey.shade200,
           width: hasActiveFilter ? 1.5 : 1,
         ),
         boxShadow: [
@@ -699,28 +835,29 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
     switch (field) {
       case FilterFieldId.customerVendorLedgerRadio:
         return Wrap(
-          children: ledgerTypeRadioOptions.map((option) {
-            return SizedBox(
-              width: MediaQuery.of(context).size.width / 2.5,
-              child: RadioListTile<String>(
-                title: Text(
-                  option['label'],
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                ),
-                value: option['value'],
-                groupValue: _selectedLedgerType,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLedgerType = value;
-                  });
-                  widget.onLedgerTypeChanged?.call(value);
-                },
-                activeColor: AppColors.primaryColor,
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
-            );
-          }).toList(),
+          children:
+              ledgerTypeRadioOptions.map((option) {
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: RadioListTile<String>(
+                    title: Text(
+                      option['label'],
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                    ),
+                    value: option['value'],
+                    groupValue: _selectedLedgerType,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLedgerType = value;
+                      });
+                      widget.onLedgerTypeChanged?.call(value);
+                    },
+                    activeColor: AppColors.primaryColor,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                );
+              }).toList(),
         );
 
       case FilterFieldId.state:
@@ -732,6 +869,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
               setState(() {
                 _selectedStates = items;
                 _filterCitiesByStates();
+                _filterLedgersByLocation();
               });
               widget.onStatesChanged?.call(items);
             },
@@ -753,33 +891,43 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         );
 
       case FilterFieldId.city:
-        return CommonMultiSelectDropdown<KeyName>(
-          config: MultiSelectConfig<KeyName>(
-            items: _filteredCities,
-            selectedItems: _selectedCities,
-            onChanged: (items) {
-              setState(() {
-                _selectedCities = items;
-              });
-              widget.onCitiesChanged?.call(items);
-            },
-            displayName: (keyName) => keyName.name ?? '',
-            hintText: _filteredCities.isEmpty && _selectedStates.isNotEmpty
-                ? 'No cities found for selected states'
-                : 'Select Cities',
-            searchHintText: 'Search Cities',
-            primaryColor: AppColors.primaryColor,
+        return IgnorePointer(
+          ignoring: _selectedStates.isEmpty,
+          child: Opacity(
+            opacity: _selectedStates.isEmpty ? 0.5 : 1.0,
+            child: CommonMultiSelectDropdown<KeyName>(
+              config: MultiSelectConfig<KeyName>(
+                items: _filteredCities,
+                selectedItems: _selectedCities,
+                onChanged: (items) {
+                  setState(() {
+                    _selectedCities = items;
+                    _filterLedgersByLocation();
+                  });
+                  widget.onCitiesChanged?.call(items);
+                },
+                displayName: (keyName) => keyName.name ?? '',
+                hintText:
+                    _selectedStates.isEmpty
+                        ? 'Select state first to see cities'
+                        : (_filteredCities.isEmpty
+                            ? 'No cities found for selected states'
+                            : 'Select Cities'),
+                searchHintText: 'Search Cities',
+                primaryColor: AppColors.primaryColor,
+              ),
+              onDropdownOpen: () {
+                setState(() {
+                  _openDropdownId = 'city';
+                });
+              },
+              onDropdownClose: () {
+                setState(() {
+                  _openDropdownId = null;
+                });
+              },
+            ),
           ),
-          onDropdownOpen: () {
-            setState(() {
-              _openDropdownId = 'city';
-            });
-          },
-          onDropdownClose: () {
-            setState(() {
-              _openDropdownId = null;
-            });
-          },
         );
 
       case FilterFieldId.group:
@@ -790,7 +938,7 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
             onChanged: (items) {
               setState(() {
                 _selectedGroups = items;
-                _filterSubGroupsByGroups(); // Filter sub-groups when groups change
+                _filterSubGroupsByGroups();
               });
               widget.onGroupsChanged?.call(items);
             },
@@ -823,9 +971,10 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
               widget.onSubGroupsChanged?.call(items);
             },
             displayName: (keyName) => keyName.name ?? '',
-            hintText: _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
-                ? 'No sub-groups found for selected groups'
-                : 'Select Sub Groups',
+            hintText:
+                _filteredSubGroups.isEmpty && _selectedGroups.isNotEmpty
+                    ? 'No sub-groups found for selected groups'
+                    : 'Select Sub Groups',
             searchHintText: 'Search Sub Groups',
             primaryColor: AppColors.primaryColor,
           ),
@@ -842,31 +991,64 @@ class _CommonFilterPageState extends State<CommonFilterPage> {
         );
 
       case FilterFieldId.ledger:
-        return CommonMultiSelectDropdown<KeyName>(
-          config: MultiSelectConfig<KeyName>(
-            items: widget.ledgers ?? [],
-            selectedItems: _selectedLedgers,
-            onChanged: (items) {
-              setState(() {
-                _selectedLedgers = items;
-              });
-              widget.onLedgersChanged?.call(items);
-            },
-            displayName: (keyName) => keyName.name ?? '',
-            hintText: 'Select Ledgers',
-            searchHintText: 'Search Ledgers',
-            primaryColor: AppColors.primaryColor,
-          ),
-          onDropdownOpen: () {
-            setState(() {
-              _openDropdownId = 'ledger';
-            });
-          },
-          onDropdownClose: () {
-            setState(() {
-              _openDropdownId = null;
-            });
-          },
+        return Stack(
+          children: [
+            Opacity(
+              opacity: _isLoadingLedgers ? 0.5 : 1.0,
+              child: IgnorePointer(
+                ignoring: _isLoadingLedgers,
+                child: CommonMultiSelectDropdown<KeyName>(
+                  config: MultiSelectConfig<KeyName>(
+                    items: _filteredLedgers,
+                    selectedItems: _selectedLedgers,
+                    onChanged: (items) {
+                      setState(() {
+                        _selectedLedgers = items;
+                      });
+                      widget.onLedgersChanged?.call(items);
+                    },
+                    displayName: (keyName) => keyName.name ?? '',
+                    hintText:
+                        _isLoadingLedgers
+                            ? 'Loading ledgers...'
+                            : (_filteredLedgers.isEmpty &&
+                                    (_selectedStates.isNotEmpty ||
+                                        _selectedCities.isNotEmpty)
+                                ? 'No ledgers found for selected filters'
+                                : 'Select Ledgers'),
+                    searchHintText: 'Search Ledgers',
+                    primaryColor: AppColors.primaryColor,
+                  ),
+                  onDropdownOpen: () {
+                    setState(() {
+                      _openDropdownId = 'ledger';
+                    });
+                  },
+                  onDropdownClose: () {
+                    setState(() {
+                      _openDropdownId = null;
+                    });
+                  },
+                ),
+              ),
+            ),
+            if (_isLoadingLedgers)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
 
       case FilterFieldId.broker:

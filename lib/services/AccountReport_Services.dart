@@ -268,30 +268,30 @@ class AccountReportService {
       throw Exception('Error fetching groups: $e');
     }
   }
-static Future<List<KeyName>> fetchAccountSubGroups() async {
-  try {
-    final response = await http.get(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccLGrp'),
-    );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((item) {
-        return KeyName(
-          key: item['AccLGrp_Key'].toString(),
-          name: item['AccLGrp_Name'],
-          extra: {
-            'AccGrp_Id': item['AccGrp_Id']?.toString() ?? '',
-          },
-        );
-      }).toList();
-    } else {
-      throw Exception('Failed to load sub groups');
+  static Future<List<KeyName>> fetchAccountSubGroups() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getAccLGrp'),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((item) {
+          return KeyName(
+            key: item['AccLGrp_Key'].toString(),
+            name: item['AccLGrp_Name'],
+            extra: {'AccGrp_Id': item['AccGrp_Id']?.toString() ?? ''},
+          );
+        }).toList();
+      } else {
+        throw Exception('Failed to load sub groups');
+      }
+    } catch (e) {
+      throw Exception('Error fetching sub groups: $e');
     }
-  } catch (e) {
-    throw Exception('Error fetching sub groups: $e');
   }
-}
+
   static Future<Uint8List?> generateGroupSummaryReport({
     required String fromDate,
     required String toDate,
@@ -433,21 +433,27 @@ static Future<List<KeyName>> fetchAccountSubGroups() async {
   }
 
   static Future<List<KeyName>> fetchLedgersByFilters({
-    String?
-    ledCat, // 'W' for customer, 'V' for vendor, 'L' for ledger, null for all
+    String? ledCat,
+    List<String>? cityKeys, // Stn_Keys to filter ledgers
   }) async {
     try {
       final Map<String, dynamic> requestBody = {};
 
-      // Only add ledCat if provided and not null
       if (ledCat != null && ledCat.isNotEmpty) {
         requestBody["ledCat"] = ledCat;
+      }
+
+      // NOTE: Pass city keys to API, but also filter locally as backup
+      if (cityKeys != null && cityKeys.isNotEmpty) {
+        final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+        requestBody["station_keys"] = "[$formattedCityKeys]";
       }
 
       print('========== FETCH LEDGERS API CALL ==========');
       print('URL: ${AppConstants.BASE_URL}/accounts/getLedgerByLedCat');
       print('Request Body: ${jsonEncode(requestBody)}');
-      print('ledCat value: $ledCat');
+      print('ledCat: $ledCat');
+      print('cityKeys (Stn_Keys): $cityKeys');
 
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerByLedCat'),
@@ -456,25 +462,46 @@ static Future<List<KeyName>> fetchAccountSubGroups() async {
       );
 
       print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         print('Parsed data length: ${data.length}');
 
-        final List<KeyName> ledgers =
+        List<KeyName> ledgers =
             data.map((item) {
               return KeyName(
                 key: item['Led_Key']?.toString() ?? '',
                 name: item['Led_Name']?.toString() ?? '',
+                extra: {'Stn_Key': item['Stn_Key']?.toString() ?? ''},
               );
             }).toList();
 
-        print('Ledgers count: ${ledgers.length}');
-        ledgers.forEach((ledger) {
-          print('Ledger: ${ledger.key} - ${ledger.name}');
-        });
+        // ========== LOCAL FILTERING ==========
+        // If cityKeys are provided, filter ledgers locally by Stn_Key
+        if (cityKeys != null && cityKeys.isNotEmpty) {
+          print('Applying local filter with cityKeys: $cityKeys');
+          final cityKeysSet = cityKeys.toSet();
 
+          final filteredLedgers =
+              ledgers.where((ledger) {
+                final ledgerStnKey = ledger.extra?['Stn_Key']?.toString() ?? '';
+                final matches =
+                    ledgerStnKey.isNotEmpty &&
+                    cityKeysSet.contains(ledgerStnKey);
+                if (matches) {
+                  print('  MATCH: ${ledger.name} (Stn_Key: $ledgerStnKey)');
+                }
+                return matches;
+              }).toList();
+
+          print(
+            'After local filter: ${filteredLedgers.length} ledgers (from ${ledgers.length} total)',
+          );
+          ledgers = filteredLedgers;
+        }
+        // ========== END LOCAL FILTERING ==========
+
+        print('Final ledgers count: ${ledgers.length}');
         return ledgers;
       } else {
         throw Exception('Failed to load ledgers: ${response.statusCode}');
@@ -611,30 +638,28 @@ static Future<List<KeyName>> fetchAccountSubGroups() async {
   }
 
   // Fetch Cities
-static Future<List<KeyName>> fetchCities() async {
-  try {
-    final response = await http.get(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getCity'),
-    );
+  static Future<List<KeyName>> fetchCities() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getCity'),
+      );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((item) {
-        return KeyName(
-          key: item['Stn_Key'].toString(),
-          name: item['Stn_Name'],
-          extra: {
-            'State_Key': item['State_Key'].toString(),
-          },
-        );
-      }).toList();
-    } else {
-      throw Exception('Failed to load cities');
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((item) {
+          return KeyName(
+            key: item['Stn_Key'].toString(),
+            name: item['Stn_Name'],
+            extra: {'State_Key': item['State_Key'].toString()},
+          );
+        }).toList();
+      } else {
+        throw Exception('Failed to load cities');
+      }
+    } catch (e) {
+      throw Exception('Error fetching cities: $e');
     }
-  } catch (e) {
-    throw Exception('Error fetching cities: $e');
   }
-}
 
   static Future<Uint8List?> generateTrialBalanceReport({
     required String fromDate,
@@ -1001,26 +1026,46 @@ static Future<List<KeyName>> fetchCities() async {
 
   //broker commissin apis
 
-  static Future<List<KeyName>> fetchLedgersByCategory(String category) async {
+  static Future<List<KeyName>> fetchLedgersByCategory(
+    String category, {
+    List<String>? cityKeys,
+  }) async {
     try {
+      final Map<String, dynamic> requestBody = {'led_cat': category};
+
+      if (cityKeys != null && cityKeys.isNotEmpty) {
+        final formattedCityKeys = cityKeys.map((key) => "'$key'").join(',');
+        requestBody["station_keys"] = "[$formattedCityKeys]";
+      }
+
       final response = await http.post(
         Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerByCategory'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'led_cat':
-              category, // 'B' for Broker, 'C' for Customer, 'ALL' for all
-        }),
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final List<KeyName> ledgers =
+        List<KeyName> ledgers =
             data.map((item) {
               return KeyName(
                 key: item['Led_Key'].toString(),
                 name: item['Led_Name'].toString(),
+                extra: {'Stn_Key': item['Stn_Key']?.toString() ?? ''},
               );
             }).toList();
+
+        // Local filtering by Stn_Key as backup
+        if (cityKeys != null && cityKeys.isNotEmpty) {
+          final cityKeysSet = cityKeys.toSet();
+          ledgers =
+              ledgers.where((ledger) {
+                final ledgerStnKey = ledger.extra?['Stn_Key']?.toString() ?? '';
+                return ledgerStnKey.isNotEmpty &&
+                    cityKeysSet.contains(ledgerStnKey);
+              }).toList();
+        }
+
         return ledgers;
       } else {
         throw Exception('Failed to load ledgers for category: $category');
@@ -1032,8 +1077,10 @@ static Future<List<KeyName>> fetchCities() async {
   }
 
   // Fetch ledgers for broker commission
-  static Future<List<KeyName>> fetchBrokerLedgers() async {
-    return fetchLedgersByCategory('W');
+  static Future<List<KeyName>> fetchBrokerLedgers({
+    List<String>? cityKeys,
+  }) async {
+    return fetchLedgersByCategory('W', cityKeys: cityKeys);
   }
 
   static Future<List<KeyName>> fetchBrokers() async {
@@ -1136,24 +1183,44 @@ static Future<List<KeyName>> fetchCities() async {
 
   //Outstanding Remainder Api
   // Fetch ledgers for outstanding remainder
-  static Future<List<KeyName>> fetchOutstandingRemainderLedgers() async {
+  static Future<List<KeyName>> fetchOutstandingRemainderLedgers({
+    List<String>? cityKeys,
+  }) async {
     try {
+      String url =
+          '${AppConstants.BASE_URL}/accounts/outstandingRemainderLedgers';
+      if (cityKeys != null && cityKeys.isNotEmpty) {
+        final cityKeysParam = cityKeys.join(',');
+        url = '$url?city_keys=$cityKeysParam';
+      }
+
       final response = await http.get(
-        Uri.parse(
-          '${AppConstants.BASE_URL}/accounts/outstandingRemainderLedgers',
-        ),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final List<KeyName> ledgers =
+        List<KeyName> ledgers =
             data.map((item) {
               return KeyName(
                 key: item['Led_Key'].toString(),
                 name: item['Led_Name'].toString(),
+                extra: {'Stn_Key': item['Stn_Key']?.toString() ?? ''},
               );
             }).toList();
+
+        // Local filtering by Stn_Key
+        if (cityKeys != null && cityKeys.isNotEmpty) {
+          final cityKeysSet = cityKeys.toSet();
+          ledgers =
+              ledgers.where((ledger) {
+                final ledgerStnKey = ledger.extra?['Stn_Key']?.toString() ?? '';
+                return ledgerStnKey.isNotEmpty &&
+                    cityKeysSet.contains(ledgerStnKey);
+              }).toList();
+        }
+
         return ledgers;
       } else {
         throw Exception('Failed to load outstanding remainder ledgers');
@@ -1178,7 +1245,8 @@ static Future<List<KeyName>> fetchCities() async {
       // Build the request body
       final Map<String, dynamic> requestBody = {
         "date_range": dateRange,
-        "report": "Outstanding_Reminder", // Report name for outstanding remainder
+        "report":
+            "Outstanding_Reminder", // Report name for outstanding remainder
         "coBr": UserSession.coBrId,
       };
 
@@ -1250,8 +1318,10 @@ static Future<List<KeyName>> fetchCities() async {
 
   //customer Ledger Api
   // Fetch customer ledgers
-  static Future<List<KeyName>> fetchCustomerLedgers() async {
-    return fetchLedgersByCategory('W');
+  static Future<List<KeyName>> fetchCustomerLedgers({
+    List<String>? cityKeys,
+  }) async {
+    return fetchLedgersByCategory('W', cityKeys: cityKeys);
   }
 
   // Generate Customer Ledger Report
@@ -1422,293 +1492,284 @@ static Future<List<KeyName>> fetchCities() async {
     }
   }
 
-
   // Add this method to your AccountReportService class
 
-static Future<Uint8List?> generateGroupTrialBalanceReport({
-  required String fromDate,
-  required String toDate,
-  required List<String> groupKeys,
-  required List<String> subGroupKeys,
-  required List<String> ledgerKeys,
-  required String reportType, // 'summary' or 'detail'
-  required bool isLedgerWise,
-  required bool isDueOnly,
-}) async {
-  try {
-    final dateRange = "$fromDate to $toDate";
+  static Future<Uint8List?> generateGroupTrialBalanceReport({
+    required String fromDate,
+    required String toDate,
+    required List<String> groupKeys,
+    required List<String> subGroupKeys,
+    required List<String> ledgerKeys,
+    required String reportType, // 'summary' or 'detail'
+    required bool isLedgerWise,
+    required bool isDueOnly,
+  }) async {
+    try {
+      final dateRange = "$fromDate to $toDate";
 
-    // Build the request body
-    final Map<String, dynamic> requestBody = {
-      "date_range": dateRange,
-      "report": "trialBalance", // Report name for group trial balance
-      "report_type": reportType,
-      "showLedgerWise": isLedgerWise ? "1" : "0",
-      "showDueOnly": isDueOnly ? "1" : "0",
-      "coBr": UserSession.coBrId,
-    };
+      // Build the request body
+      final Map<String, dynamic> requestBody = {
+        "date_range": dateRange,
+        "report": "trialBalance", // Report name for group trial balance
+        "report_type": reportType,
+        "showLedgerWise": isLedgerWise ? "1" : "0",
+        "showDueOnly": isDueOnly ? "1" : "0",
+        "coBr": UserSession.coBrId,
+      };
 
-    // Add group keys (AccGrp_Ids - numeric IDs, no quotes)
-    if (groupKeys.isNotEmpty) {
-      final formattedGroupIds = groupKeys.join(',');
-      requestBody["AccGrp_Ids"] = "[$formattedGroupIds]";
-    }
+      // Add group keys (AccGrp_Ids - numeric IDs, no quotes)
+      if (groupKeys.isNotEmpty) {
+        final formattedGroupIds = groupKeys.join(',');
+        requestBody["AccGrp_Ids"] = "[$formattedGroupIds]";
+      }
 
-    // Add sub group keys (AccLGrp_Keys - string IDs with quotes)
-    if (subGroupKeys.isNotEmpty) {
-      final formattedSubGroupKeys = subGroupKeys.map((key) => "'$key'").join(',');
-      requestBody["AccLGrp_Keys"] = "[$formattedSubGroupKeys]";
-    }
+      // Add sub group keys (AccLGrp_Keys - string IDs with quotes)
+      if (subGroupKeys.isNotEmpty) {
+        final formattedSubGroupKeys = subGroupKeys
+            .map((key) => "'$key'")
+            .join(',');
+        requestBody["AccLGrp_Keys"] = "[$formattedSubGroupKeys]";
+      }
 
-    // Add ledger keys (format as "['01100','01110']")
-    if (ledgerKeys.isNotEmpty) {
-      final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
-      requestBody["led_keys"] = "[$formattedLedgerKeys]";
-    }
+      // Add ledger keys (format as "['01100','01110']")
+      if (ledgerKeys.isNotEmpty) {
+        final formattedLedgerKeys = ledgerKeys.map((key) => "'$key'").join(',');
+        requestBody["led_keys"] = "[$formattedLedgerKeys]";
+      }
 
-    debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
-    debugPrint('Request Body: ${jsonEncode(requestBody)}');
-    debugPrint('Report Name: group_trial_balance');
-    debugPrint('Group Keys: $groupKeys');
-    debugPrint('Sub Group Keys: $subGroupKeys');
-    debugPrint('Ledger Keys: $ledgerKeys');
-    debugPrint('Report Type: $reportType');
-    debugPrint('Ledger Wise: $isLedgerWise');
-    debugPrint('Due Only: $isDueOnly');
+      debugPrint('Request URL: ${AppConstants.BASE_URL}/accounts/getLedgerPdf');
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
+      debugPrint('Report Name: group_trial_balance');
+      debugPrint('Group Keys: $groupKeys');
+      debugPrint('Sub Group Keys: $subGroupKeys');
+      debugPrint('Ledger Keys: $ledgerKeys');
+      debugPrint('Report Type: $reportType');
+      debugPrint('Ledger Wise: $isLedgerWise');
+      debugPrint('Due Only: $isDueOnly');
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getLedgerPdf'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
 
-    debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Status Code: ${response.statusCode}');
 
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
+      if (response.statusCode == 200) {
+        final contentType = response.headers['content-type'];
 
-      if (contentType != null && contentType.contains('application/pdf')) {
-        debugPrint(
-          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
-        );
-        return response.bodyBytes;
+        if (contentType != null && contentType.contains('application/pdf')) {
+          debugPrint(
+            'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+          );
+          return response.bodyBytes;
+        } else {
+          final responseData = jsonDecode(response.body);
+          throw Exception(
+            responseData['message'] ??
+                'Failed to generate group trial balance report',
+          );
+        }
       } else {
-        final responseData = jsonDecode(response.body);
         throw Exception(
-          responseData['message'] ?? 'Failed to generate group trial balance report',
+          'Failed to load group trial balance report: ${response.statusCode}',
         );
       }
-    } else {
-      throw Exception(
-        'Failed to load group trial balance report: ${response.statusCode}',
-      );
+    } catch (e) {
+      debugPrint('Error generating group trial balance report: $e');
+      throw Exception('Error generating group trial balance report: $e');
     }
-  } catch (e) {
-    debugPrint('Error generating group trial balance report: $e');
-    throw Exception('Error generating group trial balance report: $e');
   }
-}
 
-// Add this method to AccountReportService class
+  // Add this method to AccountReportService class
 
+  static Future<Uint8List?> generateJournalRegisterReport({
+    required String fromDate,
+    required String toDate,
+    required String reportType,
+    required bool isBillWise,
+    required bool isNarration,
+  }) async {
+    try {
+      final dateRange = "$fromDate to $toDate";
 
-static Future<Uint8List?> generateJournalRegisterReport({
-  required String fromDate,
-  required String toDate,
-  required String reportType,
-  required bool isBillWise,
-  required bool isNarration,
-}) async {
-  try {
-    final dateRange = "$fromDate to $toDate";
+      // Dynamic report name
+      final String reportName =
+          isBillWise ? "JournalRegisterBillWise" : "JournalRegister";
 
-    // Dynamic report name
-    final String reportName =
-        isBillWise
-            ? "JournalRegisterBillWise"
-            : "JournalRegister";
+      final Map<String, dynamic> requestBody = {
+        "date_range": dateRange,
+        "report": reportName,
+        "report_type": reportType,
+        "showBillWise": isBillWise,
+        "showNarration": isNarration,
+        "coBr": UserSession.coBrId,
+      };
 
-    final Map<String, dynamic> requestBody = {
-      "date_range": dateRange,
-      "report": reportName,
-      "report_type": reportType,
-      "showBillWise": isBillWise,
-      "showNarration": isNarration,
-      "coBr": UserSession.coBrId,
-    };
+      debugPrint(
+        'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+      );
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
 
-    debugPrint(
-      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
-    );
-    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+      debugPrint('Response Status Code: ${response.statusCode}');
 
-    debugPrint('Response Status Code: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final contentType = response.headers['content-type'];
 
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
-
-      if (contentType != null &&
-          contentType.contains('application/pdf')) {
-        debugPrint(
-          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
-        );
-        return response.bodyBytes;
+        if (contentType != null && contentType.contains('application/pdf')) {
+          debugPrint(
+            'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+          );
+          return response.bodyBytes;
+        } else {
+          final responseData = jsonDecode(response.body);
+          throw Exception(
+            responseData['message'] ??
+                'Failed to generate journal register report',
+          );
+        }
       } else {
-        final responseData = jsonDecode(response.body);
         throw Exception(
-          responseData['message'] ??
-              'Failed to generate journal register report',
+          'Failed to load journal register report: ${response.statusCode}',
         );
       }
-    } else {
-      throw Exception(
-        'Failed to load journal register report: ${response.statusCode}',
-      );
+    } catch (e) {
+      debugPrint('Error generating journal register report: $e');
+      throw Exception('Error generating journal note register report: $e');
     }
-  } catch (e) {
-    debugPrint('Error generating journal register report: $e');
-    throw Exception('Error generating journal note register report: $e');
   }
-}
 
-// Add this method to AccountReportService class
+  // Add this method to AccountReportService class
 
-static Future<Uint8List?> generateDebitNoteRegisterReport({
-  required String fromDate,
-  required String toDate,
-  required String reportType,
-  required bool isBillWise,
-  required bool isNarration,
-}) async {
-  try {
-    final dateRange = "$fromDate to $toDate";
+  static Future<Uint8List?> generateDebitNoteRegisterReport({
+    required String fromDate,
+    required String toDate,
+    required String reportType,
+    required bool isBillWise,
+    required bool isNarration,
+  }) async {
+    try {
+      final dateRange = "$fromDate to $toDate";
 
-    // Dynamic report name
-    final String reportName =
-        isBillWise
-            ? "debitNoteRegisterBillWise"
-            : "debitNoteRegister";
+      // Dynamic report name
+      final String reportName =
+          isBillWise ? "debitNoteRegisterBillWise" : "debitNoteRegister";
 
-    final Map<String, dynamic> requestBody = {
-      "date_range": dateRange,
-      "report": reportName,
-      "report_type": reportType,
-      "showBillWise": isBillWise,
-      "showNarration": isNarration,
-      "coBr": UserSession.coBrId,
-    };
+      final Map<String, dynamic> requestBody = {
+        "date_range": dateRange,
+        "report": reportName,
+        "report_type": reportType,
+        "showBillWise": isBillWise,
+        "showNarration": isNarration,
+        "coBr": UserSession.coBrId,
+      };
 
-    debugPrint(
-      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
-    );
-    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+      debugPrint(
+        'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+      );
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
 
-    debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Status Code: ${response.statusCode}');
 
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
+      if (response.statusCode == 200) {
+        final contentType = response.headers['content-type'];
 
-      if (contentType != null &&
-          contentType.contains('application/pdf')) {
-        debugPrint(
-          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
-        );
-        return response.bodyBytes;
+        if (contentType != null && contentType.contains('application/pdf')) {
+          debugPrint(
+            'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+          );
+          return response.bodyBytes;
+        } else {
+          final responseData = jsonDecode(response.body);
+          throw Exception(
+            responseData['message'] ??
+                'Failed to generate debit note register report',
+          );
+        }
       } else {
-        final responseData = jsonDecode(response.body);
         throw Exception(
-          responseData['message'] ??
-              'Failed to generate debit note register report',
+          'Failed to load debit note register report: ${response.statusCode}',
         );
       }
-    } else {
-      throw Exception(
-        'Failed to load debit note register report: ${response.statusCode}',
-      );
+    } catch (e) {
+      debugPrint('Error generating debit note register report: $e');
+      throw Exception('Error generating debit note register report: $e');
     }
-  } catch (e) {
-    debugPrint('Error generating debit note register report: $e');
-    throw Exception('Error generating debit note register report: $e');
   }
-}
 
+  // Add this method to AccountReportService class
 
-// Add this method to AccountReportService class
+  static Future<Uint8List?> generateCreditNoteRegisterReport({
+    required String fromDate,
+    required String toDate,
+    required String reportType,
+    required bool isBillWise,
+    required bool isNarration,
+  }) async {
+    try {
+      final dateRange = "$fromDate to $toDate";
 
-static Future<Uint8List?> generateCreditNoteRegisterReport({
-  required String fromDate,
-  required String toDate,
-  required String reportType,
-  required bool isBillWise,
-  required bool isNarration,
-}) async {
-  try {
-    final dateRange = "$fromDate to $toDate";
+      // Dynamic report name
+      final String reportName =
+          isBillWise ? "CreditNoteRegisterBillWise" : "CreditNoteRegister";
 
-    // Dynamic report name
-    final String reportName =
-        isBillWise
-          ? "CreditNoteRegisterBillWise"
-        : "CreditNoteRegister";
+      final Map<String, dynamic> requestBody = {
+        "date_range": dateRange,
+        "report": reportName,
+        "report_type": reportType,
+        "showBillWise": isBillWise,
+        "showNarration": isNarration,
+        "coBr": UserSession.coBrId,
+      };
 
-    final Map<String, dynamic> requestBody = {
-      "date_range": dateRange,
-      "report": reportName,
-      "report_type": reportType,
-      "showBillWise": isBillWise,
-      "showNarration": isNarration,
-      "coBr": UserSession.coBrId,
-    };
+      debugPrint(
+        'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
+      );
+      debugPrint('Request Body: ${jsonEncode(requestBody)}');
 
-    debugPrint(
-      'Request URL: ${AppConstants.BASE_URL}/accounts/getAccReports',
-    );
-    debugPrint('Request Body: ${jsonEncode(requestBody)}');
+      final response = await http.post(
+        Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
 
-    final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/accounts/getAccReports'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestBody),
-    );
+      debugPrint('Response Status Code: ${response.statusCode}');
 
-    debugPrint('Response Status Code: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final contentType = response.headers['content-type'];
 
-    if (response.statusCode == 200) {
-      final contentType = response.headers['content-type'];
-
-      if (contentType != null &&
-          contentType.contains('application/pdf')) {
-        debugPrint(
-          'PDF received successfully, size: ${response.bodyBytes.length} bytes',
-        );
-        return response.bodyBytes;
+        if (contentType != null && contentType.contains('application/pdf')) {
+          debugPrint(
+            'PDF received successfully, size: ${response.bodyBytes.length} bytes',
+          );
+          return response.bodyBytes;
+        } else {
+          final responseData = jsonDecode(response.body);
+          throw Exception(
+            responseData['message'] ??
+                'Failed to generate credit note register report',
+          );
+        }
       } else {
-        final responseData = jsonDecode(response.body);
         throw Exception(
-          responseData['message'] ??
-              'Failed to generate credit note register report',
+          'Failed to load credit note register report: ${response.statusCode}',
         );
       }
-    } else {
-      throw Exception(
-        'Failed to load credit note register report: ${response.statusCode}',
-      );
+    } catch (e) {
+      debugPrint('Error generating credit note register report: $e');
+      throw Exception('Error generating credit note register report: $e');
     }
-  } catch (e) {
-    debugPrint('Error generating credit note register report: $e');
-    throw Exception('Error generating credit note register report: $e');
   }
-}
 }
