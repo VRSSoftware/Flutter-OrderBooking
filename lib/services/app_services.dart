@@ -2039,7 +2039,7 @@ static Future<Map<String, dynamic>> fetchSizeDetailsForPurchaseReturn(Map<String
 
 // In your ApiService class
 
-static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> payload) async {
+static Future<Map<String, dynamic>> insertPurchaseReturn(Map<String, dynamic> payload) async {
   try {
     final response = await http.post(
       Uri.parse('${AppConstants.BASE_URL}/purchase/savePurchaseRtn'),
@@ -2062,27 +2062,32 @@ static Future<Map<String, dynamic>> savePurchaseReturn(Map<String, dynamic> payl
     return {'status': 'error', 'message': e.toString()};
   }
 }
-
 static Future<Map<String, dynamic>> updatePurchaseReturn(Map<String, dynamic> payload) async {
   try {
     final response = await http.post(
-      Uri.parse('${AppConstants.BASE_URL}/purchase/updatePurchaseRtn'),
+      Uri.parse('${AppConstants.BASE_URL}/purchase/updatePurchaseReturn'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
     );
 
+    print('Update Response Status: ${response.statusCode}');
+    print('Update Response Body: ${response.body}');
+
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      // Backend returns plain string "Purchase Return updated successfully"
+      return {
+        'status': 'success',
+        'message': response.body,
+        'docNo': payload['doc_id'].toString(),
+      };
     } else {
-      print('Error updating purchase return: ${response.statusCode}');
-      print('Response body: ${response.body}');
       return {
         'status': 'error', 
-        'message': 'Failed to update purchase return. Server error: ${response.statusCode}'
+        'message': 'Failed to update. Server error: ${response.statusCode}'
       };
     }
   } catch (e) {
-    print('Exception in updatePurchaseReturn: $e');
+    print('Exception: $e');
     return {'status': 'error', 'message': e.toString()};
   }
 }
@@ -2219,5 +2224,101 @@ static Future<Map<String, dynamic>> deletePurchaseReturn({
   }
 }
 
+static Future<Map<String, dynamic>> fetchPurchaseReturnForEdit(String docId) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/purchaseReturnDetails'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'docId': docId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      print('fetchPurchaseReturnForEdit response: $data');
+      return data; // Return the response as-is
+    } else {
+      print('Error response: ${response.statusCode} - ${response.body}');
+      return {
+        'status': 'error',
+        'message': 'Failed to load purchase return data',
+      };
+    }
+  } catch (e) {
+    print('Error in fetchPurchaseReturnForEdit: $e');
+    return {
+      'status': 'error',
+      'message': e.toString(),
+    };
+  }
+}
+
+// Add to app_services.dart
+
+static Future<List<dynamic>> fetchPurchaseInwardList({
+  required String coBrId,
+  required String fcYrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchase/getPurchaseList'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'CoBr_Id': coBrId,
+        'FcYr_Id': fcYrId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) {
+        return data;
+      } else if (data['result'] is List) {
+        return data['result'];
+      } else if (data['data'] is List) {
+        return data['data'];
+      }
+      return [];
+    } else {
+      throw Exception('Failed to fetch purchase inward list');
+    }
+  } catch (e) {
+    print('Error fetching purchase inward list: $e');
+    throw e;
+  }
+}
+
+static Future<Map<String, dynamic>> deletePurchaseInward({
+  required int docId,
+  required String coBrId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${AppConstants.BASE_URL}/purchaseinward/deletePurchaseInward'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'docId': docId,
+        'coBrId': coBrId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {
+        'status': 'error',
+        'message': 'Failed to delete purchase inward',
+      };
+    }
+  } catch (e) {
+    return {
+      'status': 'error',
+      'message': e.toString(),
+    };
+  }
+}
 
 }

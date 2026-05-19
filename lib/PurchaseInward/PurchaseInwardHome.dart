@@ -225,7 +225,7 @@ class _PurchaseInwardHomeState extends State<PurchaseInwardHome>
     List<Map<String, dynamic>> options = [
       {
         "label": "Purchase Inward",
-        "route": "/purchaseInward",
+        "route": "/purchaseInwardRegister",
         "icon": Icons.inventory_2,
         "color": Colors.green,
         "description":

@@ -27,6 +27,7 @@ import 'package:vrs_erp/Outstanding_Reports/Receivable/outstanding_receivable.da
 import 'package:vrs_erp/PurchaseInward/PurchaseInward/purchaseInward.dart';
 import 'package:vrs_erp/PurchaseInward/PurchaseInwardAgainstSo/PurchaseInwardAgainstSO.dart';
 import 'package:vrs_erp/PurchaseInward/PurchaseInwardHome.dart';
+import 'package:vrs_erp/PurchaseInward/PurchaseInwardRegister.dart';
 import 'package:vrs_erp/PurchaseOrder/purchaseOrder.dart';
 import 'package:vrs_erp/PurchaseReturn/PurRtnRegister.dart';
 import 'package:vrs_erp/PurchaseReturn/PurchaseRtn.dart';
@@ -163,6 +164,7 @@ class MyApp extends StatelessWidget {
         '/saleBillRegister': (context) => SaleBillRegisterPage(),
         '/purchaseInward': (context) => PurchaseInwardPage( docId: -2 ),
         '/purchaseInwardHome': (context) => PurchaseInwardHome(),
+          '/purchaseInwardRegister': (context) => PurchaseInwardRegisterPage(),
         '/PurchaseInwardAgainstSOPage': (context) => PurchaseInwardAgainstSO(),
         '/purchaseOrder': (context) => PurchaseOrderPage( docId: -2 ),
           '/purchaseReturn': (context) => PurchaseReturnRegisterPage(),

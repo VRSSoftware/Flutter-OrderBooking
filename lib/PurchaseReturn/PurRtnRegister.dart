@@ -400,7 +400,7 @@ class _PurchaseReturnRegisterPageState extends State<PurchaseReturnRegisterPage>
                                   ),
                                   SizedBox(width: 12),
                                   Text(
-                                    'Edit',
+                                    'Update',
                                     style: TextStyle(fontSize: 14),
                                   ),
                                 ],
